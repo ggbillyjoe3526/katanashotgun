@@ -84,6 +84,14 @@ func _ready() -> void:
 	Settings.boot()
 
 
+## Quits to the desktop. Everything that saves when the window's X is
+## clicked (profile, settings) gets the same notice first.
+func quit_game() -> void:
+	var tree := get_tree()
+	tree.root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
+	tree.quit()
+
+
 ## Starts a fresh run state. A run is fully described by its seed: the map
 ## layout, palette, wave line-up, mutators, boss order and augment offers.
 func reset_run() -> void:

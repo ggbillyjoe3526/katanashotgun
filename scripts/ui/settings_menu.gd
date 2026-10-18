@@ -24,6 +24,8 @@ const LABEL_PX := 13 # Chakra Petch
 const VALUE_PX := 14 # Share Tech Mono
 const TITLE_PX := 16 # Orbitron
 const NOTE_LEN := 3.0
+const QUIT_W := 144.0
+const QUIT_ARMED := "CLICK AGAIN TO QUIT"
 const SAVE_DELAY := 0.5
 const TEXT := Color(0.86, 0.83, 0.96)
 const DIM := Color(0.62, 0.58, 0.78)
@@ -45,6 +47,7 @@ var _dragging := -1
 var _note := ""
 var _note_t := 99.0
 var _save_t := -1.0
+var _quit_t := 0.0 # QUIT GAME was clicked once: seconds left for the second click
 
 
 func _ready() -> void:
@@ -69,6 +72,7 @@ func open() -> void:
 	capturing = false
 	_dragging = -1
 	_note_t = 99.0
+	_quit_t = 0.0
 	_set_tab(tab)
 	Sfx.play("ui_click", -4.0)
 
@@ -389,6 +393,9 @@ func _gui_input(event: InputEvent) -> void:
 			1:
 				_reset_tab()
 				return
+			2:
+				_press_quit()
+				return
 		if row < 0:
 			return
 		sel = row
@@ -475,7 +482,9 @@ func _tab_rect(i: int) -> Rect2:
 
 
 func _foot_rect(i: int) -> Rect2:
-	# 0 = BACK, 1 = DEFAULTS, bottom right
+	# 0 = BACK, 1 = DEFAULTS, bottom right; 2 = QUIT GAME, bottom left
+	if i == 2:
+		return Rect2(Vector2(14, PANEL.y - 21), Vector2(QUIT_W, 14))
 	var w := 84.0
 	return Rect2(Vector2(PANEL.x - 20 - (2 - i) * (w + 6) + 6, PANEL.y - 21), Vector2(w, 14))
 
@@ -494,8 +503,28 @@ func _tab_at(p: Vector2) -> int:
 	return -1
 
 
+func foot_label(i: int) -> String:
+	if i == 2:
+		return QUIT_ARMED if quit_armed() else "QUIT GAME"
+	return ["ESC  BACK", "R  DEFAULTS"][i]
+
+
+func quit_armed() -> bool:
+	return _quit_t > 0.0
+
+
+## The first click arms QUIT GAME, a second one within a few seconds quits.
+func _press_quit() -> void:
+	if quit_armed():
+		_flush_save()
+		Game.quit_game()
+		return
+	_quit_t = TechButton.ARM_S
+	Sfx.play("ui_click", -6.0)
+
+
 func _foot_at(p: Vector2) -> int:
-	for i in 2:
+	for i in 3:
 		if _foot_rect(i).has_point(p):
 			return i
 	return -1
@@ -506,6 +535,7 @@ func _process(_delta: float) -> void:
 		return
 	var rd := Game.real_dt
 	_note_t += rd
+	_quit_t -= rd
 	if _save_t >= 0.0:
 		_save_t -= rd
 		if _save_t < 0.0:
@@ -572,12 +602,13 @@ func _paint() -> void:
 	elif sel < rows.size():
 		line = rows[sel].help
 	_text(c, line, Ui.font_bold, LABEL_PX, Vector2(14, help_y), col)
-	for i in 2:
+	for i in 3:
 		var fr := _foot_rect(i)
 		var hov := i == _hover_foot
-		c.draw_rect(fr, Color(a, 0.9) if hov else Color(0.1, 0.07, 0.18))
-		c.draw_rect(fr, a, false, 1.0)
-		var lbl: String = ["ESC  BACK", "R  DEFAULTS"][i]
+		var fa := b if i == 2 else a
+		c.draw_rect(fr, Color(fa, 0.9) if hov else Color(0.1, 0.07, 0.18))
+		c.draw_rect(fr, fa, false, 1.0)
+		var lbl: String = foot_label(i)
 		var lw := _w(lbl, Ui.font_bold, LABEL_PX)
 		_text(c, lbl, Ui.font_bold, LABEL_PX, Vector2(fr.position.x + (fr.size.x - lw) * 0.5, fr.position.y + 1), DARK if hov else TEXT)
 

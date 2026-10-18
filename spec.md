@@ -593,6 +593,7 @@ Notes:
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
+| quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -1314,9 +1315,16 @@ the holographic cut-in (§9.8).
   - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
   - A controls column and a HI-SCORES table (top 5).
   - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
+  - Bottom row: SETTINGS [TAB] on the left; the version and QUIT GAME [Q] on
+    the right. The start prompt sits just above that row.
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
-  hint if the mouse fails to lock. Music ducks to −20 dB.
+  hint if the mouse fails to lock. SETTINGS [TAB] and QUIT GAME buttons
+  under them (no Q here: Q is a dash key mid-run). Music ducks to −20 dB.
+- **Quit:** QUIT GAME on the title, the pause screen and the settings footer
+  closes the game, saving the profile and settings first. The first press only
+  arms it ("PRESS AGAIN TO QUIT" for 3 s) so a stray click or key never quits.
+  A run in progress continues from its last between-wave save (§11.3).
 - **Level-up:**
   - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
     tech panels, tall enough for a two-line name and a five-line description

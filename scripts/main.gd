@@ -254,6 +254,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif Game.state == "title" and event.physical_keycode == KEY_N and not resume.is_empty():
 			Sfx.play("ui_click", -4.0)
 			abandon_suspended_run()
+		elif Game.state == "title" and event.physical_keycode == KEY_Q:
+			# title only: in a run Q is a dash key, and a lost mouse lock pauses
+			# mid-dash, so the pause screen quits by its button alone
+			hud.title_quit.press()
 		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)

@@ -121,8 +121,12 @@ func test_every_word_fits_its_box() -> void:
 			if r.type == "option":
 				for n in r.names:
 					assert_lt(menu._w(n, Ui.font_mono, SettingsMenu.VALUE_PX), menu._value_rect(0).size.x - 24, n)
-	for lbl in ["ESC  BACK", "R  DEFAULTS"]:
-		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(0).size.x - 4, lbl)
+	for i in 2:
+		assert_lt(menu._w(menu.foot_label(i), Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(i).size.x - 4, menu.foot_label(i))
+	for lbl in ["QUIT GAME", SettingsMenu.QUIT_ARMED]:
+		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(2).size.x - 4, lbl)
+	# QUIT GAME sits bottom left, clear of BACK and DEFAULTS
+	assert_lt(menu._foot_rect(2).end.x, menu._foot_rect(0).position.x)
 	assert_lt(menu._w("PRESS A KEY OR MOUSE BUTTON.  ESC CANCELS", Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 	# the widest screen the window-mode help can name
 	assert_lt(menu._w(menu._window_help("7680x4320 360 HZ"), Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
@@ -154,6 +158,37 @@ func test_escape_closes_and_saves() -> void:
 	assert_false(menu.visible)
 	var stored := Profile.get_settings_dict()
 	assert_almost_eq(float(stored.get("volume", {}).get("Master", 1.0)), 0.95, 0.001)
+
+
+func test_quit_needs_a_second_click() -> void:
+	# one stray click on QUIT GAME only arms it; the game is still running
+	menu.open()
+	menu._press_quit()
+	assert_true(menu.quit_armed())
+	assert_eq(menu.foot_label(2), SettingsMenu.QUIT_ARMED)
+	menu.close()
+	menu.open()
+	assert_false(menu.quit_armed(), "reopening starts disarmed")
+
+
+func test_quit_button_arms_first() -> void:
+	var b := TechButton.make("QUIT GAME  [Q]", Color.WHITE)
+	b.confirm_text = "PRESS AGAIN TO QUIT"
+	add_child_autofree(b)
+	watch_signals(b)
+	b.press()
+	assert_signal_not_emitted(b, "pressed")
+	assert_true(b.armed())
+	assert_eq(b.text, "PRESS AGAIN TO QUIT")
+	# the offer runs out after a few seconds of real time
+	var rd := Game.real_dt
+	Game.real_dt = TechButton.ARM_S + 0.1
+	b._process(0.0)
+	Game.real_dt = rd
+	assert_false(b.armed())
+	assert_eq(b.text, "QUIT GAME  [Q]")
+	b.press()
+	assert_signal_not_emitted(b, "pressed", "disarmed: arms again, still no quit")
 
 
 func test_reset_tab() -> void:
