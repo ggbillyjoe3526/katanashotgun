@@ -104,7 +104,9 @@ void fragment() {
 		em += em_tex * em_tint * smoothstep(0.45, 0.9, lum) * emission_from_texture;
 	}
 #if CURRENT_RENDERER != RENDERER_COMPATIBILITY
-	em = psx_linear(em);
+	if (emission_strength > 0.0 || emission_from_texture > 0.0) {
+		em = psx_linear(em);
+	}
 #endif
 	EMISSION = em + flash_color * flash * 1.5;
 #ifdef PSX_HD

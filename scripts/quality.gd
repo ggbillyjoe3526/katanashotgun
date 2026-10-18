@@ -20,7 +20,7 @@ const DEFAULT := "medium"
 const CAPS := {
 	"high": {
 		"drops": 2700, "decals": 780, "gibs": 160, "chunks_k": 1.3, "drops_k": 1.5,
-		"numbers": 40, "arcs": 128, "mists": 56, "smoke": 80, "flashes": 64, "traffic": 56,
+		"numbers": 40, "arcs": 128, "mists": 56, "smoke": 80, "flashes": 64, "traffic": 40,
 	},
 	"medium": {
 		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,

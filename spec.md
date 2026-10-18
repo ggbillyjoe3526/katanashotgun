@@ -2147,7 +2147,7 @@ weak hardware.
     | Blood mist | 16 | 40 | 56 |
     | Smoke puffs | 20 | 60 | 80 |
     | Impact flashes | 16 | 48 | 64 |
-    | Flying cars in the backdrop | 16 | 40 | 56 |
+    | Flying cars in the backdrop (40 exist) | 16 | 40 | 40 |
 
     Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
     12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
@@ -2191,7 +2191,14 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
   a shadowed lamp redraws per pixel, brighter) and SSAO barely changes a
   pixel; Forward+ ignores omni shadows on vertex-lit materials, so lamps
   never cast. Anything added to the tree after the map (foes, the player,
-  effects) gets `gi_mode` DISABLED on Forward+ so SDFGI never bakes it.
+  effects) gets `gi_mode` DISABLED on Forward+ so SDFGI never bakes it;
+  a map's own moving parts (the backdrop's traffic, monorail, blimp and
+  searchlights) call `Graphics.moving()` for the same.
+- Compatibility shades in sRGB space and Forward+ in linear, so on Forward+
+  `psx_lit` works its emission out from sRGB colours and converts the sum
+  to linear (emission 0.1 read 22 on Compatibility and 89 on Forward+
+  before). Dry faces in `psx_lit_hd` have no specular, like the plain
+  shader.
 - HDR glow on Forward+ has no bloom: bloom or wide glow levels turn the whole
   picture milky.
 - Switching to or from INSANE writes `user://renderer.cfg` and asks for a

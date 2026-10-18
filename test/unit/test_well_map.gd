@@ -95,6 +95,9 @@ func test_traffic_follows_the_quality_preset() -> void:
 	assert_eq(arena.backdrop._cars.visible_instance_count, Quality.cap("traffic"))
 	Quality.apply("high")
 	assert_eq(arena.backdrop._cars.visible_instance_count, mini(Quality.cap("traffic"), arena.backdrop._cars.instance_count))
+	# the spec and wiki say MEDIOCRE and INSANE both show every car
+	for q in ["medium", "high"]:
+		assert_eq(Quality.CAPS[q].traffic, arena.backdrop._cars.instance_count, q)
 
 
 func test_graphics_presets_reach_the_well() -> void:
