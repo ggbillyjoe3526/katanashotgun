@@ -78,7 +78,7 @@ a hiding place.
 The towers around the roof have lit windows, neon signs, adverts and the logos
 of six corporations: AMATERASU DYNAMICS, TENGU AEROSPACE, INARI FOODS,
 TSUKUYOMI MEDIA, OMOIKANE SYSTEMS and KAPPA HYDRO. Flying cars stream past in
-four lanes (fewer on lower [Quality](Settings) settings), a monorail runs
+four lanes (fewer on [WEAK graphics](Settings#graphics-presets)), a monorail runs
 south of the roof, an ad blimp circles and searchlights sweep the sky. The
 sun starts somewhere different on each [seed](Seeds) and drifts slowly across
 the gap in the skyline to the north. The signs and adverts change with the

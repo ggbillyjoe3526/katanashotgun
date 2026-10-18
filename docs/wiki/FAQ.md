@@ -45,7 +45,7 @@ On Windows in `%APPDATA%\KatanaShotgun\`. Uninstalling leaves them there.
 ([Saving and Continuing](Saving-and-Continuing#where-the-files-are))
 
 **The game runs slowly.**
-In [Settings](Settings), set Quality to Low, then lower the Render scale.
+In [Settings](Settings), set Graphics to WEAK, then lower the Render scale.
 Press F3 in game to see your frame rate.
 
 **Can I use a controller?**

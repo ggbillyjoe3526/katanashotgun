@@ -55,4 +55,4 @@ Next: the full [Controls](Controls) and [How to Play](How-to-Play).
 
 The game aims to run at a steady 60 frames per second on a 2015-era laptop
 with integrated graphics, and much faster on gaming PCs. If it struggles,
-lower the **Quality** preset or **Render scale** in [Settings](Settings).
+set **Graphics** to WEAK or lower the **Render scale** in [Settings](Settings).
