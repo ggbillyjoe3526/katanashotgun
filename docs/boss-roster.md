@@ -35,7 +35,7 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | Sidestep | aimed at from beyond 7 m (+ radius) for 0.35 s, it steps out of the line; cooldown 4 s (6 s for the run's first boss); never up close, never mid-attack | PR #19 |
 | RED SIGNAL | one heavy move per boss: spinning red diamond, alarm, a beep 0.2 s before it lands, 0.9–1.0 s warning; can't be deflected or traded with. Dashing as its hit connects = PERFECT: slow motion and +15% KAMAE. Cooldown 14 s | PR #19 |
 | Delayed swings | 30% of melee windups hold 1.7× as long; eyes stay dim, then flare with a hiss 0.22 s before the hit | PR #19 |
-| Punish windows | every recovery of 0.8 s or more: armour off, eyes dim, KAMAE fills ×1.5 | PR #19 |
+| Punish windows | every recovery of 0.8 s or more (Tetsugumo's summon included): armour off, eyes dim, KAMAE fills ×1.5 | PR #19 |
 | Pacing | first cycle (waves 3, 6, 9): area move and RED SIGNAL only once enraged; the run's first boss telegraphs them 25% longer. From wave 12: everything from the start. Area moves cooldown 8 s | PR #19 |
 | Seeded dice | a boss rolls from hash(run seed × 13 + wave): same seed, same fight | PR #19 |
 
@@ -92,7 +92,7 @@ The zone controller: a six-legged spider mech that keeps its distance and fills 
 - **Movement:** holds 8–15 m. Walks in from beyond 15 m, backs off at 70% speed inside 8 m, otherwise strafes at 60% speed, switching every 2–3.5 s. Her reinforcements come every 10 s instead of 7.
 - **Enrage (50% HP):** 9 missiles instead of 7, shorter special cooldowns, slightly faster. The gatling and stomp are unchanged.
 - **KAMAE:** mid-sized bar. The intended fill is turning her own fire against her: returned gatling bolts and glory kills on her brood. Katana pressure means staying under her stomp.
-- **Moveset (PR #19):** **back-leap** (jumps away, lands with a 7 m shockwave for 12). **EMP field** at any range: three 2.6 m zones (on you and either side) crackle 1.2 s, then stay live 1.8 s, 12 every 0.6 s; jumping clears them. Delayed stomps. RED SIGNAL **BROOD BARRAGE**: a 7.5 m ring of 10 missiles, a 4.5 m ring of 6 and one in the middle (1.2 / 1.6 / 2.0 s, 20 each); both rings share one gap, the way out; 1.2 s punish window.
+- **Moveset (PR #19):** **back-leap** (jumps away, lands with a 7 m shockwave for 12). **EMP field** at any range: three 2.6 m zones (on you and either side) crackle 1.2 s, then stay live 1.8 s, 12 every 0.6 s; jumping clears them. Delayed stomps. RED SIGNAL **BROOD BARRAGE**: a 7.5 m ring of 10 missiles, a 4.5 m ring of 6 and one in the middle (1.2 / 1.6 / 2.0 s, 20 each); both rings share one gap, the way out, opening towards the arena's middle; 1.2 s punish window.
 - **Rewards:** KANAYAGO EDGE (katana), then AKAGANE COIL (shotgun).
 - **What makes her different:** the only boss that runs away from you and fights through other enemies. Damage comes from the arena (rings, waves, bullet streams), not from contact.
 
@@ -120,7 +120,7 @@ The heavyweight: a chrome oni that walks you down and hits like a truck. Most HP
 - **Movement:** always walks straight at you. No strafing, no retreat.
 - **Enrage (50% HP):** speed jumps to 5.6, the fan volley replaces every third leap, shorter special cooldowns. His eyes turn red.
 - **KAMAE:** the largest bar. Meant to be filled up close in the recovery windows after his slam and charge, where his reach can't punish you.
-- **Moveset (PR #19):** **shoulder barge** sideways (0.3 s at 14 m/s). **Fissures** within 14 m: five 14 m fire lines crack out in a star from his fist after 0.8 s, 24 each; jump them or stand between. RED SIGNAL **DAEMON GRAB**: aims through 70% of a 1.0 s windup, then a 0.45 s lunge at 17 m/s that grabs and hurls for 34; dash through it. A whiffed grab leaves him open 1.8 s.
+- **Moveset (PR #19):** **shoulder barge** sideways (0.3 s at 14 m/s). **Fissures** within 14 m: five 14 m fire lines crack out in a star from his fist after 0.8 s, 24 each; jump them or stand between. RED SIGNAL **DAEMON GRAB** (from 9.5 m or closer): aims through 70% of a 1.0 s windup, then a 0.45 s lunge at 17 m/s that grabs and hurls for 34; dash through it. A whiffed grab leaves him open 1.8 s.
 - **Rewards:** ONIBI EDGE (katana), then RAIKO COIL (shotgun).
 - **What makes him different:** the only boss whose single hit takes a third of your health. Few attacks, long windups, huge consequences: a test of patience and punishing.
 - **Spec mismatch:** spec §5.2 says a 2–3 hit combo; the code always swings twice.

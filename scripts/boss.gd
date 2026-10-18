@@ -27,6 +27,11 @@ const GENTLE_TELE := 1.25
 const RED_CD := 14.0
 const AREA_CD := 8.0
 const RED_LEN := {"ninja": 0.9, "mech": 1.0, "oni": 1.0}
+# farthest each boss starts its RED SIGNAL from (the grab lunges about 9 m)
+const RED_RANGE := {"ninja": 22.0, "mech": 22.0, "oni": 9.5}
+# nearest the player must be for each boss to start its area move
+const AREA_REACH := {"ninja": 5.0, "mech": 30.0, "oni": 14.0}
+const RED_STATES: Array[S] = [S.RED_WINDUP, S.RED_ACT, S.BLINK]
 const PERFECT_KAMAE := 0.15 # dashing through a RED SIGNAL attack
 const RED_COLOR := Color(1.0, 0.1, 0.15)
 # NULL CROSS
@@ -60,6 +65,8 @@ var _area_len := 0.0
 var _beeped := false
 var _step := 0
 var _lines: Array = [] # NULL CROSS: [start, dir] per line
+var _line_marks: Array = [] # NULL CROSS telegraphs (may hold freed ones), cleared if it is cut short
+var _hazards: Array = [] # area hazards still on the floor (may hold freed ones)
 var _lunge := Vector3.ZERO
 var _perfect := false
 var _hit_done := false
@@ -199,8 +206,10 @@ func _animate(delta: float, spd: float) -> void:
 	var k := 1.0 - exp(-10.0 * delta)
 	var lift := 0.0
 	match state:
-		S.STOMP_WINDUP, S.AREA_WINDUP:
+		S.STOMP_WINDUP:
 			lift = clampf(state_t / (0.8 * _delay_k), 0.0, 1.0) * 0.8
+		S.AREA_WINDUP:
+			lift = clampf(state_t / maxf(_area_len, 0.01), 0.0, 1.0) * 0.8
 		S.STAGGER:
 			lift = -0.9
 		S.SIDESTEP:
@@ -233,9 +242,30 @@ func _windup_time() -> float:
 
 
 func _physics_process(delta: float) -> void:
-	if not dead and not frozen:
-		_boss_tick(delta)
+	if not dead:
+		_tidy_red()
+		if not frozen:
+			_boss_tick(delta)
 	super._physics_process(delta)
+
+
+## Whatever cut a RED SIGNAL or blink short (a KAMAE break, the player's
+## death), the boss never stays hidden and its red marks never linger.
+func _tidy_red() -> void:
+	_red_mark.visible = state == S.RED_WINDUP
+	if state in RED_STATES:
+		return
+	if not visual.visible or collision_layer == 0:
+		visual.visible = true
+		collision_layer = 4
+	_clear_line_marks()
+
+
+func _clear_line_marks() -> void:
+	for m in _line_marks:
+		if is_instance_valid(m):
+			m.queue_free()
+	_line_marks.clear()
 
 
 func _set_state(s: S) -> void:
@@ -278,7 +308,6 @@ func _boss_tick(delta: float) -> void:
 	_red_cd -= delta
 	_area_cd -= delta
 	_track_aim(delta)
-	_red_mark.visible = state == S.RED_WINDUP
 	if _red_mark.visible:
 		_red_mark.rotation.y += delta * 4.0
 		_red_mark.scale = Vector3.ONE * (1.0 + 0.2 * sin(state_t * 18.0))
@@ -574,12 +603,11 @@ func _sidestep_state(dir: Vector3) -> Array:
 func _try_big_move(dist: float, dir: Vector3) -> bool:
 	if not _big_moves_on():
 		return false
-	if _red_cd <= 0.0 and dist > 3.0 and dist < 22.0:
+	if _red_cd <= 0.0 and dist > 3.0 and dist < float(RED_RANGE.get(kind, 22.0)):
 		_red_cd = RED_CD * _rng.randf_range(0.9, 1.2)
 		_begin_red(dir)
 		return true
-	var reach: float = {"ninja": 5.0, "mech": 30.0, "oni": 14.0}.get(kind, 0.0)
-	if _area_cd <= 0.0 and dist < reach:
+	if _area_cd <= 0.0 and dist < float(AREA_REACH.get(kind, 0.0)):
 		_area_cd = AREA_CD * _rng.randf_range(0.9, 1.2)
 		_begin_area(dir)
 		return true
@@ -609,13 +637,14 @@ func _plan_cross() -> void:
 	var a := _rng.randf() * PI
 	var lim := Game.arena.half - 1.5
 	_lines.clear()
+	_clear_line_marks()
 	for i in 3:
 		var d := Vector3(cos(a + i * PI / 3.0), 0, sin(a + i * PI / 3.0))
 		var start := c - d * CROSS_LEN * 0.5
 		start.x = clampf(start.x, -lim, lim)
 		start.z = clampf(start.z, -lim, lim)
 		_lines.append([start, d])
-		Game.fx.telegraph_line(start, d, CROSS_LEN, _red_len() + 3.0 * (CROSS_LEN / CROSS_SPEED + CROSS_GAP), RED_COLOR)
+		_line_marks.append(Game.fx.telegraph_line(start, d, CROSS_LEN, _red_len() + 3.0 * (CROSS_LEN / CROSS_SPEED + CROSS_GAP), RED_COLOR))
 	visual.visible = false
 	collision_layer = 0
 	Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)
@@ -727,7 +756,10 @@ func _perfect_dodge() -> void:
 ## lands in the middle. Each ring has the same gap: that is the way out.
 func _brood_barrage() -> void:
 	var c := Game.player.global_position
+	# the way out opens roughly towards the arena's middle, never into a wall
 	var gap := _rng.randf() * TAU
+	if Vector2(c.x, c.z).length() > 3.0:
+		gap = atan2(-c.z, -c.x) + _rng.randf_range(-0.6, 0.6)
 	var t := _tele()
 	_missile_ring(c, 7.5, 12, gap, 1.2 * t)
 	_missile_ring(c, 4.5, 8, gap, 1.6 * t)
@@ -776,8 +808,14 @@ func _begin_area(dir: Vector3) -> void:
 				var d := dir.rotated(Vector3.UP, i * TAU / 5.0)
 				hazards.append(BossHazard.line(global_position + d * radius, d, 14.0, 1.6, _area_len, 24.0 * damage_mult, Color(1.0, 0.4, 0.1)))
 			Sfx.play("roar", 0.0, 0.8)
+	var kept: Array = []
+	for o in _hazards:
+		if is_instance_valid(o):
+			kept.append(o)
+	_hazards = kept
 	for h in hazards:
 		get_parent().add_child(h)
+		_hazards.append(h)
 	_set_state(S.AREA_WINDUP)
 	_log_move("area")
 
@@ -841,6 +879,14 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		return
 	if _line and is_instance_valid(_line):
 		_line.queue_free()
+	# a felled boss takes its floor hazards and red marks with it
+	for h in _hazards:
+		if is_instance_valid(h):
+			h.queue_free()
+	_hazards.clear()
+	_clear_line_marks()
+	_red_mark.visible = false
+	visual.visible = true
 	if kind == "mech":
 		var c := global_position + Vector3(0, 2.4, 0)
 		for k in 4:

@@ -1000,7 +1000,7 @@ screen.
   Tetsugumo's stomp) hold 1.7× as long; the pose rises slower and the eyes
   stay dim, then flare with a hiss 0.22 s before the hit.
 - **Punish windows:** every recovery of 0.8 s or more (after a dash chain,
-  gatling, missiles, stomp, slam, charge, area move or RED SIGNAL) drops the
+  gatling, missiles, a summon, stomp, slam, charge, area move or RED SIGNAL) drops the
   armour for the whole recovery (+0.2 s on the first boss), dims the eyes,
   and KAMAE fills ×1.5 meanwhile.
 - **RED SIGNAL:** a spinning red diamond over the head, an alarm, then a
@@ -1008,7 +1008,10 @@ screen.
   clear, or dash through it. Being dashing when its hit would connect is a
   **PERFECT**: a cyan stamp, a short slow motion (×0.35 for 0.4 s) and +15%
   KAMAE. First time, the hint "RED SIGNAL: GET CLEAR, OR DASH THROUGH IT AT
-  THE LAST MOMENT". Cooldown 14 s (×0.9–1.2); area moves 8 s (×0.9–1.2).
+  THE LAST MOMENT". Started from 3 to 22 m away (Shuten 3 to 9.5 m, his
+  grab's reach). Cooldown 14 s (×0.9–1.2); area moves 8 s (×0.9–1.2).
+  Cutting one short (a KAMAE break) clears its red marks at once, and a
+  felled boss takes its floor hazards with it.
 - **Pacing:** in the first cycle (waves 3, 6, 9) the area move and RED
   SIGNAL wait for the enrage at 50% HP; the run's first boss also telegraphs
   them 25% longer. From the second cycle (wave 12) bosses use everything
@@ -1021,8 +1024,8 @@ screen.
 | Boss | Sidestep | Area move | RED SIGNAL |
 |---|---|---|---|
 | Kurokage | Afterimage: smoke where he stood, 0.22 s at 18 m/s to the side | **Smoke ring** (within 5 m of him): smoke at his feet, a 5 m full-circle cut after 0.7 s, 18 damage; step out or jump. Recovery 0.9 s | **NULL CROSS** (0.9 s): he vanishes and three red lines (18 m, 60° apart) cross where you stand; he reappears at the first, then dashes along each in turn (34 m/s, 26 damage, 0.25 s between). Recovery 1.2 s |
-| Tetsugumo | Back-leap: jumps away and lands with a 7 m shockwave (12 damage) | **EMP field** (any range): three 2.6 m cyan zones (on you and 3.5–5 m either side) crackle 1.2 s, then stay live 1.8 s, 12 damage every 0.6 s; jumping clears them. Recovery 0.8 s | **BROOD BARRAGE** (1.0 s, pods glowing): a 7.5 m ring of 10 missiles (1.2 s), a 4.5 m ring of 6 (1.6 s) and one in the middle (2.0 s), 20 damage each; both rings share one gap, the way out. Recovery 1.2 s |
-| Shuten | Shoulder barge: 0.3 s at 14 m/s to the side | **Fissures** (within 14 m): five fire lines (14 m, 1.6 m wide) crack out in a star from his fist after 0.8 s, 24 damage; jump them or stand between. Recovery 1.0 s | **DAEMON GRAB** (1.0 s, aims until 70%): a 0.45 s lunge at 17 m/s that grabs and hurls for 34 damage. A whiffed grab leaves him open 1.8 s. Recovery 1.2 s |
+| Tetsugumo | Back-leap: jumps away and lands with a 7 m shockwave (12 damage) | **EMP field** (any range): three 2.6 m cyan zones (on you and 3.5–5 m either side) crackle 1.2 s, then stay live 1.8 s, 12 damage every 0.6 s; jumping clears them. Recovery 0.8 s | **BROOD BARRAGE** (1.0 s, pods glowing): a 7.5 m ring of 10 missiles (1.2 s), a 4.5 m ring of 6 (1.6 s) and one in the middle (2.0 s), 20 damage each; both rings share one gap, the way out, opening towards the arena's middle (±0.6 rad). Recovery 1.2 s |
+| Shuten | Shoulder barge: 0.3 s at 14 m/s to the side | **Fissures** (within 14 m): five fire lines (14 m, 1.6 m wide) crack out in a star from his fist after 0.8 s, 24 damage; jump them or stand between. Recovery 1.0 s | **DAEMON GRAB** (1.0 s, from 9.5 m or closer, aims until 70%): a 0.45 s lunge at 17 m/s that grabs and hurls for 34 damage. A whiffed grab leaves him open 1.8 s. Recovery 1.2 s |
 
 All damage × the boss's `damage_mult`.
 

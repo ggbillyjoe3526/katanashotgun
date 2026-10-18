@@ -45,3 +45,25 @@ func test_first_boss_telegraphs_longer() -> void:
 	assert_eq(b._tele(), 1.0)
 	Game.bosses_killed = killed
 	b.free()
+
+
+func test_a_cut_short_red_signal_never_leaves_the_boss_hidden() -> void:
+	var b := Boss.new()
+	b.visual = Node3D.new()
+	b.add_child(b.visual)
+	b._red_mark = MeshInstance3D.new()
+	b.add_child(b._red_mark)
+	b._line_marks.append(Node3D.new())
+	b.visual.visible = false
+	b.collision_layer = 0
+	b.state = Enemy.S.RED_ACT
+	b._tidy_red()
+	assert_false(b.visual.visible, "hidden on purpose mid NULL CROSS")
+	assert_eq(b._line_marks.size(), 1)
+	b.state = Enemy.S.STAGGER
+	b._tidy_red()
+	assert_true(b.visual.visible)
+	assert_eq(b.collision_layer, 4)
+	assert_eq(b._line_marks.size(), 0, "its red lines go with it")
+	assert_false(b._red_mark.visible)
+	b.free()

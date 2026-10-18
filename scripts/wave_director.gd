@@ -215,6 +215,8 @@ func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()
 	var at := pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
+		# only horde kinds are pooled, so `before_ready` (bosses) never runs here
+		assert(not before_ready.is_valid(), "pooled spawns take no before_ready")
 		var pe: Enemy = free.pop_front()[0]
 		pe.reuse()
 		pe.setup(kind, scale)
