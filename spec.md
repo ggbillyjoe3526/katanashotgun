@@ -235,8 +235,8 @@ done.
    captures, LMB swings the katana, RMB fires the shotgun.
 
 ### Step 8: Set up the release pipeline (S4), then do a test release
-Create a `v0.3.1` (or `v0.4.0-test`) tag, watch the Actions run
-(`gh run watch`), and check that the GitHub Release has the installer, the
+Do a dry run (*Actions → Release → Run workflow* with Publish unticked; the
+version comes from `project.godot`, S3.2), watch the Actions run, and check that the GitHub Release has the installer, the
 portable zip and the other platforms. Ask the developer to download the
 installer, install, play, and uninstall. Explain the SmartScreen warning
 (S4.4) **before** they see it.
