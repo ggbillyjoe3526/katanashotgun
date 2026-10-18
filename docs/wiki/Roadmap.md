@@ -6,9 +6,10 @@ already arrived is in the [Patch Notes](Patch-Notes).
 
 ## Next
 
-- **The first public builds.** Versions go 0.1 Dev 1, Dev 2 and on, then
-  0.1 Beta 1, Beta 2, and then the full **0.1** release. Each one is posted on
-  the [Releases page](https://github.com/ggbillyjoe3526/katanashotgun/releases)
+- **More public builds.** 0.1 Dev 1 is the first. Next come 0.1 Dev 2, Dev 3
+  and on, then 0.1 Beta 1, Beta 2, and then the full **0.1** release. Each one
+  is posted on the
+  [Releases page](https://github.com/ggbillyjoe3526/katanashotgun/releases)
   with its patch notes.
 - **Difficulty tuning** past the opening waves, by playtesting. Waves 1 to 3
   stay easy.
