@@ -89,17 +89,18 @@ func recycle_bolt(b: Bolt) -> void:
 
 ## Fires a bolt from the pool: hostile bolts and shuriken from enemies, or
 ## the player's Crimson Wave. Returns it so the caller can adjust it.
-func fire_bolt(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "bolt") -> Bolt:
+## `from` is the enemy firing it; a deflect sends the bolt back to it.
+func fire_bolt(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "bolt", from: Enemy = null) -> Bolt:
 	var free: Array = _bolt_pool[k]
 	if free.is_empty():
 		var nb := Bolt.new()
 		nb.pool = self
-		nb.setup(is_hostile, pos, velocity, dmg, k)
+		nb.setup(is_hostile, pos, velocity, dmg, k, from)
 		add_child(nb)
 		return nb
 	var b: Bolt = free.pop_back()
 	b.reuse()
-	b.setup(is_hostile, pos, velocity, dmg, k)
+	b.setup(is_hostile, pos, velocity, dmg, k, from)
 	b.activate()
 	return b
 
