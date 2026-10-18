@@ -7,6 +7,16 @@ must look like `## 0.1 Dev 2 (2026-10-18)`: the version name from
 
 ## Unreleased
 
+### Glory kills on F
+- Glory kills are now your call: when an enemy is staggered and close, a
+  gold "F  GLORY KILL" prompt appears under the crosshair (on bosses it says
+  "DEATHBLOW"), and the enemy's marker turns gold. Press F to finish it,
+  just like Doom.
+- Slashing a staggered enemy just cuts it (hard), so you choose between a
+  quick kill and the full finisher with its health and cells.
+- F can be pressed a moment early and still counts. The key will be
+  rebindable once the settings menu exists.
+
 ### A city in every colour
 - The rooftop no longer drowns in purple. Each of the five colour schemes now
   has six strong neon colours (pinks, cyans, ambers, electric blues, acid
