@@ -24,6 +24,7 @@ and Linux).
 | Space | Jump / double jump |
 | Shift (or Q) | Dash (invulnerable) |
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
+| Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
 | After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
 
 ## How a run works
@@ -66,9 +67,10 @@ scripts/maps/map_registry.gd   list of maps; the seed picks one
 scripts/gore.gd             blood droplets, floor splats, gibs, geysers, scorch marks
 scripts/fx.gd               damage numbers, tracers, telegraphs, missiles, explosions
 scripts/hud.gd              HUD, title, boss intros, level-up, death screen, initials
+scripts/settings.gd         player settings: load, save, apply, key rebinding
 scripts/juice.gd            game feel: stamps, wave intro, tally, cards, cut-ins, FINISH
 scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-in,
-                            data streaks, kill bursts
+                            data streaks, kill bursts, the settings screen
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
@@ -103,6 +105,8 @@ gdlintrc                    gdlint settings
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
+  - `tools/changelog.sh check`: the changelog notes in `changelog.d/` (one new
+    file per change instead of editing `CHANGELOG.md`; see its `README.md`).
   Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
   isn't on PATH).
 - **Licence notices:** after adding a font or other third-party asset, or
@@ -119,10 +123,28 @@ gdlintrc                    gdlint settings
   macOS, builds the Windows installer, checks it installs and uninstalls, and
   publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
   `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
-  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
-  dry run: everything is built and attached to the run, nothing is published.
+  come from that version's section of `CHANGELOG.md`, which a release gathers
+  from the one-file-per-change notes in `changelog.d/`. A pull request that
+  touches the pipeline does a dry run: everything is built and attached to
+  the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
+
+## Settings
+Open with **Tab** or the SETTINGS button on the title or pause screen.
+- **Audio:** volume for Master, Music, Sound effects, Ambience and Menus/HUD.
+- **Video:** window mode (windowed, fullscreen, exclusive fullscreen), VSync,
+  frame cap, quality preset, render scale (50 to 100% of the 3D view), field
+  of view (70 to 110, default 88).
+- **Controls:** mouse sensitivity and two keys or mouse buttons per action.
+  Taking a key another action uses swaps the two. Esc and F11 stay fixed.
+- **Comfort:** screen shake and flash strength. Below 100% flashes, impact
+  frames don't strobe.
+
+Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
+Q / E change tab, R resets the tab, Esc goes back. Settings are saved to
+`settings.json` in the game's user folder (`%APPDATA%\KatanaShotgun` on
+Windows), with a backup next to it.
 
 ## Debug flags
 Pass after `--` on the command line:
@@ -138,6 +160,8 @@ Pass after `--` on the command line:
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
+- `--settings=audio|video|controls|comfort` opens the settings screen on the
+  title at that tab
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678

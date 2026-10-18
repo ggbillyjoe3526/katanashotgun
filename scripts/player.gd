@@ -19,7 +19,7 @@ const JUMP_VEL := 9.4
 const DOUBLE_JUMP_VEL := 8.6
 const DASH_SPEED := 21.0
 const DASH_TIME := 0.2
-const BASE_FOV := 88.0
+const BASE_FOV := 88.0 # the default; the live value is Settings.fov
 const KATANA_CD := 0.32
 const KATANA_FINISHER_CD := 0.45
 const SHOTGUN_CD := 0.72
@@ -113,7 +113,7 @@ func _ready() -> void:
 	head.position.y = 1.55
 	add_child(head)
 	cam = Camera3D.new()
-	cam.fov = BASE_FOV
+	cam.fov = Settings.fov
 	cam.near = 0.02
 	cam.far = 500.0
 	head.add_child(cam)
@@ -152,7 +152,7 @@ func _process(delta: float) -> void:
 	# shake
 	trauma = maxf(0.0, trauma - delta * 1.6)
 	_shake_t += delta * 30.0
-	var sh := trauma * trauma
+	var sh := trauma * trauma * Settings.shake
 	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh
 	cam.rotation.y = sin(_shake_t * 1.7 + 2.0) * 0.04 * sh
 	tilt = lerpf(tilt, -_input_dir.x * 0.035, 1.0 - exp(-8.0 * delta))
@@ -161,7 +161,7 @@ func _process(delta: float) -> void:
 	cam.v_offset = sin(_shake_t * 2.6 + 1.0) * 0.08 * sh
 	fov_kick = move_toward(fov_kick, 0.0, delta * 60.0)
 	exec_zoom = move_toward(exec_zoom, 0.0, delta * 25.0)
-	cam.fov = BASE_FOV + fov_kick - exec_zoom
+	cam.fov = Settings.fov + fov_kick - exec_zoom
 	land_dip = move_toward(land_dip, 0.0, delta * 1.2)
 	var hspeed := Vector2(velocity.x, velocity.z).length()
 	if is_on_floor() and hspeed > 1.0 and dash_t <= 0.0:

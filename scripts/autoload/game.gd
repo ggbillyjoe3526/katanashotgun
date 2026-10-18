@@ -81,6 +81,7 @@ func _ready() -> void:
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
+	Settings.boot()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
