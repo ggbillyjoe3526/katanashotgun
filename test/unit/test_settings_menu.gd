@@ -1,6 +1,7 @@
 extends GutTest
-## The settings screen driven from the keyboard, the way a player without a
-## mouse would: move, change values, switch tabs, rebind a key, back out.
+## The settings screen worked with the mouse alone, as the owner asked:
+## click tabs, options and the footer, drag sliders, rebind and clear keys.
+## The keyboard only types a new binding and backs out with Esc.
 
 const TEST_PATH := "user://test_settings_menu.json"
 const PROFILE_DIR := "user://test-settings-menu"
@@ -17,6 +18,7 @@ func before_each() -> void:
 	Profile.use_dir(PROFILE_DIR) # saves never reach the player's profile
 	Settings.reset_all()
 	Game.state = "title"
+	Ui.init() # the panel draws when a frame passes
 	menu = SettingsMenu.new()
 	add_child_autofree(menu)
 
@@ -51,6 +53,17 @@ func _press(code: Key, shift := false) -> void:
 	menu._input(k)
 
 
+## A mouse press and release at a point on the panel (panel coordinates).
+func _click(at: Vector2, button := MOUSE_BUTTON_LEFT) -> void:
+	menu._process(0.0) # places the panel
+	for down in [true, false]:
+		var ev := InputEventMouseButton.new()
+		ev.button_index = button
+		ev.pressed = down
+		ev.position = menu._origin + at
+		menu._gui_input(ev)
+
+
 func _row(label: String) -> int:
 	for i in menu.rows.size():
 		if menu.rows[i].label == label:
@@ -67,12 +80,26 @@ func test_tab_opens_from_title_only() -> void:
 	assert_true(menu.visible)
 
 
-func test_arrows_change_a_slider() -> void:
+func test_screen_covers_the_window_so_clicks_land() -> void:
+	# it used to be zero size, so every click fell through to the title
 	menu.open()
-	menu.sel = _row("MASTER")
-	_press(KEY_LEFT)
-	_press(KEY_LEFT)
-	assert_almost_eq(float(Settings.volume["Master"]), 0.9, 0.001)
+	await wait_process_frames(1)
+	assert_eq(menu.size, menu.get_viewport_rect().size)
+
+
+func test_drag_a_slider() -> void:
+	menu.open()
+	var i := _row("MASTER")
+	var sr: Rect2 = menu._slider_rect(i)
+	_click(Vector2(sr.position.x + sr.size.x * 0.5, sr.get_center().y))
+	assert_almost_eq(float(Settings.volume["Master"]), 0.5, 0.051)
+
+
+func test_wheel_nudges_a_slider() -> void:
+	menu.open()
+	var i := _row("MASTER")
+	_click(menu._row_rect(i).get_center(), MOUSE_BUTTON_WHEEL_DOWN)
+	assert_almost_eq(float(Settings.volume["Master"]), 0.95, 0.001)
 
 
 func test_sliders_for_missing_buses_are_hidden() -> void:
@@ -82,24 +109,32 @@ func test_sliders_for_missing_buses_are_hidden() -> void:
 		assert_eq(shown, Settings.has_bus(b), b)
 
 
-func test_tabs_cycle_both_ways() -> void:
+func test_click_a_tab() -> void:
 	menu.open()
-	_press(KEY_E)
-	assert_eq(SettingsMenu.TABS[menu.tab], "VIDEO")
-	_press(KEY_TAB, true)
-	assert_eq(SettingsMenu.TABS[menu.tab], "AUDIO")
-	_press(KEY_Q)
+	_click(menu._tab_rect(SettingsMenu.TABS.find("COMFORT")).get_center())
 	assert_eq(SettingsMenu.TABS[menu.tab], "COMFORT")
 
 
-func test_option_wraps_through_values() -> void:
+func test_click_either_side_of_an_option() -> void:
 	menu.tab = SettingsMenu.TABS.find("VIDEO")
 	menu.open()
-	menu.sel = _row("FRAME CAP")
-	_press(KEY_LEFT) # uncapped -> the highest cap
+	var vr: Rect2 = menu._value_rect(_row("FRAME CAP"))
+	_click(vr.position + Vector2(4, 4)) # left: unlimited -> the highest cap
 	assert_eq(Settings.fps_cap, Settings.FPS_CAPS[-1])
-	_press(KEY_RIGHT)
+	_click(vr.end - Vector2(4, 4)) # right: back round to unlimited
 	assert_eq(Settings.fps_cap, 0)
+
+
+func test_keys_do_not_work_the_menu() -> void:
+	menu.tab = SettingsMenu.TABS.find("VIDEO")
+	menu.open()
+	var before := Settings.to_dict()
+	for code in [KEY_Q, KEY_E, KEY_TAB, KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_ENTER, KEY_R, KEY_DELETE]:
+		_press(code)
+	assert_eq(SettingsMenu.TABS[menu.tab], "VIDEO")
+	assert_eq_deep(Settings.to_dict(), before)
+	assert_true(menu.visible)
+	assert_false(menu.capturing)
 
 
 func test_quality_row_only_with_a_quality_system() -> void:
@@ -127,34 +162,59 @@ func test_every_word_fits_its_box() -> void:
 		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(2).size.x - 4, lbl)
 	# QUIT GAME sits bottom left, clear of BACK and DEFAULTS
 	assert_lt(menu._foot_rect(2).end.x, menu._foot_rect(0).position.x)
-	assert_lt(menu._w("PRESS A KEY OR MOUSE BUTTON.  ESC CANCELS", Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
+	assert_lt(menu._w(SettingsMenu.CAPTURE_HELP, Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 	# the widest screen the window-mode help can name
 	assert_lt(menu._w(menu._window_help("7680x4320 360 HZ"), Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 
 
-func test_rebind_from_the_keyboard() -> void:
+func _names(action: String) -> Array:
+	var out := []
+	for ev in Settings.action_events(action):
+		out.append(Settings.event_name(ev))
+	return out
+
+
+func test_rebind_by_clicking_a_slot() -> void:
 	menu.tab = SettingsMenu.TABS.find("CONTROLS")
 	menu.open()
-	menu.sel = _row("JUMP")
-	_press(KEY_RIGHT) # second slot
-	_press(KEY_ENTER)
+	var row := _row("JUMP")
+	var slot2: Rect2 = menu._slot_rect(row, 1)
+	_click(slot2.get_center())
 	assert_true(menu.capturing)
 	_press(KEY_ESCAPE) # Esc can't be bound: it cancels
 	assert_false(menu.capturing)
 	assert_true(menu.visible)
-	_press(KEY_ENTER)
+	_click(slot2.get_center())
+	_click(menu._row_rect(0).get_center()) # clicking away cancels too
+	assert_false(menu.capturing)
+	_click(slot2.get_center())
 	_press(KEY_V)
 	assert_false(menu.capturing)
-	var names := []
-	for ev in Settings.action_events("jump"):
-		names.append(Settings.event_name(ev))
-	assert_eq(names, ["SPACE", "V"])
+	assert_eq(_names("jump"), ["SPACE", "V"])
 
 
-func test_escape_closes_and_saves() -> void:
+func test_bind_a_mouse_button_on_the_slot() -> void:
+	menu.tab = SettingsMenu.TABS.find("CONTROLS")
 	menu.open()
-	_press(KEY_LEFT) # master volume down, saved on close
-	_press(KEY_ESCAPE)
+	var slot2: Rect2 = menu._slot_rect(_row("DASH"), 1)
+	_click(slot2.get_center())
+	_click(slot2.get_center(), MOUSE_BUTTON_XBUTTON1)
+	assert_false(menu.capturing)
+	assert_eq(_names("dash")[1], "MOUSE 4")
+
+
+func test_right_click_clears_a_slot() -> void:
+	menu.tab = SettingsMenu.TABS.find("CONTROLS")
+	menu.open()
+	_click(menu._slot_rect(_row("DASH"), 1).get_center(), MOUSE_BUTTON_RIGHT)
+	assert_eq(_names("dash"), ["SHIFT"])
+
+
+func test_back_closes_and_saves() -> void:
+	menu.open()
+	Settings.volume["Master"] = 0.95
+	menu._changed() # saved on close
+	_click(menu._foot_rect(0).get_center())
 	assert_false(menu.visible)
 	var stored := Profile.get_settings_dict()
 	assert_almost_eq(float(stored.get("volume", {}).get("Master", 1.0)), 0.95, 0.001)
@@ -163,7 +223,7 @@ func test_escape_closes_and_saves() -> void:
 func test_quit_needs_a_second_click() -> void:
 	# one stray click on QUIT GAME only arms it; the game is still running
 	menu.open()
-	menu._press_quit()
+	_click(menu._foot_rect(2).get_center())
 	assert_true(menu.quit_armed())
 	assert_eq(menu.foot_label(2), SettingsMenu.QUIT_ARMED)
 	menu.close()
@@ -191,9 +251,15 @@ func test_quit_button_arms_first() -> void:
 	assert_signal_not_emitted(b, "pressed", "disarmed: arms again, still no quit")
 
 
-func test_reset_tab() -> void:
+func test_escape_still_backs_out() -> void:
+	menu.open()
+	_press(KEY_ESCAPE)
+	assert_false(menu.visible)
+
+
+func test_defaults_button_resets_the_tab() -> void:
 	menu.tab = SettingsMenu.TABS.find("COMFORT")
 	menu.open()
 	Settings.shake = 0.2
-	_press(KEY_R)
+	_click(menu._foot_rect(1).get_center())
 	assert_eq(Settings.shake, 1.0)

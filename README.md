@@ -145,8 +145,10 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
   frames don't strobe.
 
-Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
-Q / E change tab, R resets the tab, Esc goes back. Settings are saved in
+Everything is done with the mouse: click a tab, click the left or right half
+of an option, drag or scroll a slider. To rebind, click a slot and press the
+new key (or click the slot with the mouse button you want); right-click a slot
+to clear it. DEFAULTS resets the tab, BACK (or Esc) closes. Settings are saved in
 your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags

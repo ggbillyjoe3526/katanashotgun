@@ -1834,6 +1834,11 @@ seed | click: new seed).
     scale, quality preset, FPS cap, VSync.
   - Screen-shake and flash intensity sliders (accessibility), key rebinding,
     window mode.
+  - **Mouse only** (owner, 2026-10-18): click tabs, options and the footer
+    (BACK, DEFAULTS, QUIT GAME), drag or scroll sliders, click a key slot then
+    press the new key (or click the slot with a mouse button), right-click a
+    slot to clear it. No keyboard navigation and no key hints; Esc still backs
+    out.
 - **Profile and save system** (§11). **Rewards and unlock menu** (§11.2).
 
 ---
