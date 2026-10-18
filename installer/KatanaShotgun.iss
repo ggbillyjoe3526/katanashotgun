@@ -27,7 +27,7 @@ DisableProgramGroupPage=yes
 OutputDir=..\dist
 OutputBaseFilename=KatanaShotgun-v{#AppVersion}-Windows-Setup
 SetupIconFile=icon.ico
-UninstallDisplayIcon={app}\KatanaShotgun.exe
+UninstallDisplayIcon={app}\KatanaShotgun.ico
 UninstallDisplayName=KATANA / SHOTGUN
 Compression=lzma2/max
 SolidCompression=yes
@@ -44,11 +44,13 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\build\windows\KatanaShotgun.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The exe keeps Godot's icon (it is exported on Linux without rcedit), so shortcuts use this one.
+Source: "icon.ico"; DestDir: "{app}"; DestName: "KatanaShotgun.ico"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\KATANA SHOTGUN"; Filename: "{app}\KatanaShotgun.exe"
+Name: "{group}\KATANA SHOTGUN"; Filename: "{app}\KatanaShotgun.exe"; IconFilename: "{app}\KatanaShotgun.ico"
 Name: "{group}\Uninstall KATANA SHOTGUN"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\KATANA SHOTGUN"; Filename: "{app}\KatanaShotgun.exe"; Tasks: desktopicon
+Name: "{autodesktop}\KATANA SHOTGUN"; Filename: "{app}\KatanaShotgun.exe"; IconFilename: "{app}\KatanaShotgun.ico"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\KatanaShotgun.exe"; Description: "{cm:LaunchProgram,KATANA SHOTGUN}"; Flags: nowait postinstall skipifsilent

@@ -503,7 +503,7 @@ Notes:
 ## S6. Developer decisions log (fill in as you go)
 | Decision | Value |
 |---|---|
-| Repo visibility | Public (`ggbillyjoe3526/katanashotgun`, as created by the owner; to confirm) |
+| Repo visibility | Public (`ggbillyjoe3526/katanashotgun`; confirmed by the owner 2026-10-18) |
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
@@ -1711,7 +1711,9 @@ seed | click: new seed).
   - Both are placeholders until real audio arrives.
 - **Exports:**
   - `godot --headless --export-release "Windows Desktop"
-    build/windows/KatanaShotgun.exe` (embed_pck).
+    build/windows/KatanaShotgun.exe` (embed_pck); likewise `"Linux"`
+    (`build/linux/KatanaShotgun.x86_64`) and `"macOS"`
+    (`build/macos/KatanaShotgun.zip`).
   - There is no Web preset; the game is desktop only.
 - Add: a perf overlay; automated perf captures on a fixed seed;
   save-system tests (corrupt file, version migration, crash mid-write).

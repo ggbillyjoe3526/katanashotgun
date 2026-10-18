@@ -1,4 +1,5 @@
-"""Builds installer/icon.ico (the installer and shortcut icon) from icon.svg.
+"""Builds installer/icon.ico (the setup wizard, Start Menu and desktop shortcut
+icon; the portable exe keeps Godot's default icon for now) from icon.svg.
 
 Run:  python3 tools/make_icon.py   (from the project root). Requires Pillow.
 icon.svg is pixel art drawn with plain <rect> elements on a 32x32 grid, so
