@@ -1253,7 +1253,8 @@ the holographic cut-in (§9.8).
   - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
-  hint if the mouse fails to lock. Music ducks to −20 dB.
+  hint if the mouse fails to lock. Music ducks to −20 dB. The live HUD hides
+  and the big messages freeze until you resume.
 - **Level-up:**
   - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
     tech panels, tall enough for a two-line name and a five-line description
@@ -1444,6 +1445,21 @@ something.
   the LEVEL UP title, no jitter on the tally total.
 - `--juicetest` also shows the boss name card, kill tags, NO CHARGE, a hint
   and an ENRAGED message, for paused-frame checks.
+- Nothing spills out of its panel or sits on other text (tidy pass,
+  2026-10-18). The big moments take turns instead of stacking:
+  - The level-up screen and the pause screen replace the live HUD (the pause
+    screen also freezes stamps and cards where they are until you resume).
+  - The level-up opens once FINISH, the wave payout, the boss-defeated card,
+    the boss name card and any stamp have finished; a level-up earned on a
+    wave's last kills opens after the payout, before the next wave's intro.
+  - Kill tags and hints wait for the wave intro (an "<UPGRADE> ONLINE" tag
+    appears at FIGHT) and are dropped while FINISH, the payout or the
+    boss-defeated card is up; combo milestones play their sound only then.
+  - Hints wrap onto two centred lines when wider than the screen, and sit
+    above the bottom HUD plates. A long mutator name in the payout stays
+    inside the panel; the best score steps aside while the payout is up.
+  - Results stats are two columns (names, numbers), so the numbers line up.
+  - `--uiaudit` checks all of this while the game runs (see the README).
 
 ---
 

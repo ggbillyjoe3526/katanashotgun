@@ -27,6 +27,17 @@ must look like `## v0.3.1 (2026-10-18)`.
 - Level-up cards, the title screen and the results screen use readable sizes
   too.
 
+### Nothing spills out or piles up
+- Text stays inside its panels and never sits on other text: the big moments
+  (FINISH, the wave payout, the boss cards, the wave intro, level-up) now
+  take turns instead of stacking.
+- The level-up screen and the pause screen replace the HUD instead of
+  covering half of it. Pausing freezes the big messages until you resume.
+- A level-up earned on a wave's last kills opens after the payout, before
+  the next wave starts.
+- Long tips wrap onto two lines instead of running off the screen, and the
+  results numbers line up in a column.
+
 ### The project moves into GitHub
 - The v0.3 prototype is now the starting point of the real game, with its spec
   and design doc alongside it.

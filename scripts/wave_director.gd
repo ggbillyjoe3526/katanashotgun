@@ -230,7 +230,9 @@ func _physics_process(delta: float) -> void:
 				_wave_cleared()
 		"clear":
 			phase_t -= delta
-			if Game.hud.tally_ready() or phase_t <= 0.0:
+			# a level-up earned on the last kills opens after the tally, before
+			# the next wave's intro (the two never share the screen)
+			if (Game.hud.tally_ready() or phase_t <= 0.0) and Game.pending_levelups == 0:
 				_next_wave()
 
 

@@ -101,10 +101,14 @@ Pass after `--` on the command line:
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
   `--boss=ninja|mech|oni` forces a boss
+- `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
+  any text that leaves the screen, spills out of or across a panel, or
+  overlaps other text (and a count at exit)
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
+godot --headless --path . --resolution 960x540 --quit-after 20000 -- --autoplay --uiaudit
 ```
 
 ## Regenerating audio

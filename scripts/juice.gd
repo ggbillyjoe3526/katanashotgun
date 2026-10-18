@@ -606,10 +606,43 @@ func tally_ready() -> bool:
 	return _tally_ready
 
 
+## The wave intro (its panel, countdown or FIGHT) is on screen.
+func intro_showing() -> bool:
+	if _intro_on:
+		return true
+	for s in _stamps:
+		if s.slot == "intro":
+			return true
+	return false
+
+
+func tally_showing() -> bool:
+	return _tally_on
+
+
+## A big panel (FINISH, the wave payout or the boss-defeated card) has the
+## middle of the screen.
+func panel_showing() -> bool:
+	return _fin.visible or _tally_on or _card_on
+
+
+## True while a big centre-screen moment is up (a stamp, the cut-in, FINISH,
+## the boss-defeated card, the wave intro or tally, the boss name card). The
+## level-up screen waits for it so the two never share the screen.
+func centre_busy() -> bool:
+	for s in _stamps:
+		if s.slot in ["center", "intro", "tally"]:
+			return true
+	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or hud.boss_title.visible
+
+
 ## d = {title, rows: [[name, detail, value]], chips, mults: [[name, factor]],
 ##      total, flawless}. The score is already added; the HUD holds it back
 ## until the cash-out slam.
 func show_tally(d: Dictionary) -> void:
+	# the payout panel takes over the middle: a combo stamp still up goes
+	_clear_slot("center")
+	_cutin.stop()
 	_td = d
 	_tally_on = true
 	_tally_ready = false
@@ -800,7 +833,9 @@ func _update_tally(rd: float) -> void:
 	_note_lbl.visible = boxes_on and _note_t < 99.0
 	if _note_lbl.visible:
 		_note_lbl.size = Vector2.ZERO
-		_note_lbl.position = Vector2(roundf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5), yb + BOX_H + 3 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
+		# centred under the multiplier box, but a long mutator name stays inside the panel
+		var nx := clampf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5, 10.0, w - 10 - _note_lbl.size.x)
+		_note_lbl.position = Vector2(roundf(nx), yb + BOX_H + 3 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
 	# total: counts up faster and faster, shaking, then slams
 	var total_on: bool = t >= tm.total
 	_total_lbl.visible = total_on
@@ -979,9 +1014,10 @@ func _update_card(rd: float) -> void:
 
 
 func combo_stamp(n: int, idx: int) -> void:
-	if hud.boss_title.visible:
-		# the boss name card owns the middle of the screen: sound only, and
-		# the HUD combo counter still shows the number
+	if hud.boss_title.visible or panel_showing():
+		# the boss name card, FINISH, the payout or the boss-defeated card owns
+		# the middle of the screen: sound only, and the HUD combo counter still
+		# shows the number
 		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
 		_lines.kick(0.5, 0.1)
 		return
