@@ -1,10 +1,11 @@
 class_name MapRegistry
 ## Every playable map. To add one: make a new script in scripts/maps/ that
 ## extends Arena, build its layout in _build_layout(), then add it here.
-## Runs pick a map from their seed (only the rooftop exists for now).
+## Runs pick a map from their seed (only Shin-Kagura exists for now).
+## The flat rooftop (rooftop.gd) stays as the base class of the vertical map.
 
 const MAPS := [
-	{"id": "rooftop", "script": preload("res://scripts/maps/rooftop.gd")},
+	{"id": "shin_kagura", "script": preload("res://scripts/maps/well.gd")},
 ]
 
 

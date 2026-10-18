@@ -526,6 +526,7 @@ Notes:
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
 | Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground or off a jump pad on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes must be staggered to plunge; bosses can never be plunged (no glory kills on bosses, owner 2026-10-18) |
 | Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
+| Map direction | Vertical update of Shin-Kagura: concept A "The Well", with more height on the north deck and roof ring and a living city backdrop (owner, 2026-10-18; §8) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
 | Tougher boss movesets | Souls-style boss fights: sidesteps, delayed swings, an area move and a RED SIGNAL attack per boss, punish windows; the first cycle keeps the big moves for after the enrage (owner, 2026-10-18; §5.6) |
 | Bosses: posture, no glory kills | Bosses have a posture bar (KAMAE) that aggressive play fills; a full bar breaks the boss and F lands the ONIKIRI blow. Bosses never get a glory kill; only the horde does (owner, 2026-10-18; §5.5) |
@@ -626,7 +627,7 @@ charges the gun; the gun sets up the blade.**
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
 | Capsule | radius 0.4, height 1.8, eye height 1.55 |
 | Hit invulnerability | 0.12 s |
-| Fall reset | below y = −10, respawn at the map spawn |
+| Fall reset | below the map's `kill_y` (−20 on Shin-Kagura, under the metro floor), respawn at the map spawn |
 
 ### 3.2 Katana (LEFT hand, LMB): "DOJIGIRI"
 - **3-hit combo:** left→right, right→left backhand, overhead chop.
@@ -1247,24 +1248,58 @@ the holographic cut-in (§9.8).
 - **Setting:** the neon rooftops of **Shin-Kagura** ("New Kagura"; kagura is
   the sacred Shinto dance), a cyberpunk Japanese megacity under a striped
   synthwave sun.
-- **Arena:**
-  - A 64×64 m rooftop (`half = 32`). Player spawn (0, 0.1, 24). Boss spawn
-    (0, 0, −22).
-  - A grid floor (emissive grid lines), a chrome perimeter with neon tops,
-    and invisible walls.
-  - **Torii shrine:** a 12×12 platform 2.4 m high, with ramps.
-  - **Catwalk decks** on legs at x = ±24.5 (deck height 3.2 m). Enemies path
-    under and around them.
-  - **4 jump pads.**
-  - **Seeded cover:** 4–6 neon-edged crates from 11 slots (one stacked), plus
-    one of 3 obelisk layouts.
-- **Backdrop:**
-  - Buildings with neon roof edges, seeded signs and ads, a sky hologram, and
-    a skyline MultiMesh with a gap to the north for the sun.
-  - Neon palms.
-  - A synthwave sky shader: palette gradient, a striped sun (seeded azimuth),
-    ridge mountains with a rim light, twinkling stars, and a moon.
-- **18 spawn points.** Enemies drop in from above with spawn beams.
+- **Vertical update ("The Well", concept A, picked by the owner 2026-10-18;
+  `scripts/maps/well.gd`, `WellMap`).** Concepts and renders:
+  `design/vertical-map/` in the claude.ai project's shared files (not in
+  the repo).
+  - A 64×64 m roof (`half = 32`). Player spawn (0, 0.1, 24). Boss spawn
+    (0, 0, −17), on the roof between the shaft and the north deck.
+  - **Six floor heights.** The roof's centre is cut open: a 24 m shaft drops
+    to a **metro platform at −10**, with **service blocks** (north, south)
+    and **balconies** on legs (east, west) at **−5**. The **roof ring** is at
+    0. A **torii bridge** crosses the shaft at **+5** between two side
+    **catwalks** (+5). The **north deck** (+5) steps up to a **shrine tower**
+    (+10) and a **beacon cap** (+13, the highest point), with a water-tank
+    platform (+8) and an antenna terrace (+6.2) beside it.
+  - **Roof-ring features:** a 3 m stairwell hut, a billboard gantry on legs
+    (+5), a 3 m crate and a 6 m crate stack, a sheer 7.5 m vent tower (never
+    climbable), 1.2 m planters with palms.
+  - **Step heights** (sized for the ledge climb and plunge: a 5 m ledge is
+    in reach of a double jump, 7 m is not):
+    1.2 m hop, 3 m mantle, 5 m grab ledge (amber lip, colour `ffa21f` in
+    every palette), 7 m+ sheer. Every level also has a ramp route.
+  - **Geyser pad** on the metro floor throws the player up to the bridge.
+  - **Spawns (18):** metro tunnels and freight lifts below, a lift in the
+    stairwell hut and roof hatches: enemies walk out of these
+    (`ground_spawns`, `Arena.spawn_clearance`). The rest are sky drops on the
+    roof, catwalks, deck, gantry and tower, with spawn beams as before.
+  - **Enemy pathing:** the map bakes a navmesh from its colliders at build
+    (`Arena._build_navigation`, about 0.1 s) with **leap links** across each
+    grab ledge. Enemies follow the path (`Enemy._steer`), use ramps, drop
+    off ledges, and at a link going up they crouch for 0.35 s (sparks and a
+    windup sound) and leap. Close on the same level they still run straight
+    at the player. Boss blinks and reinforcements land on the nearest
+    walkable floor (`Arena.safe_point`).
+  - **Stacked floors:** `floor_height_at(x, z, below)` returns the floor under
+    the caller, so gore, decals and missile rings land on the right level.
+  - **Falls:** the player resets below −20, enemies below −18 (`kill_y`).
+- **Backdrop (`CityBackdrop`, presentation only):**
+  - A ring of towers turned to face the roof: lit windows, neon corner and
+    floor strips, setbacks, rooftop crowns (beacons, water tanks, helipads,
+    billboards), seeded signs and ads, and six corporation logos (§13).
+  - Moving parts: four lanes of flying-car traffic (capped per Quality
+    preset, §14), a monorail passing south of the roof, an ad blimp,
+    searchlights, and a sun that drifts slowly (a 10-minute sweep, kept in
+    the skyline's gap to the north).
+  - Draws **one** number from `rng_map` and keeps its own RNG after that, so
+    it can never shift gameplay (§7.5). Tower bodies, strips and traffic are
+    MultiMeshes; nothing in it casts light.
+  - The older layers stay: the far skyline MultiMesh, a sky hologram, neon
+    palms, and the synthwave sky shader (palette gradient, striped sun with a
+    seeded azimuth, ridge mountains with a rim light, stars, a moon).
+- **The flat rooftop** (`scripts/maps/rooftop.gd`, a torii platform, catwalks
+  at 3.2 m, 4 jump pads, seeded crates and obelisks) is no longer in
+  `MapRegistry`; `WellMap` extends it for its materials and sky.
 - **Weather (seeded via `rng_map`):**
   - 35% clear, 45% light rain, 20% heavy rain.
   - The RAIJIN'S STORM mutator adds heavy rain, lightning flashes and
@@ -1278,7 +1313,8 @@ the holographic cut-in (§9.8).
   - Maps register in `MapRegistry` (`create_for_seed(rng)`).
   - Each map sets `map_name`, `half`, `player_spawn`, `boss_spawn`,
     `spawn_points` and `jump_pads`, and uses `pal` (palette) and `rng`
-    (seeded).
+    (seeded). Multi-level maps also set `floor_base`, `kill_y`,
+    `enemy_reset`, `ground_spawns`, `use_navigation` and `nav_links`.
 
 ---
 
@@ -2038,6 +2074,10 @@ historical root with a cyberpunk twist**.
   cards thunder), utsusemi ("cicada shell", the shinobi body swap), the
   Sanzu river (crossed by the dead). Retired with their effects: Long
   Reach, Vampiric Steel, Fujin Bank, High Voltage, Feedback Loop.
+- **Corporations on the skyline** (§8, invented): AMATERASU DYNAMICS (the sun
+  goddess), TENGU AEROSPACE (the winged mountain yokai), INARI FOODS (the
+  kami of rice), TSUKUYOMI MEDIA (the moon god), OMOIKANE SYSTEMS (the kami
+  of wisdom), KAPPA HYDRO (the river yokai).
 
 ---
 
@@ -2100,6 +2140,7 @@ weak hardware.
     | Blood mist | 16 | 28 | 40 |
     | Smoke puffs | 20 | 36 | 60 |
     | Impact flashes | 16 | 28 | 48 |
+    | Flying cars in the backdrop | 16 | 28 | 40 |
 
     Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
     12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are

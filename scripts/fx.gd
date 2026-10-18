@@ -506,9 +506,7 @@ func clear_strikes() -> void:
 func missile_strike(target: Vector3, delay: float, radius: float, dmg: float, style := "missile") -> void:
 	if style == "grudge" and _strikes.filter(func(st): return st.style == "grudge").size() >= GRUDGE_CAP:
 		return
-	var fh := Game.arena.floor_height_at(target.x, target.z)
-	if fh > target.y + 1.0:
-		fh = 0.0
+	var fh := Game.arena.floor_height_at(target.x, target.z, target.y + 1.0)
 	var pos := Vector3(target.x, fh, target.z)
 	var mi := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
@@ -649,9 +647,7 @@ func _update_orbs(delta: float) -> void:
 			o.v.x *= 0.98
 			o.v.z *= 0.98
 		var np: Vector3 = n.global_position + o.v * delta
-		var fh := Game.arena.floor_height_at(np.x, np.z)
-		if fh > n.global_position.y + 0.5:
-			fh = 0.0
+		var fh := Game.arena.floor_height_at(np.x, np.z, n.global_position.y + 0.5)
 		if np.y < fh + 0.35:
 			np.y = fh + 0.35
 			o.v.y = absf(o.v.y) * 0.3

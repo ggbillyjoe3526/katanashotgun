@@ -402,8 +402,10 @@ is never lost.
 - Sound effects get the same bar: the generated SFX are stand-ins.
 
 ## Maps
-- One map for now (Shin-Kagura Rooftop). Maps extend `Arena` and register in
-  `MapRegistry`; the seed picks one.
+- One map for now: Shin-Kagura Rooftop, vertical since 2026-10-18 (six floor
+  heights from a metro pit at −10 to a beacon cap at +13; enemies follow the
+  player between levels on a navmesh with leap links). Maps extend `Arena` and
+  register in `MapRegistry`; the seed picks one.
 - Future ideas (not now):
   - **Horizontal / corridor:** a long, open, procedurally generated stretch
     (an elevated highway, a market street) that feels like charging down a

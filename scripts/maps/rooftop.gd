@@ -331,40 +331,44 @@ func _palms() -> void:
 	for p in spots:
 		if rng.randf() < 0.25:
 			continue
-		var tree := Node3D.new()
-		tree.position = p
-		tree.rotation.y = rng.randf() * TAU
-		add_child(tree)
-		var h := rng.randf_range(7.0, 10.0)
-		var lean := rng.randf_range(0.04, 0.1)
-		var top := Vector3.ZERO
-		for k in 8:
-			var seg := MeshInstance3D.new()
-			var cm := CylinderMesh.new()
-			cm.top_radius = 0.22 - k * 0.012
-			cm.bottom_radius = 0.26 - k * 0.012
-			cm.height = h / 8.0 + 0.05
-			cm.radial_segments = 6
-			cm.rings = 1
-			seg.mesh = cm
-			seg.material_override = trunk_mat
-			top = Vector3(lean * k * k * 0.4, h / 8.0 * (k + 0.5), 0)
-			seg.position = top
-			seg.rotation.z = -lean * k * 0.8
-			tree.add_child(seg)
-		var crown := top + Vector3(0, h / 16.0, 0)
-		var glow: Color = _pick(pal.accents)
-		for f in 8:
-			var frond := Node3D.new()
-			frond.position = crown
-			frond.rotation = Vector3(0, f * TAU / 8.0 + rng.randf_range(-0.2, 0.2), 0)
-			tree.add_child(frond)
-			var leaf := Psx.box(Vector3(0.12, 0.06, 3.2), leaf_mat, Vector3(0, -0.5, 1.5))
-			leaf.rotation.x = 0.5
-			frond.add_child(leaf)
-			var rim := Psx.box(Vector3(0.05, 0.05, 3.1), Psx.unlit(glow, 2.2, null, {"fog_amount": 0.3}), Vector3(0, -0.46, 1.52))
-			rim.rotation.x = 0.5
-			frond.add_child(rim)
+		_palm(p, trunk_mat, leaf_mat)
+
+
+func _palm(p: Vector3, trunk_mat: Material, leaf_mat: Material) -> void:
+	var tree := Node3D.new()
+	tree.position = p
+	tree.rotation.y = rng.randf() * TAU
+	add_child(tree)
+	var h := rng.randf_range(7.0, 10.0)
+	var lean := rng.randf_range(0.04, 0.1)
+	var top := Vector3.ZERO
+	for k in 8:
+		var seg := MeshInstance3D.new()
+		var cm := CylinderMesh.new()
+		cm.top_radius = 0.22 - k * 0.012
+		cm.bottom_radius = 0.26 - k * 0.012
+		cm.height = h / 8.0 + 0.05
+		cm.radial_segments = 6
+		cm.rings = 1
+		seg.mesh = cm
+		seg.material_override = trunk_mat
+		top = Vector3(lean * k * k * 0.4, h / 8.0 * (k + 0.5), 0)
+		seg.position = top
+		seg.rotation.z = -lean * k * 0.8
+		tree.add_child(seg)
+	var crown := top + Vector3(0, h / 16.0, 0)
+	var glow: Color = _pick(pal.accents)
+	for f in 8:
+		var frond := Node3D.new()
+		frond.position = crown
+		frond.rotation = Vector3(0, f * TAU / 8.0 + rng.randf_range(-0.2, 0.2), 0)
+		tree.add_child(frond)
+		var leaf := Psx.box(Vector3(0.12, 0.06, 3.2), leaf_mat, Vector3(0, -0.5, 1.5))
+		leaf.rotation.x = 0.5
+		frond.add_child(leaf)
+		var rim := Psx.box(Vector3(0.05, 0.05, 3.1), Psx.unlit(glow, 2.2, null, {"fog_amount": 0.3}), Vector3(0, -0.46, 1.52))
+		rim.rotation.x = 0.5
+		frond.add_child(rim)
 
 
 func _spawns() -> void:

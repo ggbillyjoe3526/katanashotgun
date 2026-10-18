@@ -5,8 +5,9 @@
 A run is an endless series of waves on the rooftop. Each wave:
 
 1. **Intro:** the wave number (and its mutator, if any), then 3, 2, 1, FIGHT.
-2. **Fight:** enemies drop in from above in groups of 1 to 3 until the wave's
-   whole line-up has arrived and been killed.
+2. **Fight:** enemies arrive in groups of 1 to 3 (from tunnels, lifts,
+   hatches and the sky) until the wave's whole line-up has arrived and been
+   killed.
 3. **Tally:** the wave's score pays out ([Scoring](Scoring-and-High-Scores)).
    You get **+2 cells**.
 4. Then the next wave. Every third wave is a [boss](Bosses).
@@ -29,7 +30,7 @@ Boss waves (3, 6, 9...) send the boss and reinforcements instead.
 - Enemy health rises a little every wave and faster after wave 9 (see
   [Enemies](Enemies#they-get-tougher)).
 - **Waves 1 to 3 are meant to be easy.** It's after that the climb starts.
-- Your [seed](Seeds) decides the order enemies arrive in and where they drop.
+- Your [seed](Seeds) decides the order enemies arrive in and where they come from.
 
 ## Mutators
 
