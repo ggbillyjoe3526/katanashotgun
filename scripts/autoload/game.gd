@@ -6,8 +6,6 @@ signal hud_message(text: String, color: Color, big: bool)
 signal popup(text: String, color: Color)
 signal hint(text: String)
 
-const SCORES_PATH := "user://scores.json"
-const MAX_SCORES := 10
 const COMBO_WINDOW := 4.0
 
 var state := "title" # title | playing | levelup | paused | dead
@@ -44,6 +42,7 @@ var executions := 0
 var headshots := 0
 var deflects := 0
 var bosses_killed := 0
+var bosses_felled: Array = [] # boss kinds felled this run, in order
 var level := 1
 var xp := 0.0
 var xp_next := 60.0
@@ -54,7 +53,10 @@ var upgrades := {}
 var hints_shown := {}
 var enemy_list: Array = []
 
-var high_scores: Array = [] # [{name, score, wave, seed}]
+## The top 10 lives in the profile (spec §7.4, §11.3).
+var high_scores: Array:
+	get:
+		return Profile.high_scores
 var real_dt := 0.016 # this frame's delta in real seconds (ignores slow-mo)
 var _wave_start := {}
 var last_rank := -1
@@ -79,7 +81,7 @@ func _ready() -> void:
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
-	load_scores()
+	Settings.boot()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
@@ -106,6 +108,7 @@ func reset_run() -> void:
 	headshots = 0
 	deflects = 0
 	bosses_killed = 0
+	bosses_felled = []
 	level = 1
 	xp = 0.0
 	xp_next = 60.0
@@ -198,47 +201,35 @@ func show_hint_once(key: String, text: String) -> void:
 
 
 # ---------------------------------------------------------------- high scores
-func load_scores() -> void:
-	high_scores = []
-	if not FileAccess.file_exists(SCORES_PATH):
-		return
-	var f := FileAccess.open(SCORES_PATH, FileAccess.READ)
-	if f == null:
-		return
-	var data = JSON.parse_string(f.get_as_text())
-	if data is Array:
-		for e in data:
-			if e is Dictionary and e.has("score"):
-				high_scores.append(e)
-	high_scores.sort_custom(func(a, b): return int(a.score) > int(b.score))
-
-
-func save_scores() -> void:
-	var f := FileAccess.open(SCORES_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(high_scores))
-
-
 func best_score() -> int:
-	return int(high_scores[0].score) if high_scores.size() > 0 else 0
+	return Profile.best_score()
 
 
 func qualifies(s: int) -> bool:
-	if s <= 0:
-		return false
-	return high_scores.size() < MAX_SCORES or s > int(high_scores[-1].score)
+	return Profile.qualifies(s)
 
 
-## Inserts the current run under `initials` and returns its table position.
+## Keeps the run's score the moment it ends, as "---" until initials are
+## typed, so quitting on the results screen can't lose it. Sets last_rank
+## (-1 if it didn't make the top 10).
+func record_score() -> void:
+	last_rank = -1
+	if qualifies(score):
+		last_rank = Profile.add_score({"name": "---", "score": score, "wave": wave, "seed": seed_string(run_seed)})
+
+
+## Names the entry record_score() kept and returns its table position.
 func submit_score(initials: String) -> int:
-	var entry := {"name": initials, "score": score, "wave": wave, "seed": seed_string(run_seed)}
-	high_scores.append(entry)
-	high_scores.sort_custom(func(a, b): return int(a.score) > int(b.score))
-	if high_scores.size() > MAX_SCORES:
-		high_scores.resize(MAX_SCORES)
-	save_scores()
-	last_rank = high_scores.find(entry)
+	if last_rank >= 0:
+		Profile.rename_score(last_rank, initials)
 	return last_rank
+
+
+## This run's totals, as Profile.finish_run() and the snapshot read them.
+func run_stats() -> Dictionary:
+	return {"score": score, "wave": wave, "bosses": bosses_killed, "kills": kills, "glory_kills": executions,
+		"headshots": headshots, "deflects": deflects, "best_combo": best_combo, "time": run_time,
+		"boss_kinds": bosses_felled.duplicate()}
 
 
 func _process(delta: float) -> void:

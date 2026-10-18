@@ -25,6 +25,10 @@ var coil_mat: ShaderMaterial
 var core_mat: ShaderMaterial
 var tip_mat: ShaderMaterial
 var drum_cell_mat: ShaderMaterial
+# tinted by the equipped boss-reward looks (Rewards, spec §11.2)
+var trim_mat: ShaderMaterial
+var strip_mats: Array[ShaderMaterial] = []
+var arc_glow := Color(0.25, 0.45, 1.0, 0.35)
 var prong_tips: Array[Node3D] = []
 var idle_arc: MeshInstance3D
 var _idle_im: ImmediateMesh
@@ -94,6 +98,9 @@ func _ready() -> void:
 	scale = Vector3.ONE * 0.5
 	_build_katana()
 	_build_shotgun()
+	apply_looks()
+	# equipping from the armory (title or pause) recolours the live weapons
+	Profile.changed.connect(apply_looks)
 	_kpos = katana_idle_pos
 	_krot = katana_idle_rot
 
@@ -135,7 +142,8 @@ func _build_katana() -> void:
 	arm.rotation = Vector3(0.9, 0, 0.35)
 	katana.add_child(arm)
 	arm.add_child(Psx.box(Vector3(0.085, 0.42, 0.085), chrome, Vector3(0, -0.26, 0)))
-	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0}), Vector3(0, -0.28, 0.046)))
+	trim_mat = Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0})
+	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), trim_mat, Vector3(0, -0.28, 0.046)))
 
 
 func _build_shotgun() -> void:
@@ -159,7 +167,8 @@ func _build_shotgun() -> void:
 	spin_pivot.add_child(Psx.box(Vector3(0.06, 0.03, 0.3), dark, Vector3(0, 0.105, -0.14)))
 	for i in 5:
 		spin_pivot.add_child(Psx.box(Vector3(0.075, 0.012, 0.014), dark, Vector3(0, 0.125, -0.24 + i * 0.05)))
-	spin_pivot.add_child(Psx.box(Vector3(0.092, 0.01, 0.3), Psx.unlit(Color(0.25, 0.8, 1.0), 2.2, null, fx_p), Vector3(0, 0.09, -0.12)))
+	strip_mats.append(Psx.unlit(Color(0.25, 0.8, 1.0), 2.2, null, fx_p))
+	spin_pivot.add_child(Psx.box(Vector3(0.092, 0.01, 0.3), strip_mats[-1], Vector3(0, 0.09, -0.12)))
 	spin_pivot.add_child(Psx.box(Vector3(0.055, 0.13, 0.07), gun, Vector3(0, -0.07, 0.07)))
 	spin_pivot.add_child(Psx.box(Vector3(0.06, 0.09, 0.12), dark, Vector3(0, 0.02, 0.11)))
 	# the glowing core inside an open cage of rails
@@ -235,7 +244,8 @@ func _build_shotgun() -> void:
 	arm.rotation = Vector3(1.0, 0, -0.3)
 	shotgun.add_child(arm)
 	arm.add_child(Psx.box(Vector3(0.09, 0.44, 0.09), chrome, Vector3(0, -0.3, 0.02)))
-	arm.add_child(Psx.box(Vector3(0.095, 0.3, 0.012), Psx.unlit(Color(0.2, 0.9, 1.0), 2.2, null, fx_p), Vector3(0, -0.3, 0.07)))
+	strip_mats.append(Psx.unlit(Color(0.2, 0.9, 1.0), 2.2, null, fx_p))
+	arm.add_child(Psx.box(Vector3(0.095, 0.3, 0.012), strip_mats[-1], Vector3(0, -0.3, 0.07)))
 	muzzle = Node3D.new()
 	muzzle.position = Vector3(0, 0.05, -0.95)
 	spin_pivot.add_child(muzzle)
@@ -257,6 +267,29 @@ func _build_shotgun() -> void:
 	_srot_cur = shotgun_idle_rot
 
 
+func _exit_tree() -> void:
+	if Profile.changed.is_connected(apply_looks):
+		Profile.changed.disconnect(apply_looks)
+
+
+## Tints the katana edge and wrap and the shotgun's coils, cells and idle
+## crackle with the equipped looks. The stock look keeps the original colours.
+func apply_looks() -> void:
+	var k := Rewards.look("katana", Profile.get_equipped("katana"))
+	blade_edge_mat.set_shader_parameter("albedo_color", k.edge)
+	trim_mat.set_shader_parameter("albedo_color", k.trim)
+	var g := Rewards.look("shotgun", Profile.get_equipped("shotgun"))
+	var stock: bool = g.name == Rewards.STOCK.shotgun.name
+	coil_mat.set_shader_parameter("albedo_color", g.coil)
+	core_mat.set_shader_parameter("albedo_color", g.core)
+	drum_cell_mat.set_shader_parameter("albedo_color", Color(0.3, 0.85, 1.0) if stock else g.coil)
+	led_on.set_shader_parameter("albedo_color", Color(0.3, 0.9, 1.0) if stock else g.coil)
+	strip_mats[0].set_shader_parameter("albedo_color", Color(0.25, 0.8, 1.0) if stock else g.coil)
+	strip_mats[1].set_shader_parameter("albedo_color", Color(0.2, 0.9, 1.0) if stock else g.coil)
+	var gl: Color = g.glow
+	arc_glow = Color(gl.r, gl.g, gl.b, 0.35)
+
+
 func set_cells(n: int, max_n: int) -> void:
 	_cells = n
 	for i in cell_leds.size():
@@ -274,7 +307,7 @@ func _draw_idle_arc() -> void:
 	var eye := spin_pivot.to_local(get_viewport().get_camera_3d().global_position) if get_viewport().get_camera_3d() else Vector3(0, 0, 1)
 	var pts := Fx.jagged(a, b, 2.2, _rng)
 	_idle_im.surface_begin(Mesh.PRIMITIVE_TRIANGLES, Game.fx._arc_mat if Game.fx else null)
-	Fx.ribbon(_idle_im, pts, 0.03, Color(0.25, 0.45, 1.0, 0.35), eye)
+	Fx.ribbon(_idle_im, pts, 0.03, arc_glow, eye)
 	Fx.ribbon(_idle_im, pts, 0.008, Color(0.85, 0.95, 1.0, 1.0), eye)
 	_idle_im.surface_end()
 

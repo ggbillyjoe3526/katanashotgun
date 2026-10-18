@@ -50,10 +50,11 @@ Check any name with `tools/version.sh "0.1 Beta 2"`.
 ## Releasing a new version
 Only when the owner asks for a release.
 1. In a pull request, set `config/version` in `project.godot` to the new
-   name (for example `0.1 Dev 2`) and rename `## Unreleased` in
-   `CHANGELOG.md` to `## 0.1 Dev 2 (date)`. The owner merges it. (Nothing
-   has been released yet, so the first release is `0.1 Dev 1` itself and
-   only needs the changelog heading.)
+   name (for example `0.1 Dev 2`), then run `tools/changelog.sh release`: it
+   gathers the notes in `changelog.d/` into a `## 0.1 Dev 2 (date)` section
+   of `CHANGELOG.md` and deletes them. Read the section over and commit it.
+   The owner merges it. (Nothing has been released yet, so the first release
+   is `0.1 Dev 1` itself and only needs the changelog step.)
 2. *Actions → Release → Run workflow* on `main`. It releases the version in
    `project.godot` and creates its tag (`v0.1-dev.2`).
 
