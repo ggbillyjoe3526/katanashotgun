@@ -59,7 +59,7 @@ scripts/boss.gd             Kurokage (ninja) and Tetsugumo (spider mech)
 scripts/bolt.gd             bolts and shuriken (deflectable), Crimson Wave
 scripts/wave_director.gd    endless waves, boss waves, mutators, reinforcements
 scripts/mutators.gd         seeded wave modifiers
-scripts/upgrades.gd         the 14 level-up augments (seeded offers)
+scripts/upgrades.gd         the 24 level-up augments and their builds (seeded offers)
 scripts/palette.gd          the five synthwave palettes
 scripts/arena.gd            base class for maps (helpers, sky, weather, lightning)
 scripts/maps/rooftop.gd     Shin-Kagura Rooftop (seeded cover, signs, skyline)
@@ -149,6 +149,9 @@ your profile (`profile.json`, see above), so they get the same backup.
 Pass after `--` on the command line:
 - `--autoplay` a bot plays and logs stats · `--god` no damage
 - `--wave=6` start at a wave · `--seed=1234-5678` play a specific seed
+- `--augments=idaten,fujin,inazuma` start with those level-up cards
+  (`wave:2` for rank 2, `all` for every card at max rank); ids are in
+  `scripts/upgrades.gd`
 - `--continue` resume the suspended run (with `--autoplay`, from `user://debug/`).
   Debug runs keep their own profile in `user://debug/`, never the player's
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
@@ -159,6 +162,9 @@ Pass after `--` on the command line:
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
+- `--mutator=grudge` forces that wave mutator on every regular wave (ids in
+  `scripts/mutators.gd`)
+- `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
 - `--quality=low|medium|high` effect-count preset · `--perf` perf overlay
