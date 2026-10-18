@@ -89,8 +89,8 @@ the prototype already works.
   - **Boss:** an X-cut, then a point-blank blast. It takes 15%, unless that is the killing blow.
 - Presentation: cinematic bars, data streaks, impact frames on each hit,
   hitstop, a hop back out of the gore when it ends.
-- **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe,
-  look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
+- **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe
+  (or flying off a jump pad), look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
   katana through its collarbone (it splits in two), rip it out and step
   down. Same rewards as any glory kill. Brutes must be staggered first; bosses
   can't be plunged.

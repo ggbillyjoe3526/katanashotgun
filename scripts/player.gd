@@ -82,6 +82,7 @@ var dash_dir := Vector3.ZERO
 var _dash_hit := {}
 var jumps_left := 1
 var _floor_y := 0.0 # height of the floor last stood on (plunges need a real drop)
+var _pad_launched := false # thrown up by a jump pad since the last floor: may plunge
 var _dash_queued := false # a dash pressed mid-climb fires as the climb ends
 var katana_cd := 0.0
 var shotgun_cd := 0.0
@@ -352,6 +353,7 @@ func _physics_process(delta: float) -> void:
 			Sfx.play("land", -10.0)
 		jumps_left = 1
 		_floor_y = global_position.y
+		_pad_launched = false
 	_was_on_floor = is_on_floor()
 
 	for pad in Game.arena.jump_pads:
@@ -359,6 +361,7 @@ func _physics_process(delta: float) -> void:
 		if d < pad.r and global_position.y < pad.pos.y + 0.6 and velocity.y <= 0.5:
 			velocity = pad.launch
 			jumps_left = 1
+			_pad_launched = true
 			Sfx.play("jumppad", -4.0)
 			fov_kick = 10.0
 			Game.gore.sparks(global_position, Vector3.UP, 16, Color(0.4, 2.0, 1.4))
@@ -392,6 +395,7 @@ func _physics_process(delta: float) -> void:
 		global_position = Game.arena.player_spawn
 		velocity = Vector3.ZERO
 		_floor_y = global_position.y
+		_pad_launched = false
 		reset_physics_interpolation()
 
 
@@ -459,6 +463,7 @@ func _end_climb() -> void:
 	velocity = _climb_fwd.normalized() * WALK_SPEED * CLIMB_CARRY
 	jumps_left = 1
 	_floor_y = global_position.y - LedgeClimb.LIFT
+	_pad_launched = false
 	land_dip = 0.08
 	Sfx.play("land", -12.0, 0.9)
 	if _climb_katana:
@@ -609,7 +614,8 @@ func _set_finisher_target(e: Enemy, plunge := false) -> void:
 		e.set_finisher_lit(true)
 
 
-## A foe to plunge onto from above: you left a floor well above it, you are
+## A foe to plunge onto from above: you left a floor well above it (or a jump
+## pad threw you up; a jump from the foe's own level never counts), you are
 ## still high over it, it is within reach of the drop and near the crosshair,
 ## with nothing in between. Brutes are armoured: only when staggered.
 ## Bosses never get a finisher from a plunge (their fights end on posture).
@@ -628,7 +634,7 @@ func _find_plunge_target() -> Enemy:
 			continue
 		var base: float = e.global_position.y
 		var drop := feet - base
-		if drop < PLUNGE_MIN_DROP or _floor_y - base < PLUNGE_MIN_LEVEL:
+		if drop < PLUNGE_MIN_DROP or (_floor_y - base < PLUNGE_MIN_LEVEL and not _pad_launched):
 			continue
 		var flat: float = Vector2(e.global_position.x - global_position.x, e.global_position.z - global_position.z).length() - e.radius
 		if flat > minf(PLUNGE_MAX_REACH, PLUNGE_REACH + drop * PLUNGE_REACH_PER_M):

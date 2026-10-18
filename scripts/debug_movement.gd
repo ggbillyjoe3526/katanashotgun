@@ -23,6 +23,7 @@ var _executions0 := 0
 var _taps := {} # action -> physics frame to let go of it
 var _double_sent := false
 var _finisher_sent := false
+var _pad: Dictionary = {}
 
 
 func _ready() -> void:
@@ -48,6 +49,7 @@ func _ready() -> void:
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
 		{"name": "plunge onto a grunt at the foot of the wall lands clear of it", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -1.5), "want_plunge": true, "want_top": 0.0, "max_z": -1.4, "pitch": -1.3},
 		{"name": "plunge from a 4 m ledge onto a grunt", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.2), "want_plunge": true, "pitch": -0.9},
+		{"name": "plunge from a jump pad launch onto a grunt on the same floor", "blocks": [], "keys": [], "pad": Vector3(0, 17.0, -5.0), "enemy": Vector3(0, 0, -6.0), "want_plunge": true, "forward": false, "pitch": -1.1},
 	]
 	_next()
 
@@ -96,10 +98,13 @@ func _next() -> void:
 	_max_y = -INF
 	_max_h = 0.0
 	for n in _course.get_children().slice(1):
+		_course.remove_child(n) # out of the world now, so the next start is clear
 		n.queue_free()
 	if is_instance_valid(_enemy):
 		_enemy.queue_free()
 	_enemy = null
+	Game.arena.jump_pads.erase(_pad)
+	_pad = {}
 	_release()
 	if _i >= _checks.size():
 		print("[movetest] %s: %d of %d checks failed" % ["FAIL" if _fails > 0 else "PASS", _fails, _checks.size()])
@@ -108,6 +113,9 @@ func _next() -> void:
 	var c := _checks[_i]
 	for b in c.blocks:
 		_add_block(b)
+	if c.has("pad"):
+		_pad = {"pos": ORIGIN, "r": 1.35, "launch": c.pad}
+		Game.arena.jump_pads.append(_pad)
 	if c.has("enemy"):
 		_enemy = Enemy.new()
 		_enemy.setup(c.get("kind", "grunt"))

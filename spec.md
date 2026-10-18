@@ -696,10 +696,12 @@ charges the gun; the gun sets up the blade.**
 **Plunge (owner's request, 2026-10-18):** a glory kill from above, always
 with the katana. The same `finisher` key and prompt ("PLUNGE").
 - **When:** airborne, the floor you last stood on is at least **2.0 m above
-  the foe's feet**, you are still at least **1.2 m above them**, they are
+  the foe's feet** or a jump pad threw you up since you last stood on a
+  floor (owner, 2026-10-18), you are still at least **1.2 m above them**, they are
   within `1.5 + 0.75 × drop` m (at most 7 m) of you horizontally (past their
   body), within 35° of the crosshair (kept to 45°), with nothing in between.
-  A plain jump or double jump on the same level never qualifies.
+  A plain jump or double jump from the foe's own level never qualifies; a
+  jump from a high surface does, as stepping off it would.
 - **Who:** horde enemies only: any grunt or gunner; brutes are armoured and
   must be staggered first. **Never bosses** (the owner, 2026-10-18: bosses
   get no glory kills; their fights end on a posture break instead).
