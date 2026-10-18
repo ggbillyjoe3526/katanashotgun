@@ -188,6 +188,7 @@ func _enrage_check() -> void:
 		enraged = true
 		speed *= 1.2
 		Sfx.play("roar", 2.0, 1.2 if kind == "ninja" else 0.5)
+		Sfx.on_boss_enraged()
 		Game.hud_message.emit("%s IS ENRAGED" % display_name, Color(1, 0.2, 0.3), false)
 		_eye_mat.set_shader_parameter("energy", 6.0)
 
