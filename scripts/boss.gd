@@ -364,7 +364,7 @@ func _chase_ninja(dist: float, dir: Vector3, delta: float) -> Vector3:
 			0, 1:
 				if special_seq % 3 == 1:
 					dash_count = 3 if enraged else 2
-					_begin_dash_windup(dir)
+					_begin_dash_windup(_to_player)
 				else:
 					_set_state(S.VOLLEY_WINDUP)
 					Sfx.play_at("windup", global_position, 0.0, 1.6)

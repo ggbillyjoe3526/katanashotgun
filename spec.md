@@ -1250,7 +1250,8 @@ the holographic cut-in (§9.8).
   synthwave sun.
 - **Vertical update ("The Well", concept A, picked by the owner 2026-10-18;
   `scripts/maps/well.gd`, `WellMap`).** Concepts and renders:
-  `design/vertical-map/` in the project files.
+  `design/vertical-map/` in the claude.ai project's shared files (not in
+  the repo).
   - A 64×64 m roof (`half = 32`). Player spawn (0, 0.1, 24). Boss spawn
     (0, 0, −17), on the roof between the shaft and the north deck.
   - **Six floor heights.** The roof's centre is cut open: a 24 m shaft drops

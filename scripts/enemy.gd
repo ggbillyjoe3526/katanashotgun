@@ -83,6 +83,7 @@ var _shock_arc_t := 0.0
 var _stuck_t := 0.0
 var _detour := Vector3.ZERO
 var _detour_t := 0.0
+var _to_player := Vector3.ZERO # flat direction straight at the player (chase moves may follow a path instead)
 var _path := PackedVector3Array() # navmesh corners to the player (maps with use_navigation)
 var _path_types := PackedInt32Array() # region or link, per corner
 var _path_i := 0
@@ -518,6 +519,7 @@ func _physics_process(delta: float) -> void:
 					if state_t > 0.3:
 						_set_state(S.CHASE)
 			S.CHASE:
+				_to_player = dir
 				move = _chase(dist, _steer(ppos, dist, dir, delta), delta)
 			S.LEAP_WINDUP:
 				face = Vector3(leap_vel.x, 0, leap_vel.z).normalized()
@@ -749,7 +751,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				elif pick == 1 or (pick == 0 and not enraged):
 					_set_state(S.SLAM)
 					velocity.y = 14.0
-					leap_vel = dir * minf(dist, 14.0) / 1.0
+					leap_vel = _to_player * minf(dist, 14.0) / 1.0 # aimed at the player, not the path
 					Sfx.play("roar", 0.0, 0.8)
 				else:
 					_set_state(S.CHARGE_WINDUP)
