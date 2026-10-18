@@ -164,6 +164,7 @@ func _ready() -> void:
 ## Enters the fight: joins the enemy list, rolls its timers and drops in
 ## on a spawn beam. Runs on every spawn, pooled or new.
 func activate() -> void:
+	reset_physics_interpolation() # a pooled enemy jumps to its spawn point
 	add_to_group("enemies")
 	Enemy.list_dirty = true
 	attack_cd = _rng.randf_range(0.5, 1.4)

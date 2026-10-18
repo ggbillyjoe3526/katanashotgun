@@ -62,6 +62,7 @@ func reuse() -> void:
 
 ## Starts flying (runs on every shot, pooled or new).
 func activate() -> void:
+	reset_physics_interpolation() # a pooled bolt jumps to the muzzle
 	visible = true
 	process_mode = Node.PROCESS_MODE_INHERIT
 	if hostile:

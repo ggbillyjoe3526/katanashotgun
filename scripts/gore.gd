@@ -352,6 +352,7 @@ func chunks(p: Vector3, count: int, speed := 7.0) -> void:
 		mi.transform = Transform3D.IDENTITY
 		mi.scale = Vector3.ONE * _rng.randf_range(0.6, 1.6)
 		mi.position = p + Vector3(_rng.randf_range(-0.2, 0.2), _rng.randf_range(-0.2, 0.2), _rng.randf_range(-0.2, 0.2))
+		mi.reset_physics_interpolation()
 		var v := Vector3(_rng.randf_range(-1, 1), _rng.randf_range(0.3, 1.4), _rng.randf_range(-1, 1)).normalized() * speed * _rng.randf_range(0.5, 1.2)
 		add_gib(mi, v, Vector3(_rng.randf_range(-12, 12), _rng.randf_range(-12, 12), _rng.randf_range(-12, 12)), 0.6, 0.07)
 
@@ -385,6 +386,7 @@ func dismember(enemy: Enemy, mode: String, dir: Vector3, headshot := false) -> v
 			continue
 		var g: Node3D = _gib_from(src)
 		g.transform = gt
+		g.reset_physics_interpolation()
 		var v := Vector3.ZERO
 		var spin := Vector3(_rng.randf_range(-8, 8), _rng.randf_range(-8, 8), _rng.randf_range(-8, 8))
 		var bleed := 0.8
