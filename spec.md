@@ -524,6 +524,7 @@ Notes:
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
+| Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -568,8 +569,15 @@ Notes:
 - **User data:** `application/config/use_custom_user_dir = true`,
   `custom_user_dir_name = "KatanaShotgun"`. The app name contains a slash, so
   never derive paths from it.
-- **Window:** start windowed, F11 or Alt+Enter toggles fullscreen. Pause when
-  the window loses focus or the mouse capture is lost.
+- **Window:** start full screen at the display's own resolution (borderless,
+  up to 4K and beyond); F11 or Alt+Enter toggles windowed. Windowed mode is
+  the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
+  4K), so the retro pixels stay square and sharp. The 3D view stays 960×540
+  at any screen size and is upscaled with nearest filtering (exactly 4× on a
+  4K screen): higher resolution never smooths away the PS1/PS2 look. Pause
+  when the window loses focus or the mouse capture is lost.
+- **Frame rate:** unlimited by default with VSync off; the frame cap offers
+  60, 75, 120, 144, 165, 240 and 360, and VSync can be turned on.
 
 ### 2.1 Input map (defaults; everything rebindable)
 | Action | Default | Notes |

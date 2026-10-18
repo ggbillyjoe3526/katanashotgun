@@ -121,13 +121,13 @@ func _build_rows(t: String) -> Array:
 		"VIDEO":
 			out.append(_option("WINDOW MODE", Settings.WINDOW_MODES, ["WINDOWED", "FULLSCREEN", "EXCLUSIVE FULLSCREEN"],
 				func(): return Settings.window_mode, _set_window,
-				"F11 SWITCHES IT ANY TIME. EXCLUSIVE CAN CUT LAG"))
+				_window_help()))
 			out.append(_option("VSYNC", [true, false], ["ON", "OFF"],
 				func(): return Settings.vsync, _set_vsync,
 				"ON STOPS TEARING. OFF CUTS INPUT LAG"))
 			var cap_names := []
 			for cap in Settings.FPS_CAPS:
-				cap_names.append("UNCAPPED" if cap == 0 else "%d FPS" % cap)
+				cap_names.append("UNLIMITED" if cap == 0 else "%d FPS" % cap)
 			out.append(_option("FRAME CAP", Settings.FPS_CAPS, cap_names,
 				func(): return Settings.fps_cap, _set_fps_cap,
 				"HIGHEST FRAME RATE THE GAME WILL RUN AT"))
@@ -160,6 +160,11 @@ func _build_rows(t: String) -> Array:
 func _set_volume(bus: String, v: float) -> void:
 	Settings.volume[bus] = v
 	Settings.apply_audio()
+
+
+## Names the screen full screen will use, so the player sees it was detected.
+func _window_help(s := Settings.screen_text()) -> String:
+	return "USES YOUR %s SCREEN. F11 SWITCHES" % s if s != "" else "F11 SWITCHES IT ANY TIME"
 
 
 func _set_window(v: Variant) -> void:

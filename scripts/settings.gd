@@ -8,7 +8,7 @@ class_name Settings
 ## Saved as plain data (to_dict / from_dict) inside the player's profile
 ## (Profile, spec §11.3), which writes it atomically with a backup.
 
-const VERSION := 1
+const VERSION := 2 # 2: full screen, VSync off and no frame cap by default
 const BUSES: Array[String] = ["Master", "Music", "SFX", "Ambience", "UI"]
 const SENS_BASE := 0.0024 # radians per mouse pixel at sensitivity 1.0
 const SENS_MIN := 0.1
@@ -17,7 +17,10 @@ const FOV_MIN := 70.0
 const FOV_MAX := 110.0
 const RENDER_SCALE_MIN := 0.5
 const WINDOW_MODES: Array[String] = ["windowed", "fullscreen", "exclusive"]
-const FPS_CAPS: Array[int] = [0, 60, 75, 120, 144, 165, 240, 360] # 0 = uncapped
+const FPS_CAPS: Array[int] = [0, 60, 75, 120, 144, 165, 240, 360] # 0 = unlimited
+## The 3D view's fixed internal size (spec §2); windowed mode scales it by a
+## whole number so every retro pixel stays square and sharp.
+const BASE_SIZE := Vector2i(960, 540)
 const QUALITY_IDS: Array[String] = ["low", "medium", "high"]
 ## Picking a preset sets render scale to this as a starting point.
 const QUALITY_RENDER_SCALE := {"low": 0.75, "medium": 1.0, "high": 1.0}
@@ -42,8 +45,8 @@ const DEFAULT_FOV := 88.0
 static var path := "user://settings.json"
 
 static var volume := {} # bus name -> 0..1
-static var window_mode := "windowed"
-static var vsync := true
+static var window_mode := "fullscreen"
+static var vsync := false
 static var fps_cap := 0
 static var render_scale := 1.0
 static var quality := "high"
@@ -83,8 +86,8 @@ static func reset_audio() -> void:
 
 
 static func reset_video() -> void:
-	window_mode = "windowed"
-	vsync = true
+	window_mode = "fullscreen"
+	vsync = false
 	fps_cap = 0
 	quality = "high"
 	render_scale = 1.0
@@ -151,8 +154,46 @@ static func apply_window() -> void:
 			want = DisplayServer.WINDOW_MODE_FULLSCREEN
 		"exclusive":
 			want = DisplayServer.WINDOW_MODE_EXCLUSIVE_FULLSCREEN
-	if DisplayServer.window_get_mode() != want:
-		DisplayServer.window_set_mode(want)
+	var was := DisplayServer.window_get_mode()
+	if was == want:
+		return
+	DisplayServer.window_set_mode(want)
+	if want == DisplayServer.WINDOW_MODE_WINDOWED and was != DisplayServer.WINDOW_MODE_MAXIMIZED:
+		# the system restores the old window size as it leaves full screen, so
+		# size the window a moment later
+		var tree := Engine.get_main_loop() as SceneTree
+		if tree:
+			tree.create_timer(0.15, true, false, true).timeout.connect(fit_window)
+
+
+## Sizes the window to the biggest whole multiple of 960x540 that fits the
+## screen (2880x1620 on a 4K screen, 960x540 on 1080p), centred.
+static func fit_window() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var screen := DisplayServer.window_get_current_screen()
+	var area := DisplayServer.screen_get_usable_rect(screen)
+	var k := window_scale_for(area.size)
+	var sz := BASE_SIZE * k
+	DisplayServer.window_set_size(sz)
+	DisplayServer.window_set_position(area.position + (area.size - sz) / 2)
+
+
+## The whole-number scale of 960x540 that fits in `area` with room for the
+## window's title bar and edges (at least 1).
+static func window_scale_for(area: Vector2i) -> int:
+	var room := Vector2(area) * 0.92
+	return maxi(1, mini(floori(room.x / BASE_SIZE.x), floori(room.y / BASE_SIZE.y)))
+
+
+## The player's screen as words: "3840x2160 240 HZ" (no rate if unknown).
+static func screen_text() -> String:
+	if DisplayServer.get_name() == "headless":
+		return ""
+	var screen := DisplayServer.window_get_current_screen()
+	var sz := DisplayServer.screen_get_size(screen)
+	var hz := roundi(DisplayServer.screen_get_refresh_rate(screen))
+	return "%dx%d%s" % [sz.x, sz.y, (" %d HZ" % hz) if hz > 0 else ""]
 
 
 ## Hands the preset to the quality system (scripts/quality.gd, class Quality)
@@ -380,6 +421,8 @@ static func to_dict() -> Dictionary:
 ## type or out of range keeps its current value, so an old or damaged file
 ## never breaks the game. JSON gives numbers back as floats, so ints are cast.
 static func from_dict(d: Dictionary) -> void:
+	if _is_num(d.get("v")) and int(d.v) < 2:
+		d = _migrate_v1(d)
 	var vol: Variant = d.get("volume")
 	if vol is Dictionary:
 		for b in BUSES:
@@ -424,6 +467,21 @@ static func from_dict(d: Dictionary) -> void:
 				used.append(dd)
 				evs.append(dd)
 			bindings[action] = evs
+
+
+## Version 1 started windowed with VSync on. A file that still holds those
+## old defaults gets the new ones (full screen, VSync off); a choice the
+## player made themselves is kept.
+static func _migrate_v1(d: Dictionary) -> Dictionary:
+	var out := d.duplicate(true)
+	var wm: Variant = out.get("window_mode")
+	if wm is String and wm == "windowed":
+		out.erase("window_mode")
+	var vs: Variant = out.get("vsync")
+	if vs is bool and vs:
+		out.erase("vsync")
+	out["v"] = 2
+	return out
 
 
 static func _is_num(v: Variant) -> bool:

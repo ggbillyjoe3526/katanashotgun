@@ -124,6 +124,8 @@ func test_every_word_fits_its_box() -> void:
 	for lbl in ["ESC  BACK", "R  DEFAULTS"]:
 		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(0).size.x - 4, lbl)
 	assert_lt(menu._w("PRESS A KEY OR MOUSE BUTTON.  ESC CANCELS", Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
+	# the widest screen the window-mode help can name
+	assert_lt(menu._w(menu._window_help("7680x4320 360 HZ"), Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 
 
 func test_rebind_from_the_keyboard() -> void:
