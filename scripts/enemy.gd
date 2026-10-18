@@ -666,7 +666,7 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 	if poise_dmg < 0.0:
 		poise_dmg = final
 	if is_boss:
-		press_kamae(BossKamae.gain_for(source, poise_dmg))
+		press_kamae(BossKamae.gain_for(source, poise_dmg, dmg))
 	else:
 		_apply_poise(poise_dmg)
 	return false

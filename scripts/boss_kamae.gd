@@ -19,15 +19,16 @@ const GLORY_SHARE := 0.12
 ## under that much.
 const BLOW_SHARE := 0.2
 ## Kamae per point of poise damage, by source. The katana is the pressure
-## tool; a shotgun blast counts for less than its damage; one
-## deflected bolt counts for a lot, so a whole returned fan is a big swing.
+## tool; a shotgun blast counts for less than its damage.
 const SOURCE_MULT := {
 	"katana": 1.6,
 	"shotgun": 0.6,
-	"deflect": 0.4,
 	"wave": 1.0,
 	"dashcut": 1.0,
 }
+## A returned bolt counts by the damage it deals, not a flat amount, so a
+## returned gatling stream fills the bar steadily and a shuriken fan swings it.
+const DEFLECT_PER_DAMAGE := 0.5
 
 var max_value := 900.0
 var value := 0.0
@@ -43,8 +44,10 @@ func ratio() -> float:
 	return clampf(value / max_value, 0.0, 1.0)
 
 
-## Kamae a hit from `source` with `poise` poise damage is worth.
-static func gain_for(source: String, poise: float) -> float:
+## Kamae a hit from `source` is worth, from its poise and HP damage.
+static func gain_for(source: String, poise: float, damage := 0.0) -> float:
+	if source == "deflect":
+		return maxf(0.0, damage) * DEFLECT_PER_DAMAGE
 	return maxf(0.0, poise) * float(SOURCE_MULT.get(source, 0.0))
 
 

@@ -942,7 +942,8 @@ glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
 - **What fills it** (poise damage × a factor per source): katana ×1.6 (an
   18-poise hit gives about 29, armour or not: the blade is the pressure
   tool), shotgun ×0.6 (a point-blank blast gives about 78, less at range),
-  deflected bolts ×0.4 (56 each, so a returned shuriken fan is a big swing),
+  a returned bolt by its HP damage ×0.5 instead (about 48 for today's 95;
+  steady for a returned gatling stream, a big swing for a shuriken fan),
   Susanoo's Wave and Kage Step ×1.0, burning nothing (explosions never
   hit bosses).
 - **Glory kills nearby:** a glory kill on an add within **15 m** of the boss

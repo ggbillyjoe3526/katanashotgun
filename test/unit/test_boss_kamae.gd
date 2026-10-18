@@ -55,6 +55,7 @@ func test_sources() -> void:
 	assert_lt(BossKamae.gain_for("shotgun", 100.0), 100.0)
 	assert_eq(BossKamae.gain_for("burn", 50.0), 0.0, "burning never breaks a stance")
 	assert_eq(BossKamae.gain_for("katana", -1.0), 0.0)
+	assert_almost_eq(BossKamae.gain_for("deflect", 140.0, 80.0), 80.0 * BossKamae.DEFLECT_PER_DAMAGE, 0.001, "a returned bolt counts by its damage")
 
 
 func test_bosses_ignore_hyakunin_giri() -> void:
