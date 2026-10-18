@@ -126,6 +126,8 @@ var _gk_pitch0 := 0.0
 var _gk_dir := Vector3.FORWARD
 var _gk_perch := Vector3.ZERO # plunge: where the blade goes in, on the foe
 var _gk_dive := 0.2 # plunge: seconds of the dive
+var _room_q: PhysicsShapeQueryParameters3D # "does the body fit here?", reused
+var _los_q: PhysicsRayQueryParameters3D # plunge line of sight, reused
 
 
 func _ready() -> void:
@@ -243,7 +245,8 @@ func _physics_process(delta: float) -> void:
 	var plunge := _find_plunge_target()
 	if plunge != null:
 		_set_finisher_target(plunge, true)
-		Game.show_hint_once("plunge", "HIGH ABOVE A FOE?  PRESS %s TO PLUNGE" % Ui.key_name("finisher"))
+		if not Game.hints_shown.has("plunge"):
+			Game.show_hint_once("plunge", "HIGH ABOVE A FOE?  PRESS %s TO PLUNGE" % Ui.key_name("finisher"))
 	else:
 		_set_finisher_target(_find_finisher_target())
 	if Input.is_action_just_pressed("finisher") or (Game.debug_autoplay and gk_ready != null):
@@ -262,7 +265,8 @@ func _physics_process(delta: float) -> void:
 		wish = wish.normalized()
 
 	# a jump that falls just short of a ledge you're pushing into: climb it
-	if not is_on_floor() and _try_climb(wish):
+	# (only probed while airborne and actually up against something)
+	if not is_on_floor() and is_on_wall() and _try_climb(wish):
 		return
 
 	# dash
@@ -598,8 +602,12 @@ func _find_plunge_target() -> Enemy:
 		var ang := fwd.angle_to(e.global_position + Vector3(0, e.height * 0.6, 0) - origin)
 		if ang > (PLUNGE_KEEP_CONE if e == gk_ready else PLUNGE_CONE) or ang >= best_ang:
 			continue
-		var q := PhysicsRayQueryParameters3D.create(origin, e.global_position + Vector3(0, e.height * 0.8, 0), 1)
-		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+		if _los_q == null:
+			_los_q = PhysicsRayQueryParameters3D.new()
+			_los_q.collision_mask = 1 # the level only: foes don't block a plunge
+		_los_q.from = origin
+		_los_q.to = e.global_position + Vector3(0, e.height * 0.8, 0)
+		if not get_world_3d().direct_space_state.intersect_ray(_los_q).is_empty():
 			continue
 		best = e
 		best_ang = ang
@@ -637,14 +645,12 @@ func _start_glory(e: Enemy, plunge := false) -> void:
 	var stand := e.radius + (1.25 if gk_kind in ["brute", "boss"] else 0.85)
 	gk_to = e.global_position + to_me * stand
 	gk_to.y = e.global_position.y
+	_gk_dir = -to_me
 	if plunge:
-		# the blade goes in from on top of the foe, then you step down off it
-		_gk_perch = e.global_position + to_me * (e.radius + 0.5)
-		_gk_perch.y = e.global_position.y + e.height * 0.5
+		_place_plunge(e, to_me)
 		_gk_dive = clampf(global_position.distance_to(_gk_perch) / PLUNGE_DIVE_SPEED, 0.12, 0.3)
 	_gk_yaw0 = yaw
 	_gk_pitch0 = pitch
-	_gk_dir = -to_me
 	e.glory_hold(self)
 	invuln = 99.0
 	velocity = Vector3.ZERO
@@ -722,6 +728,40 @@ func _update_glory(rd: float) -> void:
 		_glory_beat(beat)
 	if t >= gk_len:
 		_end_glory()
+
+
+## Where a plunge puts you: the blade goes in from on top of the foe, then
+## you step down beside it. The side facing you first; if a wall is there
+## (a foe at the foot of your ledge), the next side round that has room for
+## the whole body; failing all of them, the foe's own spot, which its body
+## proves is open.
+func _place_plunge(e: Enemy, to_me: Vector3) -> void:
+	var base := e.global_position
+	for i in 8:
+		var turn := ceilf(i * 0.5) * PI * 0.25 * (1.0 if i % 2 == 1 else -1.0)
+		var side := to_me.rotated(Vector3.UP, turn)
+		var stand := base + side * (e.radius + 0.85)
+		var perch := base + side * (e.radius + 0.5) + Vector3(0, e.height * 0.5, 0)
+		if _has_room(stand) and _has_room(perch):
+			gk_to = stand
+			_gk_perch = perch
+			_gk_dir = -side
+			return
+	gk_to = base
+	_gk_perch = base + Vector3(0, e.height * 0.5, 0)
+
+
+## True when the player's capsule fits with its feet at `feet`.
+func _has_room(feet: Vector3) -> bool:
+	if _room_q == null:
+		_room_q = PhysicsShapeQueryParameters3D.new()
+		var cap := CapsuleShape3D.new()
+		cap.radius = CAPSULE_RADIUS
+		cap.height = CAPSULE_HEIGHT
+		_room_q.shape = cap
+		_room_q.collision_mask = collision_mask
+	_room_q.transform = Transform3D(Basis.IDENTITY, feet + Vector3(0, CAPSULE_HEIGHT * 0.5 + 0.05, 0))
+	return get_world_3d().direct_space_state.intersect_shape(_room_q, 1).is_empty()
 
 
 ## The plunge path: a dive that picks up speed onto the foe, a beat on top

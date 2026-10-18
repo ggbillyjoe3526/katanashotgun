@@ -13,6 +13,8 @@ const CLEAR_MARGIN := 0.15 # a jump that clears the ledge by this much needs no 
 const FACING := 0.3 # look within ~72 degrees of the wall to grab it
 const LIFT := 0.05 # the body ends this far above the ledge, then settles
 
+static var _q: PhysicsRayQueryParameters3D # reused, so probing allocates no query
+
 
 ## The highest point the feet reach if nothing else changes (metres above now).
 static func apex_gain(vy: float, gravity: float) -> float:
@@ -33,7 +35,7 @@ static func find(body: CharacterBody3D, dir: Vector3, look: Vector3, radius: flo
 	var feet := body.global_position
 	# 1. the ledge top: straight down just past the front of the body
 	var probe := feet + dir * (radius + PROBE)
-	var q := PhysicsRayQueryParameters3D.create(probe + Vector3.UP * (REACH + 0.05), probe + Vector3.UP * (MIN_RISE - 0.05), body.collision_mask)
+	var q := _ray(probe + Vector3.UP * (REACH + 0.05), probe + Vector3.UP * (MIN_RISE - 0.05), body.collision_mask)
 	var top := space.intersect_ray(q)
 	if top.is_empty() or (top.normal as Vector3).y < 0.7:
 		return {}
@@ -43,7 +45,7 @@ static func find(body: CharacterBody3D, dir: Vector3, look: Vector3, radius: flo
 		return {}
 	# 2. a face just under that top that we're moving into and looking at
 	var face_from := Vector3(feet.x, ledge_y - 0.1, feet.z)
-	q = PhysicsRayQueryParameters3D.create(face_from, face_from + dir * (radius + PROBE + 0.1), body.collision_mask)
+	q = _ray(face_from, face_from + dir * (radius + PROBE + 0.1), body.collision_mask)
 	var face := space.intersect_ray(q)
 	if face.is_empty():
 		return {}
@@ -64,3 +66,12 @@ static func find(body: CharacterBody3D, dir: Vector3, look: Vector3, radius: flo
 	if body.test_move(body.global_transform.translated(up), forward):
 		return {}
 	return {"rise": rise, "forward": forward, "ledge_y": ledge_y}
+
+
+static func _ray(from: Vector3, to: Vector3, mask: int) -> PhysicsRayQueryParameters3D:
+	if _q == null:
+		_q = PhysicsRayQueryParameters3D.new()
+	_q.from = from
+	_q.to = to
+	_q.collision_mask = mask
+	return _q

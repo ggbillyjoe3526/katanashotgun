@@ -44,6 +44,7 @@ func _ready() -> void:
 		{"name": "double jump height on open floor", "blocks": [], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0, "measure": true, "forward": false},
 		{"name": "no plunge from a jump on the same level", "blocks": [], "keys": ["jump", "double"], "enemy": Vector3(0, 0, -2.0), "want_plunge": false, "forward": false, "pitch": -0.9},
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
+		{"name": "plunge onto a grunt at the foot of the wall lands clear of it", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -1.5), "want_plunge": true, "want_top": 0.0, "max_z": -1.4, "pitch": -1.3},
 		{"name": "plunge from a 4 m ledge onto a grunt", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.2), "want_plunge": true, "pitch": -0.9},
 	]
 	_next()
@@ -184,6 +185,8 @@ func _finish(c: Dictionary, p: Player) -> void:
 		errs.append("climbed=%s" % _climbed)
 	if c.has("want_top") and not c.get("measure", false) and absf(y - float(c.want_top)) > 0.15:
 		errs.append("ended at y=%.2f, wanted %.2f" % [y, c.want_top])
+	if c.has("max_z") and p.global_position.z - ORIGIN.z > float(c.max_z):
+		errs.append("ended inside the ledge (z=%.2f)" % (p.global_position.z - ORIGIN.z))
 	if c.get("measure", false):
 		var want := (Player.JUMP_VEL * Player.JUMP_VEL + Player.DOUBLE_JUMP_VEL * Player.DOUBLE_JUMP_VEL) / (2.0 * Player.GRAVITY)
 		if absf(_max_y - want) > 0.25:
