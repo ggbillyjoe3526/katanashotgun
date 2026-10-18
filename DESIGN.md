@@ -52,7 +52,7 @@ the prototype already works.
 |---|---|---|
 | Slash | LMB | 3-hit katana combo, cleaves. **Katana kills charge the shotgun (+1 cell)** |
 | Blast | RMB | Arc shotgun: hitscan "pellets" drawn as lightning, headshots x2, **staggers** |
-| Glory kill | Slash a staggered enemy | First-person finisher (see below): heals 20, +3 cells. On bosses: a 15% deathblow |
+| Glory kill | F near a staggered enemy | First-person finisher (see below): heals 20, +3 cells. On bosses: a 15% deathblow |
 | Deflect | Slash an incoming bolt | Sends it back as a lethal, staggering shot |
 | Dash | Shift | 2 charges, invulnerable while dashing |
 | Jump | Space (x2) | Double jump, jump pads |
@@ -74,7 +74,9 @@ the prototype already works.
   when empty.
 
 ### Glory kills (Doom 2016 style)
-- Slash a staggered enemy. The camera locks on, you lunge in, and a short
+- Press F when a staggered enemy is in reach (a gold "F GLORY KILL" prompt
+  shows under the crosshair and that enemy's marker turns gold). The camera
+  locks on, you lunge in, and a short
   contextual finisher (about 0.7–0.95 s) plays while you are invulnerable.
   The world runs in slow motion; the finisher runs in real time.
 - The finisher depends on the situation:

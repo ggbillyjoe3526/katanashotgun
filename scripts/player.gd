@@ -1,13 +1,14 @@
 class_name Player
 extends CharacterBody3D
 ## Fast Doom-style movement + the katana/shotgun dual wield.
-##   LMB  katana  — 3-hit combo, cleaves, deflects bolts, glory-kills
-##                  staggered foes, katana kills charge cells.
+##   LMB  katana  — 3-hit combo, cleaves, deflects bolts, katana kills
+##                  charge cells.
 ##   RMB  arc shotgun — hitscan "pellets" drawn as lightning, headshots x2,
 ##                  staggers.
-## Glory kills (Doom 2016 style): slashing a staggered enemy locks the camera
-## on, lunges you in and plays a short contextual finisher while you are
-## invulnerable. The world runs in slow motion; the finisher runs in real time.
+## Glory kills (Doom 2016 style): pressing F (the `finisher` action) near a
+## staggered enemy locks the camera on, lunges you in and plays a short
+## contextual finisher while you are invulnerable. The world runs in slow
+## motion; the finisher runs in real time.
 ##   Shift dash (i-frames), Space jump / double jump.
 
 const WALK_SPEED := 8.8
@@ -22,6 +23,14 @@ const BASE_FOV := 88.0
 const KATANA_CD := 0.32
 const KATANA_FINISHER_CD := 0.45
 const SHOTGUN_CD := 0.72
+# glory kill reach: a staggered enemy can be finished from this far (metres
+# past its body) and this close to the crosshair. The current target is kept
+# a little further out so the prompt doesn't flicker at the edge.
+const FINISHER_REACH := 4.5
+const FINISHER_KEEP_REACH := 5.5
+const FINISHER_CONE := PI / 3.0 # 60 degrees
+const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
+const FINISHER_BUFFER := 0.18
 
 var head: Node3D
 var cam: Camera3D
@@ -67,6 +76,8 @@ var _auto_t := 0.0
 var _auto_strafe := 1.0
 
 # glory kill
+var gk_ready: Enemy = null # the staggered enemy F would finish right now
+var finisher_buffer := 0.0
 var gk_target: Enemy = null
 var gk_kind := ""
 var gk_t := 0.0
@@ -165,10 +176,12 @@ func _physics_process(delta: float) -> void:
 	katana_cd -= delta
 	shotgun_cd -= delta
 	katana_buffer -= delta
+	finisher_buffer -= delta
 	combo_reset -= delta
 	invuln -= delta
 	_hurt_t -= delta
 	if dead:
+		_set_finisher_target(null)
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
 		velocity.z = move_toward(velocity.z, 0.0, 20.0 * delta)
 		velocity.y -= GRAVITY * delta
@@ -177,6 +190,16 @@ func _physics_process(delta: float) -> void:
 	if gk_target != null:
 		# the finisher drives the body; nothing else happens meanwhile
 		velocity = Vector3.ZERO
+		return
+
+	# glory kill on F: the press is buffered like the katana's, so pressing
+	# just before an enemy staggers or comes into reach still counts
+	_set_finisher_target(_find_finisher_target())
+	if Input.is_action_just_pressed("finisher") or (Game.debug_autoplay and gk_ready != null):
+		finisher_buffer = FINISHER_BUFFER
+	if finisher_buffer > 0.0 and gk_ready != null:
+		finisher_buffer = 0.0
+		_start_glory(gk_ready)
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -353,20 +376,14 @@ func _slash() -> void:
 		hits.append(e)
 	hits.sort_custom(func(a, b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
 
-	var executed := false
 	var killed := 0
 	for e in hits:
-		if not executed and e.is_staggered():
-			executed = true
-			_execute(e, hit_dir)
-			continue
 		if e.take_hit(dmg, "katana", hit_dir, false, 18.0, 4.0):
 			killed += 1
 	if hits.size() > 0:
 		Sfx.play("slice", -1.0)
-		if not executed:
-			Game.hitstop(0.045 + 0.012 * mini(hits.size(), 4))
-			add_trauma(0.22)
+		Game.hitstop(0.045 + 0.012 * mini(hits.size(), 4))
+		add_trauma(0.22)
 		if Game.rank("vamp") > 0:
 			heal(Game.rank("vamp") * hits.size())
 	if killed > 0:
@@ -391,13 +408,58 @@ func _slash() -> void:
 			Sfx.play("wave_blade", -4.0)
 
 
-func _execute(e: Enemy, _dir: Vector3) -> void:
-	_start_glory(e)
-
-
 # ---------------------------------------------------------------- glory kills
+## The staggered enemy a glory kill would take: in reach, near the crosshair
+## and in plain sight. Closest to the crosshair wins.
+func _find_finisher_target() -> Enemy:
+	var origin := cam.global_position
+	var fwd := -cam.global_basis.z
+	var fwd_flat := Vector3(fwd.x, 0, fwd.z).normalized()
+	var best: Enemy = null
+	var best_score := INF
+	for e in Game.enemy_list:
+		if not is_instance_valid(e) or not e.is_staggered():
+			continue
+		var keep: bool = e == gk_ready
+		var center: Vector3 = e.global_position + Vector3(0, e.height * 0.5, 0)
+		var to := center - origin
+		var flat := Vector3(to.x, 0, to.z)
+		var d: float = flat.length() - e.radius
+		if d > (FINISHER_KEEP_REACH if keep else FINISHER_REACH):
+			continue
+		if absf(to.y) > e.height * 0.5 + 1.7:
+			continue
+		var ang := 0.0
+		if flat.length() > 0.4:
+			ang = fwd_flat.angle_to(flat.normalized())
+		if ang > (FINISHER_KEEP_CONE if keep else FINISHER_CONE):
+			continue
+		var score := ang + maxf(d, 0.0) * 0.05
+		if score >= best_score:
+			continue
+		# never lunge through a wall (aimed high, so low cover doesn't block)
+		var q := PhysicsRayQueryParameters3D.create(origin, e.global_position + Vector3(0, e.height * 0.8, 0), 1)
+		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+			continue
+		best = e
+		best_score = score
+	return best
+
+
+func _set_finisher_target(e: Enemy) -> void:
+	if e == gk_ready:
+		return
+	if is_instance_valid(gk_ready):
+		gk_ready.set_finisher_lit(false)
+	gk_ready = e
+	if e != null:
+		e.set_finisher_lit(true)
+
+
 ## Picks a finisher from the situation and starts it.
 func _start_glory(e: Enemy) -> void:
+	_set_finisher_target(null)
+	dash_t = 0.0 # a dash cut short by the finisher doesn't resume after it
 	Game.executions += 1
 	add_cells(3)
 	heal(20.0 * float(Game.mut("exec_heal", 1.0)))
@@ -763,7 +825,8 @@ func _autoplay(delta: float) -> Vector2:
 		_auto_t = randf_range(0.8, 2.0)
 		_auto_strafe = -_auto_strafe
 	var close := best_d < 3.0 + best.radius
-	_auto_weapons.x = 1.0 if close else 0.0
+	# a staggered enemy gets a glory kill (pressed for the bot above), not a slash
+	_auto_weapons.x = 1.0 if (close and not best.is_staggered()) else 0.0
 	_auto_weapons.y = 1.0 if (best_d < 10.0 and cells > 0 and not best.is_staggered()) else 0.0
 	if best.is_staggered():
 		return Vector2(0, -1)

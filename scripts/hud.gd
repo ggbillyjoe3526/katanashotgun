@@ -30,6 +30,8 @@ var score_label: Label
 var combo_label: Label
 var combo_bar: ColorRect
 var crosshair: Crosshair
+var finisher_prompt: FinisherPrompt
+var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var center_label: Label
 var center_shadow: Label
 var center_t := 99.0
@@ -294,6 +296,8 @@ func _build_play() -> void:
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
+	finisher_prompt = FinisherPrompt.new()
+	play_root.add_child(finisher_prompt)
 
 	var cl := _shadowed("", Ui.font_big, 16, Color.WHITE, Color(0.1, 0, 0.04), Vector2(1, 1))
 	center_label = cl[0]
@@ -351,7 +355,7 @@ func _build_title() -> void:
 	var lines := [
 		["LMB  DOJIGIRI KATANA - CHARGES THE SHOTGUN", b],
 		["RMB  RAIJIN-12 SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
-		["SLASH STAGGERED FOES FOR A GLORY KILL", a],
+		["%s  GLORY KILL A STAGGERED FOE" % Ui.key_name("finisher"), a],
 		["SLASH ENEMY BOLTS TO DEFLECT", b.lerp(Color.WHITE, 0.4)],
 		["WASD MOVE   SPACE JUMP x2   SHIFT DASH", Color(0.9, 0.9, 0.95)],
 		["EVERY 3RD WAVE: BOSS  -  HEADSHOTS x2", a.lerp(Color.WHITE, 0.3)],
@@ -1305,6 +1309,13 @@ func _update_play(delta: float) -> void:
 	crosshair.katana_k = clampf(1.0 - p.katana_cd / p.KATANA_FINISHER_CD, 0.0, 1.0)
 	crosshair.shotgun_k = clampf(1.0 - p.shotgun_cd / p.SHOTGUN_CD, 0.0, 1.0) if p.cells > 0 else 0.0
 	crosshair.queue_redraw()
+	# ---- glory kill prompt: a fixed spot under the crosshair
+	var move := ""
+	if is_instance_valid(p.gk_ready):
+		move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
+	elif finisher_demo:
+		move = "GLORY KILL"
+	finisher_prompt.refresh(move, crosshair.position, delta)
 	# ---- boss bar: top centre, under the best score
 	var boss: Enemy = Game.main.boss if Game.main else null
 	var boss_on := boss != null and is_instance_valid(boss) and not boss.dead

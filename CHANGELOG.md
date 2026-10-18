@@ -6,6 +6,16 @@ must look like `## v0.3.1 (2026-10-18)`.
 
 ## Unreleased
 
+### Glory kills on F
+- Glory kills are now your call: when an enemy is staggered and close, a
+  gold "F  GLORY KILL" prompt appears under the crosshair (on bosses it says
+  "DEATHBLOW"), and the enemy's marker turns gold. Press F to finish it,
+  just like Doom.
+- Slashing a staggered enemy just cuts it (hard), so you choose between a
+  quick kill and the full finisher with its health and cells.
+- F can be pressed a moment early and still counts. The key will be
+  rebindable once the settings menu exists.
+
 ### Text you can actually read
 - Every number and word on screen is bigger and sits on a dark plate or
   outline, so it reads over any part of the city.

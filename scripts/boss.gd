@@ -134,7 +134,7 @@ func _build_mech() -> void:
 		lower.rotation.z = side * 0.14
 		lower.add_child(Psx.box(Vector3(0.24, 0.6, 0.06), Psx.unlit(neon, 2.0), Vector3(0, -0.9, 0.12)))
 		_legs.append({"hip": hip, "knee": knee, "phase": (0.0 if (i % 2 == 0) == (side < 0) else PI), "side": side})
-	marker = Psx.quad(Vector2(0.8, 0.8), Psx.fx(Color(1.0, 0.05, 0.1), TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.9, 0))
+	marker = Psx.quad(Vector2(0.8, 0.8), Psx.fx(MARKER_RED, TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.9, 0))
 	marker.visible = false
 	add_child(marker)
 

@@ -63,6 +63,23 @@ static func px(f: Font, size: int) -> int:
 	return size
 
 
+## The name of the first key bound to `action`, for on-screen prompts
+## ("F"), so prompts stay right when the key is rebound. Shown in the
+## player's keyboard layout where the platform can tell us it.
+static func key_name(action: StringName) -> String:
+	for ev in InputMap.action_get_events(action):
+		var k := ev as InputEventKey
+		if k == null:
+			continue
+		var code := k.keycode
+		if code == KEY_NONE and DisplayServer.get_name() != "headless":
+			code = DisplayServer.keyboard_get_keycode_from_physical(k.physical_keycode)
+		if code == KEY_NONE:
+			code = k.physical_keycode
+		return OS.get_keycode_string(code).to_upper()
+	return "?"
+
+
 static func theme() -> Theme:
 	init()
 	var t := Theme.new()
