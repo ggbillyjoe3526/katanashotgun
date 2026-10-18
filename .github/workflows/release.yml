@@ -1,20 +1,20 @@
 name: Release
 
 # Publishes a GitHub Release with the Windows installer, a portable Windows
-# zip, and Linux and macOS zips (spec S4). Three ways in:
-#  - push a tag vX.Y.Z
-#  - Actions tab -> Release -> Run workflow, type the version (creates the tag)
+# zip, and Linux and macOS zips (spec S4). The version is config/version in
+# project.godot ("0.1 Dev 1"); tools/version.sh turns it into the tag
+# (v0.1-dev.1), file names and Windows version number (VERSIONING.md).
+# Three ways in:
+#  - push a tag that matches project.godot's version (v0.1-dev.1)
+#  - Actions tab -> Release -> Run workflow (releases project.godot's version
+#    and creates the tag)
 #  - a pull request that touches the pipeline: builds everything as a dry run
 #    (downloadable from the run's Artifacts) and publishes nothing
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version to release, without the v (for example 0.3.1)"
-        required: true
-        type: string
       publish:
         description: "Publish the GitHub Release (untick for a dry run)"
         required: true
@@ -28,6 +28,8 @@ on:
       - "THIRD_PARTY_NOTICES.txt"
       - "export_presets.cfg"
       - "project.godot"
+      - "tools/version.sh"
+      - "tools/changelog_section.sh"
 
 permissions:
   contents: read
@@ -45,7 +47,9 @@ jobs:
     name: Work out the version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.v.outputs.version }}
+      name: ${{ steps.v.outputs.name }}
+      tag: ${{ steps.v.outputs.tag }}
+      number: ${{ steps.v.outputs.number }}
       publish: ${{ steps.v.outputs.publish }}
       prerelease: ${{ steps.v.outputs.prerelease }}
     steps:
@@ -55,40 +59,36 @@ jobs:
       - id: v
         env:
           EVENT: ${{ github.event_name }}
-          INPUT_VERSION: ${{ inputs.version }}
           INPUT_PUBLISH: ${{ inputs.publish }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
+          OUT=$(tools/version.sh)
+          NAME=$(sed -n 's/^name=//p' <<< "$OUT")
+          TAG=$(sed -n 's/^tag=//p' <<< "$OUT")
           case "$EVENT" in
-            push)              VER="${GITHUB_REF_NAME#v}"; PUBLISH=true ;;
-            workflow_dispatch) VER="${INPUT_VERSION#v}"; PUBLISH="$INPUT_PUBLISH" ;;
-            *)                 VER="0.0.0-pr.${PR_NUMBER}"; PUBLISH=false ;;
+            push)              PUBLISH=true ;;
+            workflow_dispatch) PUBLISH="$INPUT_PUBLISH" ;;
+            *)                 PUBLISH=false ;;
           esac
-          if ! [[ "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
-            echo "::error::'$VER' is not a version like 0.3.1"; exit 1
+          if [ "$EVENT" = "push" ] && [ "$GITHUB_REF_NAME" != "v$TAG" ]; then
+            echo "::error::The tag $GITHUB_REF_NAME doesn't match the game's version '$NAME' in project.godot (its tag is v$TAG). See VERSIONING.md."; exit 1
           fi
           if [ "$EVENT" = "workflow_dispatch" ] && [ "$PUBLISH" = "true" ] && [ "$GITHUB_REF_NAME" != "main" ]; then
             echo "::error::Releases are published from main. Pick main in 'Use workflow from', or untick Publish for a dry run."; exit 1
           fi
           if [ "$EVENT" = "workflow_dispatch" ] && [ "$PUBLISH" = "true" ] \
-             && git rev-parse -q --verify "refs/tags/v$VER" >/dev/null; then
-            echo "::error::v$VER has already been released. Pick a new version number."; exit 1
+             && git rev-parse -q --verify "refs/tags/v$TAG" >/dev/null; then
+            echo "::error::$NAME (v$TAG) has already been released. Set the next version in project.godot first (see VERSIONING.md)."; exit 1
           fi
-          PRE=false
-          if [[ "$VER" == 0.* || "$VER" == *-* ]]; then PRE=true; fi
-          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "$OUT" >> "$GITHUB_OUTPUT"
           echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
-          echo "prerelease=$PRE" >> "$GITHUB_OUTPUT"
-          echo "Version $VER, publish=$PUBLISH, prerelease=$PRE" >> "$GITHUB_STEP_SUMMARY"
+          { echo "Version $NAME, publish=$PUBLISH"; echo '```'; echo "$OUT"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
   export:
     name: Test and export
     needs: version
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    env:
-      VER: ${{ needs.version.outputs.version }}
     steps:
       - uses: actions/checkout@v6
 
@@ -97,11 +97,6 @@ jobs:
           version: ${{ env.GODOT_VERSION }}
           status: ${{ env.GODOT_STATUS }}
           templates: "true"
-
-      - name: Stamp the version into the game
-        run: |
-          sed -i "s/^config\/version=.*/config\/version=\"${VER}\"/" project.godot
-          grep '^config/version=' project.godot
 
       - name: Smoke test (the bot plays; no script errors allowed)
         run: tools/smoke_test.sh
@@ -147,7 +142,9 @@ jobs:
       - name: Build the installer with Inno Setup
         shell: pwsh
         env:
-          VER: ${{ needs.version.outputs.version }}
+          NAME: ${{ needs.version.outputs.name }}
+          TAG: ${{ needs.version.outputs.tag }}
+          NUMBER: ${{ needs.version.outputs.number }}
         run: |
           $iscc = Get-ChildItem "${env:ProgramFiles(x86)}\Inno Setup *\ISCC.exe", "$env:ProgramFiles\Inno Setup *\ISCC.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $iscc) {
@@ -156,16 +153,16 @@ jobs:
           }
           if (-not $iscc) { throw "Inno Setup (ISCC.exe) not found" }
           Write-Host "Using $($iscc.FullName)"
-          & $iscc.FullName "/DAppVersion=$env:VER" installer\KatanaShotgun.iss
+          & $iscc.FullName "/DAppVersion=$env:NAME" "/DAppTag=$env:TAG" "/DAppNumber=$env:NUMBER" installer\KatanaShotgun.iss
           if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
           Get-ChildItem dist
 
       - name: Check the installer installs and uninstalls silently
         shell: pwsh
         env:
-          VER: ${{ needs.version.outputs.version }}
+          TAG: ${{ needs.version.outputs.tag }}
         run: |
-          $setup = "dist\KatanaShotgun-v$env:VER-Windows-Setup.exe"
+          $setup = "dist\KatanaShotgun-v$env:TAG-Windows-Setup.exe"
           $dir = "$env:RUNNER_TEMP\KatanaShotgunTest"
           $p = Start-Process $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/DIR=`"$dir`"" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "installer exit code $($p.ExitCode)" }
@@ -190,7 +187,8 @@ jobs:
     permissions:
       contents: write
     env:
-      VER: ${{ needs.version.outputs.version }}
+      NAME: ${{ needs.version.outputs.name }}
+      TAG: ${{ needs.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
 
@@ -212,25 +210,25 @@ jobs:
           # Every download carries the third-party licences next to the game.
           NOTICES="$GITHUB_WORKSPACE/THIRD_PARTY_NOTICES.txt"
           test -s "$NOTICES"
-          (cd art/builds/windows && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${VER}-Windows-Portable.zip" KatanaShotgun.exe)
-          zip -9 -j "dist/KatanaShotgun-v${VER}-Windows-Portable.zip" "$NOTICES"
+          (cd art/builds/windows && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${TAG}-Windows-Portable.zip" KatanaShotgun.exe)
+          zip -9 -j "dist/KatanaShotgun-v${TAG}-Windows-Portable.zip" "$NOTICES"
           chmod +x art/builds/linux/KatanaShotgun.x86_64
-          (cd art/builds/linux && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${VER}-Linux.zip" KatanaShotgun.x86_64)
-          zip -9 -j "dist/KatanaShotgun-v${VER}-Linux.zip" "$NOTICES"
+          (cd art/builds/linux && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${TAG}-Linux.zip" KatanaShotgun.x86_64)
+          zip -9 -j "dist/KatanaShotgun-v${TAG}-Linux.zip" "$NOTICES"
           if [ -f art/builds/macos/KatanaShotgun.zip ]; then
-            cp art/builds/macos/KatanaShotgun.zip "dist/KatanaShotgun-v${VER}-macOS.zip"
-            zip -9 -j "dist/KatanaShotgun-v${VER}-macOS.zip" "$NOTICES"
+            cp art/builds/macos/KatanaShotgun.zip "dist/KatanaShotgun-v${TAG}-macOS.zip"
+            zip -9 -j "dist/KatanaShotgun-v${TAG}-macOS.zip" "$NOTICES"
           fi
           for z in dist/*.zip; do unzip -l "$z" | grep THIRD_PARTY_NOTICES.txt > /dev/null || { echo "::error::$z has no notices"; exit 1; }; done
           ls -la dist
 
       - name: Release notes from the changelog
-        run: tools/changelog_section.sh "$VER" > release_notes.md; cat release_notes.md
+        run: tools/changelog_section.sh "$NAME" > release_notes.md; cat release_notes.md
 
       - name: Keep the packaged downloads (dry runs too)
         uses: actions/upload-artifact@v7
         with:
-          name: KatanaShotgun-v${{ env.VER }}
+          name: KatanaShotgun-v${{ env.TAG }}
           path: dist/*
           retention-days: 14
 
@@ -238,9 +236,9 @@ jobs:
         if: needs.version.outputs.publish == 'true'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ env.VER }}
+          tag_name: v${{ env.TAG }}
           target_commitish: ${{ github.sha }}
-          name: KATANA / SHOTGUN v${{ env.VER }}
+          name: KATANA / SHOTGUN ${{ env.NAME }}
           body_path: release_notes.md
           generate_release_notes: true
           prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
