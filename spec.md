@@ -522,6 +522,7 @@ Notes:
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
+| Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -577,6 +578,7 @@ Notes:
 | `move_*` | WASD + arrows | |
 | `jump` | Space | Double jump |
 | `dash` | Shift, Q | |
+| `finisher` | **F** | Glory kill the staggered enemy near the crosshair (§3.4) |
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Temporary; move into Settings |
 | fullscreen | F11 / Alt+Enter | |
@@ -590,7 +592,7 @@ can be added).
 
 ## 3. Core loop and mechanics
 
-**The rhythm:** blast → stagger → slash → glory kill → recharge. **The blade
+**The rhythm:** blast → stagger → slash → glory kill (press F) → recharge. **The blade
 charges the gun; the gun sets up the blade.**
 
 ### 3.1 Player
@@ -625,7 +627,8 @@ charges the gun; the gun sets up the blade.**
   turning cyan. Its kills are tagged "RETURN TO SENDER" (points ×1.5).
 - **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
   0.22, slash trail, slice sound.
-- **Slashing a staggered enemy starts a GLORY KILL** (§3.4).
+- **A slash just hits a staggered enemy** (full damage, armour ignored, so it
+  can kill it outright). The GLORY KILL is its own key, F (§3.4).
 - **Look:** see §9.6. The glowing edge flares on each swing.
 
 ### 3.3 Shotgun (RIGHT hand, RMB): "RAIJIN-12" arc shotgun ("shotgun taser")
@@ -672,8 +675,19 @@ charges the gun; the gun sets up the blade.**
   - After a shot: recoil kick, then a roll as the drum turns.
 
 ### 3.4 Glory kills (Doom 2016 style)
-**Trigger:** a katana slash that hits a **staggered** enemy (the first
-staggered enemy in the arc). This replaces the old "execution".
+**Trigger:** pressing **F** (the `finisher` action, rebindable) while a
+**staggered** enemy is in reach, like Doom (2016). This replaces the old
+"execution" and the earlier slash trigger (owner's request, 2026-10-18).
+- **Reach:** within 4.5 m of the enemy's body, within 60° of the crosshair,
+  with no wall in between. Of several, the one nearest the crosshair is
+  taken. The current target is kept out to 5.5 m and 80° so the prompt never
+  flickers at the edge.
+- **Window:** the whole stagger (`stagger_time`, 1.8–3.2 s by enemy; unchanged).
+- **Input buffer:** 0.18 s, as for the katana: pressing F just before an
+  enemy staggers or comes into reach still counts.
+- **Prompt:** while a target is in reach, a gold key cap with the bound key
+  and "GLORY KILL" ("DEATHBLOW" on bosses) sits in a fixed spot under the
+  crosshair (§9.7), and that enemy's stagger marker turns gold and grows.
 
 **On start:**
 - Executions +1, **+3 cells**, **heal 20** (×2 under the Akatsuki mutator).
@@ -725,7 +739,8 @@ hop back (−dir × 3 + up 2), katana cooldown 0.12.
 ### 3.5 Stagger and poise (all enemies)
 - Each enemy has **poise**. Damage reduces it. When it hits 0 the enemy is
   **STAGGERED** for `stagger_time`: a pulsing marker, dim eyes and a windup
-  sound. Hint the first time: "STAGGERED! SLASH IT FOR A GLORY KILL".
+  sound. Hint the first time: "STAGGERED! PRESS F FOR A GLORY KILL" (the
+  bound key's name).
 - Poise regenerates once no hits land for 2.0 s (bosses 1.4 s). It regains 35%
   of max per second (bosses 50%).
 - The shotgun is the main stagger tool. Armoured enemies (brutes, bosses)
@@ -1265,6 +1280,12 @@ the holographic cut-in (§9.8).
     repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking.
     Out of cells shows a steady "NO CHARGE" plate to the left of the
     crosshair.
+  - **Glory kill prompt:** 16 px under the crosshair, ending 8 px right of
+    it so it clears the kill tags, while a staggered enemy is in reach
+    (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL" (or
+    "DEATHBLOW" on a boss) on a dark plate. Pops in over
+    0.1 s, then holds still; only the key cap's glow pulses. Fades in 0.08 s
+    when the target is lost, and is gone during the finisher.
   - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
     on a dark plate.
   - **Hints:** bottom centre on a dark plate, above the run level, 4.5 s,
@@ -1767,8 +1788,9 @@ seed | click: new seed).
 
 ## 16. Debug, testing and tooling (keep these)
 - **Command-line flags** (after `--`):
-  - `--autoplay`: a bot plays (aims, strafes, slashes staggered enemies,
-    shotguns, auto-picks augments) and logs one stats line every 2 s.
+  - `--autoplay`: a bot plays (aims, strafes, slashes, glory-kills staggered
+    enemies with the finisher key, shotguns, auto-picks augments) and logs
+    one stats line every 2 s.
   - `--god`: no damage.
   - `--wave=N`, `--seed=XXXX-XXXX`, `--boss=ninja|mech|oni`, `--restart`
     (auto-restart after death), `--verbose-ai`.
