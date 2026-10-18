@@ -79,4 +79,5 @@ When a wave is cleared, the tally adds up **chips** and multiplies them by a
 Your [Player Level](Player-Level-and-Rewards) and boss rewards never change
 your stats, so scores on the same seed are always a fair race.
 
-Online leaderboards don't exist yet.
+The game is fully offline, so there are no online leaderboards. To race a
+friend, play the same [seed](Seeds) and compare scores.

@@ -533,6 +533,7 @@ Notes:
 | Bosses: posture, no glory kills | Bosses have a posture bar (KAMAE) that aggressive play fills; a full bar breaks the boss and F lands the ONIKIRI blow. Bosses never get a glory kill; only the horde does (owner, 2026-10-18; §5.5) |
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
+| Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -1246,7 +1247,12 @@ the holographic cut-in (§9.8).
 - The music playlist order also comes from the seed.
 - **The same seed and the same play give the same run.** Keep cosmetic
   randomness out of the gameplay streams.
-- Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.)
+- Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.) If
+  built, it is made offline from the date, since the game never goes
+  online (owner, 2026-10-18).
+- **Sharing seeds** between players, offline, is a direction to expand
+  (owner, 2026-10-18): racing a friend's score on the same seed, and more.
+  Ideas 1 to 5 in §19.1 are the first proposals.
 
 ---
 
@@ -2448,11 +2454,44 @@ seed | click: new seed).
 - The **full difficulty curve** past the early waves (tune by playtesting;
   waves 1–3 stay easy).
 - **Controller support** (not requested yet).
-- A daily seed and online leaderboard (mentioned early, not confirmed).
+- A daily seed, made offline from the date (mentioned early, not confirmed). Online leaderboards are ruled out: the game stays offline (owner, 2026-10-18).
 - A **Steam** release and cloud saves.
 - Whether in-game text gets macrons back (needs a fallback font).
 - Repo visibility (public, or private plus a public releases repo), the
   publisher name, code signing, Mac builds (PART S).
+
+
+### 19.1 Ideas to try (owner, 2026-10-18)
+From the competitor research (claude.ai doc "KATANA / SHOTGUN: Market
+Research"). The owner wants each built later as something to play-test; he
+decides after trying it whether it stays. None is approved for a release
+yet, and each needs a spec update with its tuning when it is built.
+1. **Seed Duels.** The results screen gives a short code with the seed,
+   initials, the game version and the score after every wave. A friend
+   pastes it and plays the same seed with a rival line on the HUD ("vs WIL
+   +2,350") and a head-to-head row in each tally. Offline: the code travels
+   by hand. Put the version in the code (seeds break when the game
+   changes) and mark a player's first attempt on a seed. Needs a seed entry
+   box on the title screen.
+2. **Two Hands, One Rhythm.** Alternating katana and shotgun kills earns an
+   extra combo step and lights the matching hand on the HUD; a clean
+   left-right-left chain gets a stamp. A bonus only, never a penalty, so
+   katana-heavy builds stay good. Name to pick from §13 (candidate: NITEN,
+   after Musashi's Niten Ichi-ryu).
+3. **Perfect Deflect.** A deflect in the last moment before a bolt lands is
+   PERFECT: a ringing clang, a white flash, more return damage and a big
+   KAMAE hit. Each boss gets one signature volley meant for it (Kurokage's
+   shuriken fan). Possibly KAMAE recovers more slowly as the boss loses HP
+   (Sekiro). The normal deflect stays exactly as it is.
+4. **Bet on the wave.** The wave intro offers the seeded mutator and the
+   player takes it (for its score multiplier) or passes; later waves may
+   offer a second to stack. The same seed offers the same choices; harsh
+   mutators keep their `min_wave`. One key press, so the wave start stays
+   quick.
+5. **On the beat.** Presentation snaps to the music's beat (tracks already
+   store their bpm): glory-kill flashes, KAMAE BROKEN, combo stamps, the
+   tally slam, neon and spawn-beam pulses. Only effects wait for the beat,
+   never a hit or an input. The player never has to play in rhythm.
 
 ---
 
