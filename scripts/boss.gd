@@ -344,7 +344,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 					var flat_len := Vector2(d.x, d.z).length()
 					var v := (aim_dir * flat_len + Vector3(0, d.y, 0)).normalized()
 					var b := Bolt.new()
-					b.setup(true, origin, v * 14.0, 7.0 * damage_mult)
+					b.setup(true, origin, v * 14.0, 7.0 * damage_mult, "bolt", self)
 					get_parent().add_child(b)
 					Sfx.play_at("gatling", origin, -4.0)
 				if state_t > spin + 2.0:
@@ -413,7 +413,7 @@ func _volley(dir: Vector3) -> void:
 	var n := 7 if enraged else 5
 	for i in n:
 		var b := Bolt.new()
-		b.setup(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken")
+		b.setup(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken", self)
 		get_parent().add_child(b)
 	Sfx.play_at("shuriken", global_position, 2.0)
 	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")

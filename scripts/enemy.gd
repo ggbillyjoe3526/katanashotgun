@@ -562,7 +562,7 @@ func _attack(dist: float, dir: Vector3) -> void:
 				if shots > 1:
 					aim = aim.rotated(Vector3.UP, (i - 1) * 0.12)
 				var b := Bolt.new()
-				b.setup(true, origin, aim * 11.0, 12.0 * damage_mult)
+				b.setup(true, origin, aim * 11.0, 12.0 * damage_mult, "bolt", self)
 				get_parent().add_child(b)
 			Sfx.play_at("enemy_shot", global_position, 0.0)
 			Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
@@ -602,7 +602,7 @@ func _volley(dir: Vector3) -> void:
 	var aim := (target - origin).normalized()
 	for i in 9:
 		var b := Bolt.new()
-		b.setup(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult)
+		b.setup(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult, "bolt", self)
 		get_parent().add_child(b)
 	Sfx.play_at("enemy_shot", global_position, 4.0, 0.7)
 
