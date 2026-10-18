@@ -207,7 +207,7 @@ func _quality_help() -> String:
 	if Settings.quality == "high" and Graphics.fell_back():
 		return "THIS PC RUNS INSANE ON THE BASIC RENDERER"
 	return {"low": "FOR OLD PCS: FEWER EFFECTS, SAME LOOK",
-		"medium": "SHADOWS, GLOW AND HAZE. RUNS ON MOST PCS",
+		"medium": "MORE GLOW, HAZE AND BLOOD. MOST PCS",
 		"high": "FULL LIGHTING, REFLECTIONS, FOG. STRONG GPU"}[Settings.quality]
 
 

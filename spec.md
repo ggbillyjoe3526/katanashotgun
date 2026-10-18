@@ -2133,7 +2133,7 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 |---|---|---|---|
 | Renderer | Compatibility | Compatibility | Forward+ |
 | Render scale it picks | 75% | 100% | 100% |
-| Lighting | the map as built | + ambient occlusion, moon shadows, shadows from the 4 brightest lamps | + global illumination (SDFGI: neon bounces onto floors), indirect light (SSIL), shadows from every lamp, soft high-quality shadow filtering |
+| Lighting | the map as built | the map as built | + global illumination (SDFGI: neon bounces onto floors), indirect light (SSIL), ambient occlusion (SSAO), soft moon shadows |
 | Glow | the map's own | wider neon halos | HDR glow that only catches light brighter than white |
 | Atmosphere | — | a faint additive haze around each lamp | volumetric fog lit by the lamps and moon |
 | Floors | — | — | wet: screen-space reflections on flat floors |
@@ -2145,6 +2145,12 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
   up-facing faces. Far backdrops with their own long fog range keep the
   shader's fog. Effect shaders have `fog_disabled`, so they look the same on
   both renderers.
+- Shadows and ambient occlusion are INSANE only. On Compatibility a
+  shadowed light breaks the vertex-lit materials (the moon's light drops out,
+  a shadowed lamp redraws per pixel, brighter) and SSAO barely changes a
+  pixel; Forward+ ignores omni shadows on vertex-lit materials, so lamps
+  never cast. Anything added to the tree after the map (foes, the player,
+  effects) gets `gi_mode` DISABLED on Forward+ so SDFGI never bakes it.
 - HDR glow on Forward+ has no bloom: bloom or wide glow levels turn the whole
   picture milky.
 - Switching to or from INSANE writes `user://renderer.cfg` and asks for a

@@ -3,11 +3,16 @@ class_name Graphics
 ## preset and its effect caps; this puts the rendering side of the preset on
 ## a map's Environment, moon and lamps, and keeps the renderer choice:
 ## - WEAK (`low`): the map exactly as built. The look every tier starts from.
-## - MEDIOCRE (`medium`): ambient occlusion, moon shadows, wider neon glow.
-## - INSANE (`high`): on top of that, on the Forward+ renderer, global
-##   illumination (neon light bounces off the floors), screen-space
-##   reflections on wet floors, indirect light, volumetric fog that the lamps
-##   light up, shadows from every lamp and softer, sharper shadow maps.
+## - MEDIOCRE (`medium`): wider neon glow, a haze around every lamp and
+##   smoother edges (2x MSAA).
+## - INSANE (`high`): on the Forward+ renderer, global illumination (neon
+##   light bounces off the floors), screen-space reflections on wet floors,
+##   indirect light, ambient occlusion, volumetric fog the lamps light up, and
+##   soft moon shadows; brighter glow and 4x MSAA.
+## Shadows and ambient occlusion are INSANE only: on the OpenGL renderer a
+## shadowed light drops out of the Gouraud (vertex-lit) materials or draws in
+## a brighter per-pixel pass, and its ambient occlusion barely shows. Lamps
+## never cast: Forward+ ignores omni shadows on vertex-lit materials.
 ## Every tier keeps the PS1 look: 960x540, vertex snap, Gouraud lighting, the
 ## run's palette and the dither post-process. Higher tiers add light, never
 ## realism. WEAK and MEDIOCRE run on Compatibility (OpenGL 3), INSANE on
@@ -106,7 +111,22 @@ static func attach(arena: Arena) -> void:
 		if is_instance_valid(arena):
 			apply(arena)
 	Quality.on_changed(cb)
-	arena.tree_exiting.connect(func() -> void: Quality.off_changed(cb), CONNECT_ONE_SHOT)
+	var tree := arena.get_tree()
+	if advanced() and tree:
+		tree.node_added.connect(_keep_out_of_gi)
+	var detach := func() -> void:
+		Quality.off_changed(cb)
+		if tree and tree.node_added.is_connected(_keep_out_of_gi):
+			tree.node_added.disconnect(_keep_out_of_gi)
+	arena.tree_exiting.connect(detach, CONNECT_ONE_SHOT)
+
+
+## The map is built before anything else, so whatever arrives later (foes,
+## the player, effects, gibs) moves: global illumination would bake it into
+## the static scene and leave ghost light and shadow where it was.
+static func _keep_out_of_gi(node: Node) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 
 
 ## The map's own glow, kept so WEAK can always put it back exactly.
@@ -151,14 +171,14 @@ static func apply(arena: Arena) -> void:
 		env.glow_hdr_threshold = 1.0
 		env.glow_intensity = float(base.get("glow_intensity", 1.0)) * (1.6 if top else 1.3)
 	# ambient occlusion: contact shadow in every corner and under every foe
-	env.ssao_enabled = mid
-	env.ssao_radius = 1.6 if top else 1.2
-	env.ssao_intensity = 2.2 if top else 1.8
+	env.ssao_enabled = top
+	env.ssao_radius = 1.6
+	env.ssao_intensity = 2.2
 	env.ssao_power = 1.6
 	env.ssao_detail = 0.6
 	env.ssao_light_affect = 0.0
-	_apply_moon(arena.moon, mid, top)
-	_apply_lamps(arena, mid, top)
+	_apply_moon(arena.moon, top)
+	_apply_lamps(arena)
 	_apply_haze(arena, mid and not top)
 	_apply_forward_plus(env, top, base)
 	_apply_server(tier, top)
@@ -167,36 +187,26 @@ static func apply(arena: Arena) -> void:
 ## Lamp haze on MEDIOCRE: quad size per metre of lamp range, and strength.
 const HAZE_SIZE := 0.7
 const HAZE_ALPHA := 0.18
-## How many lamps cast shadows on MEDIOCRE (the OpenGL renderer draws every
-## shadowed lamp in an extra pass, so only the brightest few).
-const MID_SHADOW_LAMPS := 4
 ## Relative weights of the seven glow levels (small to wide halos).
 const GLOW_MID: Array[float] = [0.0, 0.8, 1.0, 0.7, 0.3, 0.0, 0.0]
 
 
-static func _apply_moon(moon: DirectionalLight3D, mid: bool, top: bool) -> void:
+static func _apply_moon(moon: DirectionalLight3D, top: bool) -> void:
 	if moon == null:
 		return
-	moon.shadow_enabled = mid
-	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if top else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	moon.directional_shadow_max_distance = 90.0 if top else 60.0
+	moon.shadow_enabled = top
+	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+	moon.directional_shadow_max_distance = 90.0
 	moon.shadow_blur = 1.0
 	moon.shadow_opacity = 0.85
 	moon.light_volumetric_fog_energy = 0.6
 
 
-## Lamps that cast shadows: the brightest few on MEDIOCRE, every one the map
-## placed on INSANE (Forward+), where they also light the volumetric fog.
-## Effect lights (muzzle flashes, explosions) never cast.
-static func _apply_lamps(arena: Arena, mid: bool, top: bool) -> void:
-	var lamps := arena.find_children("*", "OmniLight3D", true, false)
-	lamps.sort_custom(func(a: OmniLight3D, b: OmniLight3D) -> bool: return a.light_energy * a.omni_range > b.light_energy * b.omni_range)
-	for i in lamps.size():
-		var l := lamps[i] as OmniLight3D
-		l.shadow_enabled = top or (mid and i < MID_SHADOW_LAMPS)
-		l.omni_shadow_mode = OmniLight3D.SHADOW_CUBE
-		l.shadow_blur = 1.2
-		l.light_volumetric_fog_energy = 2.5
+## Lamps light INSANE's volumetric fog. Effect lights (muzzle flashes,
+## explosions) don't.
+static func _apply_lamps(arena: Arena) -> void:
+	for n in arena.find_children("*", "OmniLight3D", true, false):
+		(n as OmniLight3D).light_volumetric_fog_energy = 2.5
 
 
 ## MEDIOCRE's stand-in for volumetric fog: a faint additive glow around each
@@ -269,18 +279,16 @@ static func _apply_forward_plus(env: Environment, top: bool, base: Dictionary) -
 
 ## Renderer-wide quality knobs (shadow filtering, effect resolutions).
 static func _apply_server(tier: String, top: bool) -> void:
-	var soft := RenderingServer.SHADOW_QUALITY_SOFT_HIGH if top else (RenderingServer.SHADOW_QUALITY_SOFT_LOW if tier == "medium" else RenderingServer.SHADOW_QUALITY_HARD)
-	RenderingServer.directional_soft_shadow_filter_set_quality(soft)
-	RenderingServer.positional_soft_shadow_filter_set_quality(soft)
-	RenderingServer.directional_shadow_atlas_set_size(4096 if top else 2048, true)
+	if top:
+		RenderingServer.directional_soft_shadow_filter_set_quality(RenderingServer.SHADOW_QUALITY_SOFT_HIGH)
+		RenderingServer.directional_shadow_atlas_set_size(4096, true)
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree and tree.root:
-		tree.root.positional_shadow_atlas_size = 4096 if top else 1024
 		# smoother edges that still sit on the big 960x540 pixels
 		tree.root.msaa_3d = {"low": Viewport.MSAA_DISABLED, "medium": Viewport.MSAA_2X}.get(tier, Viewport.MSAA_4X)
 	if not advanced():
 		return
-	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_HIGH if top else RenderingServer.ENV_SSAO_QUALITY_MEDIUM, true, 0.5, 2, 50.0, 300.0)
+	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_HIGH, true, 0.5, 2, 50.0, 300.0)
 	RenderingServer.environment_set_ssil_quality(RenderingServer.ENV_SSIL_QUALITY_HIGH, true, 0.5, 4, 50.0, 300.0)
 	RenderingServer.environment_set_sdfgi_ray_count(RenderingServer.ENV_SDFGI_RAY_COUNT_64)
 	RenderingServer.environment_set_volumetric_fog_volume_size(96, 96)

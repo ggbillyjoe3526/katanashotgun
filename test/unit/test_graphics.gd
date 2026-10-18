@@ -1,8 +1,9 @@
 extends GutTest
 ## Graphics presets (spec §14.1): WEAK leaves a map exactly as built,
-## MEDIOCRE adds ambient occlusion, shadows, wider glow and lamp haze, and
-## switching back puts everything back. INSANE asks for Forward+ at the next
-## start; headless there is no renderer to switch.
+## MEDIOCRE adds wider glow and lamp haze, and switching back puts everything
+## back. Shadows and ambient occlusion only come with Forward+ (INSANE), which
+## asks for that renderer at the next start; headless there is no renderer to
+## switch.
 
 var arena: Arena
 
@@ -59,9 +60,9 @@ func test_mediocre_adds_light_and_weak_takes_it_back() -> void:
 	for i in 7:
 		levels.append(arena.env.get_glow_level(i))
 	Quality.apply("medium")
-	assert_true(arena.env.ssao_enabled)
-	assert_true(arena.moon.shadow_enabled)
-	assert_eq(_shadowed_lamps(), Graphics.MID_SHADOW_LAMPS, "only the brightest lamps cast")
+	assert_false(arena.env.ssao_enabled, "OpenGL's ambient occlusion barely shows")
+	assert_false(arena.moon.shadow_enabled, "OpenGL shadows break the vertex lighting")
+	assert_eq(_shadowed_lamps(), 0)
 	assert_true(_haze_visible())
 	assert_gt(arena.env.glow_intensity, 1.05)
 	Quality.apply("low")
@@ -70,11 +71,19 @@ func test_mediocre_adds_light_and_weak_takes_it_back() -> void:
 		assert_eq(arena.env.get_glow_level(i), levels[i], "glow level %d restored" % i)
 
 
-func test_brightest_lamps_cast_first() -> void:
-	Quality.apply("medium")
-	for l in arena.find_children("*", "OmniLight3D", true, false):
-		var lamp := l as OmniLight3D
-		assert_eq(lamp.shadow_enabled, lamp.light_energy > 2.5, "lamp %.0f" % lamp.light_energy)
+func test_insane_without_forward_plus_casts_no_shadows() -> void:
+	# a PC that fell back to OpenGL keeps INSANE's caps but not its lighting
+	Quality.apply("high")
+	assert_false(arena.env.ssao_enabled)
+	assert_false(arena.moon.shadow_enabled)
+	assert_eq(_shadowed_lamps(), 0)
+
+
+func test_things_that_move_stay_out_of_global_illumination() -> void:
+	var foe := MeshInstance3D.new()
+	Graphics._keep_out_of_gi(foe)
+	assert_eq(foe.gi_mode, GeometryInstance3D.GI_MODE_DISABLED)
+	foe.free()
 
 
 func test_presets_want_their_renderer() -> void:

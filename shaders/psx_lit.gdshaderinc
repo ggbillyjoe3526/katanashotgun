@@ -80,8 +80,9 @@ void fragment() {
 	}
 	EMISSION = em + flash_color * flash * 1.5;
 #ifdef PSX_HD
-	// the Environment's depth fog (same range and curve) stands in for FOG,
-	// so volumetric fog can reach this surface too
+	// the Environment's depth fog (the same curve, 10 to 100 m; surfaces
+	// with a longer range of their own keep the plain shader) stands in for
+	// FOG, so volumetric fog can reach this surface too
 	float puddle = wet * smoothstep(0.8, 0.98, v_up);
 	ROUGHNESS = mix(1.0, 0.12, puddle);
 	METALLIC = puddle * 0.6;

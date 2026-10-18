@@ -41,10 +41,10 @@ not realism.
 | | WEAK | MEDIOCRE | INSANE |
 | --- | --- | --- | --- |
 | For | Old laptops and integrated graphics | Most PCs | A strong graphics card |
-| Light | The plain look | Ambient occlusion, moon shadows, shadows from the brightest lamps | Light that bounces (neon colours the floor), shadows from every lamp, sharper shadows |
+| Light | The plain look | The plain look | Light that bounces (neon colours the floor), soft shadows from the moon, shading in every corner |
 | Glow and air | The plain glow | Wider neon glow, a soft haze around every lamp | Real fog that the lamps light up |
 | Floors | Dry | Dry | Wet: they reflect the neon |
-| Blood and chunks | Fewer | The full show | Even more per kill |
+| Blood and chunks | Fewer | More | Even more per kill |
 | Edges | Jagged | Smoother | Smoothest |
 
 ![A glory kill moment on WEAK, MEDIOCRE and INSANE](images/graphics-presets-fight.jpg)
