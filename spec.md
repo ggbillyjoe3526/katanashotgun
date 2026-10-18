@@ -1368,19 +1368,25 @@ the holographic cut-in (§9.8).
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
   hint if the mouse fails to lock. Music ducks to −20 dB.
 - **Level-up:**
-  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
+  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (148×188
     tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
     beside it; then a name of up to two lines, rank pips (cards with more
-    than one rank only) and a description of up to five lines, each placed
+    than one rank only) and a description of up to four lines, each placed
     under the one above; the build lines sit on the bottom edge). A linking
     card wears a gold RECOMMENDED tab above its top edge (§3.8).
+  - **Card text must read at a glance** (owner, 2026-10-18: card text was
+    hard to read). Name and description are Chakra Petch 700 at 15 px, white
+    with no outline, on a solid near-black plate inset 4 px in the card; the
+    hover and selection glow tints only the rim around the plate. Card copy
+    stays under 58 characters (a Gut test checks).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
-    (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
-    Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
+    (ease-out-back, staggered 0.11 s, with a "deal" sound each), then hold
+    still: a dealt card is never rotated or scaled, so its pixel text stays
+    sharp. Hovering lifts the card 3 px and lights its border.
   - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
     accident). Input is ignored for 0.45 s after the cards appear, and the
     cursor starts below them. The first click or 1/2/3 **selects** a card
-    (lifted 12 px, ×1.08, white outline) and the subtitle asks "TAKE <NAME>?";
+    (lifted 6 px, white outline, rim glow) and the subtitle asks "TAKE <NAME>?";
     clicking it again, pressing its key again or Enter **takes** it. Clicking
     off the cards clears the selection.
   - Taking punches the card, the others drop and fade, a chime plays, and

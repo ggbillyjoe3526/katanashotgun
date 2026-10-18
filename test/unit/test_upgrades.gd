@@ -42,8 +42,8 @@ func test_card_data_is_consistent() -> void:
 		names[u.name] = true
 		assert_true(Upgrades.TAG_COLORS.has(u.tag), "%s has no tag colour" % u.id)
 		assert_between(int(u.max), 1, 3, "%s max rank" % u.id)
-		# a card holds a two-line name and about five lines of text
-		assert_lt(String(u.desc).length(), 100, "%s description too long for the card" % u.id)
+		# short copy keeps the card type large: a two-line name and four lines
+		assert_lt(String(u.desc).length(), 58, "%s description too long for the card" % u.id)
 		for r in u.get("requires", []):
 			assert_true(Upgrades.get_def(r) != {}, "%s requires unknown card %s" % [u.id, r])
 

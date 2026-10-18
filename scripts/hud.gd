@@ -129,7 +129,11 @@ const COMBO_MILESTONES := [10, 20, 30, 50, 75, 100, 150, 200, 300]
 ## key already flying from combat can't select anything.
 const CARD_ARM_TIME := 0.45
 const LEVELUP_PROMPT := "CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)"
-const CARD_SIZE := Vector2(138, 180) # level-up augment card: a two-line name and a five-line description fit
+const CARD_SIZE := Vector2(148, 188) # level-up augment card: a two-line name and a four-line description fit
+const CARD_GAP := 8.0
+const CARD_TEXT_W := 136.0 # text width inside the card's solid plate
+const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
+const CARD_DESC_PT := 12
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const CENTER_LEN := 2.4 # centre message, seconds
 const POPUP_LEN := 1.4 # kill tags, seconds
@@ -552,7 +556,7 @@ func _build_levelup() -> void:
 		var card := Control.new()
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.size = CARD_SIZE
-		var bg := Shard.make(Color(0.03, 0.02, 0.08, 0.95), 12.0, Color(Game.palette.neon_a), Color.WHITE)
+		var bg := Shard.make(Color(0.03, 0.02, 0.08, 1.0), 12.0, Color(Game.palette.neon_a), Color.WHITE)
 		bg.size = CARD_SIZE
 		bg.shadow_off = Vector2(0, 4)
 		bg.brackets = Color(1, 1, 1, 0.6)
@@ -564,6 +568,13 @@ func _build_levelup() -> void:
 		ribbon.position = Vector2(14, 3)
 		ribbon.name = "Ribbon"
 		card.add_child(ribbon)
+		# a solid plate under the text: the glow only tints the rim around it,
+		# so nothing shows through behind the words
+		var text_plate := Shard.make(Color(0.012, 0.008, 0.03, 1.0), 8.0)
+		text_plate.position = Vector2(4, 20)
+		text_plate.size = CARD_SIZE - Vector2(8, 24)
+		text_plate.name = "Plate"
+		card.add_child(text_plate)
 		for b in 4:
 			var br := Ui.rect(Color.WHITE, Vector2.ZERO, Vector2.ONE)
 			br.name = "B%d" % b
@@ -579,28 +590,30 @@ func _build_levelup() -> void:
 		tag.name = "Tag"
 		tag.position = Vector2(19, 3)
 		card.add_child(tag)
-		var nm := Ui.label("", Ui.font_big, 10, Color.WHITE, 2)
+		# the text sits on the solid plate, so it needs no outline to read
+		var nm := Ui.label("", Ui.font_bold, CARD_NAME_PT, Color.WHITE)
 		nm.name = "Name"
-		nm.position = Vector2(6, 22)
-		nm.size = Vector2(128, 32)
+		nm.position = Vector2(10, 23)
+		nm.size = Vector2(CARD_TEXT_W, 34)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
+		nm.add_theme_constant_override("line_spacing", -4)
 		card.add_child(nm)
-		var rk := Ui.label("", Ui.font_bold, 10, YELLOW, 2)
+		var rk := Ui.label("", Ui.font_bold, 10, YELLOW)
 		rk.name = "Rank"
-		rk.position = Vector2(6, 54)
+		rk.position = Vector2(10, 56)
 		card.add_child(rk)
-		var desc := Ui.label("", Ui.font_bold, 10, Color(0.88, 0.88, 0.95), 2)
+		var desc := Ui.label("", Ui.font_bold, CARD_DESC_PT, Color(0.96, 0.95, 1.0))
 		desc.name = "Desc"
-		desc.position = Vector2(6, 70)
-		desc.size = Vector2(126, 100)
+		desc.position = Vector2(10, 72)
+		desc.size = Vector2(CARD_TEXT_W, 80)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-		desc.add_theme_constant_override("line_spacing", -4)
+		desc.add_theme_constant_override("line_spacing", -3)
 		card.add_child(desc)
 		# the builds this card belongs to, pinned to the bottom edge
-		var bl := Ui.label("", Ui.font_bold, 10, Color(0.6, 0.6, 0.7), 2)
+		var bl := Ui.label("", Ui.font_bold, 10, Color(0.7, 0.7, 0.82))
 		bl.name = "Builds"
-		bl.position = Vector2(6, CARD_SIZE.y - 30)
-		bl.size = Vector2(126, 26)
+		bl.position = Vector2(10, CARD_SIZE.y - 33)
+		bl.size = Vector2(CARD_TEXT_W, 26)
 		bl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 		bl.add_theme_constant_override("line_spacing", -4)
 		card.add_child(bl)
@@ -910,15 +923,14 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 			lines.append("%s %d/3" % [b.name, Upgrades.build_count(b, after)])
 		var bl: Label = card.get_node("Builds")
 		bl.text = "\n".join(lines)
-		bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else Color(0.62, 0.62, 0.74))
+		bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else Color(0.7, 0.7, 0.82))
 		card.set_meta("rec", rec)
 		# the rank and description sit under the name, which may take two lines
-		var npx := Ui.px(Ui.font_big, 10)
-		var nh := Ui.font_big.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
-		var nl := maxi(1, roundi(nh / Ui.font_big.get_height(npx)))
-		var ry := 22.0 + nh + (nl - 1) * 3.0 + 1.0
+		var nm: Label = card.get_node("Name")
+		nm.size = Vector2(CARD_TEXT_W, 0)
+		var ry := nm.position.y + nm.get_minimum_size().y
 		card.get_node("Rank").position.y = ry
-		card.get_node("Desc").position.y = ry + (18.0 if u.max > 1 else 2.0)
+		card.get_node("Desc").position.y = ry + (16.0 if u.max > 1 else 3.0)
 		card.set_meta("col", col)
 
 
@@ -1240,40 +1252,38 @@ func _layout_levelup() -> void:
 	var tk := clampf(_deal_t / 0.1, 0.0, 1.0)
 	t.scale = Vector2.ONE * (lerpf(2.6, 1.0, tk * tk) if tk < 1.0 else 1.0 - 0.12 * sin((_deal_t - 0.1) * 30.0) * exp(-(_deal_t - 0.1) * 9.0))
 	t.rotation = 0.0
-	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 117)
+	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 119)
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 98)
+	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 100)
 	var n := _choices.size()
-	var total := n * CARD_SIZE.x + (n - 1) * 10
+	var total := n * CARD_SIZE.x + (n - 1) * CARD_GAP
 	for i in cards.size():
 		var card: Control = cards[i]
 		if not card.visible:
 			continue
 		var hov := i == hovered and _picked < 0
 		var sel := i == _selected and _picked < 0
-		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + 10), vs.y * 0.5 - 64).round()
+		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + CARD_GAP), vs.y * 0.5 - 64).round()
 		card.set_meta("base", base)
-		# deal in from below with a spin, then sway gently
+		# deal in from below with a spin, then hold still: once dealt a card is
+		# never rotated or scaled, so its pixel text stays sharp (§9.9)
 		var dk := clampf((_deal_t - (0.06 + i * 0.11)) / 0.3, 0.0, 1.0)
 		var e := Juice.ease_out_back(dk)
 		var off_y := (1.0 - e) * 190.0
-		var rot := (1.0 - e) * (0.4 if i % 2 == 0 else -0.4) + sin(_t * 1.7 + i * 1.9) * 0.015
+		var rot := (1.0 - e) * (0.4 if i % 2 == 0 else -0.4) if dk < 1.0 else 0.0
 		var sc := 1.0
 		card.modulate.a = 1.0 if dk > 0.0 else 0.0
 		if hov:
-			sc = 1.06
-			off_y -= 6.0
-			rot += clampf((cursor_pos.x - (base.x + card.size.x * 0.5)) / (card.size.x * 0.5), -1.0, 1.0) * 0.05
+			off_y -= 3.0
 		if sel:
 			# selected: lifted higher and held there until confirmed
-			sc = 1.08
-			off_y -= 12.0
+			off_y -= 6.0
 		if _picked >= 0:
 			var pk := clampf(_pick_t / 0.3, 0.0, 1.0)
 			if i == _picked:
-				sc = 1.08 + 0.14 * sin(pk * PI)
-				off_y -= 8.0 * sin(pk * PI)
+				sc = 1.0 + 0.14 * sin(pk * PI)
+				off_y -= 6.0 + 8.0 * sin(pk * PI)
 			else:
 				off_y += pk * pk * 220.0
 				rot += pk * (0.5 if i < _picked else -0.5)
