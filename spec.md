@@ -1213,27 +1213,35 @@ the holographic cut-in (§9.8).
   - **Must follow the readability rule (§9.9).**
 - **HUD layout** (480×270, 8 px margins, each cluster on a tech panel with
   brackets):
-  - **Top-left:** `WAVE 04` (Orbitron), `HOSTILES n` (mono), `SEED XXXX-XXXX`
-    (mono), mutator name and multiplier.
-  - **Top-centre:** `HI 0000000` (mono, neon), which becomes "NEW HI-SCORE!"
-    blinking once passed.
-  - **Top-right:** score (mono, 7 digits) that rolls up, bumps and turns gold
-    on big gains. Below it, the combo `x12 COMBO` on an accent plate that
-    pops each kill and heats from yellow to pink to rainbow at ≥50, with the
-    combo timer bar.
+  - **Top-left:** `WAVE 04` (Orbitron), `HOSTILES n` (mono), mutator name
+    and multiplier. The seed is not on the live HUD (it was clutter); it is
+    on the pause screen, the title and the results.
+  - **Top-centre:** `HI 0000000` (mono, neon), which reads "NEW HI-SCORE"
+    (steady, no blinking) once passed.
+  - **Top-right:** score (mono, 7 digits) that rolls up, bumps (×1.2 at most)
+    and turns gold on big gains. Below it, the combo `x12 COMBO` in dark
+    letters on an accent plate that pops each kill (growing down and left,
+    never into the score) and heats from yellow to pink to rainbow at ≥50,
+    with the combo timer bar.
   - **Bottom-left:** HP number + HP bar (red, with a white "ghost" trail that
-    drains slowly; flashes below 30%) and dash pips.
+    drains slowly; pulses softly below 30%, the number never flashes) and dash pips.
   - **Bottom-centre:** XP bar and `LV n` (run level).
   - **Bottom-right:** **cell icons** (little power cells: body, terminal nub,
     highlight; newly charged cells flash and pop) and the "CELLS" label.
   - **Centre:** crosshair (dot + ticks) with **readiness arcs**: katana cyan
     on the left, shotgun on the right, empty when out of cells. Hit ticks on
     hit.
-  - **Popups:** kill tags to the right of the crosshair, stacking downward
-    (max 6), 1.4 s.
-  - **Boss bar:** top centre, 240 px, "NAME – EPITHET".
-  - **Hints:** bottom centre on a dark plate, 4.5 s, each shown once.
-  - **Messages:** centre (e.g. "<NAME> IS ENRAGED").
+  - **Popups:** kill tags on dark plates to the right of the crosshair,
+    newest on top (max 4), 1.4 s. The stack slides rather than jumps, and a
+    repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking.
+    Out of cells shows a steady "NO CHARGE" plate to the left of the
+    crosshair.
+  - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
+    on a dark plate.
+  - **Hints:** bottom centre on a dark plate, above the run level, 4.5 s,
+    each shown once.
+  - **Messages:** a fixed spot under the boss bar (e.g. "<NAME> IS
+    ENRAGED").
 - **Title screen:**
   - The **KATANA / SHOTGUN** logo: KATANA flies in from the left and SHOTGUN
     from the right (0.3 s), on a tech panel. Then a **neon blade cuts the
@@ -1242,14 +1250,16 @@ the holographic cut-in (§9.8).
     bursts.
   - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
   - A controls column and a HI-SCORES table (top 5).
-  - "MAP · PALETTE · SEED" line and a blinking "CLICK TO START".
+  - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
   hint if the mouse fails to lock. Music ducks to −20 dB.
 - **Level-up:**
-  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×128
-    tech panels; a tag ribbon in the tag colour; name, rank pips, description,
-    [1]/[2]/[3]).
+  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
+    tech panels, tall enough for a two-line name and a five-line description
+    at a readable size; a tag ribbon in the tag colour with the [1]/[2]/[3]
+    key beside it; then name, rank pips and description, each placed under
+    the one above so nothing overlaps).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
     Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
@@ -1275,40 +1285,53 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
   hex target-lock ring with ticks snapping shut. Bigger for non-grunts and
   glory kills.
 - **Stamps:** text slams in.
-  - From 2.2–4× scale to 1 in 0.07–0.09 s (accelerating), then a squash
-    wobble, hold, and a 0.2 s fade with slight growth.
+  - From 2.2–4× scale to 1 in 0.07–0.09 s (accelerating), then a short
+    squash that settles within about 0.2 s, a still hold, and a 0.2 s fade
+    with slight growth (glitch stamps glitch out as they fade).
+  - The hold is never shorter than the read time (0.5 s + 0.05 s per
+    character). A new stamp replaces any stamp in the same screen region.
   - On impact: shake, sound and optional sparks.
 - **Wave intro:**
   - 0.00 s: a tech panel (74% of the width, brackets, scanlines) snaps open
     in 0.14 s.
   - "WAVE 04" decodes in (Orbitron, with tag "> SECTOR SHIN-KAGURA //
     HOSTILES INBOUND", or "> WARNING // HIGH-VALUE TARGET" on boss waves).
-  - From 0.32 s the mutator line types itself out at 55 chars/s (mono,
-    "> NAME – DESC – SCORE xN_", type ticks, blinking cursor).
-  - Countdown **3 / 2 / 1** at 1.20 / 1.75 / 2.30 s: bracketed glitch stamps,
-    pitched count sound 1.0 / 1.12 / 1.26.
-  - **FIGHT** at 2.85 s (40 px, brackets, tag "> ENGAGE", impact frame, data
-    streaks, shard burst, "go" sound). The intro is then "ready" and spawning
-    begins. The panel fades from 2.85 to 3.15 s.
+  - From 0.32 s the mutator types itself out at 55 chars/s on two lines
+    inside the panel ("NAME // SCORE xN", then the description; clean
+    letters, type ticks, no blinking cursor). The panel sits below the top
+    HUD clusters and grows to fit.
+  - Countdown **3 / 2 / 1** at 1.20 / 1.75 / 2.30 s: bracketed glitch stamps
+    below the panel (each replaces the last), pitched count sound 1.0 /
+    1.12 / 1.26.
+  - **FIGHT** at 2.85 s, below the panel (40 px, brackets, tag "> ENGAGE",
+    impact frame, data streaks, shard burst, "go" sound). The intro is then
+    "ready" and spawning begins. The panel fades from 2.85 to 3.1 s.
   - Boss waves skip FIGHT; the boss intro card appears instead.
   - A riser sound under normal intros; an alarm under boss intros.
 - **Combo milestones:**
   - ×10: a glitch stamp "X10 COMBO" (tag "> CHAIN SYNC") above the
     crosshair.
   - ×20 and up: the **holographic cut-in** instead of a stamp.
-- **Holographic cut-in** (0.66 s):
+  - While the boss name card is up, milestones play their sound only (the
+    HUD combo counter still shows the number), so the card is never covered.
+- **Holographic cut-in** (1.0 s, long enough to read its text):
   - A full-width comm-feed strip (70 px, chamfered, cyan top edge and accent
-    bottom edge, hazard ticks) snaps in from the side in 0.08 s, drifts, and
-    snaps out in 0.09 s.
-  - Inside: a hex-grid backdrop, scanlines and a sweeping scan bar.
+    bottom edge, hazard ticks) snaps in from the side in 0.08 s, holds still,
+    and snaps out in 0.09 s.
   - A **codec-style portrait box** (78 px) with the **protagonist's visored
     mask** as a neon wireframe hologram: helmet, cheek plates, vents, a hot
-    accent visor with two sharp white eyes.
-  - Data text "LINK//KAGE-07 xxxx:xxxx" and "SYNC n% // NEURAL LINK STABLE".
-  - Large glitch text beside it ("X20 COMBO", "DEATHBLOW!", "NEW RECORD").
-  - RGB-split ghosts on entry, a "cutin" whoosh-shing sound and data streaks.
-  - Alternates sides.
-- **End-of-wave tally** (Balatro-style, on a tech panel 290 px wide):
+    accent visor with two sharp white eyes. The hex grid, scanlines and
+    sweeping scan bar stay inside the portrait box.
+  - Large glitch text beside it ("X20 COMBO", "DEATHBLOW!", "NEW HI-SCORE")
+    on plain dark glass. (The old "LINK//KAGE-07" and "SYNC n%" data lines
+    were dropped: they changed every frame and crowded the text.)
+  - RGB-split ghosts on entry and exit only, a "cutin" whoosh-shing sound
+    and data streaks.
+  - Alternates sides. A centre stamp replaces it, and it replaces a centre
+    stamp, so the two never show at once.
+- **End-of-wave tally** (Balatro-style, on a tech panel 260 px wide, so it
+  clears the HUD corner panels; no scanlines behind the numbers; rows
+  15 px apart):
   - 0.09 s: title "WAVE 04 // CLEAR" decodes in (tag "> COMBAT LOG //
     PAYOUT"), with a stamp sound and shake 4.
   - Rows deal in from 0.32 s, every 0.2 s: they slide in, values count up
@@ -1318,31 +1341,37 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
   - Each extra multiplier (FLAWLESS ×1.5, mutator ×n) **punches** the mult
     box every 0.35 s: scale, flash and wobble, a note label, a rising "mult"
     sound, shake.
-  - A FLAWLESS stamp sits rotated on the panel corner.
+  - A FLAWLESS stamp sits slightly rotated on the panel's top-left corner,
+    clear of the title and its tag.
   - Then the **TOTAL** counts up over 0.8 s, *accelerating* (k²), with 16
-    ticks rising in pitch 0.9 → 2.4 and growing jitter and scale (suspense).
-  - **Cash-out slam:** "cash" sound, shake 9, a gold and cyan confetti
-    fountain, a small flash, and the held points roll into the HUD score with
-    ticks and a gold bump. Boss waves add 8 fireworks.
+    ticks rising in pitch 0.9 → 2.4 and a slow swell in scale (suspense).
+    The digits never shake.
+  - **Cash-out slam:** "cash" sound, shake 9, gold and cyan confetti
+    fountains at both sides of the total, a small flash, and the held points
+    roll into the HUD score with ticks and a gold bump. Boss waves add 8
+    fireworks.
   - Ready 0.9 s after the slam; fades over 0.3 s.
 - **Boss killed:**
-  - **FINISH splash** (0–0.82 s): a full-screen **"system breach"** overlay.
+  - **FINISH splash** (0–0.92 s): a full-screen **"system breach"** overlay.
     - Alert-red tint (always red, whatever the palette), a hex grid,
-      scrolling warning chevron bands top and bottom, columns of hex data,
-      tear slices.
-    - "FINISH" glitch stamp (48 px, brackets, tag "> TERMINATION CONFIRMED"),
-      "// TARGET SIGNAL LOST //".
+      scrolling warning chevron bands top and bottom, columns of hex data at
+      the edges, tear slices.
+    - A solid dark plate across the middle, with nothing busy behind the
+      words: the "FINISH" glitch stamp (48 px, brackets, tag "> TERMINATION
+      CONFIRMED") and "TARGET SIGNAL LOST" under it.
     - Impact frame 0.12 s, data streaks, a shard burst, shake 12, the
       "finish" hit sound (chord stab + crash + sub drop).
     - **Then a hard cut.**
   - **Souls card** (4.6 s, from 1.25 s):
     - A dark gradient band (88 px) fades in over 0.45 s.
     - One line of Michroma letter-spaced text in **gold** (1.0, 0.86, 0.55)
-      decodes left to right over 0.12–0.87 s. It has a soft glow behind it
-      and cyan/magenta ghosts that glitch on entry and stutter briefly every
-      ~1.4 s. It zooms slowly (+6% over the card) and is fitted to 90% of the
-      screen width.
-    - A small subtitle "NAME – EPITHET" fades in at 0.9–1.6 s.
+      appears letter by letter, left to right, over 0.12–0.87 s (clean
+      letters, no scramble). It has a soft glow behind it and cyan/magenta
+      ghosts that are wide on entry and settle to 1 px; once complete the
+      line holds perfectly still (no stutter, no zoom). It fits 90% of the
+      screen width by stepping the font size down, never by scaling.
+    - A subtitle "NAME – EPITHET" (Michroma, readable size) fades in at
+      0.9–1.6 s.
     - Everything fades over the last 1.1 s. It counts as "ready" at
       length − 0.45 s.
     - "felled" sound: glitch crunch, sub boom, a dark minor-add9 synth swell
@@ -1350,7 +1379,8 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
 - **Death ("YOU DIED", cyberpunk):**
   - The music cuts. At 0.6 s, the souls card **"FLATLINED"** in red (3.2 s)
     with the "flatline" sound (a heart-monitor tone over a low drone).
-  - At 3.4 s, the results screen:
+  - At 3.4 s, the results screen replaces the FLATLINED card and the live
+    HUD:
     - The stats appear **line by line** every 0.09 s with type ticks: wave
       reached, bosses, kills, glory kills, headshot kills, deflects, best
       combo, level, time, seed.
@@ -1360,11 +1390,11 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
       fireworks) or the HI-SCORES table.
   - The title music returns at −14 dB. Input is accepted after 2.4 s. The
     world desaturates and keeps running in slow motion (×0.35).
-- **Hi-score:** passing the best score mid-run: a glitch stamp "NEW
-  HI-SCORE" (tag "> RECORD OVERWRITTEN"), fireworks and a "NEW RECORD"
-  cut-in.
+- **Hi-score:** passing the best score mid-run: one message, a "NEW
+  HI-SCORE" cut-in, with the highscore sound and fireworks at the sides.
 - **Other:**
-  - Popups punch in at ×1.9 → 1 in 0.12 s with a wobble and a bright flash.
+  - Popups punch in at ×1.4 → 1 in 0.1 s with a brief bright flash, then
+    hold still.
   - Cells flash when charged. Glory kills show cinematic bars (black, neon
     edges, scanlines, 26 px, in 0.08 s).
   - Dash adds data streaks. Executions flash white at 0.4 alpha. Damage
@@ -1395,6 +1425,25 @@ something.
 - **Short wording:** one to three words for flashes.
 - **Acceptance test:** record gameplay, pause on any frame during a flash,
   and the text must be fully legible.
+
+**How the UI meets the rule (implemented 2026-10-18):**
+- Smallest sizes at 480×270, chosen by rendering every face at every size:
+  Orbitron 13 px (with +1 px glyph spacing everywhere, or neighbouring
+  letters merge: "LI" read as "U"), Share Tech Mono 14 px, Chakra Petch 12 px
+  (13 px for anything that matters), Michroma 12 px. Smaller sizes break the
+  letter shapes (0 reads as A, O as D) and are not used for anything the
+  player reads.
+- Glitch text (`GlitchText`): decode capped at 0.1 s; digits and punctuation
+  never scramble; no glitch bursts while held, only `glitch_out()` on the way
+  out; RGB split 1 px at rest; a dark outline under every glyph.
+- HUD clusters sit on darker glass (0.78) with no scanlines; layout is
+  computed from the real text sizes, so nothing overlaps.
+- Nothing blinks: warnings, prompts and NEW HI-SCORE are steady or pulse
+  softly; low HP pulses the bar, never the number.
+- Moving text holds still once it lands: no drift on cut-ins, no wobble on
+  the LEVEL UP title, no jitter on the tally total.
+- `--juicetest` also shows the boss name card, kill tags, NO CHARGE, a hint
+  and an ENRAGED message, for paused-frame checks.
 
 ---
 

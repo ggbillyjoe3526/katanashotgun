@@ -88,7 +88,8 @@ func _next_wave() -> void:
 		queue = _composition(wave)
 		var sub := ""
 		if not Game.mutator.is_empty():
-			sub = "%s  -  %s  -  SCORE x%.1f" % [Game.mutator.name, Game.mutator.desc, Game.mutator.score]
+			# two lines: the name and its score, then what it does
+			sub = "%s  //  SCORE x%.1f\n%s" % [Game.mutator.name, Game.mutator.score, Game.mutator.desc]
 		Game.hud.wave_intro(wave, sub, Color.WHITE, false)
 		Sfx.play("riser", -6.0)
 	Game.arena.set_storm(bool(Game.mut("storm", false)))

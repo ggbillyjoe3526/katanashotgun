@@ -149,7 +149,11 @@ func on_boss_killed(b: Enemy) -> void:
 	Sfx.music_cut()
 	director.on_boss_killed(b)
 	hud.finish_splash()
-	hud.juice.later(1.25, func(): hud.souls_card(b.defeat_text, Color(1.0, 0.86, 0.55), "%s  -  %s" % [b.display_name, b.subtitle], "felled", 4.6))
+	# copy the words now: a boss finished by a glory kill is freed before the
+	# card shows, and the card used to be skipped with a script error
+	var line := b.defeat_text
+	var sub := "%s  -  %s" % [b.display_name, b.subtitle]
+	hud.juice.later(1.25, func(): hud.souls_card(line, Color(1.0, 0.86, 0.55), sub, "felled", 4.6))
 	hud.juice.later(5.4, func(): Sfx.resume_combat())
 
 

@@ -17,6 +17,11 @@ const MULT_COL := Color(1.0, 0.18, 0.32)
 const GOLD := Color(1.0, 0.85, 0.25)
 const MAX_SPARKS := 1400
 const MAX_ROWS := 7
+# tally layout (UI pixels): narrow enough to clear the HUD corner panels
+const TALLY_W := 260.0
+const ROW_Y0 := 40.0
+const ROW_H := 15.0
+const BOX_H := 26.0
 
 var hud: Hud
 var vs := Vector2(480, 270)
@@ -34,7 +39,8 @@ var _intro_t := 0.0
 var _intro_ready := true
 var _band: Shard
 var _intro_title: GlitchText
-var _intro_sub: Label
+var _intro_lines: Array[Label] = []
+var _intro_out := false
 var _typed := 0
 
 # tally
@@ -61,7 +67,7 @@ var _panel_size := Vector2(280, 160)
 var _times := {}
 
 # souls-style card
-const SCRAMBLE := "#$%&*+<>=/0123456789ABCDEFHKMNRSTUVXZ"
+const CARD_SIZES := [24, 20, 18, 16]
 var _card: Control
 var _card_band: TextureRect
 var _card_glow: TextureRect
@@ -74,7 +80,7 @@ var _card_t := 0.0
 var _card_len := 4.6
 var _card_text := ""
 var _card_w := 0.0
-var _scramble_t := 0.0
+var _card_px := 24
 
 # persona layer
 var _lines: SpeedLines
@@ -90,16 +96,20 @@ var _fin_t := 99.0
 
 ## The FINISH backdrop, cyberpunk style: a "system breach" overlay. Red tint,
 ## a hex grid, scrolling warning chevrons top and bottom, columns of hex data
-## and screen-tear slices.
+## and screen-tear slices. The middle band, where FINISH lands, is a dark
+## plate with nothing busy behind the words (spec §9.9).
 class FinishBG:
 	extends Control
 	var t := 0.0
 	var accent := Color(1, 0.1, 0.3)
 	var accent2 := Color(0.3, 0.95, 1.0)
+	var band := Rect2() # the text plate, in this control's pixels
 	var _data: Array = []
+	var _data_t := 0.0
+	var _rng := RandomNumberGenerator.new() # presentation only
 
 	func _draw() -> void:
-		var a := clampf(1.0 - maxf(0.0, t - 0.7) / 0.12, 0.0, 1.0)
+		var a := clampf(1.0 - maxf(0.0, t - 0.8) / 0.12, 0.0, 1.0)
 		draw_rect(Rect2(Vector2.ZERO, size), Color(accent.r * 0.35, accent.g * 0.05, accent.b * 0.2, 0.78 * a))
 		# hex grid
 		var hc := Color(accent.r, accent.g, accent.b, 0.22 * a)
@@ -120,23 +130,38 @@ class FinishBG:
 			while cx < size.x + 24:
 				draw_colored_polygon(PackedVector2Array([Vector2(cx, band_y + 2), Vector2(cx + 8, band_y + 2), Vector2(cx + 14, band_y + 8), Vector2(cx + 8, band_y + 14), Vector2(cx, band_y + 14), Vector2(cx + 6, band_y + 8)]), Color(accent.r, accent.g, accent.b, 0.9 * a))
 				cx += 24.0
-		# hex data columns
-		if _data.is_empty() or randf() < 0.5:
+		# hex data columns at the edges (decoration only), refreshed at a
+		# steady rate rather than every frame
+		if _data.is_empty() or t >= _data_t:
+			_data_t = t + 0.08
 			_data.clear()
 			for i in 18:
-				_data.append("%04X %04X" % [randi() & 0xFFFF, randi() & 0xFFFF])
+				_data.append("%04X %04X" % [_rng.randi() & 0xFFFF, _rng.randi() & 0xFFFF])
 		var mf := Ui.font_mono
 		for i in _data.size():
 			var yy := 40.0 + i * 10.0
 			if yy > size.y - 30:
 				break
-			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent2.r, accent2.g, accent2.b, 0.6 * a))
-			draw_string(mf, Vector2(size.x - 64, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent.r, accent.g, accent.b, 0.7 * a))
-		draw_string(mf, Vector2(size.x * 0.5 - 60, size.y * 0.5 + 34), "// TARGET SIGNAL LOST //", HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(1, 1, 1, 0.9 * a))
-		# tear slices
+			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent2.r, accent2.g, accent2.b, 0.45 * a))
+			draw_string(mf, Vector2(size.x - 64, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent.r, accent.g, accent.b, 0.55 * a))
+		# tear slices, kept off the text plate
 		for k in 4:
-			var ty := randf() * size.y
-			draw_rect(Rect2(Vector2(randf_range(-30, 30), ty), Vector2(size.x, randf_range(1, 5))), Color(accent2.r, accent2.g, accent2.b, 0.35 * a) if k % 2 else Color(1, 1, 1, 0.25 * a))
+			var ty := _rng.randf() * size.y
+			if ty > band.position.y - 6.0 and ty < band.end.y + 1.0:
+				continue
+			draw_rect(Rect2(Vector2(_rng.randf_range(-30, 30), ty), Vector2(size.x, _rng.randf_range(1, 5))), Color(accent2.r, accent2.g, accent2.b, 0.35 * a) if k % 2 else Color(1, 1, 1, 0.25 * a))
+		# the text plate: solid dark, neon edges, no pattern
+		if band.size.y > 0.0:
+			draw_rect(band, Color(0.03, 0.0, 0.03, 0.92 * a))
+			draw_rect(Rect2(band.position, Vector2(band.size.x, 1)), Color(accent.r, accent.g, accent.b, a))
+			draw_rect(Rect2(Vector2(band.position.x, band.end.y - 1), Vector2(band.size.x, 1)), Color(accent2.r, accent2.g, accent2.b, a))
+			var sub := "TARGET SIGNAL LOST"
+			var bf := Ui.font_bold
+			var bs := 13
+			var sw := bf.get_string_size(sub, HORIZONTAL_ALIGNMENT_LEFT, -1, bs).x
+			var sp := Vector2(roundf((size.x - sw) * 0.5), band.end.y - 6.0)
+			draw_string_outline(bf, sp, sub, HORIZONTAL_ALIGNMENT_LEFT, -1, bs, 2, Color(0, 0, 0, a))
+			draw_string(bf, sp, sub, HORIZONTAL_ALIGNMENT_LEFT, -1, bs, Color(1, 1, 1, 0.95 * a))
 
 
 class SparkLayer:
@@ -173,8 +198,12 @@ func _ready() -> void:
 	_bars_bot.scan = 0.04
 	_bars_top.visible = false
 	_bars_bot.visible = false
-	add_child(_bars_top)
-	add_child(_bars_bot)
+	# the bars go under the HUD clusters, so the HUD stays readable on black
+	# instead of being half covered
+	hud.play_root.add_child(_bars_top)
+	hud.play_root.move_child(_bars_top, 1)
+	hud.play_root.add_child(_bars_bot)
+	hud.play_root.move_child(_bars_bot, 2)
 	_build_intro()
 	_build_tally()
 	_build_card()
@@ -241,27 +270,50 @@ func _set_text(l: Label, text: String) -> void:
 ## Slams `text` onto the screen. Options (all optional):
 ## anchor (fraction of the screen), off (pixels), from (start scale),
 ## slam (fly-in time), hold, fade, rot (radians), shake, sound, vol, pitch,
-## burst (spark count on impact), shadow (colour), font.
+## burst (spark count on impact), shadow (colour), font, slot.
+## One message per screen region (spec §9.9): a stamp replaces any stamp in
+## the same `slot` ("center" by default), and a centre stamp replaces the
+## cut-in. The hold is never shorter than the time it takes to read the text.
 func stamp(text: String, color: Color, size := 24, o := {}) -> void:
+	var slot: String = o.get("slot", "center")
+	_clear_slot(slot)
+	if slot == "center":
+		_cutin.stop()
 	var l: Control
 	if o.get("glitch", false):
-		l = GlitchText.new().setup(text, size, color, o.get("accent", Color(Game.palette.neon_a)), int(o.get("seed", 0)), {"accent2": o.get("accent2", Color(Game.palette.neon_b)), "brackets": o.get("brackets", false), "tag": o.get("tag", ""), "decode": o.get("decode", 0.12)})
+		l = GlitchText.new().setup(text, size, color, o.get("accent", Color(Game.palette.neon_a)), int(o.get("seed", 0)), {"accent2": o.get("accent2", Color(Game.palette.neon_b)), "brackets": o.get("brackets", false), "tag": o.get("tag", ""), "decode": o.get("decode", 0.1)})
 	else:
 		var f: Font = o.get("font", Ui.font_big)
 		var shadow: Color = o.get("shadow", color.darkened(0.7))
-		l = _pair(text, f, size, color, shadow, Vector2(2, 2) if size <= 16 else Vector2(3, 3))
+		l = _pair(text, f, size, color, shadow, Vector2(1, 1) if size <= 16 else Vector2(2, 2))
 	l.modulate.a = 0.0
 	add_child(l)
 	move_child(l, _spark_layer.get_index())
 	_stamps.append({
-		"l": l, "t": 0.0, "hit": false, "c": color,
+		"l": l, "t": 0.0, "hit": false, "c": color, "slot": slot,
 		"anchor": o.get("anchor", Vector2(0.5, 0.4)), "off": o.get("off", Vector2.ZERO),
 		"from": float(o.get("from", 3.0)), "slam": float(o.get("slam", 0.09)),
-		"hold": float(o.get("hold", 0.8)), "fade": float(o.get("fade", 0.25)),
+		"hold": maxf(float(o.get("hold", 0.8)), read_time(text)), "fade": float(o.get("fade", 0.25)),
 		"rot": float(o.get("rot", 0.0)), "shake": float(o.get("shake", 4.0)),
 		"sound": str(o.get("sound", "stamp")), "vol": float(o.get("vol", -3.0)),
 		"pitch": float(o.get("pitch", 1.0)), "burst": int(o.get("burst", 0)),
+		"out": false,
 	})
+
+
+## How long a flash must stay still to be read (spec §9.9).
+static func read_time(text: String) -> float:
+	return 0.5 + 0.05 * text.length()
+
+
+func _clear_slot(slot: String) -> void:
+	var i := 0
+	while i < _stamps.size():
+		if _stamps[i].slot == slot:
+			_stamps[i].l.queue_free()
+			_stamps.remove_at(i)
+			continue
+		i += 1
 
 
 func _update_stamps(rd: float) -> void:
@@ -290,13 +342,18 @@ func _update_stamps(rd: float) -> void:
 			rot = s.rot * (1.0 + 2.0 * (1.0 - k))
 			a = k
 		else:
+			# a short squash that settles fast, then the text holds still
 			var u: float = s.t - s.slam
-			sc = 1.0 - 0.14 * sin(u * 30.0) * exp(-u * 9.0)
-			rot += sin(u * 26.0) * exp(-u * 8.0) * 0.07
+			sc = 1.0 - 0.08 * sin(u * 30.0) * exp(-u * 14.0)
+			rot += sin(u * 26.0) * exp(-u * 14.0) * 0.04
 		var ft: float = s.t - s.slam - s.hold
 		if ft > 0.0:
+			if not s.out:
+				s.out = true
+				if l is GlitchText:
+					l.glitch_out(minf(0.12, s.fade))
 			a = 1.0 - ft / s.fade
-			sc *= 1.0 + 0.3 * ft / s.fade
+			sc *= 1.0 + 0.15 * ft / s.fade
 		l.size = Vector2.ZERO
 		l.pivot_offset = l.size * 0.5
 		l.scale = Vector2.ONE * sc
@@ -355,18 +412,19 @@ func _update_sparks(rd: float) -> void:
 
 # ---------------------------------------------------------------- wave intro
 func _build_intro() -> void:
-	_band = Shard.make(Color(0.02, 0.0, 0.06, 0.82), 10.0, Color(Game.palette.neon_a), Color(Game.palette.neon_b))
+	_band = Shard.make(Color(0.02, 0.0, 0.06, 0.88), 10.0, Color(Game.palette.neon_a), Color(Game.palette.neon_b))
 	_band.shadow_off = Vector2(0, 3)
-	_band.scan = 0.035
 	_band.brackets = Color(Game.palette.neon_b)
 	_band.visible = false
 	add_child(_band)
 	_intro_title = GlitchText.new()
 	_intro_title.visible = false
 	add_child(_intro_title)
-	_intro_sub = Ui.label("", Ui.font_mono, 8, Color.WHITE, 2)
-	_intro_sub.visible = false
-	add_child(_intro_sub)
+	for i in 2:
+		var l := Ui.label("", Ui.font_bold, 10, Color.WHITE, 2)
+		l.visible = false
+		add_child(l)
+		_intro_lines.append(l)
 
 
 func intro_ready() -> bool:
@@ -375,6 +433,7 @@ func intro_ready() -> bool:
 
 ## WAVE N slams in, the mutator types itself out, 3-2-1, then FIGHT.
 ## Boss waves skip the FIGHT stamp (the boss card takes over).
+## `sub` is up to two lines ("NAME  //  SCORE xN" and its description).
 func wave_intro(wave: int, sub: String, col: Color, boss: bool) -> void:
 	var pal := Game.palette
 	_intro_on = true
@@ -382,30 +441,48 @@ func wave_intro(wave: int, sub: String, col: Color, boss: bool) -> void:
 	_intro_t = 0.0
 	_typed = 0
 	var acc := Color(pal.neon_a) if not boss else Color(1.0, 0.1, 0.18)
-	_intro_title.setup("WAVE %02d" % wave, 24, Color.WHITE, acc, wave, {"accent2": Color(pal.neon_b), "decode": 0.22, "tag": "> SECTOR SHIN-KAGURA // HOSTILES INBOUND" if not boss else "> WARNING // HIGH-VALUE TARGET"})
+	_intro_title.setup("WAVE %02d" % wave, 24, Color.WHITE, acc, wave, {"accent2": Color(pal.neon_b), "tag": "> SECTOR SHIN-KAGURA // HOSTILES INBOUND" if not boss else "> WARNING // HIGH-VALUE TARGET"})
 	_band.shadow = acc
-	_intro_sub.text = ("> " + sub) if sub != "" else ""
-	_intro_sub.add_theme_color_override("font_color", Color(pal.neon_c) if not boss else Color(1.0, 0.3, 0.35))
-	_intro_sub.visible_characters = 0
+	var parts := sub.split("\n") if sub != "" else PackedStringArray()
+	for i in _intro_lines.size():
+		var l: Label = _intro_lines[i]
+		l.text = parts[i] if i < parts.size() else ""
+		l.visible_characters = 0
+		l.visible = l.text != ""
+	_intro_lines[0].add_theme_color_override("font_color", Color(pal.neon_c) if not boss else Color(1.0, 0.3, 0.35))
+	_intro_lines[1].add_theme_color_override("font_color", Color(0.92, 0.9, 1.0))
 	_band.visible = true
 	_lines.kick(0.8, 0.15)
 	_intro_title.visible = true
-	_intro_sub.visible = sub != ""
 	later(0.09, func():
 		add_shake(5.0)
 		Sfx.play("stamp", -3.0, 1.0, 0.0))
+	# the countdown and FIGHT sit below the band, never on top of it
+	var count_at := Vector2(0.5, 0.71)
 	var pitches := [1.0, 1.12, 1.26]
 	for i in 3:
 		later(1.2 + i * 0.55, func():
-			stamp(str(3 - i), Color.WHITE, 32, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": Vector2(0.5, 0.22), "off": Vector2(0, 66), "from": 2.2, "hold": 0.3, "fade": 0.14, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i]}))
+			if not _intro_on or _intro_ready:
+				return
+			stamp(str(3 - i), Color.WHITE, 32, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": count_at, "from": 2.2, "hold": 0.3, "fade": 0.1, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i], "slot": "intro"}))
 	later(2.85, func():
+		var cut := _intro_ready # the boss card already ended the intro
 		_intro_ready = true
-		if not boss:
-			stamp("FIGHT", Color.WHITE, 40, {"glitch": true, "brackets": true, "tag": "> ENGAGE", "accent": Color(pal.neon_a), "anchor": Vector2(0.5, 0.22), "off": Vector2(0, 66), "from": 3.0, "hold": 0.45, "fade": 0.2, "shake": 8.0, "sound": "go", "vol": -2.0, "burst": 40})
+		if not boss and _intro_on and not cut:
+			stamp("FIGHT", Color.WHITE, 40, {"glitch": true, "brackets": true, "tag": "> ENGAGE", "accent": Color(pal.neon_a), "anchor": count_at, "from": 3.0, "hold": 0.45, "fade": 0.2, "shake": 8.0, "sound": "go", "vol": -2.0, "burst": 40, "slot": "intro"})
 			_lines.kick(1.0, 0.2)
-			_shards.burst(Vector2(vs.x * 0.5, vs.y * 0.22 + 64), Color(pal.neon_a), 18, 300.0, true)
+			_shards.burst(vs * count_at, Color(pal.neon_a), 18, 300.0, true)
 			if hud.post:
 				hud.post.impact_frame(0.05))
+
+
+## Cuts the wave intro short (the boss card replaces it).
+func end_intro() -> void:
+	if not _intro_on:
+		return
+	_intro_t = maxf(_intro_t, 2.85)
+	_intro_ready = true
+	_clear_slot("intro")
 
 
 func _update_intro(rd: float) -> void:
@@ -413,11 +490,23 @@ func _update_intro(rd: float) -> void:
 		return
 	_intro_t += rd
 	var t := _intro_t
-	var by := roundf(vs.y * 0.22 - 8.0)
-	var open := ease_out(t / 0.14)
-	var bh := roundf(46.0 * open)
+	# the band sits below the top HUD clusters and above the crosshair area
+	var by := roundf(maxf(58.0, vs.y * 0.215))
+	var title_h := _intro_title.size.y
+	var lines_h := 0.0
+	for l in _intro_lines:
+		if l.visible:
+			l.size = Vector2.ZERO
+			lines_h += l.size.y
+	var full_h := roundf(4.0 + title_h + lines_h + (4.0 if lines_h > 0.0 else 2.0))
 	var bw := roundf(vs.x * 0.74)
-	_band.position = Vector2(roundf((vs.x - bw) * 0.5), by + (46.0 - bh) * 0.5)
+	for l in _intro_lines:
+		if l.visible:
+			bw = maxf(bw, l.size.x + 28.0)
+	bw = minf(bw, vs.x - 8.0)
+	var open := ease_out(t / 0.14)
+	var bh := roundf(full_h * open)
+	_band.position = Vector2(roundf((vs.x - bw) * 0.5), by + roundf((full_h - bh) * 0.5))
 	_band.size = Vector2(bw, maxf(bh, 1.0))
 	# title: a stamp that stays put
 	var sc: float
@@ -426,31 +515,45 @@ func _update_intro(rd: float) -> void:
 		sc = lerpf(3.0, 1.0, k * k)
 	else:
 		var u := t - 0.09
-		sc = 1.0 - 0.14 * sin(u * 30.0) * exp(-u * 9.0)
+		sc = 1.0 - 0.08 * sin(u * 30.0) * exp(-u * 14.0)
 	_intro_title.pivot_offset = _intro_title.size * 0.5
 	_intro_title.scale = Vector2.ONE * sc
-	_intro_title.position = (Vector2(vs.x * 0.5, by + 16.0) - _intro_title.size * 0.5).round()
-	# subtitle types itself out
-	if _intro_sub.visible:
-		var n := int(maxf(0.0, t - 0.32) * 55.0)
-		if n > _typed and n <= _intro_sub.text.length():
-			if n / 2 != _typed / 2 and _intro_sub.text[n - 1] != " ":
-				Sfx.play("type", -15.0, 1.25, 0.08)
-			_typed = n
-		_intro_sub.visible_characters = mini(n, _intro_sub.text.length()) + (1 if fmod(t, 0.5) < 0.25 else 0)
-		if n >= _intro_sub.text.length() and not _intro_sub.text.ends_with("_"):
-			_intro_sub.text += "_"
-		_intro_sub.size = Vector2.ZERO
-		_intro_sub.position = Vector2(roundf((vs.x - _intro_sub.size.x) * 0.5), by + 34.0)
-	var a := 1.0 if t < 2.85 else clampf(1.0 - (t - 2.85) / 0.3, 0.0, 1.0)
+	_intro_title.position = (Vector2(vs.x * 0.5 - _intro_title.size.x * 0.5, by + 4.0)).round()
+	# the mutator types itself out (clean letters, no scramble), line by line
+	var n := int(maxf(0.0, t - 0.32) * 55.0)
+	var total := 0
+	for l in _intro_lines:
+		if l.visible:
+			total += l.text.length()
+	if n > _typed and _typed < total:
+		if n / 2 != _typed / 2:
+			Sfx.play("type", -15.0, 1.25, 0.08)
+		_typed = mini(n, total)
+	var y := by + 4.0 + title_h
+	var left := n
+	for l in _intro_lines:
+		if not l.visible:
+			continue
+		l.visible_characters = clampi(left, 0, l.text.length())
+		left -= l.text.length()
+		l.position = Vector2(roundf((vs.x - l.size.x) * 0.5), roundf(y))
+		y += l.size.y
+	var a := 1.0 if t < 2.85 else clampf(1.0 - (t - 2.85) / 0.25, 0.0, 1.0)
+	if t >= 2.85 and not _intro_out:
+		_intro_out = true
+		_intro_title.glitch_out(0.1)
+	elif t < 2.85:
+		_intro_out = false
 	_band.modulate.a = a
-	_intro_title.modulate.a = a if t > 0.0 else 0.0
-	_intro_sub.modulate.a = a
-	if t > 3.2:
+	_intro_title.modulate.a = a
+	for l in _intro_lines:
+		l.modulate.a = a
+	if t > 3.1:
 		_intro_on = false
 		_band.visible = false
 		_intro_title.visible = false
-		_intro_sub.visible = false
+		for l in _intro_lines:
+			l.visible = false
 
 
 # ---------------------------------------------------------------- tally
@@ -459,9 +562,9 @@ func _build_tally() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.visible = false
 	add_child(_panel)
-	_panel_bg = Shard.make(Color(0.02, 0.0, 0.06, 0.86), 12.0, Color(Game.palette.neon_a), Color(Game.palette.neon_b))
+	# no scanlines: nothing busy behind the numbers (spec §9.9)
+	_panel_bg = Shard.make(Color(0.02, 0.0, 0.06, 0.9), 12.0, Color(Game.palette.neon_a), Color(Game.palette.neon_b))
 	_panel_bg.shadow_off = Vector2(0, 4)
-	_panel_bg.scan = 0.03
 	_panel_bg.brackets = Color(Game.palette.neon_b)
 	_panel_bg.bracket_len = 10.0
 	_panel.add_child(_panel_bg)
@@ -474,30 +577,28 @@ func _build_tally() -> void:
 	_panel.add_child(_tally_title)
 	for i in MAX_ROWS:
 		var r := {
-			"name": Ui.label("", Ui.font_bold, 8, Color(0.92, 0.9, 1.0), 2),
-			"detail": Ui.label("", Ui.font_mono, 8, Color(0.6, 0.6, 0.78), 2),
-			"value": Ui.label("", Ui.font_mono, 10, CHIPS_COL.lerp(Color.WHITE, 0.35), 2),
+			"name": Ui.label("", Ui.font_bold, 10, Color(0.92, 0.9, 1.0), 2),
+			"detail": Ui.label("", Ui.font_mono, 9, Color(0.66, 0.66, 0.84), 2),
+			"value": Ui.label("", Ui.font_mono, 10, CHIPS_COL.lerp(Color.WHITE, 0.5), 2),
 		}
 		for k in r:
 			_panel.add_child(r[k])
 		_rows.append(r)
-	_chips_box = Shard.make(CHIPS_COL.darkened(0.55), 6.0, CHIPS_COL, CHIPS_COL)
+	_chips_box = Shard.make(CHIPS_COL.darkened(0.6), 6.0, CHIPS_COL, CHIPS_COL)
 	_chips_box.shadow_off = Vector2(0, 2)
-	_chips_box.scan = 0.06
 	_panel.add_child(_chips_box)
-	_chips_lbl = Ui.label("0", Ui.font_mono, 18, Color.WHITE, 2, CHIPS_COL.darkened(0.7))
+	_chips_lbl = Ui.label("0", Ui.font_big, 13, Color.WHITE, 3, CHIPS_COL.darkened(0.75))
 	_chips_box.add_child(_chips_lbl)
-	_x_lbl = Ui.label("X", Ui.font_big, 16, Color.WHITE, 2)
+	_x_lbl = Ui.label("X", Ui.font_big, 13, Color.WHITE, 2)
 	_panel.add_child(_x_lbl)
-	_mult_box = Shard.make(MULT_COL.darkened(0.55), 6.0, MULT_COL, MULT_COL)
+	_mult_box = Shard.make(MULT_COL.darkened(0.6), 6.0, MULT_COL, MULT_COL)
 	_mult_box.shadow_off = Vector2(0, 2)
-	_mult_box.scan = 0.06
 	_panel.add_child(_mult_box)
-	_mult_lbl = Ui.label("1.0", Ui.font_mono, 18, Color.WHITE, 2, MULT_COL.darkened(0.7))
+	_mult_lbl = Ui.label("1.0", Ui.font_big, 13, Color.WHITE, 3, MULT_COL.darkened(0.75))
 	_mult_box.add_child(_mult_lbl)
-	_note_lbl = Ui.label("", Ui.font_bold, 8, MULT_COL.lerp(Color.WHITE, 0.4), 2)
+	_note_lbl = Ui.label("", Ui.font_bold, 10, MULT_COL.lerp(Color.WHITE, 0.5), 2)
 	_panel.add_child(_note_lbl)
-	_total_lbl = _pair("", Ui.font_big, 16, GOLD, Color(0.55, 0.15, 0.0))
+	_total_lbl = _pair("", Ui.font_big, 16, GOLD, Color(0.4, 0.1, 0.0))
 	_panel.add_child(_total_lbl)
 
 
@@ -516,7 +617,11 @@ func show_tally(d: Dictionary) -> void:
 	_mult_punch = 0.0
 	_note_t = 99.0
 	var pal := Game.palette
-	_tally_title.setup(d.title, 16, Color.WHITE, Color(pal.neon_a), int(d.get("wave", 0)), {"accent2": Color(pal.neon_b), "decode": 0.25, "tag": "> COMBAT LOG // PAYOUT"})
+	_tally_title.setup(d.title, 16, Color.WHITE, Color(pal.neon_a), int(d.get("wave", 0)), {"accent2": Color(pal.neon_b), "tag": "> COMBAT LOG // PAYOUT", "tag_right": true})
+	# full panel width: the title stays centred, the tag sits at the right
+	# and the FLAWLESS sticker has the left corner to itself
+	_tally_title.custom_minimum_size.x = TALLY_W - 28.0
+	_tally_title.size = _tally_title.custom_minimum_size
 	_panel_bg.shadow = Color(pal.neon_a)
 	_panel_edges[0].color = Color(pal.neon_a)
 	_panel_edges[1].color = Color(pal.neon_b)
@@ -535,9 +640,9 @@ func show_tally(d: Dictionary) -> void:
 	var mults: Array = d.mults
 	_mult_shown = float(mults[0][1])
 	# layout
-	var w := 290.0
-	var yb := 34.0 + n * 11.0 + 6.0
-	_panel_size = Vector2(w, yb + 62.0)
+	var w := TALLY_W
+	var yb := _boxes_y(n)
+	_panel_size = Vector2(w, yb + BOX_H + 50.0)
 	# timeline
 	var t_rows := 0.32
 	var step := 0.2
@@ -550,8 +655,9 @@ func show_tally(d: Dictionary) -> void:
 		add_shake(4.0)
 		Sfx.play("stamp", -4.0, 1.05, 0.0))
 	if d.get("flawless", false):
+		# a sticker on the panel's cut top-left corner, clear of the title and tag
 		later(0.3, func():
-			stamp("FLAWLESS", Color(pal.neon_c), 8, {"anchor": Vector2.ZERO, "off": _panel_origin() + Vector2(w - 42, 6), "rot": 0.22, "from": 4.0, "hold": t_slam + 0.6, "fade": 0.3, "shake": 3.0, "vol": -6.0, "pitch": 1.3, "shadow": Color(0.0, 0.0, 0.0)}))
+			stamp("FLAWLESS", Color(pal.neon_c), 10, {"font": Ui.font_bold, "anchor": Vector2.ZERO, "off": _panel_origin() + Vector2(38, 8), "rot": -0.1, "from": 3.0, "hold": t_slam + 0.6, "fade": 0.3, "shake": 3.0, "vol": -6.0, "pitch": 1.3, "shadow": Color(0.0, 0.0, 0.0), "slot": "tally"}))
 	for i in n:
 		later(t_rows + i * step, func(): Sfx.play("deal", -5.0, 1.0 + i * 0.07, 0.0))
 	later(tc, func():
@@ -576,7 +682,9 @@ func show_tally(d: Dictionary) -> void:
 	later(t_slam, func():
 		Sfx.play("cash", -1.0, 1.0, 0.0)
 		add_shake(9.0)
-		fountain(_panel_origin() + Vector2(w * 0.5, yb + 46.0), 80)
+		# confetti flanks the total instead of burying it
+		fountain(_panel_origin() + Vector2(24.0, yb + BOX_H + 44.0), 40)
+		fountain(_panel_origin() + Vector2(w - 24.0, yb + BOX_H + 44.0), 40)
 		if d.get("boss", false):
 			var cols := [Color(pal.neon_a), Color(pal.neon_b), Color(pal.neon_c), GOLD]
 			for i in 8:
@@ -588,6 +696,10 @@ func show_tally(d: Dictionary) -> void:
 			hud.post.flash(0.15)
 		hud.release_score(int(d.total)))
 	later(t_slam + 0.9, func(): _tally_ready = true)
+
+
+func _boxes_y(n: int) -> float:
+	return ROW_Y0 + n * ROW_H + 6.0
 
 
 func _fmt_mult(f: float) -> String:
@@ -641,20 +753,21 @@ func _update_tally(rd: float) -> void:
 			r[key].visible = on
 		if not on:
 			continue
-		var y := 34.0 + i * 11.0
+		var y := ROW_Y0 + i * ROW_H
 		var slide := roundf(-26.0 * pow(1.0 - k, 2.0))
+		r.name.size = Vector2.ZERO
 		r.name.position = Vector2(14 + slide, y)
 		r.detail.size = Vector2.ZERO
-		r.detail.position = Vector2(132 + slide, y)
+		r.detail.position = Vector2(118 + slide, y + 1)
 		var kv := clampf((t - rt) / 0.16, 0.0, 1.0)
 		var val := int(float(rows[i][2]) * kv)
 		r.value.text = _num(val)
 		r.value.size = Vector2.ZERO
-		r.value.pivot_offset = Vector2(r.value.size.x, 4)
-		r.value.scale = Vector2.ONE * (1.0 + 0.6 * (1.0 - ease_out(kv)))
+		r.value.pivot_offset = Vector2(r.value.size.x, r.value.size.y * 0.5)
+		r.value.scale = Vector2.ONE * (1.0 + 0.3 * (1.0 - ease_out(kv)))
 		r.value.position = Vector2(w - 14 - r.value.size.x, y)
 	# chips x mult
-	var yb := 34.0 + n * 11.0 + 6.0
+	var yb := _boxes_y(n)
 	var boxes_on: bool = t >= tm.tc
 	_chips_box.visible = boxes_on
 	_mult_box.visible = boxes_on
@@ -663,7 +776,7 @@ func _update_tally(rd: float) -> void:
 	if boxes_on:
 		var kb := clampf((t - tm.tc) / 0.3, 0.0, 1.0)
 		var pop := 1.0 + 0.35 * (1.0 - ease_out(clampf((t - tm.tc) / 0.14, 0.0, 1.0)))
-		_chips_box.size = Vector2(bw, 22)
+		_chips_box.size = Vector2(bw, BOX_H)
 		_chips_box.pivot_offset = _chips_box.size * 0.5
 		_chips_box.scale = Vector2.ONE * pop
 		_chips_box.position = Vector2(14, yb)
@@ -671,12 +784,12 @@ func _update_tally(rd: float) -> void:
 		_chips_lbl.size = Vector2.ZERO
 		_chips_lbl.position = ((_chips_box.size - _chips_lbl.size) * 0.5).round()
 		_x_lbl.size = Vector2.ZERO
-		_x_lbl.position = Vector2(roundf((w - _x_lbl.size.x) * 0.5), yb + 3)
+		_x_lbl.position = Vector2(roundf((w - _x_lbl.size.x) * 0.5), yb + roundf((BOX_H - _x_lbl.size.y) * 0.5))
 		_mult_punch = move_toward(_mult_punch, 0.0, rd * 5.0)
-		_mult_box.size = Vector2(bw, 22)
+		_mult_box.size = Vector2(bw, BOX_H)
 		_mult_box.pivot_offset = _mult_box.size * 0.5
-		_mult_box.scale = Vector2.ONE * (pop + 0.45 * _mult_punch * _mult_punch)
-		_mult_box.rotation = sin(t * 40.0) * 0.06 * _mult_punch
+		_mult_box.scale = Vector2.ONE * (pop + 0.35 * _mult_punch * _mult_punch)
+		_mult_box.rotation = sin(t * 40.0) * 0.03 * _mult_punch
 		_mult_box.position = Vector2(w - 14 - bw, yb)
 		_mult_box.color = MULT_COL.darkened(0.55).lerp(MULT_COL.lerp(Color.WHITE, 0.4), _mult_punch * _mult_punch)
 		_mult_lbl.text = _fmt_mult(_mult_shown)
@@ -687,7 +800,7 @@ func _update_tally(rd: float) -> void:
 	_note_lbl.visible = boxes_on and _note_t < 99.0
 	if _note_lbl.visible:
 		_note_lbl.size = Vector2.ZERO
-		_note_lbl.position = Vector2(roundf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5), yb + 25 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
+		_note_lbl.position = Vector2(roundf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5), yb + BOX_H + 3 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
 	# total: counts up faster and faster, shaking, then slams
 	var total_on: bool = t >= tm.total
 	_total_lbl.visible = total_on
@@ -696,16 +809,15 @@ func _update_tally(rd: float) -> void:
 		var shown := int(float(_td.total) * kt * kt)
 		var slammed: bool = t >= tm.slam
 		_set_text(_total_lbl, "+" + _num(int(_td.total) if slammed else shown))
+		# suspense comes from the accelerating count, the rising ticks and a
+		# slow swell; the digits themselves never shake (spec §9.9)
 		var s2 := 1.0 + 0.18 * kt
-		var jit := Vector2.ZERO
-		if not slammed:
-			jit = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * kt * 1.6
-		else:
+		if slammed:
 			var u: float = t - tm.slam
-			s2 = 1.0 + 0.7 * exp(-u * 14.0) - 0.12 * sin(u * 30.0) * exp(-u * 8.0)
+			s2 = 1.0 + 0.5 * exp(-u * 14.0) - 0.08 * sin(u * 30.0) * exp(-u * 10.0)
 		_total_lbl.pivot_offset = _total_lbl.size * 0.5
 		_total_lbl.scale = Vector2.ONE * s2
-		_total_lbl.position = (Vector2((w - _total_lbl.size.x) * 0.5, yb + 38.0) + jit).round()
+		_total_lbl.position = Vector2((w - _total_lbl.size.x) * 0.5, yb + BOX_H + 20.0).round()
 		_total_lbl.add_theme_color_override("font_color", GOLD.lerp(Color.WHITE, 0.6 * exp(-maxf(0.0, t - tm.slam) * 6.0) if slammed else 0.0))
 	# fade out
 	var end: float = tm.slam + 0.9
@@ -767,18 +879,28 @@ func _build_card() -> void:
 		var gl := Ui.label("", Ui.font_card, 24, c)
 		gl.material = add
 		gl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		# letters appear in place: the line is laid out once, never re-centred
+		gl.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 		_card.add_child(gl)
 		_card_ghosts.append(gl)
-	_card_lbl = Ui.label("", Ui.font_card, 24, Color.WHITE)
+	_card_lbl = Ui.label("", Ui.font_card, 24, Color.WHITE, 3, Color(0.0, 0.0, 0.0, 0.85))
 	_card_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_lbl.visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
 	_card.add_child(_card_lbl)
-	_card_sub = Ui.label("", Ui.font_card, 8, Color(0.75, 0.72, 0.85))
+	_card_sub = Ui.label("", Ui.font_card, 12, Color(0.85, 0.82, 0.95), 2)
 	_card_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_card.add_child(_card_sub)
 
 
 func card_ready() -> bool:
 	return _card_ready
+
+
+## Ends the card at once (the results screen replaces FLATLINED).
+func end_card() -> void:
+	_card_on = false
+	_card_ready = true
+	_card.visible = false
 
 
 ## The big slow card: a dark band, one line of glowing letter-spaced text
@@ -793,23 +915,21 @@ func souls_card(text: String, col: Color, sub := "", sound := "", length := 4.6)
 	_card_lbl.add_theme_color_override("font_color", col)
 	_card_glow.modulate = Color(col.r, col.g, col.b, 0.0)
 	_card_sub.text = sub
-	_card_w = Ui.font_card.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 24).x
-	_card_lbl.text = _scrambled(0)
+	# fit by font size, never by scaling, so the pixel letters stay crisp
+	_card_px = CARD_SIZES[CARD_SIZES.size() - 1]
+	for s in CARD_SIZES:
+		if Ui.font_card.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, s).x <= vs.x * 0.9:
+			_card_px = s
+			break
+	_card_w = Ui.font_card.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _card_px).x
+	for l in [_card_lbl] + _card_ghosts:
+		l.text = text
+		l.add_theme_font_size_override("font_size", _card_px)
+		l.visible_characters = 0
 	_card.visible = true
 	if sound != "":
 		Sfx.play(sound, 0.0, 1.0, 0.0)
 	add_shake(3.0)
-
-
-func _scrambled(resolved: int) -> String:
-	var out := ""
-	for i in _card_text.length():
-		var ch := _card_text[i]
-		if ch == " " or i < resolved:
-			out += ch
-		else:
-			out += SCRAMBLE[randi() % SCRAMBLE.length()]
-	return out
 
 
 func _update_card(rd: float) -> void:
@@ -824,46 +944,30 @@ func _update_card(rd: float) -> void:
 	_card_band.position = Vector2(0, cy - 44)
 	_card_band.size = Vector2(vs.x, 88)
 	_card_band.modulate.a = band_a
-	# decode the letters left to right
+	# the letters appear left to right (clean letters, no scramble), then the
+	# line holds perfectly still until it fades
 	var k := clampf((t - 0.12) / 0.75, 0.0, 1.0)
-	var resolved := int(k * _card_text.length())
-	_scramble_t -= rd
-	if _scramble_t <= 0.0 or resolved >= _card_text.length():
-		_scramble_t = 0.045
-		_card_lbl.text = _scrambled(resolved)
-		for gl in _card_ghosts:
-			gl.text = _card_lbl.text
-	var text_a := smoothstep(0.05, 0.8, t) * (1.0 - smoothstep(L - 1.1, L - 0.15, t))
-	# glitch: heavy while it decodes, then the odd stutter
-	var g := 1.0 - smoothstep(0.1, 0.9, t)
-	if t > 1.2 and fmod(t, 1.37) < 0.07:
-		g = 0.55
-	# slow zoom, fitted to the screen width
-	var fit := minf(1.0, vs.x * 0.9 / maxf(_card_w + 16.0, 1.0))
-	var sc := fit * (1.0 + 0.06 * t / L)
+	var shown := int(ceil(k * _card_text.length()))
+	var text_a := smoothstep(0.05, 0.5, t) * (1.0 - smoothstep(L - 1.1, L - 0.15, t))
 	var w := _card_w + 24.0
 	for l in [_card_lbl] + _card_ghosts:
+		l.visible_characters = shown
 		l.size = Vector2(w, 0)
 		l.size = Vector2(w, l.size.y)
-		l.pivot_offset = l.size * 0.5
-		l.scale = Vector2.ONE * sc
 		l.position = Vector2(roundf((vs.x - w) * 0.5), roundf(cy - l.size.y * 0.5 - 2.0))
-	var flick := 1.0
-	if g > 0.25 and randf() < g * 0.45:
-		flick = 0.35
-	_card_lbl.modulate.a = text_a * flick
-	var jitter := (1.0 + 6.0 * g)
-	_card_ghosts[0].position.x -= roundf(randf_range(0.5, 1.0) * jitter)
-	_card_ghosts[1].position.x += roundf(randf_range(0.5, 1.0) * jitter)
-	if g > 0.3:
-		_card_ghosts[0].position.y += roundf(randf_range(-1.5, 1.5) * g)
+	_card_lbl.modulate.a = text_a
+	# cyan/magenta ghosts: wider while the line arrives, 1 px once it holds
+	var g := 1.0 - smoothstep(0.1, 0.9, t)
+	var off := 1.0 + roundf(3.0 * g)
+	_card_ghosts[0].position.x -= off
+	_card_ghosts[1].position.x += off
 	for gl in _card_ghosts:
-		gl.modulate.a = text_a * (0.22 + 0.6 * g)
+		gl.modulate.a = text_a * (0.25 + 0.35 * g)
 	# soft light behind the words
-	_card_glow.size = Vector2(_card_w * sc * 1.5, 70)
+	_card_glow.size = Vector2(_card_w * 1.5, 70)
 	_card_glow.position = Vector2(roundf((vs.x - _card_glow.size.x) * 0.5), cy - 36)
 	_card_glow.modulate.a = 0.2 * text_a
-	# small subtitle fades in late
+	# the name line fades in late
 	_card_sub.size = Vector2(vs.x, 0)
 	_card_sub.position = Vector2(0, cy + 19)
 	_card_sub.modulate.a = smoothstep(0.9, 1.6, t) * (1.0 - smoothstep(L - 1.1, L - 0.2, t))
@@ -875,6 +979,12 @@ func _update_card(rd: float) -> void:
 
 
 func combo_stamp(n: int, idx: int) -> void:
+	if hud.boss_title.visible:
+		# the boss name card owns the middle of the screen: sound only, and
+		# the HUD combo counter still shows the number
+		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
+		_lines.kick(0.5, 0.1)
+		return
 	if idx >= 1:
 		# bigger milestones get the holographic cut-in instead of a stamp
 		_lines.kick(0.5 + idx * 0.1, 0.1)
@@ -884,16 +994,18 @@ func combo_stamp(n: int, idx: int) -> void:
 		return
 	var hue := fmod(0.12 - idx * 0.11 + 1.0, 1.0)
 	var col := Color.from_hsv(hue, 0.75, 1.0)
-	stamp("X%d COMBO" % n, col, 24, {"glitch": true, "tag": "> CHAIN SYNC", "accent": Color(Game.palette.neon_a), "seed": idx, "anchor": Vector2(0.5, 0.5), "off": Vector2(0, -46), "from": 2.4, "hold": 0.55, "fade": 0.2, "shake": 3.0 + idx * 0.5, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "burst": 24 + idx * 6})
+	stamp("X%d COMBO" % n, col, 24, {"glitch": true, "tag": "> CHAIN SYNC", "accent": Color(Game.palette.neon_a), "seed": idx, "anchor": Vector2(0.5, 0.5), "off": Vector2(0, -50), "from": 2.4, "hold": 0.55, "fade": 0.2, "shake": 3.0 + idx * 0.5, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "burst": 24 + idx * 6})
 	_lines.kick(0.5, 0.1)
 
 
+## Passing the best score: one message (the cut-in), never a stamp and a
+## cut-in on top of each other (spec §9.9).
 func hiscore_stamp() -> void:
 	var pal := Game.palette
-	stamp("NEW HI-SCORE", Color(pal.neon_c), 24, {"glitch": true, "brackets": true, "tag": "> RECORD OVERWRITTEN", "accent": Color(pal.neon_a), "anchor": Vector2(0.5, 0.5), "off": Vector2(0, -64), "hold": 1.3, "shake": 5.0, "sound": "highscore", "vol": -3.0, "burst": 40})
-	cut_in("NEW RECORD")
-	later(0.2, func(): firework(Vector2(vs.x * 0.3, vs.y * 0.25), Color(pal.neon_a)))
-	later(0.4, func(): firework(Vector2(vs.x * 0.7, vs.y * 0.22), Color(pal.neon_b)))
+	cut_in("NEW HI-SCORE")
+	Sfx.play("highscore", -3.0, 1.0, 0.0)
+	later(0.2, func(): firework(Vector2(vs.x * 0.16, vs.y * 0.62), Color(pal.neon_a)))
+	later(0.4, func(): firework(Vector2(vs.x * 0.84, vs.y * 0.6), Color(pal.neon_b)))
 
 
 # ---------------------------------------------------------------- persona layer
@@ -916,6 +1028,7 @@ func speed_lines(strength: float, hold := 0.0) -> void:
 ## Persona-style cut-in strip with the protagonist's mask.
 func cut_in(text: String, flip := false) -> void:
 	var pal := Game.palette
+	_clear_slot("center")
 	_cutin.play(text, Color(pal.neon_a), Color(pal.neon_b), flip)
 	_lines.kick(0.7, 0.25)
 	add_shake(3.0)
@@ -945,7 +1058,9 @@ func finish_splash() -> void:
 	if hud.post:
 		hud.post.impact_frame(0.12)
 	_fin.accent2 = Color(pal.neon_b)
-	stamp("FINISH", Color.WHITE, 48, {"glitch": true, "brackets": true, "tag": "> TERMINATION CONFIRMED", "accent": Color(pal.neon_a), "accent2": Color(pal.neon_b), "seed": 9, "decode": 0.1, "anchor": Vector2(0.5, 0.46), "from": 3.0, "slam": 0.07, "hold": 0.66, "fade": 0.04, "shake": 10.0, "sound": "", "burst": 0})
+	var cy := roundf(vs.y * 0.46)
+	_fin.band = Rect2(0, cy - 56, vs.x, 124)
+	stamp("FINISH", Color.WHITE, 48, {"glitch": true, "brackets": true, "tag": "> TERMINATION CONFIRMED", "accent": Color(pal.neon_a), "accent2": Color(pal.neon_b), "seed": 9, "anchor": Vector2(0.5, 0.46), "from": 3.0, "slam": 0.07, "hold": 0.8, "fade": 0.04, "shake": 10.0, "sound": "", "burst": 0})
 	_shards.burst(vs * 0.5, Color.WHITE, 30, 380.0, true)
 
 
@@ -957,7 +1072,7 @@ func _update_finish(rd: float) -> void:
 	_fin.queue_redraw()
 	if OS.get_cmdline_user_args().has("--verbose-juice"):
 		print("fin t=%.2f vis=%s size=%s pos=%s" % [_fin_t, _fin.visible, _fin.size, _fin.position])
-	if _fin_t > 0.82:
+	if _fin_t > 0.92:
 		_fin.visible = false
 		_fin_t = 99.0
 
