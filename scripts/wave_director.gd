@@ -5,6 +5,10 @@ extends Node3D
 ## climbing, so a run ends when you do.
 ## Enemies, bolts and blade waves live under this node.
 
+## Fired between waves, after the tally (and any boss reward card), just
+## before `next_wave` starts: the moment a run can be suspended.
+signal between_waves(next_wave: int)
+
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
 
@@ -23,6 +27,7 @@ var _cleanup_t := 0.0
 var _rng: RandomNumberGenerator
 var boss_bounty := 0
 var boss_bounty_name := ""
+var pending_reward: Dictionary = {} # unlocked by this wave's boss, shown after its tally
 
 
 func _ready() -> void:
@@ -231,7 +236,23 @@ func _physics_process(delta: float) -> void:
 		"clear":
 			phase_t -= delta
 			if Game.hud.tally_ready() or phase_t <= 0.0:
-				_next_wave()
+				if pending_reward.is_empty():
+					_end_break()
+				else:
+					# spec §11.2: the reward card follows the boss tally
+					phase = "reward"
+					phase_t = 8.0 # fallback; the card normally ends the phase
+					Game.hud.show_reward(pending_reward)
+					pending_reward = {}
+		"reward":
+			phase_t -= delta
+			if Game.hud.reward_ready() or phase_t <= 0.0:
+				_end_break()
+
+
+func _end_break() -> void:
+	between_waves.emit(wave + 1)
+	_next_wave()
 
 
 ## End-of-wave tally, chips x mult: what you did this wave adds chips, the

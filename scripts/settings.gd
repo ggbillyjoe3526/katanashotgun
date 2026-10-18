@@ -5,9 +5,8 @@ class_name Settings
 ## All static, so any script reads them directly (Settings.fov). Game calls
 ## boot() once at start-up; the settings menu edits the values, then calls
 ## the matching apply_*() and save().
-## Saved as plain data (to_dict / from_dict) so the profile can store it; until
-## the profile system lands, save() writes its own file with an atomic rename
-## and one backup (spec §11.3).
+## Saved as plain data (to_dict / from_dict) inside the player's profile
+## (Profile, spec §11.3), which writes it atomically with a backup.
 
 const VERSION := 1
 const BUSES: Array[String] = ["Master", "Music", "SFX", "Ambience", "UI"]
@@ -66,7 +65,7 @@ static func boot() -> void:
 	for r in REBINDABLE:
 		_remember_defaults(r[0])
 	reset_all()
-	load_file()
+	load_saved()
 	apply_all()
 
 
@@ -432,31 +431,30 @@ static func _is_num(v: Variant) -> bool:
 
 
 # ---------------------------------------------------------------- file
-## Writes the settings: a temp file first, then the old file becomes the
-## backup and the temp file takes its place, so a crash mid-write never
-## leaves a half-written file as the only copy.
+## Stores the settings in the profile, which writes them crash-safely a
+## moment later (several changes in a row write once) and on quit.
 static func save() -> bool:
-	var tmp := path + ".tmp"
-	var bak := path + ".bak"
-	var f := FileAccess.open(tmp, FileAccess.WRITE)
-	if f == null:
-		push_warning("Settings: can't write %s (%s)" % [tmp, error_string(FileAccess.get_open_error())])
-		return false
-	f.store_string(JSON.stringify(to_dict(), "\t"))
-	f.close()
-	if FileAccess.file_exists(path):
-		if FileAccess.file_exists(bak):
-			DirAccess.remove_absolute(bak)
-		DirAccess.rename_absolute(path, bak)
-	var err := DirAccess.rename_absolute(tmp, path)
-	if err != OK:
-		push_warning("Settings: can't replace %s (%s)" % [path, error_string(err)])
-		return false
+	Profile.store_settings(to_dict())
 	return true
 
 
-## Loads the file, or its backup if the file is missing or damaged. Returns
-## false when neither could be read (the defaults stay).
+## Loads the settings from the profile. A profile with none yet takes them
+## from the old stand-in file (user://settings.json) once, so nobody loses
+## settings saved before the profile existed. Returns false when there was
+## nothing to load (the defaults stay).
+static func load_saved() -> bool:
+	var d := Profile.get_settings_dict()
+	if _is_num(d.get("v")):
+		from_dict(d)
+		return true
+	if load_file():
+		save()
+		return true
+	return false
+
+
+## Reads the old stand-in file, or its backup if the file is missing or
+## damaged. Returns false when neither could be read.
 static func load_file() -> bool:
 	for p in [path, path + ".bak"]:
 		var d := _read(p)
