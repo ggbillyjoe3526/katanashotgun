@@ -212,7 +212,7 @@ func _pick_spawn() -> Vector3:
 
 
 func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
-	var at := pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
+	var at := pos + Vector3(0, minf(7.0 + _rng.randf() * 2.0, Game.arena.spawn_clearance(pos)), 0)
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
 		var pe: Enemy = free.pop_front()[0]
@@ -242,7 +242,8 @@ func spawn_adds(n: int, near: Vector3) -> void:
 		var lim := Game.arena.half - 2.0
 		p.x = clampf(p.x, -lim, lim)
 		p.z = clampf(p.z, -lim, lim)
-		p.y = 0.0
+		p.y = near.y
+		p = Game.arena.safe_point(p)
 		_spawn("grunt" if i % 3 != 2 else "gunner", hp_scale(wave), p)
 
 

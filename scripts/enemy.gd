@@ -11,7 +11,7 @@ extends CharacterBody3D
 const MARKER_RED := Color(1.0, 0.05, 0.1)
 const FINISHER_GOLD := Color(1.0, 0.8, 0.15)
 
-enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP }
+enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP, LEAP_WINDUP, LEAP }
 
 var kind := "grunt"
 var hp := 45.0
@@ -65,6 +65,12 @@ var _shock_arc_t := 0.0
 var _stuck_t := 0.0
 var _detour := Vector3.ZERO
 var _detour_t := 0.0
+var _path := PackedVector3Array() # navmesh corners to the player (maps with use_navigation)
+var _path_types := PackedInt32Array() # region or link, per corner
+var _path_i := 0
+var _query: NavigationPathQueryParameters3D
+var _query_result: NavigationPathQueryResult3D
+var _repath_t := 0.0
 
 var visual: Node3D
 var hips: Node3D
@@ -182,7 +188,7 @@ func activate() -> void:
 	attack_cd = _rng.randf_range(0.5, 1.4)
 	special_cd = _rng.randf_range(3.0, 6.0)
 	strafe = 1.0 if _rng.randf() < 0.5 else -1.0
-	var fh := Game.arena.floor_height_at(global_position.x, global_position.z)
+	var fh := Game.arena.floor_height_at(global_position.x, global_position.z, global_position.y)
 	Game.fx.spawn_beam(Vector3(global_position.x, fh, global_position.z), _eye_color.lerp(Color.RED, 0.5), height)
 	Sfx.play_at("spawn", global_position, -6.0)
 	if kind == "oni":
@@ -469,6 +475,11 @@ func _physics_process(delta: float) -> void:
 	else:
 		match state:
 			S.SPAWN:
+				if state_t > 4.0 and not is_on_floor():
+					# wedged on the way down: put it on the nearest walkable floor
+					global_position = Game.arena.safe_point(global_position)
+					velocity = Vector3.ZERO
+					state_t = 0.0
 				if is_on_floor():
 					if not landed:
 						landed = true
@@ -477,7 +488,18 @@ func _physics_process(delta: float) -> void:
 					if state_t > 0.3:
 						_set_state(S.CHASE)
 			S.CHASE:
-				move = _chase(dist, dir, delta)
+				move = _chase(dist, _steer(ppos, dist, dir, delta), delta)
+			S.LEAP_WINDUP:
+				face = Vector3(leap_vel.x, 0, leap_vel.z).normalized()
+				if state_t >= 0.35:
+					velocity.y = leap_vel.y
+					_set_state(S.LEAP)
+			S.LEAP:
+				face = Vector3(leap_vel.x, 0, leap_vel.z).normalized()
+				move = Vector3(leap_vel.x, 0, leap_vel.z)
+				if state_t > 0.25 and is_on_floor():
+					_repath_t = 0.0
+					_set_state(S.CHASE)
 			S.WINDUP:
 				if kind == "gunner" or is_boss:
 					face = dir
@@ -540,7 +562,7 @@ func _physics_process(delta: float) -> void:
 	knock = knock.move_toward(Vector3.ZERO, 26.0 * delta)
 	if not is_on_floor():
 		velocity.y -= 30.0 * delta
-	elif state != S.SLAM:
+	elif state != S.SLAM and state != S.LEAP:
 		velocity.y = minf(velocity.y, 0.0)
 	move_and_slide()
 	# simple unstick: if we're pushing into a wall and not getting anywhere, slide along it for a bit
@@ -564,9 +586,75 @@ func _physics_process(delta: float) -> void:
 		face_yaw = lerp_angle(face_yaw, atan2(face.x, face.z), 1.0 - exp(-12.0 * delta))
 	visual.rotation.y = face_yaw
 	_animate(delta, Vector2(velocity.x, velocity.z).length())
-	if global_position.y < -8.0:
-		global_position = Vector3(0, 6, -20)
+	if global_position.y < Game.arena.kill_y + 2.0:
+		global_position = Game.arena.enemy_reset
 		velocity = Vector3.ZERO
+
+
+## Which way to walk toward the player. Straight at them on maps without a
+## navmesh or when close on the same level; otherwise toward the next corner
+## of a navmesh path, which uses ramps and leap links between levels. At a
+## leap link going up, the enemy crouches (telegraph) and jumps.
+func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
+	var a := Game.arena
+	if a == null or a.nav_region == null:
+		return dir
+	if dist < 3.0 and absf(ppos.y - global_position.y) < 1.5:
+		return dir
+	_repath_t -= delta
+	if _repath_t <= 0.0:
+		_repath_t = 0.3 + float(spawn_id % 5) * 0.04 # spread the queries over frames
+		var map := get_world_3d().navigation_map
+		if NavigationServer3D.map_get_iteration_id(map) == 0:
+			return dir
+		if _query == null:
+			_query = NavigationPathQueryParameters3D.new()
+			_query.metadata_flags = NavigationPathQueryParameters3D.PATH_METADATA_INCLUDE_TYPES
+			_query.navigation_layers = Arena.NAV_WALK | Arena.NAV_LEAP
+			_query_result = NavigationPathQueryResult3D.new()
+		_query.map = map
+		_query.start_position = global_position
+		_query.target_position = ppos
+		NavigationServer3D.query_path(_query, _query_result)
+		_path = _query_result.path
+		_path_types = _query_result.path_types
+		_path_i = 1
+	var pos := global_position
+	while _path_i < _path.size():
+		var c: Vector3 = _path[_path_i]
+		if Vector2(c.x - pos.x, c.z - pos.z).length() > 0.6:
+			break
+		# right above or below a corner (on a bridge over it, say): skip it unless
+		# it's the top of a leap still to make
+		var leap_top := c.y - pos.y > 0.9 and _path_types.size() >= _path_i and _path_types[_path_i - 1] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK
+		if leap_top:
+			break
+		_path_i += 1
+	if _path_i >= _path.size():
+		return dir
+	var next: Vector3 = _path[_path_i]
+	var flat := Vector3(next.x - pos.x, 0, next.z - pos.z)
+	var rise := next.y - pos.y
+	# a link's type sits on its start corner, the one just passed
+	var on_link := _path_types.size() >= _path_i and _path_types[_path_i - 1] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK
+	if on_link and rise > 0.9 and is_on_floor():
+		_leap(next)
+		return Vector3.ZERO
+	if flat.length() < 0.01:
+		return dir
+	return flat.normalized()
+
+
+## Crouch, then jump up to `to` (a leap link's top end): high enough to clear
+## the lip, slow enough sideways to land just inside it.
+func _leap(to: Vector3) -> void:
+	var flat := Vector3(to.x - global_position.x, 0, to.z - global_position.z)
+	var up := sqrt(2.0 * 30.0 * (to.y - global_position.y + 1.3))
+	leap_vel = flat.normalized() * maxf(flat.length() * 1.6, 3.0) + Vector3(0, up, 0)
+	_path_i += 1
+	_set_state(S.LEAP_WINDUP)
+	Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 6)
+	Sfx.play_at("windup", global_position, -8.0, 1.5)
 
 
 ## Boss subclasses handle their own states here. Returns [move, face].

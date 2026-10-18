@@ -215,6 +215,17 @@ func _traffic() -> void:
 	mmi.custom_aabb = AABB(Vector3(-160, 0, -160), Vector3(320, 70, 320))
 	add_child(mmi)
 	_update_cars(0.0)
+	_on_quality(Quality.preset)
+	Quality.on_changed(_on_quality)
+
+
+## Fewer flying cars on lower presets: the outer lanes empty first.
+func _on_quality(_id: String) -> void:
+	_cars.visible_instance_count = mini(Quality.cap("traffic"), _cars.instance_count)
+
+
+func _exit_tree() -> void:
+	Quality.off_changed(_on_quality)
 
 
 func _car_part(mesh: ArrayMesh, size: Vector3, offset: Vector3, mat: Material) -> void:

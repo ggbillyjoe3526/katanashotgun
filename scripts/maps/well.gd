@@ -8,7 +8,7 @@ extends RooftopMap
 ## up the roof ring. Every step uses the climb heights of design note
 ## design/vertical-map/heights.md: 1.2 m hop, 3 m mantle, 5 m grab ledge (amber
 ## lip), 7 m+ sheer (never climbable). The city around it is a CityBackdrop.
-## Not in MapRegistry yet: enemies need pathing between levels first.
+## Enemies path over a baked navmesh with leap links (Arena._build_navigation).
 
 const AMBER := Color("ffa21f") # grab-ledge lip: fixed so it reads the same in every palette
 const SHAFT := 12.0 # half-width of the shaft
@@ -26,6 +26,10 @@ func _init() -> void:
 	half = 32.0
 	player_spawn = Vector3(0, 0.1, 24)
 	boss_spawn = Vector3(0, 0, -17)
+	floor_base = FLOOR
+	kill_y = -20.0
+	enemy_reset = Vector3(0, 6, -17)
+	use_navigation = true
 
 
 func _build_layout() -> void:
@@ -149,8 +153,11 @@ func _shaft() -> void:
 		_lip(Vector3(s * 8, SERVICE, -8), Vector3(s * 8, SERVICE, 8))
 	_ramp(Vector3(5, FLOOR, 1), Vector3(5, SERVICE, -8), 3.0, m_ramp)
 	_ramp(Vector3(-5, FLOOR, -1), Vector3(-5, SERVICE, 8), 3.0, m_ramp)
-	_ramp(Vector3(-10, SERVICE, 7), Vector3(-10, 0, -3), 3.6, m_ramp)
-	_ramp(Vector3(10, SERVICE, -7), Vector3(10, 0, 3), 3.6, m_ramp)
+	# balcony ramps fill the balcony's width, so nothing wedges against the wall
+	_ramp(Vector3(-10, SERVICE, 7), Vector3(-10, 0, -3), 4.0, m_ramp)
+	_ramp(Vector3(10, SERVICE, -7), Vector3(10, 0, 3), 4.0, m_ramp)
+	_deck(-SHAFT, -8, -6, -3, -0.5, 0) # landings: ramp top to the roof edge
+	_deck(8, SHAFT, 3, 6, -0.5, 0)
 	# dressing: neon bands, signs, light
 	_trim(Vector3(-11.9, -2.5, -11.8), Vector3(11.9, -2.5, -11.8), _accent(1))
 	_trim(Vector3(-11.9, -2.5, 11.8), Vector3(11.9, -2.5, 11.8), _accent(3))
@@ -166,7 +173,7 @@ func _shaft() -> void:
 	_light(Vector3(0, -2, 0), _accent(0), 1.6, 14.0)
 	# geyser pad: metro platform back up to the bridge
 	_pad(Vector3(0, FLOOR, 6), Vector3(0, 28.0, -2.5))
-	_crate(Vector3(6, FLOOR, -4), 1.2, _accent(5), 1.57)
+	_crate(Vector3(-9.5, FLOOR, -3), 1.2, _accent(5))
 	_crate(Vector3(-2.5, FLOOR, -5), 3.0, _accent(4))
 
 
@@ -276,33 +283,33 @@ func _torii(p: Vector3, sc: float, rot: float) -> void:
 ## a sheer vent tower and planters, so the ground floor has its own heights.
 func _ring() -> void:
 	# south-west stairwell hut (3 m mantle) with air-con units (hops) on top
-	_deck(-29, -23, 21, 28, 0, 3, m_dark)
-	_lip(Vector3(-29, 3, 21), Vector3(-23, 3, 21))
-	for p in [Vector3(-27.5, 3, 24.5), Vector3(-25, 3, 26.5)]:
+	_deck(-21, -15, 22, 28, 0, 3, m_dark)
+	_lip(Vector3(-21, 3, 22), Vector3(-15, 3, 22))
+	for p in [Vector3(-19.5, 3, 24.5), Vector3(-17, 3, 26.5)]:
 		_solid(Vector3(1.6, 1.2, 1.6), p + Vector3(0, 0.6, 0), m_chrome)
 		_neon(Vector3(1.0, 0.06, 1.0), p + Vector3(0, 1.23, 0), _accent(1), 2.0)
 	# south-east billboard gantry (+5 on legs) with a big ad facing the arena
-	_deck(16, 27, 22, 29, DECK - 0.5, DECK)
-	for x in [16.5, 26.5]:
-		for z in [22.5, 28.5]:
+	_deck(11, 21, 23, 29, DECK - 0.5, DECK)
+	for x in [11.5, 20.5]:
+		for z in [23.5, 28.5]:
 			_wall(x - 0.3, x + 0.3, z - 0.3, z + 0.3, 0, DECK - 0.5, m_dark)
-	_lip(Vector3(16, DECK, 22), Vector3(27, DECK, 22))
-	_lip(Vector3(16, DECK, 22), Vector3(16, DECK, 29))
-	for x in [16.6, 26.4]:
+	_lip(Vector3(11, DECK, 23), Vector3(21, DECK, 23))
+	_lip(Vector3(21, DECK, 23), Vector3(21, DECK, 29))
+	for x in [11.6, 20.4]:
 		add_child(Psx.box(Vector3(0.4, 8.0, 0.4), m_dark, Vector3(x, DECK + 4.0, 29.2)))
-	var ad := Psx.quad(Vector2(11, 5.5), Psx.unlit(Color(1, 1, 1), 1.8, TexGen.get_tex("ad%d" % (rng.randi() % 6)), {"fog_amount": 0.2}), Vector3(21.5, DECK + 5.5, 29.0))
+	var ad := Psx.quad(Vector2(10, 5.0), Psx.unlit(Color(1, 1, 1), 1.8, TexGen.get_tex("ad%d" % (rng.randi() % 6)), {"fog_amount": 0.2}), Vector3(16, DECK + 5.5, 29.0))
 	ad.rotation.y = PI
 	add_child(ad)
-	_neon_box_edges(Vector3(21.5, DECK + 5.5, 29.05), Vector3(11.2, 5.7, 0.1), 0.0, _accent(4), 3.0)
-	_light(Vector3(21.5, DECK + 3.0, 26.0), _accent(4), 1.8, 12.0)
-	_crate(Vector3(13.2, 0, 25.5), 3.0, _accent(2))
+	_neon_box_edges(Vector3(16, DECK + 5.5, 29.05), Vector3(10.2, 5.2, 0.1), 0.0, _accent(4), 3.0)
+	_light(Vector3(16, DECK + 3.0, 26.0), _accent(4), 1.8, 12.0)
+	_crate(Vector3(16, 0, 19.5), 3.0, _accent(2), 1.57) # step up: 3 m, then 2 m to the gantry
 	# west: a 3 m container and a 6 m stack (mantle, mantle) under the catwalk
 	_crate(Vector3(-17, 0, -7), 3.0, _accent(3))
-	_crate(Vector3(-17, 0, 4), 3.0, _accent(0))
-	_crate(Vector3(-17, 3, 4), 3.0, _accent(5))
+	_crate(Vector3(-17, 0, 4.3), 3.0, _accent(0))
+	_crate(Vector3(-17, 3, 4.3), 3.0, _accent(5))
 	# east: a sheer 7 m vent tower (never climbable) and a hop crate
-	_wall(15, 18.5, -3, 1, 0, 7.5, m_dark)
-	_sign_at(Vector3(14.9, 4.0, -1), -PI * 0.5, "sign_v%d" % (rng.randi() % 8), Vector2(2.2, 6.0), _accent(5))
+	_wall(15, 18.5, 5, 9, 0, 7.5, m_dark)
+	_sign_at(Vector3(14.9, 4.0, 7), -PI * 0.5, "sign_v%d" % (rng.randi() % 8), Vector2(2.2, 6.0), _accent(5))
 	var fan := MeshInstance3D.new()
 	var fm := CylinderMesh.new()
 	fm.top_radius = 1.4
@@ -311,9 +318,9 @@ func _ring() -> void:
 	fm.radial_segments = 10
 	fan.mesh = fm
 	fan.material_override = m_chrome
-	fan.position = Vector3(16.75, 7.6, -1)
+	fan.position = Vector3(16.75, 7.6, 7)
 	add_child(fan)
-	_crate(Vector3(18.5, 0, 8), 1.2, _accent(2), 1.57)
+	_crate(Vector3(18.5, 0, -7), 1.2, _accent(2), 1.57)
 	# north strip and south planters
 	_crate(Vector3(-6, 0, -17), 1.2, _accent(4), 1.57)
 	_crate(Vector3(8, 0, -16), 3.0, _accent(1), 0.2)
@@ -328,8 +335,8 @@ func _spawn_sources() -> void:
 	for s in [-1.0, 1.0]:
 		_tunnel(Vector3(s * (SHAFT - 0.3), FLOOR, 0), Vector3(-s, 0, 0))
 		_lift(Vector3(s * -4, SERVICE, s * (SHAFT - 0.2)), Vector3(0, 0, -s))
-	_lift(Vector3(-26, 0, 20.8), Vector3(0, 0, -1))
-	for p in [Vector3(-27, 0, -16), Vector3(27, 0, 16), Vector3(-20, DECK, -26.5)]:
+	_lift(Vector3(-18, 0, 21.8), Vector3(0, 0, -1))
+	for p in [Vector3(-24.5, 0, -11), Vector3(24.5, 0, 9), Vector3(-11, DECK, -23.5)]:
 		_hatch(p)
 
 
@@ -418,13 +425,45 @@ func _edge() -> void:
 
 
 func _spawn_list() -> void:
-	spawn_points = [
-		# metro tunnels and freight lifts (below)
+	# metro tunnels, freight lifts, the hut lift and the roof hatches: enemies walk out
+	ground_spawns = [
 		Vector3(-10.5, FLOOR, 0), Vector3(10.5, FLOOR, 0), Vector3(-4, SERVICE, -10.5), Vector3(4, SERVICE, 10.5),
-		# roof ring: hatches, the stairwell hut, open roof
-		Vector3(-27, 0, -16), Vector3(27, 0, 16), Vector3(-26, 0, 19.5), Vector3(-20, 0, -16), Vector3(20, 0, -18),
-		Vector3(-16, 0, 26), Vector3(16, 0, 14), Vector3(0, 0, -18),
-		# high ground
-		Vector3(-20, DECK, -26.5), Vector3(12, DECK, -26), Vector3(-24.5, DECK, 8), Vector3(24.5, DECK, -8),
-		Vector3(21.5, DECK, 25), Vector3(3, 10, -28),
+		Vector3(-24.5, 0, -11), Vector3(24.5, 0, 9), Vector3(-18, 0, 20.5), Vector3(-11, DECK, -23.5),
 	]
+	spawn_points = ground_spawns.duplicate()
+	spawn_points.append_array([
+		# sky drops: open roof and high ground
+		Vector3(-20, 0, -16), Vector3(20, 0, -18), Vector3(-12, 0, 29), Vector3(16, 0, 14), Vector3(0, 0, -18),
+		Vector3(12, DECK, -26), Vector3(-24.5, DECK, 8), Vector3(24.5, DECK, -8), Vector3(16, DECK, 25.5), Vector3(4.5, 10, -28),
+	])
+	_links()
+
+
+## Leap links for enemy pathing: [low, high] pairs 1.3 m either side of each
+## amber grab lip (and the hop and mantle onto the antenna terrace and beacon cap).
+func _links() -> void:
+	var o := 1.3
+	# metro to the service blocks, clear of the metro ramps, crates and the pad
+	for x in [-6.0, 1.0]:
+		nav_links.append([Vector3(x, FLOOR, -8 + o), Vector3(x, SERVICE, -8 - o)])
+	for x in [-2.5, 6.0]:
+		nav_links.append([Vector3(x, FLOOR, 8 - o), Vector3(x, SERVICE, 8 + o)])
+	# metro to the balconies (the balconies' own ramps lead on to the roof)
+	for z in [3.0, 6.0]:
+		nav_links.append([Vector3(8 - o, FLOOR, z), Vector3(8 + o, SERVICE, z)])
+	for z in [-3.0, -6.0]:
+		nav_links.append([Vector3(-8 + o, FLOOR, z), Vector3(-8 - o, SERVICE, z)])
+	# service blocks to the roof
+	for x in [-6.0, 6.0]:
+		for s in [-1.0, 1.0]:
+			nav_links.append([Vector3(x, SERVICE, s * (SHAFT - o)), Vector3(x, 0, s * (SHAFT + o))])
+	for x in [-20.0, -4.0, 9.0, 19.0]:
+		nav_links.append([Vector3(x, 0, -22 + o), Vector3(x, DECK, -22 - o)]) # roof to north deck
+	for z in [-14.0, -4.0, 9.0]: # clear of the bridge (z -2 to 2) and the crates below
+		for s in [-1.0, 1.0]:
+			nav_links.append([Vector3(s * (22 - o), 0, z), Vector3(s * (22 + o), DECK, z)]) # roof to side catwalks
+	nav_links.append([Vector3(-3, DECK, -25 + o), Vector3(-3, 10, -25 - o)]) # deck to shrine tower
+	nav_links.append([Vector3(7 + o, DECK, -28), Vector3(7 - o, 10, -28)])
+	nav_links.append([Vector3(4.2, 10, -28.5), Vector3(1.2, 13, -28.5)]) # tower to beacon cap
+	nav_links.append([Vector3(21.5, DECK, -25 + o), Vector3(21.5, 6.2, -25 - o)]) # deck to antenna terrace
+	nav_links.append([Vector3(16, 0, 23 - o), Vector3(16, DECK, 23 + o)]) # roof to billboard gantry

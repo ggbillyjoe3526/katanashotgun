@@ -319,7 +319,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 			target.x = clampf(target.x, -lim, lim)
 			target.z = clampf(target.z, -lim, lim)
 			target.y = p.global_position.y + 0.2
-			global_position = target
+			global_position = Game.arena.safe_point(target)
 			visual.visible = true
 			collision_layer = 4
 			Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)

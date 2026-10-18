@@ -296,7 +296,7 @@ func _physics_process(delta: float) -> void:
 	if shotgun_held and shotgun_cd <= 0.0:
 		_fire()
 
-	if global_position.y < -10.0:
+	if global_position.y < Game.arena.kill_y:
 		global_position = Game.arena.player_spawn
 		velocity = Vector3.ZERO
 
@@ -803,6 +803,9 @@ func on_upgrade(id: String) -> void:
 # ---------------------------------------------------------------- autoplay (testing)
 var _auto_target: Enemy = null
 var _auto_weapons := Vector2.ZERO
+var _auto_path := PackedVector3Array()
+var _auto_path_i := 0
+var _auto_repath := 0.0
 
 
 func _autoplay(delta: float) -> Vector2:
@@ -823,6 +826,9 @@ func _autoplay(delta: float) -> Vector2:
 		return Vector2(sin(Time.get_ticks_msec() * 0.001), -0.3)
 	var aim := best.global_position + Vector3(0, best.height * 0.6, 0) - cam.global_position
 	var want_yaw := atan2(-aim.x, -aim.z)
+	var corner := _autoplay_corner(best, best_d, delta)
+	if corner != Vector3.ZERO:
+		want_yaw = atan2(-corner.x, -corner.z)
 	yaw = lerp_angle(yaw, want_yaw, 1.0 - exp(-10.0 * delta))
 	pitch = lerpf(pitch, atan2(aim.y, Vector2(aim.x, aim.z).length()), 1.0 - exp(-10.0 * delta))
 	if _auto_t <= 0.0:
@@ -837,6 +843,27 @@ func _autoplay(delta: float) -> Vector2:
 	if best_d > 6.0:
 		return Vector2(_auto_strafe * 0.4, -1)
 	return Vector2(_auto_strafe, -0.2 if best_d > 2.5 else 0.3)
+
+
+## On maps with a navmesh, the bot walks the ramps toward a target on another
+## level (it doesn't leap). Returns the flat direction to the next corner, or
+## zero to walk straight at the target.
+func _autoplay_corner(best: Enemy, best_d: float, delta: float) -> Vector3:
+	if Game.arena.nav_region == null:
+		return Vector3.ZERO
+	if best_d < 6.0 and absf(best.global_position.y - global_position.y) < 1.5:
+		return Vector3.ZERO
+	_auto_repath -= delta
+	if _auto_repath <= 0.0:
+		_auto_repath = 0.4
+		_auto_path = NavigationServer3D.map_get_path(get_world_3d().navigation_map, global_position, best.global_position, true, Arena.NAV_WALK)
+		_auto_path_i = 1
+	while _auto_path_i < _auto_path.size():
+		var c := _auto_path[_auto_path_i]
+		if Vector2(c.x - global_position.x, c.z - global_position.z).length() > 0.8:
+			return Vector3(c.x - global_position.x, 0, c.z - global_position.z)
+		_auto_path_i += 1
+	return Vector3.ZERO
 
 
 func _autoplay_weapons() -> Vector2:

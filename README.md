@@ -61,8 +61,10 @@ scripts/wave_director.gd    endless waves, boss waves, mutators, reinforcements
 scripts/mutators.gd         seeded wave modifiers
 scripts/upgrades.gd         the 14 level-up augments (seeded offers)
 scripts/palette.gd          the five synthwave palettes
-scripts/arena.gd            base class for maps (helpers, sky, weather, lightning)
-scripts/maps/rooftop.gd     Shin-Kagura Rooftop (seeded cover, signs, skyline)
+scripts/arena.gd            base class for maps (helpers, sky, weather, lightning, navmesh)
+scripts/maps/well.gd        Shin-Kagura Rooftop, vertical: metro pit to beacon tower
+scripts/maps/city_backdrop.gd  the living city: towers, logos, traffic, monorail, sun
+scripts/maps/rooftop.gd     the flat rooftop (base class of well.gd, not in rotation)
 scripts/maps/map_registry.gd   list of maps; the seed picks one
 scripts/gore.gd             blood droplets, floor splats, gibs, geysers, scorch marks
 scripts/fx.gd               damage numbers, tracers, telegraphs, missiles, explosions
