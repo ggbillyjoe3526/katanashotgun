@@ -4,12 +4,6 @@ What we're working on and what comes after. **These are plans, not
 promises:** the order can change as the game is played and tested. What has
 already arrived is in the [Patch Notes](Patch-Notes).
 
-## Being built now
-
-- **Even easier-to-read text.** Text is already bigger and on solid plates;
-  next come crisper pixel fonts, and text that always stays inside its panel
-  across the HUD, menus and level-up cards.
-
 ## Next
 
 - **The first public builds.** Versions go 0.1 Dev 1, Dev 2 and on, then

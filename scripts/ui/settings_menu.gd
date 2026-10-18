@@ -20,8 +20,8 @@ const VALUE_W := 228.0
 const SLIDER_W := 132.0
 const SLOT_W := 104.0
 const TABS: Array[String] = ["AUDIO", "VIDEO", "CONTROLS", "COMFORT"]
-const LABEL_PX := 13 # Chakra Petch
-const VALUE_PX := 14 # Share Tech Mono
+const LABEL_PX := Ui.PIX # Jersey 10, at its own pixel size
+const VALUE_PX := Ui.PIX # its fixed-width digits
 const TITLE_PX := 16 # Orbitron
 const NOTE_LEN := 3.0
 const QUIT_W := 144.0
@@ -575,7 +575,7 @@ func _paint() -> void:
 		if i == _hover_tab and not on:
 			c.draw_rect(tr, a, false, 1.0)
 		var tw := _w(TABS[i], Ui.font_bold, LABEL_PX)
-		_text(c, TABS[i], Ui.font_bold, LABEL_PX, Vector2(tr.position.x + (tr.size.x - tw) * 0.5, tr.position.y + 2), DARK if on else TEXT)
+		_text_in(c, TABS[i], Ui.font_bold, LABEL_PX, tr.position.x + (tr.size.x - tw) * 0.5, tr, DARK if on else TEXT)
 	c.draw_rect(Rect2(Vector2(10, 50), Vector2(PANEL.x - 20, 1)), Color(a, 0.6))
 	# rows
 	for i in rows.size():
@@ -585,7 +585,7 @@ func _paint() -> void:
 		if picked:
 			c.draw_rect(rr, Color(a, 0.16))
 			c.draw_rect(Rect2(rr.position, Vector2(2, rr.size.y)), a)
-		_text(c, r.label, Ui.font_bold, LABEL_PX, Vector2(LABEL_X, rr.position.y + 2), Color.WHITE if picked else TEXT)
+		_text_in(c, r.label, Ui.font_bold, LABEL_PX, LABEL_X, rr, Color.WHITE if picked else TEXT)
 		match r.type:
 			"slider":
 				_paint_slider(c, i, r, b, picked)
@@ -614,7 +614,7 @@ func _paint() -> void:
 		c.draw_rect(fr, fa, false, 1.0)
 		var lbl: String = foot_label(i)
 		var lw := _w(lbl, Ui.font_bold, LABEL_PX)
-		_text(c, lbl, Ui.font_bold, LABEL_PX, Vector2(fr.position.x + (fr.size.x - lw) * 0.5, fr.position.y + 1), DARK if hov else TEXT)
+		_text_in(c, lbl, Ui.font_bold, LABEL_PX, fr.position.x + (fr.size.x - lw) * 0.5, fr, DARK if hov else TEXT)
 
 
 func _paint_slider(c: Control, i: int, r: Dictionary, col: Color, picked: bool) -> void:
@@ -625,7 +625,7 @@ func _paint_slider(c: Control, i: int, r: Dictionary, col: Color, picked: bool) 
 	c.draw_rect(Rect2(sr.position, Vector2(roundf(sr.size.x * k), sr.size.y)), col)
 	var kx := roundf(sr.position.x + sr.size.x * k) - 1.0
 	c.draw_rect(Rect2(Vector2(kx, sr.position.y - 3), Vector2(3, sr.size.y + 6)), Color.WHITE if picked else TEXT)
-	_text(c, r.fmt.call(v), Ui.font_mono, VALUE_PX, Vector2(sr.end.x + 12, ROW_Y + i * ROW_H), Color.WHITE)
+	_text_in(c, r.fmt.call(v), Ui.font_mono, VALUE_PX, sr.end.x + 12, _row_rect(i), Color.WHITE)
 
 
 func _paint_option(c: Control, i: int, r: Dictionary, col: Color, picked: bool) -> void:
@@ -633,10 +633,10 @@ func _paint_option(c: Control, i: int, r: Dictionary, col: Color, picked: bool) 
 	var idx: int = r.values.find(r.get.call())
 	var name: String = r.names[idx] if idx >= 0 else "?"
 	var arrow := col if picked else DIM
-	_text(c, "<", Ui.font_mono, VALUE_PX, Vector2(vr.position.x, vr.position.y - 1), arrow)
-	_text(c, ">", Ui.font_mono, VALUE_PX, Vector2(vr.end.x - _w(">", Ui.font_mono, VALUE_PX), vr.position.y - 1), arrow)
+	_text_in(c, "<", Ui.font_mono, VALUE_PX, vr.position.x, vr, arrow)
+	_text_in(c, ">", Ui.font_mono, VALUE_PX, vr.end.x - _w(">", Ui.font_mono, VALUE_PX), vr, arrow)
 	var nw := _w(name, Ui.font_mono, VALUE_PX)
-	_text(c, name, Ui.font_mono, VALUE_PX, Vector2(vr.position.x + (vr.size.x - nw) * 0.5, vr.position.y - 1), Color.WHITE)
+	_text_in(c, name, Ui.font_mono, VALUE_PX, vr.position.x + (vr.size.x - nw) * 0.5, vr, Color.WHITE)
 
 
 func _paint_key(c: Control, i: int, r: Dictionary, col: Color, gold: Color, picked: bool) -> void:
@@ -647,16 +647,21 @@ func _paint_key(c: Control, i: int, r: Dictionary, col: Color, gold: Color, pick
 		if capturing and live:
 			c.draw_rect(sr, gold)
 			var t := "PRESS KEY"
-			_text(c, t, Ui.font_mono, VALUE_PX, Vector2(sr.position.x + (sr.size.x - _w(t, Ui.font_mono, VALUE_PX)) * 0.5, sr.position.y - 1), DARK)
+			_text_in(c, t, Ui.font_mono, VALUE_PX, sr.position.x + (sr.size.x - _w(t, Ui.font_mono, VALUE_PX)) * 0.5, sr, DARK)
 			continue
 		c.draw_rect(sr, Color(0.1, 0.07, 0.18))
 		c.draw_rect(sr, col if live else Color(0.3, 0.26, 0.45), false, 1.0)
 		var t := Settings.event_name(evs[s]) if s < evs.size() else "-"
-		_text(c, t, Ui.font_mono, VALUE_PX, Vector2(sr.position.x + (sr.size.x - _w(t, Ui.font_mono, VALUE_PX)) * 0.5, sr.position.y - 1), Color.WHITE if s < evs.size() else DIM)
+		_text_in(c, t, Ui.font_mono, VALUE_PX, sr.position.x + (sr.size.x - _w(t, Ui.font_mono, VALUE_PX)) * 0.5, sr, Color.WHITE if s < evs.size() else DIM)
 
 
 func _text(c: Control, t: String, f: Font, px: int, top_left: Vector2, col: Color) -> void:
 	c.draw_string(f, (top_left + Vector2(0, f.get_ascent(px))).round(), t, HORIZONTAL_ALIGNMENT_LEFT, -1, px, col)
+
+
+## Pixel-face text with its capitals centred in `r` from the left edge `x`.
+func _text_in(c: Control, t: String, f: Font, px: int, x: float, r: Rect2, col: Color) -> void:
+	c.draw_string(f, Vector2(x, r.position.y + (r.size.y + Ui.PIX_CAP) * 0.5).round(), t, HORIZONTAL_ALIGNMENT_LEFT, -1, px, col)
 
 
 func _w(t: String, f: Font, px: int) -> float:

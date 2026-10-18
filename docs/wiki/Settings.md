@@ -24,9 +24,10 @@ effects**, **Ambience** (rain and the city) and **Menus/HUD**.
 
 The game keeps its chunky PS1/PS2 pixel look at any resolution: the 3D view
 is drawn at 960 × 540 and scaled up in whole steps without smoothing, so on a
-4K screen every game pixel is a sharp 4 × 4 block, and 2 × 2 on 1080p. The
-Video tab names the screen it detected. **F11** switches between full screen
-and a window.
+4K screen every game pixel is a sharp 4 × 4 block, and 2 × 2 on 1080p. Text
+uses a true pixel font drawn at 480 × 270, so its letters stay crisp and even
+at any size (8 × 8 blocks on 4K). The Video tab names the screen it
+detected. **F11** switches between full screen and a window.
 
 **If the game runs slowly:** set Graphics to WEAK first, then lower the
 Render scale. Press **F3** in a game to see your frame rate.

@@ -349,7 +349,9 @@ func _physics_process(delta: float) -> void:
 				_wave_cleared()
 		"clear":
 			phase_t -= delta
-			if Game.hud.tally_ready() or phase_t <= 0.0:
+			# a level-up earned on the last kills opens after the tally, before
+			# the reward card and the next wave's intro (they never share the screen)
+			if (Game.hud.tally_ready() or phase_t <= 0.0) and Game.pending_levelups == 0:
 				if pending_reward.is_empty():
 					_end_break()
 				else:

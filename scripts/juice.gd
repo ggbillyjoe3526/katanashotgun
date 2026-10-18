@@ -136,14 +136,16 @@ class FinishBG:
 			_data_t = t + 0.08
 			_data.clear()
 			for i in 18:
-				_data.append("%04X %04X" % [_rng.randi() & 0xFFFF, _rng.randi() & 0xFFFF])
+				_data.append("%04X" % (_rng.randi() & 0xFFFF))
+		# the pixel face draws only at its own size (smaller sizes draw nothing)
 		var mf := Ui.font_mono
+		var dw := mf.get_string_size("0000", HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX).x
 		for i in _data.size():
-			var yy := 40.0 + i * 10.0
+			var yy := 44.0 + i * 16.0
 			if yy > size.y - 30:
 				break
-			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent2.r, accent2.g, accent2.b, 0.45 * a))
-			draw_string(mf, Vector2(size.x - 64, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent.r, accent.g, accent.b, 0.55 * a))
+			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX, Color(accent2.r, accent2.g, accent2.b, 0.45 * a))
+			draw_string(mf, Vector2(size.x - 8 - dw, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX, Color(accent.r, accent.g, accent.b, 0.55 * a))
 		# tear slices, kept off the text plate
 		for k in 4:
 			var ty := _rng.randf() * size.y
@@ -606,10 +608,44 @@ func tally_ready() -> bool:
 	return _tally_ready
 
 
+## The wave intro (its panel, countdown or FIGHT) is on screen.
+func intro_showing() -> bool:
+	if _intro_on:
+		return true
+	for s in _stamps:
+		if s.slot == "intro":
+			return true
+	return false
+
+
+func tally_showing() -> bool:
+	return _tally_on
+
+
+## A big panel (FINISH, the wave payout or the boss-defeated card) has the
+## middle of the screen.
+func panel_showing() -> bool:
+	return _fin.visible or _tally_on or _card_on
+
+
+## True while a big centre-screen moment is up (a stamp, the cut-in, FINISH,
+## the boss-defeated card, the wave intro or tally, the boss name card, the
+## boss reward card). The
+## level-up screen waits for it so the two never share the screen.
+func centre_busy() -> bool:
+	for s in _stamps:
+		if s.slot in ["center", "intro", "tally"]:
+			return true
+	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or hud.boss_title.visible or hud.reward_card.visible
+
+
 ## d = {title, rows: [[name, detail, value]], chips, mults: [[name, factor]],
 ##      total, flawless}. The score is already added; the HUD holds it back
 ## until the cash-out slam.
 func show_tally(d: Dictionary) -> void:
+	# the payout panel takes over the middle: a combo stamp still up goes
+	_clear_slot("center")
+	_cutin.stop()
 	_td = d
 	_tally_on = true
 	_tally_ready = false
@@ -800,7 +836,9 @@ func _update_tally(rd: float) -> void:
 	_note_lbl.visible = boxes_on and _note_t < 99.0
 	if _note_lbl.visible:
 		_note_lbl.size = Vector2.ZERO
-		_note_lbl.position = Vector2(roundf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5), yb + BOX_H + 3 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
+		# centred under the multiplier box, but a long mutator name stays inside the panel
+		var nx := clampf(w - 14 - bw * 0.5 - _note_lbl.size.x * 0.5, 10.0, w - 10 - _note_lbl.size.x)
+		_note_lbl.position = Vector2(roundf(nx), yb + BOX_H + 3 - roundf(4.0 * (1.0 - ease_out(_note_t / 0.15))))
 	# total: counts up faster and faster, shaking, then slams
 	var total_on: bool = t >= tm.total
 	_total_lbl.visible = total_on
@@ -979,9 +1017,10 @@ func _update_card(rd: float) -> void:
 
 
 func combo_stamp(n: int, idx: int) -> void:
-	if hud.boss_title.visible:
-		# the boss name card owns the middle of the screen: sound only, and
-		# the HUD combo counter still shows the number
+	if hud.boss_title.visible or panel_showing():
+		# the boss name card, FINISH, the payout or the boss-defeated card owns
+		# the middle of the screen: sound only, and the HUD combo counter still
+		# shows the number
 		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
 		_lines.kick(0.5, 0.1)
 		return
@@ -1018,6 +1057,9 @@ func glory_start(kind: String) -> void:
 	_bars_top.visible = true
 	_bars_bot.visible = true
 	if kind == "boss":
+		# the break blow outranks the boss name card: the card makes way
+		hud.boss_title.visible = false
+		hud.boss_sub.visible = false
 		cut_in("ONIKIRI!")
 
 

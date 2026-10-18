@@ -41,6 +41,8 @@ var center_t := 99.0
 var hint_label: Label
 var hint_bg: ColorRect
 var hint_t := 99.0
+var _hint_wait := "" # a hint held back until the wave intro has finished
+var _popup_wait: Array = [] # tags held back the same way ([text, colour])
 var popups: Array = []
 var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
 var boss_root: Control
@@ -69,6 +71,7 @@ var pause_root: Control
 var sens_label: Label
 var death_root: Control
 var death_stats: Label
+var death_vals: Label # the numbers, in their own column so they line up
 var death_blink: Label
 var levelup_root: Control
 var cards: Array = []
@@ -140,7 +143,7 @@ const CARD_ARM_TIME := 0.45
 const LEVELUP_PROMPT := "CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)"
 const CARD_SIZE := Vector2(148, 188) # level-up augment card: a two-line name and a four-line description fit
 const CARD_GAP := 8.0
-const CARD_TEXT_W := 136.0 # text width inside the card's solid plate
+const CARD_TEXT_W := 132.0 # text width inside the card's solid plate (140 wide, text 6 px in)
 const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
 const CARD_DESC_PT := 12
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
@@ -167,6 +170,8 @@ var _selected := -1 # level-up: the card a first click or key chose; a second on
 var _pick_t := 0.0
 var _death_lines := 0
 var _death_full: PackedStringArray = []
+var _death_vals_full: PackedStringArray = []
+var _death_cols := Vector2.ZERO # full widths of the name and number columns
 var _last_cells := 0
 var _cell_flash: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 var _death_counted := false
@@ -220,6 +225,9 @@ func _ready() -> void:
 	settings_menu = SettingsMenu.new()
 	settings_menu.theme = root.theme
 	add_child(settings_menu)
+	# the settings screen covers the title or pause screen; the text behind it
+	# would peek out at its edges
+	settings_menu.visibility_changed.connect(func(): root.visible = not settings_menu.visible)
 	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
 	title_settings.pressed.connect(_open_settings)
 	title_root.add_child(title_settings)
@@ -426,7 +434,6 @@ func _build_title() -> void:
 	var y := 0
 	for ln in lines:
 		var l := Ui.label(ln[0], Ui.font_bold, 9, ln[1], 2)
-		l.add_theme_font_size_override("font_size", 12) # the smallest size this face reads cleanly at
 		l.set_meta("row", y)
 		title_root.add_child(l)
 		title_labels.append(l)
@@ -457,7 +464,6 @@ func _build_title() -> void:
 	title_scores = Ui.label("", Ui.font_mono, 8, Color(0.95, 0.92, 1.0), 2)
 	title_root.add_child(title_scores)
 	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
-	title_seed.add_theme_font_size_override("font_size", 12)
 	title_root.add_child(title_seed)
 	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
 	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
@@ -539,10 +545,13 @@ func _build_death() -> void:
 	death_score = Ui.label("", Ui.font_big, 16, Color(Game.palette.neon_c), 2)
 	death_root.add_child(death_score)
 	death_stats = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.85, 0.9), 2)
-	death_stats.add_theme_constant_override("line_spacing", -3)
+	death_stats.add_theme_constant_override("line_spacing", 0)
 	death_root.add_child(death_stats)
+	death_vals = Ui.label("", Ui.font_mono, 9, Color.WHITE, 2)
+	death_vals.add_theme_constant_override("line_spacing", 0)
+	death_root.add_child(death_vals)
 	death_table = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.92, 1.0), 2)
-	death_table.add_theme_constant_override("line_spacing", -3)
+	death_table.add_theme_constant_override("line_spacing", 0)
 	death_root.add_child(death_table)
 	death_prompt = Ui.label("", Ui.font_bold, 10, Color.WHITE, 2)
 	death_root.add_child(death_prompt)
@@ -622,7 +631,6 @@ func _build_levelup() -> void:
 		nm.position = Vector2(10, 23)
 		nm.size = Vector2(CARD_TEXT_W, 34)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
-		nm.add_theme_constant_override("line_spacing", -4)
 		card.add_child(nm)
 		var rk := Ui.label("", Ui.font_bold, 11, YELLOW)
 		rk.name = "Rank"
@@ -633,15 +641,14 @@ func _build_levelup() -> void:
 		desc.position = Vector2(10, 72)
 		desc.size = Vector2(CARD_TEXT_W, 80)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
-		desc.add_theme_constant_override("line_spacing", -3)
 		card.add_child(desc)
 		# the builds this card belongs to, pinned to the bottom edge
 		var bl := Ui.label("", Ui.font_bold, 10, Color(0.7, 0.7, 0.82))
 		bl.name = "Builds"
-		bl.position = Vector2(10, CARD_SIZE.y - 33)
-		bl.size = Vector2(CARD_TEXT_W, 26)
+		bl.position = Vector2(10, CARD_SIZE.y - 37)
+		bl.size = Vector2(CARD_TEXT_W, 30)
 		bl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-		bl.add_theme_constant_override("line_spacing", -4)
+		bl.add_theme_constant_override("line_spacing", -2) # two build lines fit the bottom edge
 		card.add_child(bl)
 		# a tab above the card when it links to a card you already own
 		var rec := Ui.label("RECOMMENDED", Ui.font_bold, 10, Color(0.08, 0.04, 0.0))
@@ -656,6 +663,7 @@ func _build_levelup() -> void:
 		levelup_root.add_child(card)
 		cards.append(card)
 	cursor = Ui.label("+", Ui.font_big, 8, Color.WHITE, 2)
+	cursor.set_meta("uiaudit_skip", true) # the pointer may pass over anything
 	levelup_root.add_child(cursor)
 
 
@@ -681,6 +689,11 @@ func hide_title() -> void:
 
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
+	# the pause screen replaces the live HUD and freezes the big messages
+	# where they are; they carry on when the game resumes
+	play_root.visible = not on
+	juice.visible = not on
+	juice.process_mode = Node.PROCESS_MODE_PAUSABLE if on else Node.PROCESS_MODE_ALWAYS
 	pause_quit.disarm()
 	var lines := Upgrades.build_lines(Game.upgrades)
 	var bl: Label = pause_root.get_node("Builds")
@@ -716,16 +729,23 @@ func show_death() -> void:
 	var mins := int(Game.run_time) / 60
 	var secs := int(Game.run_time) % 60
 	death_score.text = "SCORE  %07d" % Game.score
-	death_stats.text = "WAVE REACHED   %d\nBOSSES SLAIN   %d\nKILLS          %d\nGLORY KILLS    %d\nHEADSHOT KILLS %d\nDEFLECTS       %d\nBEST COMBO     x%d\nRUN LV         %d\nTIME           %d:%02d" % [
-		Game.wave, Game.bosses_killed, Game.kills, Game.executions, Game.headshots, Game.deflects, Game.best_combo, Game.level, mins, secs]
+	# names and numbers are two columns: padding with spaces drifts by a few
+	# pixels in this font, so the numbers would not line up
+	_death_full = PackedStringArray(["WAVE REACHED", "BOSSES SLAIN", "KILLS", "GLORY KILLS", "HEADSHOT KILLS", "DEFLECTS", "BEST COMBO", "RUN LV", "TIME"])
+	_death_vals_full = PackedStringArray([str(Game.wave), str(Game.bosses_killed), str(Game.kills), str(Game.executions), str(Game.headshots), str(Game.deflects), "x%d" % Game.best_combo, str(Game.level), "%d:%02d" % [mins, secs]])
+	var mpx := Ui.px(Ui.font_mono, 9)
+	_death_cols = Vector2.ZERO
+	for i in _death_full.size():
+		_death_cols.x = maxf(_death_cols.x, Ui.font_mono.get_string_size(_death_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
+		_death_cols.y = maxf(_death_cols.y, Ui.font_mono.get_string_size(_death_vals_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
 	entering = Game.last_rank >= 0 and not Game.debug_autoplay
 	initials = ""
 	initials_root.visible = false # shown once the score has counted up
 	death_table.visible = false
 	if not entering:
 		death_table.text = "HI-SCORES\n" + _score_table(-1, 8)
-	_death_full = death_stats.text.split("\n")
 	death_stats.text = ""
+	death_vals.text = ""
 	death_score.text = "SCORE  %07d" % 0
 	_update_initials()
 
@@ -762,6 +782,7 @@ func _death_countup() -> void:
 		_death_lines = lines
 		Sfx.play("type", -10.0, 0.9 + lines * 0.04, 0.0)
 	death_stats.text = "\n".join(_death_full.slice(0, _death_lines))
+	death_vals.text = "\n".join(_death_vals_full.slice(0, _death_lines))
 	var k := clampf((_death_t - 0.8) / 1.2, 0.0, 1.0)
 	var shown := int(Game.score * (k * k * (3.0 - 2.0 * k)))
 	death_score.text = "SCORE  %07d" % shown
@@ -798,6 +819,14 @@ func _death_countup() -> void:
 ## The wave intro: WAVE N stamp, typed-out mutator, 3-2-1 countdown, FIGHT.
 func wave_intro(wave: int, sub_text: String, color: Color, boss: bool) -> void:
 	juice.wave_intro(wave, sub_text, color, boss)
+	# the intro has the middle of the screen to itself: older tags and hints
+	# go, and a fresh tag (an augment just picked: "<UPGRADE> ONLINE") waits
+	# and shows at FIGHT
+	for pp in popups:
+		if pp.t < 1.0:
+			_popup_wait.append([pp.l.text, pp.c])
+	_clear_tags()
+	hint_bg.visible = false
 	mut_label.text = ("%s  x%.1f" % [Game.mutator.name, Game.mutator.score]) if not Game.mutator.is_empty() else ""
 
 
@@ -818,7 +847,8 @@ func _on_player_level(lv: int) -> void:
 func _on_level_roll_done(levels: int) -> void:
 	if levels <= 0:
 		return
-	juice.cut_in("PLAYER LV %d" % Profile.player_level)
+	# no cut-in here: its strip would cover the score and the level bar, which
+	# already shows the new level
 	Sfx.play("highscore", -3.0, 1.0, 0.0)
 	juice.firework(Vector2(vs.x * 0.2, vs.y * 0.7), Color(Game.palette.neon_a))
 	juice.later(0.2, func(): juice.firework(Vector2(vs.x * 0.8, vs.y * 0.7), Color(Game.palette.neon_b)))
@@ -845,6 +875,13 @@ func on_run_resumed() -> void:
 func show_tally(d: Dictionary) -> void:
 	score_hold += int(d.total)
 	juice.show_tally(d)
+	_clear_tags()
+
+
+func _clear_tags() -> void:
+	for pp in popups:
+		_free_popup(pp.l)
+	popups.clear()
 
 
 func tally_ready() -> bool:
@@ -861,6 +898,7 @@ func release_score(amount: int) -> void:
 ## FromSoftware-style card ("SHADOW DELETED", "FLATLINED").
 func souls_card(text: String, col: Color, sub := "", sound := "", length := 4.6) -> void:
 	juice.souls_card(text, col, sub, sound, length)
+	_clear_tags()
 
 
 func card_ready() -> bool:
@@ -890,6 +928,7 @@ func speed_lines(strength: float, hold := 0.0) -> void:
 
 func finish_splash() -> void:
 	juice.finish_splash()
+	_clear_tags()
 
 
 func show_boss_intro(title_text: String, sub_text: String) -> void:
@@ -921,6 +960,8 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 	cursor_pos = Vector2(vs.x * 0.5, vs.y - 8)
 	levelup_root.get_node("Sub").text = LEVELUP_PROMPT
 	levelup_root.visible = true
+	# the cards replace the live HUD: they would otherwise cover its numbers
+	play_root.visible = false
 	# deal the cards one by one
 	for i in choices.size():
 		juice.later(0.06 + i * 0.11, func(): Sfx.play("deal", -4.0, 0.95 + i * 0.1, 0.0))
@@ -971,6 +1012,7 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 
 func hide_levelup() -> void:
 	levelup_root.visible = false
+	play_root.visible = not death_root.visible and not title_root.visible
 
 
 func _input(event: InputEvent) -> void:
@@ -1073,9 +1115,11 @@ func show_message(text: String, color: Color, big := true) -> void:
 	center_label.text = text
 	center_shadow.text = text
 	center_label.add_theme_color_override("font_color", color)
-	var sz := Ui.px(Ui.font_big, 16 if big else 10)
-	center_label.add_theme_font_size_override("font_size", sz)
-	center_shadow.add_theme_font_size_override("font_size", sz)
+	var f := Ui.face(Ui.font_big, 16 if big else 10)
+	var sz := Ui.px(f, 16 if big else 10)
+	for l in [center_label, center_shadow]:
+		l.add_theme_font_override("font", f)
+		l.add_theme_font_size_override("font_size", sz)
 	center_label.size = Vector2.ZERO
 	center_shadow.size = Vector2.ZERO
 	center_label.visible = true
@@ -1117,12 +1161,45 @@ func kamae_broken() -> void:
 
 
 func show_hint(text: String) -> void:
-	hint_label.text = text
+	if juice.intro_showing():
+		# the countdown and FIGHT use the lower middle of the screen
+		_hint_wait = text
+		return
+	hint_label.text = _wrap(text, hint_label, vs.x - 60.0)
 	hint_bg.visible = true
 	hint_t = 0.0
 
 
+## Breaks `text` at word gaps into lines of about equal width, none wider
+## than `max_w`. Text that already fits is returned as it is.
+func _wrap(text: String, l: Label, max_w: float) -> String:
+	var f: Font = l.get_theme_font("font")
+	var fs := l.get_theme_font_size("font_size")
+	var full := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
+	if full <= max_w:
+		return text
+	var target := minf(max_w, full / ceilf(full / max_w) + 24.0)
+	var out := PackedStringArray()
+	var line := ""
+	for w in text.split(" ", false):
+		var t := w if line == "" else line + " " + w
+		if line != "" and f.get_string_size(t, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > target:
+			out.append(line)
+			line = w
+		else:
+			line = t
+	out.append(line)
+	return "\n".join(out)
+
+
 func add_popup(text: String, color: Color) -> void:
+	if juice.intro_showing():
+		# e.g. "<UPGRADE> ONLINE" picked just before a wave: it shows at FIGHT
+		_popup_wait.append([text, color])
+		return
+	if juice.panel_showing():
+		# kill tags would sit on FINISH, the payout or the boss-defeated card
+		return
 	# a repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking
 	# identical lines
 	if not popups.is_empty() and popups[0].text == text and popups[0].t < 0.8:
@@ -1145,7 +1222,7 @@ func add_popup(text: String, color: Color) -> void:
 		l.add_theme_color_override("font_color", color)
 		l.visible = true
 	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
-	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1})
+	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color})
 
 
 func _free_popup(l: Label) -> void:
@@ -1242,16 +1319,22 @@ func _process(_delta: float) -> void:
 		t.size = Vector2.ZERO
 		t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.05)
 		_fit([death_score, death_table, death_prompt, initials_label])
-		death_score.position = Vector2((vs.x - death_score.size.x) * 0.5, vs.y * 0.05 + 30)
-		var col_w := death_stats.size.x + 40.0 + maxf(death_table.size.x, 190.0)
+		# each line sits under the real height of the one above (the label
+		# boxes include empty space under capitals, so they tuck in a little)
+		death_score.position = Vector2((vs.x - death_score.size.x) * 0.5, t.position.y + t.size.y - 6)
+		# column widths come from the full text, so nothing shifts as lines appear
+		_fit([death_stats, death_vals])
+		var stats_w := _death_cols.x + 12.0 + _death_cols.y
+		var col_w := stats_w + 32.0 + maxf(death_table.size.x, 190.0)
 		var x0 := (vs.x - col_w) * 0.5
-		level_bar.position = Vector2(roundf((vs.x - level_bar.size.x) * 0.5), roundf(vs.y * 0.05 + 52))
-		var y0 := vs.y * 0.05 + 90
+		level_bar.position = Vector2(roundf((vs.x - level_bar.size.x) * 0.5), roundf(death_score.position.y + death_score.size.y))
+		var y0 := level_bar.position.y + level_bar.size.y + 4
 		death_stats.position = Vector2(x0, y0)
-		death_table.position = Vector2(x0 + death_stats.size.x + 40.0, y0)
+		death_vals.position = Vector2(x0 + _death_cols.x + 12.0, y0)
+		death_table.position = Vector2(x0 + stats_w + 32.0, y0)
 		if entering:
 			_update_initials()
-			initials_root.position = Vector2(x0 + death_stats.size.x + 40.0, y0)
+			initials_root.position = Vector2(x0 + stats_w + 32.0, y0)
 			initials_label.position = Vector2.ZERO
 			for i in 3:
 				initials_slots[i].position = Vector2(i * 30, initials_label.size.y + 4)
@@ -1293,7 +1376,8 @@ func _layout_title() -> void:
 	logo_band.size = Vector2(lw + 36, logo_k.size.y + 16)
 	var sk := clampf((tt - 0.32) / 0.07, 0.0, 1.0)
 	logo_slash.visible = tt > 0.32
-	logo_slash.size = Vector2(22, (logo_k.size.y + 30) * sk)
+	# the slash stops above the subtitle line
+	logo_slash.size = Vector2(22, (logo_k.size.y + 22) * sk)
 	logo_slash.position = Vector2(lx0 + logo_k.size.x + gap * 0.5 - 11, ly - 12)
 	if tt > 0.39 and not _title_hit:
 		_title_hit = true
@@ -1498,7 +1582,8 @@ func _update_play(delta: float) -> void:
 		hi_label.text = "NEW HI-SCORE"
 	else:
 		hi_label.text = "HI %07d" % maxi(best, shown_score)
-	hi_label.visible = true
+	# the wave payout panel reaches up to it, so it steps aside meanwhile
+	hi_label.visible = not juice.tally_showing()
 	hi_label.position = Vector2(roundf((vs.x - hi_label.size.x) * 0.5), m - 3)
 	# ---- boss name card (the big one when a boss arrives)
 	var band_on := boss_title.visible
@@ -1544,7 +1629,7 @@ func _update_play(delta: float) -> void:
 	score_label.pivot_offset = Vector2(score_label.size.x, score_label.size.y * 0.5)
 	score_label.scale = Vector2.ONE * (1.0 + 0.2 * _score_bump * _score_bump)
 	score_label.add_theme_color_override("font_color", Color.WHITE.lerp(Juice.GOLD, minf(1.0, _score_bump * 1.5)))
-	score_label.position = Vector2(vs.x - m - score_label.size.x, m - 5)
+	score_label.position = Vector2(vs.x - m - score_label.size.x, m - 2)
 	var score_bottom := score_label.position.y + score_label.size.y - 2.0
 	# ---- combo: pops on every kill, the plate heats up, milestones stamp
 	if Game.combo == 0:
@@ -1645,10 +1730,19 @@ func _update_play(delta: float) -> void:
 		hint_label.size = Vector2.ZERO
 		hint_bg.size = Vector2(hint_label.size.x + 12, hint_label.size.y + 2)
 		hint_label.position = Vector2(6, 1)
-		hint_bg.position = Vector2(roundf((vs.x - hint_bg.size.x) * 0.5), lvl_label.position.y - 4 - hint_bg.size.y)
+		# above the level and the bottom plates, so it never sits on them
+		var hb := minf(lvl_label.position.y, minf(plate_bl.position.y, plate_br.position.y))
+		hint_bg.position = Vector2(roundf((vs.x - hint_bg.size.x) * 0.5), hb - 4 - hint_bg.size.y)
 		hint_bg.modulate.a = clampf((4.5 - hint_t) / 0.3, 0.0, 1.0)
 		if hint_t > 4.5:
 			hint_bg.visible = false
+	if not juice.intro_showing():
+		if _hint_wait != "":
+			show_hint(_hint_wait)
+			_hint_wait = ""
+		for w in _popup_wait:
+			add_popup(w[0], w[1])
+		_popup_wait.clear()
 	# ---- kill tags: right of the crosshair, newest on top; the stack slides
 	# smoothly instead of jumping, and each tag holds still once it lands
 	var px0 := roundf(vs.x * 0.5 + 18)

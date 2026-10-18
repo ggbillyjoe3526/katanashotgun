@@ -821,7 +821,9 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 ### 3.8 Run level and augments (in-run, resets each run)
 - XP comes from kills (grunt 10, gunner 18, brute 60, Kurokage 320, Tetsugumo
   420, Shuten 500). XP to the next level = `60 + (level − 1) × 40`.
-- **Each level-up** pauses the game (tree paused) and offers **3 augments**,
+- **Each level-up** pauses the game (tree paused) and offers **3 augments**
+  (it opens once any centre-screen moment has finished: FINISH, the payout,
+  a boss card, a stamp; see §9.9),
   drawn as a seeded Fisher–Yates pick from the cards not yet at max rank (and
   whose `requires` card, if any, is owned). Choose with click or 1/2/3.
   Several pending level-ups chain.
@@ -1488,11 +1490,15 @@ the holographic cut-in (§9.8).
 ### 9.7 UI: cyberpunk, rendered pixel-retro
 **Our own cyberpunk visual language, not Persona 5's.**
 - **Faces** (all SIL OFL, bundled):
-  - **Orbitron 900:** display text and big numbers (×1.25 size boost).
-  - **Chakra Petch 600/700:** labels (×1.25).
-  - **Share Tech Mono:** data, seeds, tables and rolling numbers (×1.5);
-    monospaced digits stop count-ups from jittering.
-  - **Michroma:** the big slow cards (glyph spacing +2).
+  - **Jersey 10:** all body text, labels, card text, tags and data. A true
+    pixel face, drawn only at its own size (19 px, capitals 10 px) or a
+    whole multiple, so every stroke is one even pixel wide. Numbers, seeds,
+    tables and rolling counters use its fixed-width digits, which stop
+    count-ups from jittering.
+  - **Orbitron 900:** big display words and numbers only (×1.25 size boost);
+    anything below its 16 px minimum is drawn in Jersey 10 instead.
+  - **Michroma:** the big slow cards (glyph spacing +2); its small subtitle
+    line is Jersey 10.
   - All are pixel-rendered (§2). Latin subsets only, so **in-game text has no
     macrons** (DOJIGIRI, not DŌJIGIRI). Optionally add a Latin-Extended
     fallback font and restore them.
@@ -1558,6 +1564,7 @@ the holographic cut-in (§9.8).
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
   hint if the mouse fails to lock. SETTINGS [TAB] and QUIT GAME buttons
   under them (no Q here: Q is a dash key mid-run). Music ducks to −20 dB.
+  The live HUD hides and the big messages freeze until you resume.
 - **Quit:** QUIT GAME on the title, the pause screen and the settings footer
   closes the game, saving the profile and settings first. The first press only
   arms it ("PRESS AGAIN TO QUIT" for 3 s) so a stray click or key never quits.
@@ -1570,7 +1577,7 @@ the holographic cut-in (§9.8).
     under the one above; the build lines sit on the bottom edge). A linking
     card wears a gold RECOMMENDED tab above its top edge (§3.8).
   - **Card text must read at a glance** (owner, 2026-10-18: card text was
-    hard to read). Name and description are Chakra Petch 700 at 15 px (rank 14 px), white
+    hard to read). Name, rank and description are Jersey 10 at 19 px, white
     with no outline, on a solid near-black plate inset 4 px in the card; the
     hover and selection glow tints only the rim around the plate. Card copy
     stays under 58 characters (a Gut test checks).
@@ -1748,12 +1755,13 @@ something.
   and the text must be fully legible.
 
 **How the UI meets the rule (implemented 2026-10-18):**
-- Smallest sizes at 480×270, chosen by rendering every face at every size:
-  Orbitron 13 px (with +1 px glyph spacing everywhere, or neighbouring
-  letters merge: "LI" read as "U"), Share Tech Mono 14 px, Chakra Petch 12 px
-  (13 px for anything that matters), Michroma 12 px. Smaller sizes break the
-  letter shapes (0 reads as A, O as D) and are not used for anything the
-  player reads.
+- Sizes at 480×270, chosen by rendering every face at every size: small
+  text is Jersey 10 at 19 px (10 px capitals, one-pixel strokes; it is
+  never drawn between sizes, where its pixels would turn uneven). Orbitron
+  starts at 16 px (with +1 px glyph spacing everywhere, or neighbouring
+  letters merge: "LI" read as "U") and Michroma at 16 px; below that the
+  vector faces break the letter shapes (0 reads as A, O as D, uneven stems),
+  so small text never uses them.
 - Glitch text (`GlitchText`): decode capped at 0.1 s; digits and punctuation
   never scramble; no glitch bursts while held, only `glitch_out()` on the way
   out; RGB split 1 px at rest; a dark outline under every glyph.
@@ -1765,6 +1773,21 @@ something.
   the LEVEL UP title, no jitter on the tally total.
 - `--juicetest` also shows the boss name card, kill tags, NO CHARGE, a hint
   and an ENRAGED message, for paused-frame checks.
+- Nothing spills out of its panel or sits on other text (tidy pass,
+  2026-10-18). The big moments take turns instead of stacking:
+  - The level-up screen and the pause screen replace the live HUD (the pause
+    screen also freezes stamps and cards where they are until you resume).
+  - The level-up opens once FINISH, the wave payout, the boss-defeated card,
+    the boss name card and any stamp have finished; a level-up earned on a
+    wave's last kills opens after the payout, before the next wave's intro.
+  - Kill tags and hints wait for the wave intro (an "<UPGRADE> ONLINE" tag
+    appears at FIGHT) and are dropped while FINISH, the payout or the
+    boss-defeated card is up; combo milestones play their sound only then.
+  - Hints wrap onto two centred lines when wider than the screen, and sit
+    above the bottom HUD plates. A long mutator name in the payout stays
+    inside the panel; the best score steps aside while the payout is up.
+  - Results stats are two columns (names, numbers), so the numbers line up.
+  - `--uiaudit` checks all of this while the game runs (see the README).
 
 ---
 

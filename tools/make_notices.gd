@@ -14,8 +14,7 @@ const RULE := "=================================================================
 ## [name, licence file] for each third-party asset inside the game.
 const SHIPPED := [
 	["Orbitron (font)", "res://assets/fonts/LICENSE_orbitron.txt"],
-	["Chakra Petch (font)", "res://assets/fonts/LICENSE_chakra_petch.txt"],
-	["Share Tech Mono (font)", "res://assets/fonts/LICENSE_share_tech_mono.txt"],
+	["Jersey 10 (font)", "res://assets/fonts/LICENSE_jersey_10.txt"],
 	["Michroma (font)", "res://assets/fonts/LICENSE_michroma.txt"],
 ]
 

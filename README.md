@@ -87,7 +87,7 @@ assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds 
 assets/music/               soundtrack (tools/gen_music.py); tracks/ holds one settings
                             file per piece
 default_bus_layout.tres     the audio mix: Master, Music, SFX, Ambience, UI buses
-assets/fonts/               Orbitron, Chakra Petch, Share Tech Mono, Michroma (SIL OFL)
+assets/fonts/               Jersey 10, Orbitron, Michroma (SIL OFL)
 installer/                  Windows installer script (Inno Setup) and icon
 tools/                      smoke and unit test runners, notices, release-notes helper,
                             icon and audio generators
@@ -197,6 +197,9 @@ Pass after `--` on the command line:
   plus a log line every 2 s and a summary at exit
 - **F3** toggles the perf overlay (fps, frame time, draw calls, nodes) in any
   build
+- `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
+  any text that leaves the screen, spills out of or across a panel, or
+  overlaps other text (and a count at exit)
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
@@ -204,6 +207,7 @@ tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
 tools/movement_test.sh                                           # movement course
 tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
+godot --headless --path . --resolution 960x540 --quit-after 20000 -- --autoplay --uiaudit
 ```
 
 ## Regenerating audio
