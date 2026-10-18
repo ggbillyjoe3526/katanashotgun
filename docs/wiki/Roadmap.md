@@ -6,9 +6,6 @@ already arrived is in the [Patch Notes](Patch-Notes).
 
 ## Being built now
 
-- **The Well.** The rooftop goes vertical: a shaft down to a metro station,
-  balconies, a raised north deck, a torii bridge, and a living city around it.
-  ([The Map](The-Map#coming-soon-the-well))
 - **Even easier-to-read text.** Text is already bigger and on solid plates;
   next come crisper pixel fonts, and text that always stays inside its panel
   across the HUD, menus and level-up cards.
