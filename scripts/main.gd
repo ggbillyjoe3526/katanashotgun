@@ -35,6 +35,7 @@ func _ready() -> void:
 	Game.gore = gore
 	var fx := Fx.new()
 	fx.process_mode = Node.PROCESS_MODE_PAUSABLE
+	fx.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # moved every frame, not per tick
 	add_child(fx)
 	Game.fx = fx
 	director = WaveDirector.new()
@@ -56,6 +57,9 @@ func _ready() -> void:
 	add_child(ShaderWarmup.new())
 	if OS.get_cmdline_user_args().has("--juicetest"):
 		add_child(load("res://scripts/debug_juice.gd").new())
+		return
+	if OS.get_cmdline_user_args().has("--movetest"):
+		add_child(load("res://scripts/debug_movement.gd").new())
 		return
 	if OS.get_cmdline_user_args().has("--cardtour"):
 		add_child(load("res://scripts/debug_cards.gd").new())

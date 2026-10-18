@@ -95,6 +95,7 @@ var _eye_color := Color(0.2, 1.0, 1.0)
 var _glow_mat: ShaderMaterial
 var marker: MeshInstance3D
 var finisher_lit := false # the player's glory kill would take this one
+var _exec_tag := "GLORY KILL" # the kill tag a finisher's kill shows
 var _rng := RandomNumberGenerator.new()
 var _jacket_mat: ShaderMaterial
 var _mohawk: Node3D
@@ -586,6 +587,7 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < -8.0:
 		global_position = Vector3(0, 6, -20)
 		velocity = Vector3.ZERO
+		reset_physics_interpolation()
 
 
 ## Boss subclasses handle their own states here. Returns [move, face].
@@ -817,7 +819,7 @@ func glory_hit(dir: Vector3, amount := 1.0) -> void:
 	knock += Vector3(dir.x, 0, dir.z).normalized() * 0.6 * amount
 
 
-func execute(dir: Vector3, gore_mode := "execution") -> bool:
+func execute(dir: Vector3, gore_mode := "execution", tag := "GLORY KILL") -> bool:
 	visual.rotation.x = 0.0
 	if is_boss and hp > max_hp * BossKamae.BLOW_SHARE + 1.0:
 		# the ONIKIRI blow on a broken boss; its name was the cut-in
@@ -834,6 +836,7 @@ func execute(dir: Vector3, gore_mode := "execution") -> bool:
 		_end_stagger()
 		return false
 	glory_gore = gore_mode
+	_exec_tag = tag
 	die("execution", dir, false)
 	return true
 
@@ -931,11 +934,13 @@ func _update_poise(delta: float) -> void:
 
 
 ## The stagger marker turns gold and grows on the enemy F would finish, so
-## the player can see which one the glory kill will take.
+## the player can see which one the glory kill will take. A plunge can take
+## an enemy that isn't staggered, so the gold marker shows on it too.
 func set_finisher_lit(on: bool) -> void:
 	if finisher_lit == on:
 		return
 	finisher_lit = on
+	marker.visible = on or is_staggered()
 	var m := marker.material_override as ShaderMaterial
 	m.set_shader_parameter("color", FINISHER_GOLD if on else MARKER_RED)
 
@@ -1010,7 +1015,7 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 	var pts := points
 	match source:
 		"execution":
-			tag = "ONIKIRI" if is_boss else "GLORY KILL"
+			tag = "ONIKIRI" if is_boss else _exec_tag
 			col = Color(1.0, 0.15, 0.2)
 			pts *= 2
 			if not is_boss:
