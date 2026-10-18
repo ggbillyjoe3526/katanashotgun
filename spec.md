@@ -533,6 +533,7 @@ Notes:
 | Bosses: posture, no glory kills | Bosses have a posture bar (KAMAE) that aggressive play fills; a full bar breaks the boss and F lands the ONIKIRI blow. Bosses never get a glory kill; only the horde does (owner, 2026-10-18; §5.5) |
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
+| Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -1246,7 +1247,12 @@ the holographic cut-in (§9.8).
 - The music playlist order also comes from the seed.
 - **The same seed and the same play give the same run.** Keep cosmetic
   randomness out of the gameplay streams.
-- Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.)
+- Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.) If
+  built, it is made offline from the date, since the game never goes
+  online (owner, 2026-10-18).
+- **Sharing seeds** between players, offline, is a direction to expand
+  (owner, 2026-10-18): racing a friend's score on the same seed, and more.
+  §19.1 lists the ideas to try.
 
 ---
 
@@ -2448,11 +2454,94 @@ seed | click: new seed).
 - The **full difficulty curve** past the early waves (tune by playtesting;
   waves 1–3 stay easy).
 - **Controller support** (not requested yet).
-- A daily seed and online leaderboard (mentioned early, not confirmed).
+- A daily seed, made offline from the date (mentioned early, not confirmed). Online leaderboards are ruled out: the game stays offline (owner, 2026-10-18).
 - A **Steam** release and cloud saves.
 - Whether in-game text gets macrons back (needs a fallback font).
 - Repo visibility (public, or private plus a public releases repo), the
   publisher name, code signing, Mac builds (PART S).
+
+
+### 19.1 Ideas to try (owner, 2026-10-18)
+From the competitor research (claude.ai doc "KATANA / SHOTGUN: Market
+Research"). The owner wants each built later as something to play-test; he
+decides after trying it whether it stays. None is approved for a release
+yet, and each needs a spec update with its tuning when it is built.
+1. **Seed Duels.** The results screen gives a short code with the seed,
+   initials, the game version and the score after every wave. A friend
+   pastes it and plays the same seed with a rival line on the HUD ("vs WIL
+   +2,350") and a head-to-head row in each tally. Offline: the code travels
+   by hand. Put the version in the code (seeds break when the game
+   changes) and mark a player's first attempt on a seed. Needs a seed entry
+   box on the title screen.
+2. **Two Hands, One Rhythm.** Alternating katana and shotgun kills earns an
+   extra combo step and lights the matching hand on the HUD; a clean
+   left-right-left chain gets a stamp. A bonus only, never a penalty, so
+   katana-heavy builds stay good. Name to pick from §13 (candidate: NITEN,
+   after Musashi's Niten Ichi-ryu).
+3. **Perfect Deflect.** A deflect in the last moment before a bolt lands is
+   PERFECT: a ringing clang, a white flash, more return damage and a big
+   KAMAE hit. Each boss gets one signature volley meant for it (Kurokage's
+   shuriken fan). Possibly KAMAE recovers more slowly as the boss loses HP
+   (Sekiro). The normal deflect stays exactly as it is.
+4. **Bet on the wave.** The wave intro offers the seeded mutator and the
+   player takes it (for its score multiplier) or passes; later waves may
+   offer a second to stack. The same seed offers the same choices; harsh
+   mutators keep their `min_wave`. One key press, so the wave start stays
+   quick.
+5. **On the beat.** Presentation snaps to the music's beat (tracks already
+   store their bpm): glory-kill flashes, KAMAE BROKEN, combo stamps, the
+   tally slam, neon and spawn-beam pulses. Only effects wait for the beat,
+   never a hit or an input. The player never has to play in rhythm.
+
+Ideas 6 to 10 build on the shared seed and work fully offline: players
+swap a short code or a small file by hand. Most need a seed entry box on
+the title screen first (today a friend's seed needs a shortcut edit).
+6. **Challenge Codes.** A code carrying a seed plus rules the sender picked
+   from what exists: mutators locked on for every wave, a starting build, a
+   wave to reach and a score to beat. A "dare a friend" builder after a
+   run. Challenge scores sit on their own board, never mixed with normal
+   high scores.
+7. **Ghost Ronin.** A small file of a run (the player's position and big
+   moments, a few times a second) that a friend loads on the same seed:
+   the run plays back beside them as a see-through neon ronin. A recording
+   only; it never touches the run.
+8. **Legendary Seeds.** A title-screen shrine of named, hand-picked seeds,
+   each with bronze, silver and gold scores; a medal saved per seed. New
+   seeds join with updates or as boss rewards. Re-check the list each
+   update, since seeds change when the game changes.
+9. **The City Is Watching.** Shin-Kagura reacts to the run: news drones
+   gather as the combo climbs, billboards show kills and score live, and
+   city screens show the top initials for this seed (yours, or the friend
+   whose code is loaded). Presentation only, scaled by the graphics preset.
+10. **Run Cards.** One key on the results screen saves a postcard image to
+   the Pictures folder: seed code, score, wave, builds, bosses felled and
+   the run's best moment, in the game's style. No internet.
+
+
+### 19.2 Standing apart from Mullet MadJack (owner, 2026-10-18)
+Mullet MadJack is the closest rival players will name (retro anime
+cyberpunk FPS, blade and shotgun, endless mode, 97% positive). It is a
+3 to 4 hour comedy campaign of tiny rooms against a 10-second timer; its
+reviews complain most about repetition and weak bosses. KATANA / SHOTGUN
+is its opposite, and these five areas are the direction to strengthen
+when planning work:
+1. **Bosses are the showpiece.** KAMAE, real movesets and the ONIKIRI are
+   our deepest system and their weakest point. Perfect Deflect (§19.1 #3)
+   and the planned boss variants push it further.
+2. **Big arena, big crowds.** Up to 22 enemies at once on a rooftop with
+   six floor heights, against their small rooms. Keep the one map fresh
+   (The City Is Watching, §19.1 #9) and add the planned maps.
+3. **A game that lasts.** Endless waves, seeds shared between friends,
+   Challenge Codes and Legendary Seeds give months of play, not a short
+   campaign.
+4. **Both hands, all the time.** Katana and shotgun always in hand, each
+   feeding the other; Two Hands, One Rhythm (§19.1 #2) makes it the thing
+   every clip shows.
+5. **Our own mood.** Stylish, serious and mythic ("loud, then quiet"), not
+   jokey. Don't add a timer, a story campaign or comedy because it worked
+   for them.
+Match them on the basics: a free demo, comfort options (shake and flash
+sliders exist) and controller support (still an open decision, §19).
 
 ---
 
