@@ -18,12 +18,13 @@ and Linux).
 | Mouse | Look |
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
 | RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
-| Slash a staggered enemy | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow) |
+| F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow). A gold "F GLORY KILL" prompt shows when one is in reach |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
 | Space | Jump / double jump |
 | Shift (or Q) | Dash (invulnerable) |
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
+| Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
 | After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
 
 ## How a run works
@@ -54,9 +55,10 @@ scripts/maps/map_registry.gd   list of maps; the seed picks one
 scripts/gore.gd             blood droplets, floor splats, gibs, geysers, scorch marks
 scripts/fx.gd               damage numbers, tracers, telegraphs, missiles, explosions
 scripts/hud.gd              HUD, title, boss intros, level-up, death screen, initials
+scripts/settings.gd         player settings: load, save, apply, key rebinding
 scripts/juice.gd            game feel: stamps, wave intro, tally, cards, cut-ins, FINISH
 scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-in,
-                            data streaks, kill bursts
+                            data streaks, kill bursts, the settings screen
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
@@ -98,16 +100,35 @@ gdlintrc                    gdlint settings
   `godot --headless --path . -s res://tools/make_notices.gd` and commit
   `THIRD_PARTY_NOTICES.txt`. The installer and every zip ship it next to the
   game.
-- **Releases** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`, or open
-  *Actions → Release → Run workflow* and type the version. It runs the smoke
-  test, exports Windows, Linux and macOS, builds the Windows installer, checks
-  it installs and uninstalls, and publishes a GitHub Release with
-  `KatanaShotgun-vX.Y.Z-Windows-Setup.exe`, `-Windows-Portable.zip`,
-  `-Linux.zip` and `-macOS.zip`. The release notes come from that version's
-  section of `CHANGELOG.md`. A pull request that touches the pipeline does a
+- **Version:** set once, as `config/version` in `project.godot`, with names
+  like `0.1 Dev 1`, `0.1 Beta 2` and `0.1`. `VERSIONING.md` explains the
+  scheme and how a name becomes a tag (`v0.1-dev.1`).
+- **Releases** (`.github/workflows/release.yml`): open *Actions → Release →
+  Run workflow* on `main` to release the version in `project.godot` (or push
+  its matching tag). It runs the smoke test, exports Windows, Linux and
+  macOS, builds the Windows installer, checks it installs and uninstalls, and
+  publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
+  `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
+  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
   dry run: everything is built and attached to the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
+
+## Settings
+Open with **Tab** or the SETTINGS button on the title or pause screen.
+- **Audio:** volume for Master, Music, Sound effects, Ambience and Menus/HUD.
+- **Video:** window mode (windowed, fullscreen, exclusive fullscreen), VSync,
+  frame cap, quality preset, render scale (50 to 100% of the 3D view), field
+  of view (70 to 110, default 88).
+- **Controls:** mouse sensitivity and two keys or mouse buttons per action.
+  Taking a key another action uses swaps the two. Esc and F11 stay fixed.
+- **Comfort:** screen shake and flash strength. Below 100% flashes, impact
+  frames don't strobe.
+
+Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
+Q / E change tab, R resets the tab, Esc goes back. Settings are saved to
+`settings.json` in the game's user folder (`%APPDATA%\KatanaShotgun` on
+Windows), with a backup next to it.
 
 ## Debug flags
 Pass after `--` on the command line:
@@ -117,6 +138,11 @@ Pass after `--` on the command line:
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
   `--boss=ninja|mech|oni` forces a boss
+- `--palettetour` four fixed views of the arena for checking colour, then
+  quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
+  or a normal run
+- `--settings=audio|video|controls|comfort` opens the settings screen on the
+  title at that tab
 - `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
   measure the mix (use with `--write-movie` so audio follows game time)
 

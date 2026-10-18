@@ -70,16 +70,18 @@ func _perimeter() -> void:
 	_solid(Vector3(half * 2 + 1.2, h, 0.6), Vector3(0, h * 0.5, e), m_chrome)
 	_solid(Vector3(0.6, h, half * 2 + 1.2), Vector3(-e, h * 0.5, 0), m_chrome)
 	_solid(Vector3(0.6, h, half * 2 + 1.2), Vector3(e, h * 0.5, 0), m_chrome)
-	_neon(Vector3(half * 2 + 1.2, 0.09, 0.12), Vector3(0, h + 0.05, -e + 0.25), pal.neon_a, 3.0)
-	_neon(Vector3(half * 2 + 1.2, 0.09, 0.12), Vector3(0, h + 0.05, e - 0.25), pal.neon_b, 3.0)
-	_neon(Vector3(0.12, 0.09, half * 2 + 1.2), Vector3(-e + 0.25, h + 0.05, 0), pal.neon_b, 3.0)
-	_neon(Vector3(0.12, 0.09, half * 2 + 1.2), Vector3(e - 0.25, h + 0.05, 0), pal.neon_a, 3.0)
+	_neon(Vector3(half * 2 + 1.2, 0.09, 0.12), Vector3(0, h + 0.05, -e + 0.25), _accent(0), 3.0)
+	_neon(Vector3(half * 2 + 1.2, 0.09, 0.12), Vector3(0, h + 0.05, e - 0.25), _accent(1), 3.0)
+	_neon(Vector3(0.12, 0.09, half * 2 + 1.2), Vector3(-e + 0.25, h + 0.05, 0), _accent(3), 3.0)
+	_neon(Vector3(0.12, 0.09, half * 2 + 1.2), Vector3(e - 0.25, h + 0.05, 0), _accent(4), 3.0)
 	for s in [-1.0, 1.0]:
 		_solid(Vector3(half * 2 + 4, 16, 1), Vector3(0, 8, s * (e + 0.5)), null, 0.0, 0, false)
 		_solid(Vector3(1, 16, half * 2 + 4), Vector3(s * (e + 0.5), 8, 0), null, 0.0, 0, false)
-	for c in [Vector3(-29, 0, -29), Vector3(29, 0, -29), Vector3(-29, 0, 29), Vector3(29, 0, 29)]:
+	var corners := [Vector3(-29, 0, -29), Vector3(29, 0, -29), Vector3(-29, 0, 29), Vector3(29, 0, 29)]
+	for k in corners.size():
+		var c: Vector3 = corners[k]
 		add_child(Psx.box(Vector3(0.3, 6, 0.3), m_dark, c + Vector3(0, 3, 0)))
-		var col: Color = pal.neon_a if int(c.x > 0) ^ int(c.z > 0) else pal.neon_b
+		var col := _accent([2, 5, 5, 2][k])
 		_neon(Vector3(0.6, 0.6, 0.6), c + Vector3(0, 6.2, 0), col, 3.5)
 		_halo(c + Vector3(0, 6.2, 0), col, 3.0, 0.5)
 		_light(c + Vector3(0, 5.5, 0), col, 1.7, 16.0)
@@ -145,12 +147,12 @@ func _catwalks() -> void:
 				_solid(Vector3(0.5, h - 0.45, 0.5), Vector3(x + lx, (h - 0.45) * 0.5, lz), m_dark, 0.0, 1)
 		_ramp(Vector3(x, 0, 22.5), Vector3(x, h, 15), 5.0, m_ramp)
 		_ramp(Vector3(x, 0, -22.5), Vector3(x, h, -15), 5.0, m_ramp)
-		var col: Color = pal.neon_b if s < 0 else pal.neon_a
+		var col := _accent(1) if s < 0 else _accent(3)
 		_neon(Vector3(0.08, 0.08, 30), Vector3(x - s * 2.52, h + 0.04, 0), col, 3.0)
 		_neon(Vector3(0.08, 0.08, 30), Vector3(x - s * 2.52, h - 0.45, 0), col, 2.0)
 		for i in 7:
 			add_child(Psx.box(Vector3(0.12, 1.0, 0.12), m_dark, Vector3(x + s * 2.4, h + 0.5, -13.5 + i * 4.5)))
-		_neon(Vector3(0.08, 0.08, 30), Vector3(x + s * 2.4, h + 1.0, 0), pal.neon_c, 2.2)
+		_neon(Vector3(0.08, 0.08, 30), Vector3(x + s * 2.4, h + 1.0, 0), _accent(2) if s < 0 else _accent(5), 2.2)
 		_light(Vector3(x - s * 3.0, h + 2.0, -8), col, 1.6, 13.0)
 		_light(Vector3(x - s * 3.0, h + 2.0, 8), col, 1.6, 13.0, s > 0)
 
@@ -169,7 +171,6 @@ func _cover() -> void:
 		crate_slots[i] = crate_slots[j]
 		crate_slots[j] = tmp
 	var count := rng.randi_range(4, 6)
-	var neon_cols := [pal.neon_a, pal.neon_b, pal.neon_c]
 	for i in count:
 		var p: Vector3 = crate_slots[i][0]
 		var r: float = crate_slots[i][1]
@@ -177,12 +178,12 @@ func _cover() -> void:
 		var mat := Psx.lit(Color(pal.floor).lightened(0.25), TexGen.get_tex("container"), false, 1.0, {"uv_tiling": Vector2(2, 1)})
 		var pos := p + Vector3(0, size.y * 0.5, 0)
 		_platform(size, pos, mat, r)
-		_neon_box_edges(pos, size, r, neon_cols[i % 3], 2.4)
+		_neon_box_edges(pos, size, r, _accent(i), 2.4)
 		if i == 0:
 			# a stacked crate for verticality
 			var pos2 := pos + Vector3(0, size.y, 0)
 			_platform(size, pos2, mat, r)
-			_neon_box_edges(pos2, size, r, neon_cols[(i + 1) % 3], 2.4)
+			_neon_box_edges(pos2, size, r, _accent(i + 3), 2.4)
 	# neon obelisks: one of three layouts
 	var layouts := [
 		[Vector3(-14, 0, -9), Vector3(14, 0, -9), Vector3(-14, 0, 9), Vector3(14, 0, 9)],
@@ -194,11 +195,11 @@ func _cover() -> void:
 	for p in layout:
 		var q: Vector3 = p
 		_solid(Vector3(1.4, 8, 1.4), q + Vector3(0, 4, 0), m_chrome)
-		var col: Color = pal.neon_a if i % 2 == 0 else pal.neon_b
+		var col := _accent(i + 3)
 		for cx in [-0.72, 0.72]:
 			for cz in [-0.72, 0.72]:
 				_neon(Vector3(0.08, 7.5, 0.08), q + Vector3(cx, 4, cz), col, 3.5, null, 0.3 if (i == 2 and cx > 0 and cz > 0) else 0.0)
-		_neon(Vector3(1.6, 0.1, 1.6), q + Vector3(0, 8.05, 0), pal.neon_c, 3.0)
+		_neon(Vector3(1.6, 0.1, 1.6), q + Vector3(0, 8.05, 0), _accent(i + 1), 3.0)
 		_light(q + Vector3(0, 3.0, 0), col, 1.8, 12.0, i == 2)
 		i += 1
 
@@ -256,7 +257,7 @@ func _buildings() -> void:
 		s.y *= rng.randf_range(0.8, 1.25)
 		var pos := c + Vector3(0, s.y * 0.5 - 12.0, 0)
 		add_child(Psx.box(s, m_windows, pos, 4))
-		_neon_box_edges(pos, s, 0.0, _pick([pal.neon_a, pal.neon_b, pal.neon_c]), 2.0, true)
+		_neon_box_edges(pos, s, 0.0, _pick(pal.accents), 2.0, true)
 	# neon signs and billboards facing the arena (texture, colour and flicker are seeded)
 	var spots := [
 		[Vector3(-20, 14, -35.9), 0.0, "v"], [Vector3(6, 20, -36.9), 0.0, "v"], [Vector3(-4, 9, -36.9), 0.0, "h"],
@@ -264,10 +265,9 @@ func _buildings() -> void:
 		[Vector3(-35.9, 18, -6), PI * 0.5, "ad"], [Vector3(-35.9, 8, 16), PI * 0.5, "h"], [Vector3(-12, 3, 36.9), PI, "h"],
 		[Vector3(14, 6, 36.9), PI, "v"],
 	]
-	var cols := [pal.neon_a, pal.neon_b, pal.neon_c]
 	for sp in spots:
 		var kind: String = sp[2]
-		var col: Color = _pick(cols)
+		var col: Color = _pick(pal.accents)
 		var tex_name := ""
 		var size := Vector2.ZERO
 		var energy := 2.8
@@ -288,7 +288,7 @@ func _buildings() -> void:
 		q.rotation.y = sp[1]
 		add_child(q)
 		_halo(sp[0] + Vector3.FORWARD.rotated(Vector3.UP, sp[1]) * -0.5, col, maxf(size.x, size.y) * 1.3, 0.2)
-	var holo := Psx.quad(Vector2(60, 30), Psx.unlit(pal.neon_b, 0.9, TexGen.get_tex("ad%d" % (rng.randi() % 6)), {"flicker": 0.15, "fog_amount": 0.15}), Vector3(rng.randf_range(-60, 60), 70, -150))
+	var holo := Psx.quad(Vector2(60, 30), Psx.unlit(_accent(4), 0.9, TexGen.get_tex("ad%d" % (rng.randi() % 6)), {"flicker": 0.15, "fog_amount": 0.15}), Vector3(rng.randf_range(-60, 60), 70, -150))
 	holo.rotation.y = rng.randf_range(-0.3, 0.3)
 	add_child(holo)
 
@@ -318,7 +318,7 @@ func _skyline() -> void:
 	mmi.multimesh = mm
 	mmi.material_override = m_skyline
 	add_child(mmi)
-	var beacon_mat := Psx.unlit(pal.neon_a, 3.0, null, {"flicker": 0.6, "fog_amount": 0.1})
+	var beacon_mat := Psx.unlit(_accent(5), 3.0, null, {"flicker": 0.6, "fog_amount": 0.1})
 	for bpos in beacons:
 		add_child(Psx.box(Vector3(1.2, 1.2, 1.2), beacon_mat, bpos))
 
@@ -353,7 +353,7 @@ func _palms() -> void:
 			seg.rotation.z = -lean * k * 0.8
 			tree.add_child(seg)
 		var crown := top + Vector3(0, h / 16.0, 0)
-		var glow: Color = _pick([pal.neon_a, pal.neon_b, pal.neon_c])
+		var glow: Color = _pick(pal.accents)
 		for f in 8:
 			var frond := Node3D.new()
 			frond.position = crown

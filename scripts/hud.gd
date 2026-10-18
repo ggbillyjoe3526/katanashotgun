@@ -8,6 +8,9 @@ const MAGENTA := Color(1.0, 0.2, 0.7)
 const CYAN := Color(0.25, 0.95, 1.0)
 const RED := Color(1.0, 0.15, 0.2)
 const YELLOW := Color(1.0, 0.85, 0.25)
+# preloaded rather than found by class name, so the HUD still compiles when
+# the editor hasn't rescanned yet (e.g. right after switching git branches)
+const FinisherPromptScript := preload("res://scripts/ui/finisher_prompt.gd")
 
 var root: Control
 var vs := Vector2(480, 270)
@@ -30,6 +33,8 @@ var score_label: Label
 var combo_label: Label
 var combo_bar: ColorRect
 var crosshair: Crosshair
+var finisher_prompt: FinisherPromptScript
+var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var center_label: Label
 var center_shadow: Label
 var center_t := 99.0
@@ -91,6 +96,9 @@ var initials := ""
 
 var post: PostFx
 var juice: Juice
+var settings_menu: SettingsMenu
+var title_settings: TechButton
+var pause_settings: TechButton
 
 # persona plates behind the HUD clusters
 var plate_tl: Shard
@@ -173,6 +181,16 @@ func _ready() -> void:
 	juice = Juice.new()
 	juice.hud = self
 	root.add_child(juice)
+	# outside the root, so HUD shake never moves the settings screen
+	settings_menu = SettingsMenu.new()
+	settings_menu.theme = root.theme
+	add_child(settings_menu)
+	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	title_settings.pressed.connect(_open_settings)
+	title_root.add_child(title_settings)
+	pause_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	pause_settings.pressed.connect(_open_settings)
+	pause_root.add_child(pause_settings)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -294,6 +312,8 @@ func _build_play() -> void:
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
+	finisher_prompt = FinisherPromptScript.new()
+	play_root.add_child(finisher_prompt)
 
 	var cl := _shadowed("", Ui.font_big, 16, Color.WHITE, Color(0.1, 0, 0.04), Vector2(1, 1))
 	center_label = cl[0]
@@ -351,7 +371,7 @@ func _build_title() -> void:
 	var lines := [
 		["LMB  DOJIGIRI KATANA - CHARGES THE SHOTGUN", b],
 		["RMB  RAIJIN-12 SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
-		["SLASH STAGGERED FOES FOR A GLORY KILL", a],
+		["%s  GLORY KILL A STAGGERED FOE" % Ui.key_name("finisher"), a],
 		["SLASH ENEMY BOLTS TO DEFLECT", b.lerp(Color.WHITE, 0.4)],
 		["WASD MOVE   SPACE JUMP x2   SHIFT DASH", Color(0.9, 0.9, 0.95)],
 		["EVERY 3RD WAVE: BOSS  -  HEADSHOTS x2", a.lerp(Color.WHITE, 0.3)],
@@ -392,8 +412,8 @@ func _build_title() -> void:
 	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
 	title_seed.add_theme_font_size_override("font_size", 12)
 	title_root.add_child(title_seed)
-	# build version, stamped from the release tag by CI (spec S3.2)
-	title_version = Ui.label("V" + str(ProjectSettings.get_setting("application/config/version", "0.0.0")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
+	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
+	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
 	title_root.add_child(title_version)
 	title_blink = Ui.label("CLICK TO START", Ui.font_big, 10, Color.WHITE, 2)
 	title_root.add_child(title_blink)
@@ -562,6 +582,13 @@ func hide_title() -> void:
 
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
+	if not on:
+		settings_menu.close()
+
+
+func _open_settings() -> void:
+	if settings_menu.can_open():
+		settings_menu.open()
 
 
 func show_death() -> void:
@@ -888,7 +915,7 @@ func damage_flash(amount: float, _from: Vector3) -> void:
 
 
 func execution_flash() -> void:
-	exec_rect.color = Color(1, 1, 1, 0.4)
+	exec_rect.color = Color(1, 1, 1, 0.4 * Settings.flash)
 	juice.add_shake(4.0)
 	if post:
 		post.flash(0.25)
@@ -950,6 +977,7 @@ func _process(_delta: float) -> void:
 		lh.visible = Game.main and Game.main.lock_failures >= 2
 		lh.size = Vector2.ZERO
 		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
+		pause_settings.position = Vector2(roundf((vs.x - pause_settings.size.x) * 0.5), vs.y * 0.5 + 84)
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
@@ -1040,6 +1068,7 @@ func _layout_title() -> void:
 	title_version.position = Vector2(vs.x - title_version.size.x - 6, vs.y - title_version.size.y - 4)
 	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
 	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, vs.y - 30)
+	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 6)
 
 
 func _layout_levelup() -> void:
@@ -1305,6 +1334,13 @@ func _update_play(delta: float) -> void:
 	crosshair.katana_k = clampf(1.0 - p.katana_cd / p.KATANA_FINISHER_CD, 0.0, 1.0)
 	crosshair.shotgun_k = clampf(1.0 - p.shotgun_cd / p.SHOTGUN_CD, 0.0, 1.0) if p.cells > 0 else 0.0
 	crosshair.queue_redraw()
+	# ---- glory kill prompt: a fixed spot under the crosshair
+	var move := ""
+	if is_instance_valid(p.gk_ready):
+		move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
+	elif finisher_demo:
+		move = "GLORY KILL"
+	finisher_prompt.refresh(move, crosshair.position, delta)
 	# ---- boss bar: top centre, under the best score
 	var boss: Enemy = Game.main.boss if Game.main else null
 	var boss_on := boss != null and is_instance_valid(boss) and not boss.dead

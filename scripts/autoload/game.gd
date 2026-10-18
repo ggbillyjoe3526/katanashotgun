@@ -16,6 +16,7 @@ var mouse_sensitivity := 0.0024
 var debug_autoplay := false
 var debug_god := false
 var debug_no_pause := false
+var debug_palette := "" # --palette=NAME or index: force a palette (debug only)
 
 var player: Player
 var main: Node
@@ -71,12 +72,15 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
+		elif a.begins_with("--palette="):
+			debug_palette = a.substr(10)
 	load_scores()
+	Settings.boot()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
@@ -90,7 +94,7 @@ func reset_run() -> void:
 	rng_map.seed = hash(run_seed * 3 + 1)
 	rng_waves.seed = hash(run_seed * 5 + 2)
 	rng_upgrades.seed = hash(run_seed * 7 + 3)
-	palette = Palette.pick(rng_map)
+	palette = Palette.pick(rng_map, debug_palette)
 	state = "title"
 	mutator = {}
 	wave_damage = 0.0

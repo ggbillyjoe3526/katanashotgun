@@ -244,7 +244,7 @@ func add_shake(amount: float) -> void:
 func shake_offset() -> Vector2:
 	if shake < 0.25:
 		return Vector2.ZERO
-	return Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake * randf_range(0.5, 1.0)
+	return Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake * Settings.shake * randf_range(0.5, 1.0)
 
 
 func _pair(text: String, f: Font, size: int, color: Color, shadow: Color, off := Vector2(2, 2)) -> Label:
