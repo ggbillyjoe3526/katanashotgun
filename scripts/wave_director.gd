@@ -11,6 +11,12 @@ signal between_waves(next_wave: int)
 
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
+# Raijin's Storm: a telegraphed strike near the player every few seconds
+const STRIKE_FIRST := 3.0
+const STRIKE_GAP := Vector2(3.5, 6.0)
+const STRIKE_WARN := 1.2
+const STRIKE_RADIUS := 2.4
+const STRIKE_DAMAGE := 16.0
 
 var wave := 0
 var queue: Array = []
@@ -26,6 +32,8 @@ var _cleanup: Array = []
 var _cleanup_t := 0.0
 var _rng: RandomNumberGenerator
 var boss_bounty := 0
+var last_mutator := "" # never the same mutator twice in a row
+var _strike_t := 0.0
 var boss_bounty_name := ""
 var pending_reward: Dictionary = {} # unlocked by this wave's boss, shown after its tally
 
@@ -78,6 +86,8 @@ func _next_wave() -> void:
 	Game.wave = wave
 	Game.wave_damage = 0.0
 	Game.begin_wave_stats()
+	Game.seed_hazards(wave)
+	_strike_t = STRIKE_FIRST
 	boss_bounty = 0
 	boss_bounty_name = ""
 	phase = "intro"
@@ -89,7 +99,13 @@ func _next_wave() -> void:
 		Game.hud.wave_intro(wave, "BOSS INCOMING", Color(Game.palette.neon_a), true)
 		Sfx.play("alarm", -3.0)
 	else:
-		Game.mutator = Mutators.roll(_rng, wave)
+		Game.mutator = Mutators.roll(_rng, wave, last_mutator)
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--mutator="):
+				# debug: force one on every regular wave (the roll still draws)
+				Game.mutator = Mutators.get_def(a.substr(10))
+		if not Game.mutator.is_empty():
+			last_mutator = Game.mutator.id
 		queue = _composition(wave)
 		var sub := ""
 		if not Game.mutator.is_empty():
@@ -125,7 +141,7 @@ func _composition(w: int) -> Array:
 
 
 func _max_alive() -> int:
-	return mini(8 + wave * 2, 22)
+	return int(mini(8 + wave * 2, 22) * float(Game.mut("max_alive", 1.0)))
 
 
 func _pick_spawn() -> Vector3:
@@ -199,6 +215,8 @@ func _physics_process(delta: float) -> void:
 			var e = _cleanup.pop_front()
 			if is_instance_valid(e) and not e.dead:
 				e.die("explode", Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)))
+	if phase in ["spawning", "boss"] and Game.mut("strikes", false):
+		_storm_strikes(delta)
 	match phase:
 		"intro":
 			phase_t -= delta
@@ -217,7 +235,7 @@ func _physics_process(delta: float) -> void:
 					var item: Array = queue.pop_front()
 					var off := Vector3(_rng.randf_range(-2.0, 2.0), 0, _rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
 					_spawn(item[0], item[1], sp + off)
-				spawn_t = maxf(0.8, 1.8 - wave * 0.06)
+				spawn_t = maxf(0.8, 1.8 - wave * 0.06) * float(Game.mut("spawn_rate", 1.0))
 			if queue.is_empty() and alive == 0:
 				_wave_cleared()
 		"boss":
@@ -253,6 +271,19 @@ func _physics_process(delta: float) -> void:
 func _end_break() -> void:
 	between_waves.emit(wave + 1)
 	_next_wave()
+
+
+## Raijin's Storm: lightning picks a spot near the player (from the hazard
+## stream), rings it red for STRIKE_WARN seconds, then hits everything there.
+func _storm_strikes(delta: float) -> void:
+	_strike_t -= delta
+	if _strike_t > 0.0:
+		return
+	var r := Game.rng_hazards
+	_strike_t = r.randf_range(STRIKE_GAP.x, STRIKE_GAP.y)
+	var a := r.randf() * TAU
+	var p := Game.player.global_position + Vector3(cos(a), 0, sin(a)) * r.randf_range(0.0, 2.5)
+	Game.fx.missile_strike(p, STRIKE_WARN, STRIKE_RADIUS, STRIKE_DAMAGE, "lightning")
 
 
 ## End-of-wave tally, chips x mult: what you did this wave adds chips, the

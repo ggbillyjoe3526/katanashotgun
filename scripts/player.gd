@@ -230,7 +230,7 @@ func _physics_process(delta: float) -> void:
 	# dash
 	if Input.is_action_just_pressed("dash") and dash_charges >= 1.0 and dash_t <= 0.0:
 		_start_dash(wish)
-	dash_charges = minf(float(max_dash), dash_charges + delta / DASH_RECHARGE)
+	dash_charges = minf(float(max_dash), dash_charges + delta / (DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0))))
 
 	if dash_t > 0.0:
 		dash_t -= delta

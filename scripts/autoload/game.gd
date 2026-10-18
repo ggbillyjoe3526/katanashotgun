@@ -30,6 +30,9 @@ var palette: Dictionary = {}
 var rng_map := RandomNumberGenerator.new()
 var rng_waves := RandomNumberGenerator.new()
 var rng_upgrades := RandomNumberGenerator.new()
+## Mid-wave hazards (storm strikes). Reseeded from the seed at every wave
+## start, so how long a wave lasts never shifts the waves after it.
+var rng_hazards := RandomNumberGenerator.new()
 var mutator: Dictionary = {}
 var wave_damage := 0.0
 
@@ -147,6 +150,16 @@ func slowmo(scale: float, duration: float) -> void:
 	_slowmo_left = maxf(_slowmo_left, duration)
 
 
+## Seconds a kill keeps the combo alive (Matsuri Rush halves it).
+func combo_window() -> float:
+	return COMBO_WINDOW * float(mut("combo_window", 1.0))
+
+
+## Called at each wave start: the hazard stream depends only on seed and wave.
+func seed_hazards(w: int) -> void:
+	rng_hazards.seed = hash(run_seed * 11 + w * 131 + 5)
+
+
 func combo_mult() -> float:
 	return 1.0 + minf(combo * 0.1, 4.0)
 
@@ -158,7 +171,7 @@ func score_mult() -> float:
 func register_kill(base_points: int, xp_amount: float, tag := "", tag_color := Color.WHITE) -> void:
 	kills += 1
 	combo += 1
-	combo_timer = COMBO_WINDOW
+	combo_timer = combo_window()
 	best_combo = maxi(best_combo, combo)
 	var pts := int(base_points * score_mult())
 	score += pts

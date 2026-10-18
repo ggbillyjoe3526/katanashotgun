@@ -29,7 +29,7 @@ static func capture(next_wave: int, director: WaveDirector, player: Player) -> D
 			"waves": str(Game.rng_waves.state),
 			"upgrades": str(Game.rng_upgrades.state),
 		},
-		"director": {"boss_cycle": director._boss_cycle.duplicate(), "cycle_count": director._cycle_count},
+		"director": {"boss_cycle": director._boss_cycle.duplicate(), "cycle_count": director._cycle_count, "last_mutator": director.last_mutator},
 		"player": {
 			"hp": player.hp, "cells": player.cells, "dash_charges": player.dash_charges,
 			"slash_count": player.slash_count,
@@ -67,6 +67,7 @@ static func apply(snap: Dictionary, director: WaveDirector, player: Player) -> i
 	for k in d.get("boss_cycle", []):
 		director._boss_cycle.append(str(k))
 	director._cycle_count = int(d.get("cycle_count", 0))
+	director.last_mutator = str(d.get("last_mutator", ""))
 	# augments that raise maximums (HP, cells, dashes) re-apply rank by rank,
 	# then the exact values on the snapshot win
 	for id in Game.upgrades:

@@ -1001,21 +1001,40 @@ Japanese myth or history root (§13). **Never reuse FromSoftware names.**
   BUSY".
 
 ### 6.3 Mutators (seeded, from wave 2, 35% skip chance, never on boss waves)
-In-game names drop macrons (§13).
+In-game names drop macrons (§13). A roll always makes two draws from the
+wave stream (chance, pick), never repeats the previous wave's mutator, and
+only picks mutators whose `min_wave` has come (the harsher ones wait so
+waves 1 to 3 stay easy). The pool grew from 9 to 15 on 2026-10-18 at the
+owner's request for more variety.
 
-| id | Name | Effect | Score × |
-|---|---|---|---|
-| overdrive | IDATEN'S HASTE | Enemies move 25% faster | 1.5 |
-| glass | MURAMASA'S CURSE | You deal and take +50% damage | 1.3 |
-| bloodmoon | AKATSUKI | Enemies ×1.4 HP; glory kills heal double | 1.4 |
-| drymag | YOMI BLACKOUT | No passive cell recharge | 1.3 |
-| swarm | HYAKKI YAKO | 60% more grunts, at 70% HP | 1.2 |
-| snipers | TEPPO VOLLEY | Double the gunners | 1.3 |
-| ironclad | KANABO VANGUARD | Two extra brutes | 1.4 |
-| storm | RAIJIN'S STORM | Lightning flashes, thunder and heavy rain | 1.25 |
-| vampire | JOROGUMO'S BITE | Kills heal 2 HP; enemies hit 30% harder | 1.2 |
+| id | Name | Effect | Score × | From wave |
+|---|---|---|---|---|
+| overdrive | OKURI-INU HUNT | Enemies move 25% faster | 1.5 | 2 |
+| glass | MURAMASA'S CURSE | You deal and take +50% damage | 1.3 | 2 |
+| bloodmoon | AKATSUKI | Enemies ×1.4 HP; glory kills heal double | 1.4 | 2 |
+| drymag | YOMI BLACKOUT | No passive cell recharge | 1.3 | 2 |
+| swarm | HYAKKI YAKO | 60% more grunts, at 70% HP | 1.2 | 2 |
+| snipers | TEPPO VOLLEY | Double the gunners | 1.3 | 2 |
+| ironclad | KANABO VANGUARD | Two extra brutes | 1.4 | 2 |
+| storm | RAIJIN'S STORM | Lightning, thunder and heavy rain, and every 3.5–6 s a strike lands within 2.5 m of you: a red ring for 1.2 s, then 16 damage in 2.4 m (enemies in it take 32) | 1.4 | 2 |
+| grudge | ONRYO'S GRUDGE | Each non-boss enemy that dies leaves a red ring that bursts 1.1 s later: 14 damage in 2.2 m (enemies take 28, so they chain) | 1.3 | 3 |
+| plated | KABUTO PLATE | Grunts and gunners have armour 0.4: the katana does 40% until they are staggered | 1.3 | 2 |
+| matsuri | MATSURI RUSH | The combo window is 2 s instead of 4 s | 1.4 | 2 |
+| kanashibari | KANASHIBARI | Dashes take twice as long to recharge | 1.3 | 3 |
+| hannya | HANNYA'S WRATH | A non-boss enemy below half HP enrages once: speed ×1.4, damage ×1.3, red eyes | 1.3 | 4 |
+| umibozu | UMIBOZU SWELL | Up to 60% more enemies alive at once, spawning twice as often | 1.4 | 4 |
+| senryo | SENRYO BOUNTY | Headshot and glory kills score ×2; every other kill scores half | 1.2 | 2 |
+
+Score multipliers are shown with one decimal, so they are set to one
+decimal. Removed 2026-10-18: JOROGUMO'S BITE (kills heal 2 HP, enemies hit
+30% harder), too close to Akatsuki's heal-for-risk trade. IDATEN'S HASTE was
+renamed OKURI-INU HUNT so it no longer shares a root with the Idaten Drive
+augment. Mid-wave hazards (storm strikes) draw from `Game.rng_hazards`,
+reseeded from the seed at every wave start, so a wave's length never shifts
+later waves.
 
 The mutator name shows under the wave label on the HUD, with its multiplier.
+Debug: `--mutator=id` forces one on every regular wave.
 
 ---
 
@@ -1754,7 +1773,12 @@ historical root with a cyberpunk twist**.
   (Kanayago-kami, the deity of ironworking), AKAGANE COIL (akagane,
   copper), ONIBI EDGE (onibi, oni-fire ghost lights), RAIKO COIL (Minamoto
   no Raiko, who slew Shuten-doji).
-- **Mutators and augments:** see §6.3 and §3.8. Augment roots added
+- **Mutators and augments:** see §6.3 and §3.8. Mutator roots added
+  2026-10-18: okuri-inu (the yokai dog that stalks travellers at night),
+  onryo (a vengeful ghost), kabuto (the samurai helmet), matsuri (a
+  festival), kanashibari (sleep paralysis, blamed on spirits), hannya (the
+  jealous demon mask of Noh), umibozu (the sea giant that rises from calm
+  water), senryo (a thousand ryo, a fortune). Augment roots added
   2026-10-18: Ikazuchi (the eight thunder kami of Yomi), Inazuma
   ("lightning"), hitodama (yokai soul-fire wisps), Hachiman (god of archery and
   war), Nasu no Yoichi (the archer who hit the fan at Yashima), Gashadokuro

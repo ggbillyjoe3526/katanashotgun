@@ -10,6 +10,11 @@ const FINISHER_GOLD := Color(1.0, 0.8, 0.15)
 
 enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP }
 
+# Onryo's Grudge mutator: a dead enemy bursts this long after, this big
+const GRUDGE_DELAY := 1.1
+const GRUDGE_RADIUS := 2.2
+const GRUDGE_DAMAGE := 14.0
+
 var kind := "grunt"
 var hp := 45.0
 var max_hp := 45.0
@@ -52,6 +57,7 @@ var leap_vel := Vector3.ZERO
 var combo_left := 0
 var special_seq := 0
 var enraged := false
+var _wrath := false # Hannya's Wrath mutator: enraged once wounded
 var face_yaw := 0.0
 var landed := false
 var frozen := false # no AI (debug showcase, or shorted out when the boss dies)
@@ -101,6 +107,8 @@ func setup(k: String, scale_mult := 1.0) -> void:
 	if not is_boss:
 		hp *= float(Game.mut("enemy_hp", 1.0))
 		speed *= float(Game.mut("enemy_speed", 1.0))
+	if k in ["grunt", "gunner"]:
+		armor = float(Game.mut("light_armor", armor)) # Kabuto Plate
 	_finish_setup(scale_mult)
 
 
@@ -658,6 +666,8 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 	if hp <= 0.0:
 		die(source, dir, headshot)
 		return true
+	if not _wrath and not is_boss and hp < max_hp * 0.5 and Game.mut("enrage", false):
+		_enrage()
 	if poise_dmg < 0.0:
 		poise_dmg = final
 	_apply_poise(poise_dmg)
@@ -864,6 +874,9 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		col = Color(1.0, 0.9, 0.3)
 		pts = int(pts * 1.5)
 		Game.headshots += 1
+	if Game.mut("bounty", false):
+		# Senryo Bounty: the skilful kills pay double, the rest half
+		pts = pts * 2 if (headshot or source == "execution") else int(pts * 0.5)
 	if tag == "" and kind == "brute":
 		tag = "KANABO DOWN"
 		col = Color(1.0, 0.7, 0.2)
@@ -905,6 +918,9 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		orbs += 4
 	if orbs > 0:
 		Game.fx.health_orbs(pos, orbs)
+	if Game.mut("grudge", false) and not is_boss:
+		# Onryo's Grudge: the body bursts a moment later; the ring shows where
+		Game.fx.missile_strike(global_position, GRUDGE_DELAY, GRUDGE_RADIUS, GRUDGE_DAMAGE, "grudge")
 	if burn_t > 0.0 and Game.rank("hitodama") > 0:
 		_hitodama_burst()
 	var hk := float(Game.mut("heal_kill", 0.0))
@@ -913,6 +929,15 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 	if is_boss:
 		Game.main.on_boss_killed(self)
 	queue_free()
+
+
+## Hannya's Wrath: a wounded enemy enrages, faster and harder hitting, eyes red.
+func _enrage() -> void:
+	_wrath = true
+	speed *= 1.4
+	damage_mult *= 1.3
+	_eye_mat.set_shader_parameter("albedo_color", Color(1.0, 0.1, 0.1))
+	Sfx.play_at("windup", global_position, -4.0, 1.4)
 
 
 ## Hitodama Chain: a burning enemy's death spreads the fire to everyone close.

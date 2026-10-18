@@ -162,6 +162,8 @@ Pass after `--` on the command line:
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
+- `--mutator=grudge` forces that wave mutator on every regular wave (ids in
+  `scripts/mutators.gd`)
 - `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
