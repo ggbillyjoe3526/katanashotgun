@@ -271,7 +271,7 @@ func _chase_mech(dist: float, dir: Vector3, delta: float) -> Vector3:
 	return Vector3(-dir.z, 0, dir.x) * strafe * speed * 0.6
 
 
-func _custom_state(dist: float, dir: Vector3, delta: float) -> Array:
+func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 	var p := Game.player
 	match state:
 		S.DASH_WINDUP:

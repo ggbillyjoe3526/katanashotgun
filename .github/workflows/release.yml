@@ -25,6 +25,7 @@ on:
       - ".github/workflows/release.yml"
       - ".github/actions/**"
       - "installer/**"
+      - "THIRD_PARTY_NOTICES.txt"
       - "export_presets.cfg"
       - "project.godot"
 
@@ -169,6 +170,7 @@ jobs:
           $p = Start-Process $setup -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CURRENTUSER", "/DIR=`"$dir`"" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "installer exit code $($p.ExitCode)" }
           if (-not (Test-Path "$dir\KatanaShotgun.exe")) { throw "game exe missing after install" }
+          if (-not (Test-Path "$dir\THIRD_PARTY_NOTICES.txt")) { throw "licence notices missing after install" }
           $p = Start-Process "$dir\unins000.exe" -ArgumentList "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "uninstaller exit code $($p.ExitCode)" }
           Start-Sleep -Seconds 3
@@ -207,12 +209,19 @@ jobs:
           set -euo pipefail
           mkdir -p dist
           cp art/installer/*.exe dist/
+          # Every download carries the third-party licences next to the game.
+          NOTICES="$GITHUB_WORKSPACE/THIRD_PARTY_NOTICES.txt"
+          test -s "$NOTICES"
           (cd art/builds/windows && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${VER}-Windows-Portable.zip" KatanaShotgun.exe)
+          zip -9 -j "dist/KatanaShotgun-v${VER}-Windows-Portable.zip" "$NOTICES"
           chmod +x art/builds/linux/KatanaShotgun.x86_64
           (cd art/builds/linux && zip -9 "$GITHUB_WORKSPACE/dist/KatanaShotgun-v${VER}-Linux.zip" KatanaShotgun.x86_64)
+          zip -9 -j "dist/KatanaShotgun-v${VER}-Linux.zip" "$NOTICES"
           if [ -f art/builds/macos/KatanaShotgun.zip ]; then
             cp art/builds/macos/KatanaShotgun.zip "dist/KatanaShotgun-v${VER}-macOS.zip"
+            zip -9 -j "dist/KatanaShotgun-v${VER}-macOS.zip" "$NOTICES"
           fi
+          for z in dist/*.zip; do unzip -l "$z" | grep THIRD_PARTY_NOTICES.txt > /dev/null || { echo "::error::$z has no notices"; exit 1; }; done
           ls -la dist
 
       - name: Release notes from the changelog

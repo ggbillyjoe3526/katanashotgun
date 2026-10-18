@@ -25,6 +25,33 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
   agent (`.claude/agents/critic.md`) and fix its blocking findings.
 - **Reading big files:** a hook stops whole-file reads over 40 KB; grep, then
   read with offset and limit.
+- **Tests and lint:** `tools/unit_tests.sh` (Gut, tests in `test/unit/`) and
+  `gdlint scripts test tools` (settings in `gdlintrc`) run in CI next to the
+  smoke test.
 - **Exit-time leak warnings** (`RID allocations ... leaked at exit`,
   `ObjectDB instances were leaked`) appear at the end of every headless run;
   they are known and are not script errors.
+
+## Third-party code and assets
+Rules for anything made by someone else (from William's licence briefing,
+2026-10-18). `ASSETS.md` is our log; `THIRD_PARTY_NOTICES.txt` is what ships.
+- **Check first:** the current LICENSE and README on the source, and the
+  minimum Godot version (must work on 4.7.2).
+- **Addons:** copy only the repo's `addons/<name>` folder into `addons/`, never
+  the whole repo or a submodule. Keep its LICENSE inside the folder (copy it in
+  if the repo keeps it at the root).
+- **Same commit:** log it in `ASSETS.md`. If it ships in the game, add its
+  licence file to `SHIPPED` in `tools/make_notices.gd` and regenerate
+  `THIRD_PARTY_NOTICES.txt` (CI fails if it is stale).
+- **Debug and test addons** are excluded in every preset's `exclude_filter` in
+  `export_presets.cfg`, so they never ship.
+- **No GPL code in the game.** GPL programs are fine as tools on the PC.
+- **Tools stay out of the repo** (MCP servers, editors, asset tools); only
+  their output goes in.
+- **Assets carry their own licence**, separate from the tool or site they came
+  from: record each one's source and licence. Only CC0, CC-BY or SIL OFL
+  (project rules).
+- **Do not use:** TRELLIS and TRELLIS.2 (nvdiffrast is research-only),
+  Hunyuan3D 2 and 2.1 (licence excludes the EU, UK and South Korea, including
+  via Blender MCP), MusicGen models (non-commercial), and Sketchfab or Poly
+  Pizza models whose licence hasn't been checked one by one.

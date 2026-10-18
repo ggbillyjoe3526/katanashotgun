@@ -38,6 +38,10 @@ must look like `## v0.3.1 (2026-10-18)`.
 - The title screen now shows the game's version in the bottom-right corner.
 - The game can now be exported for macOS as well as Windows and Linux. The old
   web build was removed: this is a desktop game.
+- Every download now includes `THIRD_PARTY_NOTICES.txt`, the licences for the
+  Godot engine and the game's fonts.
+- More automatic checks on every change: tests that the same seed always gives
+  the same run, and a code style check.
 
 ## v0.3.0 (prototype)
 - Every core mechanic: DOJIGIRI katana, RAIJIN-12 arc shotgun, dash, double

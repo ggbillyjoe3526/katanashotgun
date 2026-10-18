@@ -46,6 +46,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\build\windows\KatanaShotgun.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; The exe keeps Godot's icon (it is exported on Linux without rcedit), so shortcuts use this one.
 Source: "icon.ico"; DestDir: "{app}"; DestName: "KatanaShotgun.ico"; Flags: ignoreversion
+; Licences for the engine and fonts, shipped next to the game.
+Source: "..\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\KATANA SHOTGUN"; Filename: "{app}\KatanaShotgun.exe"; IconFilename: "{app}\KatanaShotgun.ico"

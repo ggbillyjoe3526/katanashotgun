@@ -434,7 +434,7 @@ func intro_ready() -> bool:
 ## WAVE N slams in, the mutator types itself out, 3-2-1, then FIGHT.
 ## Boss waves skip the FIGHT stamp (the boss card takes over).
 ## `sub` is up to two lines ("NAME  //  SCORE xN" and its description).
-func wave_intro(wave: int, sub: String, col: Color, boss: bool) -> void:
+func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	var pal := Game.palette
 	_intro_on = true
 	_intro_ready = false
