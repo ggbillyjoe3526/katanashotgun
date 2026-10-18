@@ -167,11 +167,16 @@ Pass after `--` on the command line:
 - `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
+- `--quality=low|medium|high` effect-count preset · `--perf` perf overlay
+  plus a log line every 2 s and a summary at exit
+- **F3** toggles the perf overlay (fps, frame time, draw calls, nodes) in any
+  build
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
+tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
 ```
 
 ## Regenerating audio

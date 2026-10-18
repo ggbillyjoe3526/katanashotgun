@@ -437,9 +437,7 @@ func _slash() -> void:
 	if Game.rank("wave") > 0:
 		var every := 4 - Game.rank("wave")
 		if slash_count % maxi(1, every) == 0 or heavy:
-			var w := Bolt.new()
-			w.setup(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
-			Game.main.add_entity(w)
+			Game.main.director.fire_bolt(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
 			Sfx.play("wave_blade", -4.0)
 
 
@@ -458,10 +456,9 @@ func _blood_heal(amount: float) -> void:
 ## Yata Mirror: a deflected bolt sends two more copies out either side.
 func _mirror_split(b: Bolt) -> void:
 	for side in [-1.0, 1.0]:
-		var nb := Bolt.new()
-		nb.setup(true, b.global_position, b.vel, b.damage, b.kind)
-		Game.main.add_entity(nb)
-		# 0.35 rad stays outside the deflect auto-aim cone, so the copies fan out
+		# the parent flies back to its shooter; the copies fan out 0.35 rad
+		# either side of it at the same speed and damage
+		var nb: Bolt = Game.main.director.fire_bolt(true, b.global_position, b.vel, b.damage, b.kind)
 		nb.deflect(b.vel.normalized().rotated(Vector3.UP, side * 0.35), true)
 
 
@@ -723,9 +720,7 @@ func _glory_kill(gore_mode: String) -> void:
 		var c := e.global_position + Vector3(0, 1.0, 0)
 		for i in 8:
 			var dir := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 8.0)
-			var w := Bolt.new()
-			w.setup(false, c + dir * 0.6, dir * 26.0, 60.0, "wave")
-			Game.main.add_entity(w)
+			Game.main.director.fire_bolt(false, c + dir * 0.6, dir * 26.0, 60.0, "wave")
 		Sfx.play("wave_blade", -1.0, 0.8)
 	if Game.rank("chain") > 0:
 		for o in Game.enemy_list:
