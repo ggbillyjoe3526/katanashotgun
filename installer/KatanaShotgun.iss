@@ -1,11 +1,20 @@
 ; Windows installer for KATANA / SHOTGUN (Inno Setup 6).
-; Built by .github/workflows/release.yml:  ISCC.exe /DAppVersion=1.2.3 installer\KatanaShotgun.iss
+; Built by .github/workflows/release.yml, with the forms tools/version.sh gives:
+;   ISCC.exe "/DAppVersion=0.1 Dev 1" /DAppTag=0.1-dev.1 /DAppNumber=0.1.1.1 installer\KatanaShotgun.iss
+; AppVersion is the name players see; AppTag goes in the file name; AppNumber
+; is the four-number version Windows needs in the setup exe's properties.
 ; No slash in any file, folder or shortcut name: "KATANA SHOTGUN" there, the
 ; slash only in display text. Saves live in %APPDATA%\KatanaShotgun, never in
 ; the install folder, so uninstalling or upgrading never touches progress.
 
 #ifndef AppVersion
-  #define AppVersion "0.0.0"
+  #define AppVersion "0.0"
+#endif
+#ifndef AppTag
+  #define AppTag "0.0"
+#endif
+#ifndef AppNumber
+  #define AppNumber "0.0.0.0"
 #endif
 #ifndef AppPublisher
   #define AppPublisher "ggbillyjoe3526"
@@ -17,6 +26,10 @@ AppId={{D6D0BE94-DB3E-4C11-9AE8-663EB30DCA64}
 AppName=KATANA SHOTGUN
 AppVerName=KATANA / SHOTGUN {#AppVersion}
 AppVersion={#AppVersion}
+VersionInfoVersion={#AppNumber}
+VersionInfoProductVersion={#AppNumber}
+VersionInfoTextVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion}
 AppPublisher={#AppPublisher}
 AppPublisherURL=https://github.com/ggbillyjoe3526/katanashotgun
 AppSupportURL=https://github.com/ggbillyjoe3526/katanashotgun/issues
@@ -25,7 +38,7 @@ DefaultDirName={autopf}\KATANA SHOTGUN
 DefaultGroupName=KATANA SHOTGUN
 DisableProgramGroupPage=yes
 OutputDir=..\dist
-OutputBaseFilename=KatanaShotgun-v{#AppVersion}-Windows-Setup
+OutputBaseFilename=KatanaShotgun-v{#AppTag}-Windows-Setup
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\KatanaShotgun.ico
 UninstallDisplayName=KATANA / SHOTGUN

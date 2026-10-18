@@ -2,7 +2,8 @@
 
 What changed in each version of KATANA / SHOTGUN, newest first, in plain
 words. Each release's section becomes its GitHub Release notes, so headings
-must look like `## v0.3.1 (2026-10-18)`.
+must look like `## 0.1 Dev 2 (2026-10-18)`: the version name from
+`VERSIONING.md`.
 
 ## Unreleased
 
@@ -15,6 +16,12 @@ must look like `## v0.3.1 (2026-10-18)`.
   bright horizon) and the haze and shadows are darker and more neutral, so
   the neon pops instead of everything sharing one tint.
 - The same seed still gives the same colour scheme and the same rooftop.
+
+### Version names
+- The game is now version **0.1 Dev 1** (the title screen used to say
+  V0.3.0). Updates go 0.1 Dev 2, Dev 3 and on, then 0.1 Beta 1, Beta 2, and
+  the full release is 0.1. The title screen, the installer and the download
+  names all use these names.
 
 ### Text you can actually read
 - Every number and word on screen is bigger and sits on a dark plate or
