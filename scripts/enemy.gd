@@ -7,6 +7,10 @@ extends CharacterBody3D
 ## dead one is parked, hidden, and later reset with `reuse()` instead of
 ## being freed and rebuilt.
 
+# stagger marker: red while staggered, gold on the one a glory kill would take
+const MARKER_RED := Color(1.0, 0.05, 0.1)
+const FINISHER_GOLD := Color(1.0, 0.8, 0.15)
+
 enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP }
 
 var kind := "grunt"
@@ -78,6 +82,7 @@ var _eye_mat: ShaderMaterial
 var _eye_color := Color(0.2, 1.0, 1.0)
 var _glow_mat: ShaderMaterial
 var marker: MeshInstance3D
+var finisher_lit := false # the player's glory kill would take this one
 var _rng := RandomNumberGenerator.new()
 var _jacket_mat: ShaderMaterial
 var _mohawk: Node3D
@@ -381,7 +386,7 @@ func _build_body() -> void:
 	_part(leg_r, "LegR", leg_size, m_pants, Vector3(0, -_leg_len * 0.5, 0))
 
 	# Sekiro-style deathblow marker
-	marker = Psx.quad(Vector2(0.5, 0.5), Psx.fx(Color(1.0, 0.05, 0.1), TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.55, 0))
+	marker = Psx.quad(Vector2(0.5, 0.5), Psx.fx(MARKER_RED, TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.55, 0))
 	marker.visible = false
 	add_child(marker)
 	_roll_look()
@@ -757,6 +762,7 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 ## Glory kill hold: the enemy is pinned in place facing the player while the
 ## finisher plays out.
 func glory_hold(by: Node3D) -> void:
+	set_finisher_lit(false)
 	frozen = true
 	shorted = true
 	marker.visible = false
@@ -829,10 +835,11 @@ func _stagger() -> void:
 	marker.visible = true
 	_eye_mat.set_shader_parameter("energy", 0.8)
 	Sfx.play_at("windup", global_position, -2.0, 0.45)
-	Game.show_hint_once("stagger", "STAGGERED!  SLASH IT FOR A GLORY KILL")
+	Game.show_hint_once("stagger", "STAGGERED!  PRESS %s FOR A GLORY KILL" % Ui.key_name("finisher"))
 
 
 func _end_stagger() -> void:
+	set_finisher_lit(false)
 	marker.visible = false
 	poise = max_poise
 	_eye_mat.set_shader_parameter("energy", 3.0)
@@ -845,7 +852,19 @@ func _update_poise(delta: float) -> void:
 		poise = minf(max_poise, poise + max_poise * (0.5 if is_boss else 0.35) * delta)
 	if marker.visible:
 		var k := 1.0 + sin(Time.get_ticks_msec() * 0.02) * 0.25
+		if finisher_lit:
+			k += 0.4
 		marker.scale = Vector3.ONE * k * (height / 1.8)
+
+
+## The stagger marker turns gold and grows on the enemy F would finish, so
+## the player can see which one the glory kill will take.
+func set_finisher_lit(on: bool) -> void:
+	if finisher_lit == on:
+		return
+	finisher_lit = on
+	var m := marker.material_override as ShaderMaterial
+	m.set_shader_parameter("color", FINISHER_GOLD if on else MARKER_RED)
 
 
 func _update_burn(delta: float) -> void:
