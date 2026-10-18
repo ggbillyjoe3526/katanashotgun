@@ -9,7 +9,7 @@ class_name Ui
 
 static var font: Font # labels (Chakra Petch 600)
 static var font_bold: Font # emphasis (Chakra Petch 700)
-static var font_big: Font # display + big numbers (Orbitron 900)
+static var font_big: FontVariation # display + big numbers (Orbitron 900)
 static var font_mono: Font # data, seeds, rolling numbers (Share Tech Mono)
 static var font_card: FontVariation # boss felled / flatlined cards (Michroma)
 
@@ -19,7 +19,11 @@ static func init() -> void:
 		return
 	font = _pix("chakra_petch_600")
 	font_bold = _pix("chakra_petch_700")
-	font_big = _pix("orbitron_900")
+	# Orbitron is tightly spaced; at pixel sizes neighbouring letters merge
+	# ("LI" reads as "U"), so it gets one extra pixel between glyphs
+	font_big = FontVariation.new()
+	font_big.base_font = _pix("orbitron_900")
+	font_big.spacing_glyph = 1
 	font_mono = _pix("share_tech_mono")
 	font_card = FontVariation.new()
 	font_card.base_font = _pix("michroma")
