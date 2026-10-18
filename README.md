@@ -167,11 +167,16 @@ Pass after `--` on the command line:
   title at that tab
 - `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
   measure the mix (use with `--write-movie` so audio follows game time)
+- `--quality=low|medium|high` effect-count preset · `--perf` perf overlay
+  plus a log line every 2 s and a summary at exit
+- **F3** toggles the perf overlay (fps, frame time, draw calls, nodes) in any
+  build
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
+tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
 ```
 
 ## Regenerating audio
