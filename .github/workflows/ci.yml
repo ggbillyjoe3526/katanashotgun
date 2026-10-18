@@ -1,0 +1,48 @@
+name: Checks
+
+# Every pull request and every push to main: import the project and let the
+# autoplay bot play. Fails on any script error.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to a pull request cancels its older run; runs on main are grouped by
+# commit so none is cancelled and every merge shows whether main is green.
+concurrency:
+  group: checks-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GODOT_VERSION: "4.7.2" # must match the project (spec S2 step 2)
+  GODOT_STATUS: "stable"
+
+jobs:
+  smoke:
+    name: Smoke test (headless autoplay)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup-godot
+        with:
+          version: ${{ env.GODOT_VERSION }}
+          status: ${{ env.GODOT_STATUS }}
+
+      - name: Smoke test
+        run: tools/smoke_test.sh
+
+      - name: Keep the logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: smoke-logs
+          path: |
+            import.log
+            smoke.log
+          if-no-files-found: ignore
+          retention-days: 14
