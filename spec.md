@@ -2517,6 +2517,32 @@ the title screen first (today a friend's seed needs a shortcut edit).
    the Pictures folder: seed code, score, wave, builds, bosses felled and
    the run's best moment, in the game's style. No internet.
 
+
+### 19.2 Standing apart from Mullet MadJack (owner, 2026-10-18)
+Mullet MadJack is the closest rival players will name (retro anime
+cyberpunk FPS, blade and shotgun, endless mode, 97% positive). It is a
+3 to 4 hour comedy campaign of tiny rooms against a 10-second timer; its
+reviews complain most about repetition and weak bosses. KATANA / SHOTGUN
+is its opposite, and these five areas are the direction to strengthen
+when planning work:
+1. **Bosses are the showpiece.** KAMAE, real movesets and the ONIKIRI are
+   our deepest system and their weakest point. Perfect Deflect (§19.1 #3)
+   and the planned boss variants push it further.
+2. **Big arena, big crowds.** Up to 22 enemies at once on a rooftop with
+   six floor heights, against their small rooms. Keep the one map fresh
+   (The City Is Watching, §19.1 #9) and add the planned maps.
+3. **A game that lasts.** Endless waves, seeds shared between friends,
+   Challenge Codes and Legendary Seeds give months of play, not a short
+   campaign.
+4. **Both hands, all the time.** Katana and shotgun always in hand, each
+   feeding the other; Two Hands, One Rhythm (§19.1 #2) makes it the thing
+   every clip shows.
+5. **Our own mood.** Stylish, serious and mythic ("loud, then quiet"), not
+   jokey. Don't add a timer, a story campaign or comedy because it worked
+   for them.
+Match them on the basics: a free demo, comfort options (shake and flash
+sliders exist) and controller support (still an open decision, §19).
+
 ---
 
 ## 20. Acceptance checklist (definition of done for any change)
