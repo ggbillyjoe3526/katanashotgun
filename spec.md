@@ -518,6 +518,7 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
+| Music style | Fast (140 to 165 bpm), futuristic, energetic dark electronic bass music with an EDM feel, like Rezz: wobble basses, EDM drums, glitch edits, no string instruments (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
@@ -1141,8 +1142,8 @@ the holographic cut-in (§9.8).
   - 35% clear, 45% light rain, 20% heavy rain.
   - The RAIJIN'S STORM mutator adds heavy rain, lightning flashes and
     thunder.
-  - Rain uses a particle field plus an ambient loop. **The loop is too loud:
-    fix it, see §10.3.**
+  - Rain uses a particle field plus two quiet ambient loops (light, and a
+    heavy layer added in storms) far back in the mix; see §10.3.
 - **The map API** (keep it): maps extend an `Arena` base class.
   - Helpers: `_solid`, `_platform` (registers floor height), `_ramp`,
     `_neon`, `_neon_box_edges`, `_light`, `_halo`, `floor_height_at`, plus
@@ -1594,6 +1595,31 @@ buses (Music, SFX, Ambience, UI) with settings sliders. Duck music slightly
 under big SFX moments, and **cut it** for the boss-death hush and the death
 card.
 
+**The mix (built; `default_bus_layout.tres`).** Five buses: Master, Music,
+SFX, Ambience, UI. The mix levels live in the layout; the settings sliders
+add on top of them, and music ducking lives on the music players, never on a
+bus's volume.
+
+| Bus | Level | Effects | Gets |
+|---|---|---|---|
+| Master | 0 dB | hard limiter, ceiling -1 dB | everything |
+| Music | +2 dB | none | the two music players |
+| SFX | -16 dB | high shelf -4 dB above 6.5 kHz (tames hiss in the placeholder SFX; drop it for professional SFX) | combat, movement, enemies, flow stingers |
+| Ambience | -16 dB | high-pass 70 Hz, low-pass 6 kHz, compressor sidechained from Music (threshold -16 dB, 3:1) so ambience ducks under the music | rain beds, thunder |
+| UI | -11 dB | none | menus, typing, tally and combo juice (each cue's `bus`, §10.5) |
+
+Big hits (glory-kill execution, explosion, loud slams, boss entrance) pull
+the music down 2 to 3 dB for about half a second (each cue's `music_duck_db`,
+§10.5). Only a
+cue played at -3 dB or louder ducks, and the duck can't retrigger for 1.5 s,
+so a horde never keeps the music pinned down.
+
+Measured on a 60 s autoplay run (seed 548A-8455, waves 1 to 2, Movie Maker,
+`--record-mix`), integrated loudness: Music -19 LUFS, SFX -21 to -22, UI -25,
+light rain -40, heavy rain -37, Master -17 with true peak under -1 dBTP. The
+prototype mix measured -6 LUFS with peaks above 0 dBFS (clipping), the SFX
+about 10 LU over the music, and heavy rain louder than the music.
+
 ### 10.2 Music: requirements for the real game
 - The prototype's procedural tracks are **PLACEHOLDERS** for testing pacing
   and the music director. **They are not the soundtrack.**
@@ -1601,9 +1627,15 @@ card.
   top tier, never basic, boring or low effort.** It is a headline feature,
   the way Doom (2016) and Persona 5 treat theirs. Properly composed,
   arranged, mixed and mastered, by a composer/producer or licensed.
-- Style: high-energy **synthwave/darksynth fused with heavy, aggressive
-  elements** for combat; distinct boss themes; a memorable title theme. It
-  must not sound repetitive.
+- Style: **fast-paced, futuristic and energetic**, matching the game's speed
+  (owner, 2026-10-18): about 140 to 155 bpm in combat, faster for bosses.
+  The sound is **dark electronic bass music with an EDM feel; think Rezz**
+  (owner, 2026-10-18, after rejecting clean synthwave and then guitars: **no
+  string instruments**): heavy distorted, talking wobble basses over a clean
+  sub, hard EDM kicks with sidechain pump and claps, hypnotic dark plucks
+  and leads, zaps and drop impacts, and glitch edits (stutters, tape stops,
+  reverses, gates, bitcrush). Distinct boss themes; a
+  memorable title theme. It must not sound repetitive.
 - **System requirements:**
   - Stems or intensity layers so the music can react (boss phases, enrage,
     combo heat, the hush after a boss dies).
@@ -1618,23 +1650,44 @@ card.
   - `music_cut()` (a fast fade to silence) and `resume_combat()`.
   - Ducking: playing −6 dB base, pause −20, level-up −16, results −14.
 - **Placeholder tracks** (prototype, generated):
-  - combat_0 108 bpm minor [0,5,2,6]; combat_1 104 minor [0,6,5,6];
-    combat_2 110 minor [0,3,5,4]; combat_3 100 dorian [5,6,0,0];
-    combat_4 112 minor [0,5,3,4]; combat_5 106 dorian [0,2,6,5].
-  - boss_0 128 phrygian; boss_1 122 harmonic minor; boss_2 132 harmonic
-    minor; title 88 dorian.
-  - Sections: intro, groove, lead, lead2, break, build, drop, outro.
+  - combat_0 148 bpm minor [0,5,2,6]; combat_1 140 minor [0,6,5,6];
+    combat_2 150 minor [0,3,5,4]; combat_3 144 dorian [5,6,0,0];
+    combat_4 152 minor [0,5,3,4]; combat_5 146 dorian [0,2,6,5]. About
+    95 to 100 s each.
+  - boss_0 160 phrygian; boss_1 156 harmonic minor; boss_2 165 harmonic
+    minor; title 118 dorian.
+  - Sections: short intro, groove, lead, lead2, break, build, drop, lead,
+    drop, short outro. Kicks four-on-the-floor or driving, hats in 16ths,
+    basses in 16ths (octave, pulse or gallop) played by a formant wobble
+    bass (its LFO runs on song time), an FM growl or a reese, with a sine
+    sub underneath. Bass, sub, pad and plucks pump under the kick (the
+    lead half as much). A
+    hypnotic one-bar pluck sequence, a dark detuned lead or a screech for
+    the melody, a dark filtered pad, clap rolls and zaps into each section,
+    an impact on each drop. Most second bar ends outside the intro and
+    outro (and some off-beats in drops) get a seeded glitch.
+  - Every track is mastered to -14 LUFS (`tools/gen_music.py`), the level the
+    mix in §10.1 was measured against.
 
 ### 10.3 Ambience (critical feedback)
 - Ambience (rain, wind, city hum, neon buzz) is fine but **must sit far back
   in the mix and never become a constant hiss.**
-- The prototype's **rain loop** reads as annoying **"white noise"**:
-  - It plays in 65% of runs, at −16 dB (light) and −8 dB (heavy).
-  - **Fix:** much quieter (about −24 dB or below, ducked under music),
-    band-limited so it isn't full-band hiss, and built from varied droplet,
-    patter and drip layers instead of flat noise.
-  - It should come and go; heavy rain is felt, not heard over the music.
-  - Apply the same to any other bed and to noise baked into SFX.
+- The prototype's rain loop read as annoying **"white noise"** (one 6 s
+  full-band noise loop at -16 dB light and -8 dB heavy; 35% of its energy
+  above 5 kHz). **Fixed:**
+  - Rebuilt by `tools/gen_audio.py rain` as two 20 s stereo loops,
+    `rain.ogg` and `rain_heavy.ogg`, made of patter, droplet, drip and a
+    little low body, with slow gusts. Band-limited: under 0.2% of the
+    energy above 5 kHz.
+  - The rain still plays in 65% of runs. Light rain plays `rain` at -2 dB;
+    heavy rain plays `rain` at -3 dB plus `rain_heavy` at -3 dB (Sfx
+    `RAIN_DB`, `RAIN_HEAVY_DB`), on the Ambience bus, so it lands about
+    20 LU (light) and 18 LU (heavy) under the music and ducks further while
+    music plays.
+  - Each layer drifts up to 6 dB below its level and back every 5 to 12 s,
+    so it comes and goes.
+  - Apply the same to any other bed and to noise baked into SFX (the SFX
+    bus's high shelf tames the placeholder SFX).
 
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
@@ -1649,10 +1702,39 @@ card.
   flatline, finish, cutin.
 - **UI:** ui_click, ui_hover, type.
 - **Juice:** tick, stamp, chime, cash, count, go, mult, deal, fanfare.
-- **Ambience:** thunder, rain loop.
-- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms),
-  random pitch variation.
+- **Ambience:** thunder, rain loops (light and heavy layers).
+- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms,
+  on real time), random pitch variation from a presentation-only RNG.
 - The same quality bar as the music applies.
+
+### 10.5 Audio pipeline (built; ready for professional audio)
+The game reads audio from data, so professional sound and music drop in
+without code changes. `assets/audio/README.md` is the how-to for a sound
+designer or composer (folders, delivery specs, replacing a cue, stems).
+- **Cues:** one `SfxCue` resource per sound effect in
+  `assets/audio/cues/<name>.tres` (variants, bus, trim, pitch variation,
+  throttle, max voices, priority, 3D distances, music duck). `Sfx.play(name)`
+  and `Sfx.play_at(name, pos)` look the cue up; a sound file with no cue yet
+  still plays with defaults. `tools/make_audio_data.gd` creates missing cue
+  and track files and never overwrites existing ones.
+- **Voices:** fixed pools (20 2D, 20 positional; `VoicePool`). A cue at its
+  max voices reuses its own oldest voice; otherwise a free voice; otherwise
+  it takes the oldest voice of the lowest priority at or below its own; else
+  it is dropped. Priorities: CRITICAL (player weapons including the arc
+  zap, hurt, enemy telegraphs such as windup, roar and slam, flow stingers
+  and boss moments), NORMAL (enemy shots and missiles, movement, UI), LOW
+  (gore, spawns), AMBIENT (thunder). Voice caps per cue: gore0-2 2 each,
+  gore_big, shotgun and gatling 3, swings 2, the rest 4 (UI hover 1).
+- Stingers that must keep their pitch (levelup, wave_clear, highscore,
+  fanfare, felled, flatline, boss_intro) have pitch variation off.
+- **Music:** one `MusicTrack` resource per piece in
+  `assets/music/tracks/<name>.tres` (role combat / boss + boss kind / title,
+  stems, per-stem intensity, loop and loop offset, bpm, trim). The combat
+  playlist is the combat tracks sorted by name, shuffled by the run seed.
+- **Intensity layers:** stem 0 always plays; further stems fade in by music
+  intensity (0 to 1): combo / 25, pinned to 1 while a boss is enraged, 0
+  after a cut. Rises 0.8 per second, falls 0.15 per second. The placeholder
+  tracks are single stems, so this is ready but not yet audible.
 
 ---
 
@@ -1926,7 +2008,7 @@ seed | click: new seed).
 ### 15.4 Recommended improvements for the full game
 - Move data tables (enemies, bosses, augments, mutators, palettes, rewards,
   names and codex) into **Resources (`.tres`)** so they can be tuned without
-  code.
+  code. (Audio cues and music tracks are done: §10.5.)
 - Use scenes where they help tooling (maps, UI screens), but keep the
   procedural look.
 - Add an **event bus** for game events (kill, glory kill, wave start and
@@ -1961,6 +2043,8 @@ seed | click: new seed).
     run (debug only; the seed still draws its palette number).
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
+  - `--record-mix=DIR`: records each audio bus to `DIR/<bus>.wav` on quit, to
+    measure the mix (use with `--write-movie` so audio follows game time).
   - `--quality=low|medium|high`: the effect-count preset (§14).
   - `--perf`: shows the perf overlay, logs draw calls, live nodes and node
     churn every 2 s, and prints a summary at exit.
@@ -2012,7 +2096,7 @@ seed | click: new seed).
    text is clean while held, numbers never scramble, there are no
    overlapping duplicates, and tags are decoration only.
 2. **Audio mix (§10.3).** The rain loop is far too loud; set up buses; music
-   first.
+   first. (Done: five buses, music on top, quiet layered rain; see §10.1.)
 3. **Palettes (§9.2).** Too purple; make every scene multi-colour.
    (Reworked into a six-accent multi-colour base; see §9.2.)
 4. **Pooling and performance (§14).**

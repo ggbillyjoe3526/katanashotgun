@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_xhmpy"]
+[ext_resource type="AudioStream" path="res://assets/audio/gatling.wav" id="2_swhii"]
+
+[resource]
+script = ExtResource("1_xhmpy")
+streams = Array[AudioStream]([ExtResource("2_swhii")])
+max_voices = 3

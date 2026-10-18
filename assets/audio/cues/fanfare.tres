@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_ro05g"]
+[ext_resource type="AudioStream" path="res://assets/audio/fanfare.wav" id="2_eruxy"]
+
+[resource]
+script = ExtResource("1_ro05g")
+streams = Array[AudioStream]([ExtResource("2_eruxy")])
+bus = "UI"
+vary_pitch = false

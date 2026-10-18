@@ -74,8 +74,12 @@ scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-i
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
-assets/audio/               SFX (tools/gen_audio.py)
-assets/music/               soundtrack (tools/gen_music.py)
+scripts/audio/              sound cue, music track and voice pool classes
+assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds one
+                            settings file per sound; README.md is the audio how-to
+assets/music/               soundtrack (tools/gen_music.py); tracks/ holds one settings
+                            file per piece
+default_bus_layout.tres     the audio mix: Master, Music, SFX, Ambience, UI buses
 assets/fonts/               Orbitron, Chakra Petch, Share Tech Mono, Michroma (SIL OFL)
 installer/                  Windows installer script (Inno Setup) and icon
 tools/                      smoke and unit test runners, notices, release-notes helper,
@@ -167,6 +171,8 @@ Pass after `--` on the command line:
 - `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
+- `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
+  measure the mix (use with `--write-movie` so audio follows game time)
 - `--quality=low|medium|high` effect-count preset · `--perf` perf overlay
   plus a log line every 2 s and a summary at exit
 - **F3** toggles the perf overlay (fps, frame time, draw calls, nodes) in any
@@ -181,5 +187,11 @@ tools/perf_bench.sh render 7 2400                                # perf probe (d
 
 ## Regenerating audio
 `python3 tools/gen_audio.py` (SFX) and `python3 tools/gen_music.py` (soundtrack).
+`python3 tools/gen_audio.py rain` rebuilds only the rain beds. Needs numpy,
+scipy and ffmpeg. Mix levels live in `default_bus_layout.tres` (spec §10.1).
+Each sound and track has a settings file (`assets/audio/cues/`,
+`assets/music/tracks/`); `assets/audio/README.md` explains how to drop in
+professional audio, and `godot --headless --path . -s res://tools/make_audio_data.gd`
+creates the files for new sounds.
 Both need numpy, scipy and ffmpeg. `python3 tools/make_icon.py` rebuilds
 `installer/icon.ico` from `icon.svg` (needs Pillow).

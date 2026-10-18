@@ -349,11 +349,12 @@ is never lost.
   - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" between them.
 
 ## Audio
-- Six procedurally composed combat tracks (own key, tempo, progression,
-  groove, lead and melodies, arranged in sections), shuffled per run and
-  crossfaded. One theme per boss, plus a title theme. The music cuts to
+- Six procedurally composed, fast (140 to 152 bpm) combat tracks in a dark
+  electronic bass-music style (Rezz): wobble basses, EDM drums, glitch edits
+  (own key, tempo, progression, groove, lead and melodies, arranged in
+  sections), shuffled per run and crossfaded. One theme per boss, plus a title theme. The music cuts to
   silence when a boss dies and when you die.
-- **Mix priority (feedback, to fix):** **music is the focus**, then combat
+- **Mix priority (fixed; levels in spec §10.1):** **music is the focus**, then combat
   SFX, then ambience. Ambience (rain, wind, city hum, neon buzz) is fine
   but must sit far back in the mix and never become a constant hiss. The
   prototype's rain loop reads as an annoying "white noise" bed: it is too
@@ -374,8 +375,9 @@ is never lost.
   composer/producer, or licensed. Layered synths, live or high-end sampled
   instruments where they fit, punchy professional drums, dynamic range that
   holds up on headphones and speakers.
-- Style target: high-energy synthwave/darksynth fused with heavy, aggressive
-  elements for combat; distinct boss themes; a memorable title theme.
+- Style target: fast, high-energy dark electronic bass music with an EDM
+  feel, like Rezz, and no string instruments (owner's call; spec §10.2);
+  distinct boss themes; a memorable title theme.
 - Must work with the systems in place: stems or intensity layers so it can
   react (boss phases, combo heat, the hush after a boss dies), loop points for
   boss and title tracks, and enough combat tracks that runs never repeat.
