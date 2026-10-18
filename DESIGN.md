@@ -52,8 +52,9 @@ the prototype already works.
 |---|---|---|
 | Slash | LMB | 3-hit katana combo, cleaves. **Katana kills charge the shotgun (+1 cell)** |
 | Blast | RMB | Arc shotgun: hitscan "pellets" drawn as lightning, headshots x2, **staggers** |
-| Glory kill | F near a staggered enemy | First-person finisher (see below): heals 20, +3 cells. On bosses: a 15% deathblow |
-| Plunge | F while dropping from high ground onto a foe | A glory kill from above: the katana goes down through it |
+| Glory kill | F near a staggered enemy | First-person finisher (see below): heals 20, +3 cells. Never on bosses |
+| Plunge | F while dropping from high ground onto a foe | A glory kill from above: the katana goes down through it. Never on bosses |
+| ONIKIRI | F near a boss whose KAMAE is broken | Aggression fills a boss's KAMAE (posture) bar; full, it breaks and F lands a 20% blow (kills at 20% or less). Spec §5.5 |
 | Deflect | Slash an incoming bolt | Sends it back as a lethal, staggering shot |
 | Dash | Shift | 2 charges, invulnerable while dashing |
 | Jump | Space (x2) | Double jump, jump pads; a ledge a jump falls just short of is climbed |
@@ -86,7 +87,7 @@ the prototype already works.
   - **From behind:** stab through the back, then rip the blade up (it splits in two).
   - **From the air:** falling overhead cut (split in two).
   - **Brute:** climb up, chop the skull, blast down into the neck.
-  - **Boss:** an X-cut, then a point-blank blast. It takes 15%, unless that is the killing blow.
+  - **Boss (the ONIKIRI, only while its KAMAE is broken):** an X-cut, then a point-blank blast. It takes 20%, unless that is the killing blow.
 - Presentation: cinematic bars, data streaks, impact frames on each hit,
   hitstop, a hop back out of the gore when it ends.
 - **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe
@@ -121,6 +122,11 @@ the prototype already works.
     shockwaves, bolt fans. Felled line: **DAEMON PURGED**.
   - First cycle: the two lighter bosses in seeded order, then Shuten. Later
     cycles are shuffled, and each cycle is tougher.
+  - Every boss fights Souls-style (spec §5.6): it sidesteps if you hang back
+    and aim, holds some swings a beat longer, and has one area move and one
+    RED SIGNAL attack (dash through it for a PERFECT). Big moves leave a
+    punish window with its armour down. In the first cycle the area move and
+    RED SIGNAL wait until it's enraged.
 
 ### Boss names (FromSoftware-style, cyberpunk theme)
 Every boss gets its own unique name, the way FromSoftware names bosses, but
