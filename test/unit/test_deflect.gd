@@ -60,3 +60,56 @@ func test_setup_sets_and_clears_the_shooter() -> void:
 	assert_null(b.shooter)
 	assert_null(b.target)
 	b.free()
+
+
+func _returning_bolt(at: Enemy) -> Bolt:
+	var b := Bolt.new()
+	b.prewarm = true # built but parked: the test drives it by hand
+	add_child_autofree(b)
+	b.global_position = Vector3.ZERO
+	b.vel = Vector3.FORWARD * 36.0
+	b._set_target(at)
+	b._returning = true
+	return b
+
+
+func test_a_respawned_shooter_is_a_different_enemy() -> void:
+	# pooled enemies come back as new spawns; the bolt must not chase that
+	var shooter := _enemy(Vector3(0, 0, -10))
+	shooter.spawn_id = 5
+	var b := Bolt.new()
+	b.setup(true, Vector3.ZERO, Vector3.FORWARD * 11.0, 12.0, "bolt", shooter)
+	assert_true(Bolt._same_spawn(shooter, b._shooter_spawn))
+	shooter.spawn_id = 6
+	assert_false(Bolt._same_spawn(shooter, b._shooter_spawn))
+	b.free()
+
+
+func test_takes_the_next_enemy_when_its_target_dies() -> void:
+	var first := _enemy(Vector3(0, 0, -10))
+	var next := _enemy(Vector3(0.5, 0, -16))
+	var old_list := Game.enemy_list
+	Game.enemy_list = [first, next]
+	var b := _returning_bolt(first)
+	first.dead = true
+	b._steer()
+	assert_eq(b.target, next)
+	assert_true(b._returning)
+	next.dead = true
+	b._steer()
+	assert_null(b.target)
+	assert_false(b._returning, "nobody left: it flies straight and walls stop it again")
+	Game.enemy_list = old_list
+
+
+func test_freed_target_is_let_go() -> void:
+	var boss := StandIn.new()
+	boss.setup("gunner")
+	add_child(boss)
+	var old_list := Game.enemy_list
+	Game.enemy_list = []
+	var b := _returning_bolt(boss)
+	boss.free() # bosses aren't pooled: they are freed when they die
+	b._steer()
+	assert_false(b._returning)
+	Game.enemy_list = old_list

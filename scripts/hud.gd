@@ -42,6 +42,7 @@ var hint_label: Label
 var hint_bg: ColorRect
 var hint_t := 99.0
 var popups: Array = []
+var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
 var boss_root: Control
 var boss_fill: ColorRect
 var boss_name: Label
@@ -50,6 +51,8 @@ var noammo_bg: Shard
 var noammo_t := 99.0
 var blood_root: Control
 var bloods: Array = []
+var _blood_free: Array[TextureRect] = []
+var _blood_rng := RandomNumberGenerator.new() # presentation only
 var exec_rect: ColorRect
 var _hp_ghost_v := 1.0
 var _score_shown := 0.0
@@ -177,6 +180,7 @@ func _ready() -> void:
 	layer = 5
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Ui.init()
+	_blood_rng.randomize()
 	Ui.pixelate_viewport(get_viewport())
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -972,14 +976,26 @@ func add_popup(text: String, color: Color) -> void:
 		top.l.text = "%s x%d" % [text, top.n]
 		top.t = 0.0
 		return
-	var l := Ui.label(text, Ui.font_bold, 10, color, 2)
-	# a dark plate: the tags must read over gore and neon alike
-	l.add_theme_stylebox_override("normal", _popup_plate)
+	while popups.size() >= MAX_POPUPS:
+		_free_popup(popups.pop_back().l)
+	var l: Label
+	if _popup_free.is_empty():
+		l = Ui.label(text, Ui.font_bold, 10, color, 2)
+		# a dark plate: the tags must read over gore and neon alike
+		l.add_theme_stylebox_override("normal", _popup_plate)
+		play_root.add_child(l)
+	else:
+		l = _popup_free.pop_back()
+		l.text = text
+		l.add_theme_color_override("font_color", color)
+		l.visible = true
 	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
-	play_root.add_child(l)
 	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1})
-	while popups.size() > MAX_POPUPS:
-		popups.pop_back().l.queue_free()
+
+
+func _free_popup(l: Label) -> void:
+	l.visible = false
+	_popup_free.append(l)
 
 
 func damage_flash(amount: float, _from: Vector3) -> void:
@@ -1000,14 +1016,22 @@ func no_ammo() -> void:
 
 
 func screen_blood(n: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	var rng := _blood_rng
 	for i in n + rng.randi() % 2:
-		var tr := TextureRect.new()
+		while bloods.size() >= 10:
+			_free_blood(bloods.pop_front().n)
+		var tr: TextureRect
+		if _blood_free.is_empty():
+			tr = TextureRect.new()
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_SCALE
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			blood_root.add_child(tr)
+		else:
+			tr = _blood_free.pop_back()
+			tr.visible = true
 		tr.texture = TexGen.get_tex("splat_b" if rng.randf() < 0.5 else "splat")
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_SCALE
-		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var s := rng.randf_range(40, 95)
 		tr.size = Vector2(s, s)
 		tr.pivot_offset = tr.size * 0.5
@@ -1016,11 +1040,12 @@ func screen_blood(n: int) -> void:
 		var px := rng.randf_range(0, vs.x - s) if not edge else (rng.randf_range(-s * 0.4, s * 0.3) if rng.randf() < 0.5 else rng.randf_range(vs.x - s * 0.7, vs.x - s * 0.2))
 		tr.position = Vector2(px, rng.randf_range(-s * 0.3, vs.y - s * 0.6))
 		tr.modulate = Color(0.5, 0.0, 0.03, 0.7)
-		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blood_root.add_child(tr)
 		bloods.append({"n": tr, "t": 0.0, "life": rng.randf_range(1.4, 2.4)})
-	while bloods.size() > 10:
-		bloods.pop_front().n.queue_free()
+
+
+func _free_blood(tr: TextureRect) -> void:
+	tr.visible = false
+	_blood_free.append(tr)
 
 
 # ---------------------------------------------------------------- frame
@@ -1465,7 +1490,7 @@ func _update_play(delta: float) -> void:
 		pp.t += delta
 		var l: Label = pp.l
 		if pp.t > POPUP_LEN:
-			l.queue_free()
+			_free_popup(l)
 			popups.remove_at(i)
 			continue
 		var ty := py0 + i * POPUP_STEP
@@ -1485,7 +1510,7 @@ func _update_play(delta: float) -> void:
 		b.t += delta
 		var n: TextureRect = b.n
 		if b.t > b.life:
-			n.queue_free()
+			_free_blood(n)
 			bloods.remove_at(i)
 			continue
 		n.position.y += delta * 6.0
