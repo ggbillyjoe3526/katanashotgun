@@ -434,7 +434,6 @@ func _build_title() -> void:
 	var y := 0
 	for ln in lines:
 		var l := Ui.label(ln[0], Ui.font_bold, 9, ln[1], 2)
-		l.add_theme_font_size_override("font_size", 12) # the smallest size this face reads cleanly at
 		l.set_meta("row", y)
 		title_root.add_child(l)
 		title_labels.append(l)
@@ -465,7 +464,6 @@ func _build_title() -> void:
 	title_scores = Ui.label("", Ui.font_mono, 8, Color(0.95, 0.92, 1.0), 2)
 	title_root.add_child(title_scores)
 	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
-	title_seed.add_theme_font_size_override("font_size", 12)
 	title_root.add_child(title_seed)
 	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
 	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)

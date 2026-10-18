@@ -120,7 +120,7 @@ static func theme() -> Theme:
 	init()
 	var t := Theme.new()
 	t.default_font = font
-	t.default_font_size = 10
+	t.default_font_size = PIX
 	return t
 
 

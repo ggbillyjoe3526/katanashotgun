@@ -136,14 +136,16 @@ class FinishBG:
 			_data_t = t + 0.08
 			_data.clear()
 			for i in 18:
-				_data.append("%04X %04X" % [_rng.randi() & 0xFFFF, _rng.randi() & 0xFFFF])
+				_data.append("%04X" % (_rng.randi() & 0xFFFF))
+		# the pixel face draws only at its own size (smaller sizes draw nothing)
 		var mf := Ui.font_mono
+		var dw := mf.get_string_size("0000", HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX).x
 		for i in _data.size():
-			var yy := 40.0 + i * 10.0
+			var yy := 44.0 + i * 16.0
 			if yy > size.y - 30:
 				break
-			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent2.r, accent2.g, accent2.b, 0.45 * a))
-			draw_string(mf, Vector2(size.x - 64, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, 8, Color(accent.r, accent.g, accent.b, 0.55 * a))
+			draw_string(mf, Vector2(8, yy), _data[i], HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX, Color(accent2.r, accent2.g, accent2.b, 0.45 * a))
+			draw_string(mf, Vector2(size.x - 8 - dw, yy), _data[(i + 7) % _data.size()], HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX, Color(accent.r, accent.g, accent.b, 0.55 * a))
 		# tear slices, kept off the text plate
 		for k in 4:
 			var ty := _rng.randf() * size.y
