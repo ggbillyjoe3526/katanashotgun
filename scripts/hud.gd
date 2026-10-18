@@ -8,6 +8,9 @@ const MAGENTA := Color(1.0, 0.2, 0.7)
 const CYAN := Color(0.25, 0.95, 1.0)
 const RED := Color(1.0, 0.15, 0.2)
 const YELLOW := Color(1.0, 0.85, 0.25)
+# preloaded rather than found by class name, so the HUD still compiles when
+# the editor hasn't rescanned yet (e.g. right after switching git branches)
+const FinisherPromptScript := preload("res://scripts/ui/finisher_prompt.gd")
 
 var root: Control
 var vs := Vector2(480, 270)
@@ -30,7 +33,7 @@ var score_label: Label
 var combo_label: Label
 var combo_bar: ColorRect
 var crosshair: Crosshair
-var finisher_prompt: FinisherPrompt
+var finisher_prompt: FinisherPromptScript
 var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var center_label: Label
 var center_shadow: Label
@@ -296,7 +299,7 @@ func _build_play() -> void:
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
-	finisher_prompt = FinisherPrompt.new()
+	finisher_prompt = FinisherPromptScript.new()
 	play_root.add_child(finisher_prompt)
 
 	var cl := _shadowed("", Ui.font_big, 16, Color.WHITE, Color(0.1, 0, 0.04), Vector2(1, 1))
@@ -396,8 +399,8 @@ func _build_title() -> void:
 	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
 	title_seed.add_theme_font_size_override("font_size", 12)
 	title_root.add_child(title_seed)
-	# build version, stamped from the release tag by CI (spec S3.2)
-	title_version = Ui.label("V" + str(ProjectSettings.get_setting("application/config/version", "0.0.0")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
+	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
+	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
 	title_root.add_child(title_version)
 	title_blink = Ui.label("CLICK TO START", Ui.font_big, 10, Color.WHITE, 2)
 	title_root.add_child(title_blink)

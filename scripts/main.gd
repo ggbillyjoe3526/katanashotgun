@@ -48,6 +48,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--movetest"):
 		add_child(load("res://scripts/debug_movement.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--palettetour"):
+		add_child(load("res://scripts/debug_palette.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--showcase"):
 		Game.state = "playing"
 		hud.hide_title()

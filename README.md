@@ -99,13 +99,16 @@ gdlintrc                    gdlint settings
   `godot --headless --path . -s res://tools/make_notices.gd` and commit
   `THIRD_PARTY_NOTICES.txt`. The installer and every zip ship it next to the
   game.
-- **Releases** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`, or open
-  *Actions → Release → Run workflow* and type the version. It runs the smoke
-  test, exports Windows, Linux and macOS, builds the Windows installer, checks
-  it installs and uninstalls, and publishes a GitHub Release with
-  `KatanaShotgun-vX.Y.Z-Windows-Setup.exe`, `-Windows-Portable.zip`,
-  `-Linux.zip` and `-macOS.zip`. The release notes come from that version's
-  section of `CHANGELOG.md`. A pull request that touches the pipeline does a
+- **Version:** set once, as `config/version` in `project.godot`, with names
+  like `0.1 Dev 1`, `0.1 Beta 2` and `0.1`. `VERSIONING.md` explains the
+  scheme and how a name becomes a tag (`v0.1-dev.1`).
+- **Releases** (`.github/workflows/release.yml`): open *Actions → Release →
+  Run workflow* on `main` to release the version in `project.godot` (or push
+  its matching tag). It runs the smoke test, exports Windows, Linux and
+  macOS, builds the Windows installer, checks it installs and uninstalls, and
+  publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
+  `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
+  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
   dry run: everything is built and attached to the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
@@ -120,6 +123,9 @@ Pass after `--` on the command line:
   `--boss=ninja|mech|oni` forces a boss
 - `--movetest` (with `--headless --fixed-fps 60`) runs the scripted movement
   course: jump heights, ledge climbs, walls too tall to climb, plunges
+- `--palettetour` four fixed views of the arena for checking colour, then
+  quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
+  or a normal run
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678

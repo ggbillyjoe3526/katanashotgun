@@ -282,13 +282,14 @@ is never lost.
   Drive, Miami Nights, Ultraviolet, Blood Chrome, Toxic Tokyo) colour the sky,
   striped sun, mountains, neon, floor grid, fog and windows. Seeded weather;
   the Neon Storm mutator adds lightning.
-- **Colour direction (feedback, to fix later):** the current palettes lean
-  too heavily toward purple. The game must be vibrant, neon and bold, with
+- **Colour direction:** the game must be vibrant, neon and bold, with
   **multiple strong colours on screen at all times** (cyan, magenta, hot
   pink, electric blue, acid green, amber, orange-red and so on), never a
   single-hue wash. Every scene needs contrasting accents: signs, neon tubes,
   UI, effects and the sky should not all share one hue. Purple can be one
-  colour among many, not the base of everything.
+  colour among many, not the base of everything. Each palette now has six
+  accent hues that maps spread over signs, tubes and props, checked by
+  `Palette.problems()` (spec §9.2).
 - **Palette unlocks:** palettes earned from boss rewards could be *tints* on
   top of the multi-colour base (a warm sunset tint, a toxic green tint, a
   cold chrome tint), so every palette stays colourful rather than becoming

@@ -16,6 +16,9 @@ const GAP_BELOW_CROSSHAIR := 16.0
 const RIGHT_OF_CROSSHAIR := 8.0 # the kill tags start 18 px right of it
 const POP_TIME := 0.1
 const FADE_TIME := 0.08
+const POP_SCALE := 1.3 # starting scale of the pop-in
+const GLOW_SPEED := 10.0 # key cap pulse, radians per second
+const GLOW_AMOUNT := 0.3 # how far the cap brightens toward white
 
 var _cap: Shard
 var _key: Label
@@ -61,10 +64,10 @@ func refresh(move: String, crosshair: Vector2, rd: float) -> void:
 	_t += rd
 	_layout(crosshair)
 	var pop := Juice.ease_out(_t / POP_TIME)
-	scale = Vector2.ONE * lerpf(1.3, 1.0, pop)
+	scale = Vector2.ONE * lerpf(POP_SCALE, 1.0, pop)
 	modulate.a = clampf(_t / (POP_TIME * 0.5), 0.0, 1.0) * (1.0 - _fade / FADE_TIME)
 	# the cap glows; dark ink on gold or white reads on every frame
-	_cap.color = GOLD.lerp(Color.WHITE, 0.3 * (0.5 + 0.5 * sin(_t * 10.0)))
+	_cap.color = GOLD.lerp(Color.WHITE, GLOW_AMOUNT * (0.5 + 0.5 * sin(_t * GLOW_SPEED)))
 
 
 func _layout(crosshair: Vector2) -> void:
