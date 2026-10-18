@@ -31,6 +31,9 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
   `AppId`. No slash in file, folder or shortcut names.
 - **Review:** before marking a PR that touches code ready, run the `critic`
   agent (`.claude/agents/critic.md`) and fix its blocking findings.
+- **Bosses:** `docs/boss-roster.md` records how every boss fights. Read it
+  before adding or changing a boss (its new-boss checklist), and update it in
+  the same PR as any boss change.
 - **Reading big files:** a hook stops whole-file reads over 40 KB; grep, then
   read with offset and limit.
 - **Tests and lint:** `tools/unit_tests.sh` (Gut, tests in `test/unit/`) and

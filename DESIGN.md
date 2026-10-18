@@ -53,9 +53,10 @@ the prototype already works.
 | Slash | LMB | 3-hit katana combo, cleaves. **Katana kills charge the shotgun (+1 cell)** |
 | Blast | RMB | Arc shotgun: hitscan "pellets" drawn as lightning, headshots x2, **staggers** |
 | Glory kill | F near a staggered enemy | First-person finisher (see below): heals 20, +3 cells. On bosses: a 15% deathblow |
+| Plunge | F while dropping from high ground onto a foe | A glory kill from above: the katana goes down through it |
 | Deflect | Slash an incoming bolt | Sends it back as a lethal, staggering shot |
 | Dash | Shift | 2 charges, invulnerable while dashing |
-| Jump | Space (x2) | Double jump, jump pads |
+| Jump | Space (x2) | Double jump, jump pads; a ledge a jump falls just short of is climbed |
 
 ### The arc shotgun (RAIJIN-12)
 - A futuristic "shotgun taser". Gameplay is exactly a shotgun: a spread of
@@ -88,6 +89,17 @@ the prototype already works.
   - **Boss:** an X-cut, then a point-blank blast. It takes 15%, unless that is the killing blow.
 - Presentation: cinematic bars, data streaks, impact frames on each hit,
   hitstop, a hop back out of the gore when it ends.
+- **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe
+  (or flying off a jump pad), look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
+  katana through its collarbone (it splits in two), rip it out and step
+  down. Same rewards as any glory kill. Brutes must be staggered first; bosses
+  can't be plunged.
+
+### Climbing
+- A jump that falls just short of a ledge you're pushing into grabs it and
+  pulls you up (about 0.25–0.4 s). Only ledges your hands could reach count
+  (up to 2 m above your feet), and only with room to stand on top, so tall
+  walls are never climbable.
 
 ## Run structure (arcade)
 - **Difficulty rises the further the player gets.** Every wave is harder than
@@ -207,7 +219,7 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
 - **Enemies:** grunts *Ashigaru* (foot soldiers), gunners *Teppō* (the
   matchlock corps), brutes *Kanabō* (after the oni's iron club).
 - **Mutators** (keep the plain-English description underneath):
-  - Overdrive → **IDATEN'S HASTE**
+  - Overdrive → **OKURI-INU HUNT** (was Idaten's Haste)
   - Glass Cannon → **MURAMASA'S CURSE**
   - Blood Moon → **AKATSUKI** (the red dawn)
   - Brownout → **YOMI BLACKOUT**
@@ -215,13 +227,15 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
   - Sniper Nest → **TEPPŌ VOLLEY**
   - Ironclad → **KANABŌ VANGUARD**
   - Neon Storm → **RAIJIN'S STORM**
-  - Vampire → **JORŌGUMO'S BITE**
+  - Vampire → JORŌGUMO'S BITE, removed 2026-10-18 (too close to Akatsuki)
+  - Seven more since 2026-10-18 (Onryō's Grudge, Kabuto Plate, Matsuri Rush,
+    Kanashibari, Hannya's Wrath, Umibōzu Swell, Senryō Bounty): spec §6.3.
 - **Augments:** Monoblade → **Masamune Edge**, Crimson Wave → **Susanoo's
   Wave**, Phantom Cut → **Kage Step**, Chain Glory → **Hyakunin-giri** (a
   hundred-man cut), Overclocked Legs → **Idaten Drive**, Chrome Heart →
   **Kongō Heart** (vajra, unbreakable), Forked Lightning → **Raijin's Fork**,
-  Capacitor Bank → **Fūjin Bank**, Plasma Burn → **Kagutsuchi Flame** (the
-  fire kami). Keep the rest unless a better myth fits.
+  Plasma Burn → **Kagutsuchi Flame** (the fire kami). The full card list,
+  its builds and the newer names are in spec §3.8 and §13.
 - **Variants and future bosses** should follow the same rule. Example:
   "Orochi Protocol, the Eight-Headed Network"; "Jorōgumo, Silk-Server
   Matriarch"; "Gashadokuro, the Scrapyard Colossus"; "Nue, Chimera of the
@@ -348,11 +362,12 @@ is never lost.
   - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" between them.
 
 ## Audio
-- Six procedurally composed combat tracks (own key, tempo, progression,
-  groove, lead and melodies, arranged in sections), shuffled per run and
-  crossfaded. One theme per boss, plus a title theme. The music cuts to
+- Six procedurally composed, fast (140 to 152 bpm) combat tracks in a dark
+  electronic bass-music style (Rezz): wobble basses, EDM drums, glitch edits
+  (own key, tempo, progression, groove, lead and melodies, arranged in
+  sections), shuffled per run and crossfaded. One theme per boss, plus a title theme. The music cuts to
   silence when a boss dies and when you die.
-- **Mix priority (feedback, to fix):** **music is the focus**, then combat
+- **Mix priority (fixed; levels in spec §10.1):** **music is the focus**, then combat
   SFX, then ambience. Ambience (rain, wind, city hum, neon buzz) is fine
   but must sit far back in the mix and never become a constant hiss. The
   prototype's rain loop reads as an annoying "white noise" bed: it is too
@@ -373,8 +388,9 @@ is never lost.
   composer/producer, or licensed. Layered synths, live or high-end sampled
   instruments where they fit, punchy professional drums, dynamic range that
   holds up on headphones and speakers.
-- Style target: high-energy synthwave/darksynth fused with heavy, aggressive
-  elements for combat; distinct boss themes; a memorable title theme.
+- Style target: fast, high-energy dark electronic bass music with an EDM
+  feel, like Rezz, and no string instruments (owner's call; spec §10.2);
+  distinct boss themes; a memorable title theme.
 - Must work with the systems in place: stems or intensity layers so it can
   react (boss phases, combo heat, the hush after a boss dies), loop points for
   boss and title tracks, and enough combat tracks that runs never repeat.

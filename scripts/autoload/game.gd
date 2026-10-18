@@ -30,12 +30,16 @@ var palette: Dictionary = {}
 var rng_map := RandomNumberGenerator.new()
 var rng_waves := RandomNumberGenerator.new()
 var rng_upgrades := RandomNumberGenerator.new()
+## Mid-wave hazards (storm strikes). Reseeded from the seed at every wave
+## start, so how long a wave lasts never shifts the waves after it.
+var rng_hazards := RandomNumberGenerator.new()
 var mutator: Dictionary = {}
 var wave_damage := 0.0
 
 var score := 0
 var combo := 0
 var combo_timer := 0.0
+var combo_hold := 0.0 # seconds the combo timer stays frozen (Taiko Frenzy)
 var best_combo := 0
 var kills := 0
 var executions := 0
@@ -74,7 +78,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour") or args.has("--movetest")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
@@ -83,6 +87,14 @@ func _ready() -> void:
 			debug_palette = a.substr(10)
 	Settings.boot()
 	Quality.from_cmdline() # after Settings, so the command line wins
+
+
+## Quits to the desktop. Everything that saves when the window's X is
+## clicked (profile, settings) gets the same notice first.
+func quit_game() -> void:
+	var tree := get_tree()
+	tree.root.propagate_notification(NOTIFICATION_WM_CLOSE_REQUEST)
+	tree.quit()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
@@ -103,6 +115,7 @@ func reset_run() -> void:
 	score = 0
 	combo = 0
 	combo_timer = 0.0
+	combo_hold = 0.0
 	best_combo = 0
 	kills = 0
 	executions = 0
@@ -146,6 +159,16 @@ func slowmo(scale: float, duration: float) -> void:
 	_slowmo_left = maxf(_slowmo_left, duration)
 
 
+## Seconds a kill keeps the combo alive (Matsuri Rush halves it).
+func combo_window() -> float:
+	return COMBO_WINDOW * float(mut("combo_window", 1.0))
+
+
+## Called at each wave start: the hazard stream depends only on seed and wave.
+func seed_hazards(w: int) -> void:
+	rng_hazards.seed = hash(run_seed * 11 + w * 131 + 5)
+
+
 func combo_mult() -> float:
 	return 1.0 + minf(combo * 0.1, 4.0)
 
@@ -157,7 +180,7 @@ func score_mult() -> float:
 func register_kill(base_points: int, xp_amount: float, tag := "", tag_color := Color.WHITE) -> void:
 	kills += 1
 	combo += 1
-	combo_timer = COMBO_WINDOW
+	combo_timer = combo_window()
 	best_combo = maxi(best_combo, combo)
 	var pts := int(base_points * score_mult())
 	score += pts
@@ -256,7 +279,9 @@ func _process(delta: float) -> void:
 	_applied_ts = ts
 	if state == "playing":
 		run_time += real_dt
-		if combo > 0:
+		if combo_hold > 0.0:
+			combo_hold -= real_dt
+		elif combo > 0:
 			combo_timer -= real_dt
 			if combo_timer <= 0.0:
 				combo = 0

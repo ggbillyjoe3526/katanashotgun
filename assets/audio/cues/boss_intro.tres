@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_3bkrh"]
+[ext_resource type="AudioStream" path="res://assets/audio/boss_intro.wav" id="2_g4wlw"]
+
+[resource]
+script = ExtResource("1_3bkrh")
+streams = Array[AudioStream]([ExtResource("2_g4wlw")])
+vary_pitch = false
+priority = 3
+music_duck_db = -3.0

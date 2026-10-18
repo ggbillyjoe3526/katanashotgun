@@ -2,8 +2,8 @@ class_name SettingsMenu
 extends Control
 ## The settings screen, opened from the title and the pause screen (click
 ## SETTINGS or press Tab). Four tabs: AUDIO, VIDEO, CONTROLS and COMFORT.
-## Works with the mouse (click, drag, wheel) and the keyboard (arrows or WASD
-## to move and change, Enter to rebind, Q / E or Tab for tabs, Esc to go back).
+## Works with the mouse alone (click, drag, wheel; right-click clears a key).
+## The keyboard only types a new binding, and Esc goes back.
 ## Everything sits on one dark tech panel and is drawn still and flat, so every
 ## word reads at a glance (spec §9.9). Changes apply at once and are saved half
 ## a second after the last one, and again when the menu closes.
@@ -24,6 +24,9 @@ const LABEL_PX := Ui.PIX # Jersey 10, at its own pixel size
 const VALUE_PX := Ui.PIX # its fixed-width digits
 const TITLE_PX := 16 # Orbitron
 const NOTE_LEN := 3.0
+const QUIT_W := 144.0
+const QUIT_ARMED := "CLICK AGAIN TO QUIT"
+const CAPTURE_HELP := "PRESS A KEY OR CLICK THE SLOT. CLICK AWAY TO CANCEL"
 const SAVE_DELAY := 0.5
 const TEXT := Color(0.86, 0.83, 0.96)
 const DIM := Color(0.62, 0.58, 0.78)
@@ -45,10 +48,13 @@ var _dragging := -1
 var _note := ""
 var _note_t := 99.0
 var _save_t := -1.0
+var _quit_t := 0.0 # QUIT GAME was clicked once: seconds left for the second click
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# offsets too: anchors alone keep the zero size this had when it was made,
+	# and a zero-size control never gets a click
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
@@ -69,6 +75,7 @@ func open() -> void:
 	capturing = false
 	_dragging = -1
 	_note_t = 99.0
+	_quit_t = 0.0
 	_set_tab(tab)
 	Sfx.play("ui_click", -4.0)
 
@@ -121,13 +128,13 @@ func _build_rows(t: String) -> Array:
 		"VIDEO":
 			out.append(_option("WINDOW MODE", Settings.WINDOW_MODES, ["WINDOWED", "FULLSCREEN", "EXCLUSIVE FULLSCREEN"],
 				func(): return Settings.window_mode, _set_window,
-				"F11 SWITCHES IT ANY TIME. EXCLUSIVE CAN CUT LAG"))
+				_window_help()))
 			out.append(_option("VSYNC", [true, false], ["ON", "OFF"],
 				func(): return Settings.vsync, _set_vsync,
 				"ON STOPS TEARING. OFF CUTS INPUT LAG"))
 			var cap_names := []
 			for cap in Settings.FPS_CAPS:
-				cap_names.append("UNCAPPED" if cap == 0 else "%d FPS" % cap)
+				cap_names.append("UNLIMITED" if cap == 0 else "%d FPS" % cap)
 			out.append(_option("FRAME CAP", Settings.FPS_CAPS, cap_names,
 				func(): return Settings.fps_cap, _set_fps_cap,
 				"HIGHEST FRAME RATE THE GAME WILL RUN AT"))
@@ -144,9 +151,9 @@ func _build_rows(t: String) -> Array:
 		"CONTROLS":
 			out.append(_slider("MOUSE SENSITIVITY", Settings.SENS_MIN, Settings.SENS_MAX, 0.1,
 				func(): return Settings.sensitivity, _set_sensitivity,
-				func(v: float): return "%.1f" % v, "[ AND ] ALSO CHANGE IT IN GAME"))
+				func(v: float): return "%.1f" % v, "HOW FAST THE VIEW TURNS"))
 			for r in Settings.rebindable_actions():
-				out.append({"type": "key", "label": r[1], "action": r[0], "help": "CLICK OR ENTER TO CHANGE. DELETE CLEARS"})
+				out.append({"type": "key", "label": r[1], "action": r[0], "help": "CLICK A SLOT, THEN PRESS THE NEW KEY. RIGHT-CLICK CLEARS"})
 		"COMFORT":
 			out.append(_slider("SCREEN SHAKE", 0.0, 1.0, 0.05,
 				func(): return Settings.shake, _set_shake,
@@ -160,6 +167,11 @@ func _build_rows(t: String) -> Array:
 func _set_volume(bus: String, v: float) -> void:
 	Settings.volume[bus] = v
 	Settings.apply_audio()
+
+
+## Names the screen full screen will use, so the player sees it was detected.
+func _window_help(s := Settings.screen_text()) -> String:
+	return "USES YOUR %s SCREEN. F11 SWITCHES" % s if s != "" else "F11 SWITCHES IT ANY TIME"
 
 
 func _set_window(v: Variant) -> void:
@@ -229,9 +241,6 @@ func _adjust(i: int, steps: int) -> void:
 			var cur := vals.find(r.get.call())
 			r.set.call(vals[wrapi(cur + steps, 0, vals.size())])
 			_changed()
-		"key":
-			slot = clampi(slot + steps, 0, Settings.SLOTS - 1)
-			Sfx.play("ui_hover", -10.0)
 
 
 func _set_slider(r: Dictionary, v: float) -> void:
@@ -303,58 +312,31 @@ func _input(event: InputEvent) -> void:
 		return
 	if not event is InputEventKey:
 		return
+	# the screen is worked with the mouse; keys only bind a control, and Esc
+	# backs out. Every other key is held here so the game behind never sees it.
 	var k := event as InputEventKey
 	var code := k.physical_keycode
 	if code == KEY_F11 or (code == KEY_ENTER and k.alt_pressed):
 		return # main toggles fullscreen
 	get_viewport().set_input_as_handled()
-	if not k.pressed:
+	if not k.pressed or k.echo:
 		return
 	if capturing:
-		if k.echo:
-			return
 		if code == KEY_ESCAPE:
 			capturing = false
 		elif not Settings.RESERVED_KEYS.has(code):
 			var ev := InputEventKey.new()
 			ev.physical_keycode = code
 			_finish_capture(ev)
-		return
-	match code:
-		KEY_ESCAPE:
-			close()
-		KEY_UP, KEY_W:
-			_select(sel - 1)
-		KEY_DOWN, KEY_S:
-			_select(sel + 1)
-		KEY_LEFT, KEY_A:
-			_adjust(sel, -1)
-		KEY_RIGHT, KEY_D:
-			_adjust(sel, 1)
-		KEY_TAB:
-			if not k.echo:
-				_switch_tab(tab - 1 if k.shift_pressed else tab + 1)
-		KEY_Q:
-			if not k.echo:
-				_switch_tab(tab - 1)
-		KEY_E:
-			if not k.echo:
-				_switch_tab(tab + 1)
-		KEY_ENTER, KEY_KP_ENTER, KEY_SPACE:
-			if not k.echo:
-				_activate(sel)
-		KEY_DELETE, KEY_BACKSPACE:
-			if sel < rows.size() and rows[sel].type == "key":
-				Settings.clear_binding(rows[sel].action, slot)
-				_changed()
-		KEY_R:
-			if not k.echo:
-				_reset_tab()
+	elif code == KEY_ESCAPE:
+		close()
 
 
 func _gui_input(event: InputEvent) -> void:
 	accept_event()
-	var mp := _content.get_local_mouse_position()
+	if not event is InputEventMouse:
+		return
+	var mp := (event as InputEventMouse).position - _origin
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if not mb.pressed:
@@ -362,14 +344,30 @@ func _gui_input(event: InputEvent) -> void:
 				_dragging = -1
 			return
 		if capturing:
-			var ev := InputEventMouseButton.new()
-			ev.button_index = mb.button_index
-			_finish_capture(ev)
+			# a button pressed on the waiting slot is the new binding (so LMB
+			# can be bound); a click anywhere else cancels. The second half of
+			# a double-click and the wheel are ignored, so neither binds by
+			# accident (a stray LMB would take the katana's button).
+			if mb.double_click or mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]:
+				return
+			if _slot_rect(sel, slot).has_point(mp):
+				var ev := InputEventMouseButton.new()
+				ev.button_index = mb.button_index
+				_finish_capture(ev)
+			elif mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_RIGHT:
+				capturing = false
 			return
 		var row := _row_at(mp)
 		if mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
 			if row >= 0 and rows[row].type != "key":
 				_adjust(row, 1 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1)
+			return
+		if mb.button_index == MOUSE_BUTTON_RIGHT:
+			if row >= 0 and rows[row].type == "key":
+				for s in Settings.SLOTS:
+					if _slot_rect(row, s).has_point(mp) and s < Settings.action_events(rows[row].action).size():
+						Settings.clear_binding(rows[row].action, s)
+						_changed()
 			return
 		if mb.button_index != MOUSE_BUTTON_LEFT:
 			return
@@ -383,6 +381,9 @@ func _gui_input(event: InputEvent) -> void:
 				return
 			1:
 				_reset_tab()
+				return
+			2:
+				_press_quit()
 				return
 		if row < 0:
 			return
@@ -431,16 +432,6 @@ func _switch_tab(i: int) -> void:
 	Sfx.play("ui_hover", -6.0)
 
 
-func _activate(i: int) -> void:
-	if i < 0 or i >= rows.size():
-		return
-	match rows[i].type:
-		"key":
-			_start_capture(i, slot)
-		"option":
-			_adjust(i, 1)
-
-
 func _drag_to(x: float) -> void:
 	var r: Dictionary = rows[_dragging]
 	var sr := _slider_rect(_dragging)
@@ -470,7 +461,9 @@ func _tab_rect(i: int) -> Rect2:
 
 
 func _foot_rect(i: int) -> Rect2:
-	# 0 = BACK, 1 = DEFAULTS, bottom right
+	# 0 = BACK, 1 = DEFAULTS, bottom right; 2 = QUIT GAME, bottom left
+	if i == 2:
+		return Rect2(Vector2(14, PANEL.y - 21), Vector2(QUIT_W, 14))
 	var w := 84.0
 	return Rect2(Vector2(PANEL.x - 20 - (2 - i) * (w + 6) + 6, PANEL.y - 21), Vector2(w, 14))
 
@@ -489,8 +482,28 @@ func _tab_at(p: Vector2) -> int:
 	return -1
 
 
+func foot_label(i: int) -> String:
+	if i == 2:
+		return QUIT_ARMED if quit_armed() else "QUIT GAME"
+	return ["BACK", "DEFAULTS"][i]
+
+
+func quit_armed() -> bool:
+	return _quit_t > 0.0
+
+
+## The first click arms QUIT GAME, a second one within a few seconds quits.
+func _press_quit() -> void:
+	if quit_armed():
+		_flush_save()
+		Game.quit_game()
+		return
+	_quit_t = TechButton.ARM_S
+	Sfx.play("ui_click", -6.0)
+
+
 func _foot_at(p: Vector2) -> int:
-	for i in 2:
+	for i in 3:
 		if _foot_rect(i).has_point(p):
 			return i
 	return -1
@@ -501,6 +514,7 @@ func _process(_delta: float) -> void:
 		return
 	var rd := Game.real_dt
 	_note_t += rd
+	_quit_t -= rd
 	if _save_t >= 0.0:
 		_save_t -= rd
 		if _save_t < 0.0:
@@ -526,8 +540,6 @@ func _paint() -> void:
 	var b: Color = Game.palette.get("neon_b", Hud.CYAN)
 	var gold: Color = Game.palette.get("neon_c", Hud.YELLOW)
 	_text(c, "SETTINGS", Ui.font_big, TITLE_PX, Vector2(14, 9), Color.WHITE)
-	var hint := "Q / E  CHANGE TAB"
-	_text(c, hint, Ui.font_bold, LABEL_PX, Vector2(PANEL.x - 14 - _w(hint, Ui.font_bold, LABEL_PX), 12), DIM)
 	# tabs
 	for i in TABS.size():
 		var tr := _tab_rect(i)
@@ -559,7 +571,7 @@ func _paint() -> void:
 	var line := ""
 	var col := DIM
 	if capturing:
-		line = "PRESS A KEY OR MOUSE BUTTON.  ESC CANCELS"
+		line = CAPTURE_HELP
 		col = gold
 	elif _note_t < NOTE_LEN:
 		line = _note
@@ -567,12 +579,13 @@ func _paint() -> void:
 	elif sel < rows.size():
 		line = rows[sel].help
 	_text(c, line, Ui.font_bold, LABEL_PX, Vector2(14, help_y), col)
-	for i in 2:
+	for i in 3:
 		var fr := _foot_rect(i)
 		var hov := i == _hover_foot
-		c.draw_rect(fr, Color(a, 0.9) if hov else Color(0.1, 0.07, 0.18))
-		c.draw_rect(fr, a, false, 1.0)
-		var lbl: String = ["ESC  BACK", "R  DEFAULTS"][i]
+		var fa := b if i == 2 else a
+		c.draw_rect(fr, Color(fa, 0.9) if hov else Color(0.1, 0.07, 0.18))
+		c.draw_rect(fr, fa, false, 1.0)
+		var lbl: String = foot_label(i)
 		var lw := _w(lbl, Ui.font_bold, LABEL_PX)
 		_text_in(c, lbl, Ui.font_bold, LABEL_PX, fr.position.x + (fr.size.x - lw) * 0.5, fr, DARK if hov else TEXT)
 

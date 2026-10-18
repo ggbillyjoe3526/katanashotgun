@@ -187,6 +187,7 @@ func _enrage_check() -> void:
 		enraged = true
 		speed *= 1.2
 		Sfx.play("roar", 2.0, 1.2 if kind == "ninja" else 0.5)
+		Sfx.on_boss_enraged()
 		Game.hud_message.emit("%s IS ENRAGED" % display_name, Color(1, 0.2, 0.3), false)
 		_eye_mat.set_shader_parameter("energy", 6.0)
 
@@ -320,6 +321,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 			target.z = clampf(target.z, -lim, lim)
 			target.y = p.global_position.y + 0.2
 			global_position = target
+			reset_physics_interpolation() # a blink, not a slide
 			visual.visible = true
 			collision_layer = 4
 			Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)
@@ -343,7 +345,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 					var d := (target - origin)
 					var flat_len := Vector2(d.x, d.z).length()
 					var v := (aim_dir * flat_len + Vector3(0, d.y, 0)).normalized()
-					Game.main.director.fire_bolt(true, origin, v * 14.0, 7.0 * damage_mult)
+					Game.main.director.fire_bolt(true, origin, v * 14.0, 7.0 * damage_mult, "bolt", self)
 					Sfx.play_at("gatling", origin, -4.0)
 				if state_t > spin + 2.0:
 					_barrel_glow.set_shader_parameter("energy", 1.0)
@@ -410,7 +412,7 @@ func _volley(dir: Vector3) -> void:
 	var aim := (target - origin).normalized()
 	var n := 7 if enraged else 5
 	for i in n:
-		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken")
+		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken", self)
 	Sfx.play_at("shuriken", global_position, 2.0)
 	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
 
