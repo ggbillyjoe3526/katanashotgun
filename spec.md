@@ -1091,21 +1091,37 @@ the holographic cut-in (§9.8).
     never be a single-hue wash.
   - Signs, neon tubes, UI, effects and the sky should not all share one hue.
     Purple can be one colour among many, not the base of everything.
-- The five prototype palettes (seeded; each sets sky top/mid/horizon, sun
-  top/bottom, fog, ambient, neon_a/b/c, grid, floor, mountain). Rework them
-  into a multi-colour base:
+- **The multi-colour base (built, `scripts/palette.gd`).** Five palettes,
+  picked by `rng_map` (one draw, so the rest of the map stream never moves).
+  Each sets sky top/mid/horizon, sun top/bottom, fog, ambient, grid, floor,
+  mountain and **six accent hues**. `neon_a/b/c` are the first three accents
+  (the HUD and effects use them; `neon_c` is always bright enough for text).
+  The big areas (sky top, fog, ambient, floor) stay dark and fairly neutral
+  so the accents carry the colour; the sky gradient crosses at least two hue
+  families.
 
-| Palette | sky_top | sky_mid | horizon | sun top→bottom | neon_a | neon_b | neon_c | grid | floor |
+| Palette | sky_top | sky_mid | horizon | sun top→bottom | fog | ambient | grid | floor | accents (a, b, c, then 3 more) |
 |---|---|---|---|---|---|---|---|---|---|
-| SUNSET DRIVE | 12002b | 5a0f6e | ff3d7f | ffe14d→ff2a8a | ff2a8a | 2af6ff | ffd23f | ff3df0 | 150a26 |
-| MIAMI NIGHTS | 070a2e | 2b1d74 | ff6ec7 | fff07a→ff4f6e | ff4fb8 | 3dfcd8 | ff9e3d | 3dfcd8 | 0c0c26 |
-| ULTRAVIOLET | 090018 | 3b0a7a | c45dff | ffb3ff→7b2cff | b44dff | 4df0ff | ff3d9e | b44dff | 100626 |
-| BLOOD CHROME | 120006 | 4a0820 | ff4b3b | ffd27a→ff1f4d | ff2b4a | 29e7ff | ffb52b | ff2b4a | 1a0810 |
-| TOXIC TOKYO | 001312 | 04404a | 19ffc1 | f6ff7a→19ff9c | 19ffc1 | ff3df2 | f6ff4a | 19ffc1 | 041416 |
+| SUNSET DRIVE | 060b2e | a3195b | ff7a2a | ffe14d→ff2a8a | 161a30 | 565c82 | 2af6ff | 0c0e1e | ff2a8a 2af6ff ffc23a 3d6bff 9dff3a ff4a1f |
+| MIAMI NIGHTS | 050a2a | 1d3590 | ff6ec7 | fff07a→ff4f6e | 0f1c32 | 4a6688 | 3dfcd8 | 08101e | ff4fb8 3dfcd8 ff9e3d 4d8bff c6ff3d b45cff |
+| ULTRAVIOLET | 05021a | 24127a | 2fd0ff | e8ff6a→ff3d9e | 12112c | 54568a | 9dff3a | 0a0a1c | b44dff 4df0ff e8ff3a ff3d9e 3dff8a ff7a1f |
+| BLOOD CHROME | 05060c | 1e2a40 | ff3b2b | ffd27a→ff1f4d | 171a22 | 66687a | ff2b4a | 100c10 | ff2b4a 29e7ff ffb52b ff3df0 3d7bff b8ff3d |
+| TOXIC TOKYO | 020818 | 064a50 | ff3da8 | f6ff7a→19ff9c | 0b1c1e | 46666e | 19ffc1 | 061012 | 19ffc1 ff3df2 f6ff4a ff7a1f 2f8bff ff3d5a |
 
-  - Suggested fix: every scene uses **at least 4–5 distinct accent hues**
-    (assign sign, tube and prop colours from a multi-hue set, not just neon
-    a/b/c), and limit how much one hue covers the sky and fog.
+  ULTRAVIOLET keeps its name as a blacklight look: violet is its one purple
+  accent, surrounded by UV-reactive cyan, acid yellow, pink and green.
+- **Rules every palette must pass** (`Palette.problems()`, run on every
+  palette by `test/unit/test_palette.gd`): at least 5 accents, each a strong
+  neon (saturation ≥ 0.6, value ≥ 0.8) and at least 25° of hue from every
+  other; at most one purple accent (hue 255–300°); `neon_c` luminance ≥ 0.5;
+  fog and ambient saturation ≤ 0.75 and fog value ≤ 0.25; sky_mid and
+  horizon at least 30° apart; at most two of the large areas (sky top, sky
+  mid, fog, ambient, floor, mountain) purple.
+- **Accent distribution:** maps take colours with `Arena._accent(i)` or pick
+  from `pal.accents`, never just neon a/b/c. On the rooftop each perimeter
+  side, catwalk, crate and obelisk gets its own hue; signs, building edges,
+  palms and lit windows pick from all six; the torii keeps one hue (neon_a)
+  and jump pads stay neon_c so they read as one kind of object.
 - **Palette unlocks** (boss rewards) can be **tints** over the multi-colour
   base (a warm sunset tint, a toxic green tint, a cold chrome tint), so every
   palette stays colourful.
@@ -1749,6 +1765,9 @@ seed | click: new seed).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
+    1.5 s each, then quits; `--palette=` also forces the palette in a normal
+    run (debug only; the seed still draws its palette number).
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1794,6 +1813,7 @@ seed | click: new seed).
 2. **Audio mix (§10.3).** The rain loop is far too loud; set up buses; music
    first.
 3. **Palettes (§9.2).** Too purple; make every scene multi-colour.
+   (Reworked into a six-accent multi-colour base; see §9.2.)
 4. **Pooling and performance (§14).**
 5. **Katana model (§9.6).** Thermal-katana look (red-hot orange edge), our
    own design.
@@ -1816,7 +1836,8 @@ seed | click: new seed).
       paused-frame test.
 - [ ] Audio buses and the new mix; quiet, filtered, varied rain; music first
       (§10.1, §10.3).
-- [ ] Multi-colour palettes and accent distribution (§9.2).
+- [x] Multi-colour palettes and accent distribution (§9.2). Feel on a real
+      GPU still to be confirmed by the owner.
 - [ ] Pool every runtime-spawned object; cap and recycle; shader warm-up;
       perf overlay; hit the frame-time targets (§14).
 

@@ -6,6 +6,16 @@ must look like `## v0.3.1 (2026-10-18)`.
 
 ## Unreleased
 
+### A city in every colour
+- The rooftop no longer drowns in purple. Each of the five colour schemes now
+  has six strong neon colours (pinks, cyans, ambers, electric blues, acid
+  greens, orange-reds), and the signs, tubes, crates, catwalks, obelisks,
+  palm trees and lit windows spread across all of them.
+- Skies run through at least two colours (a deep blue top, a hot middle, a
+  bright horizon) and the haze and shadows are darker and more neutral, so
+  the neon pops instead of everything sharing one tint.
+- The same seed still gives the same colour scheme and the same rooftop.
+
 ### Text you can actually read
 - Every number and word on screen is bigger and sits on a dark plate or
   outline, so it reads over any part of the city.
