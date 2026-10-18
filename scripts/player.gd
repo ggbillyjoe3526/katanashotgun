@@ -555,9 +555,7 @@ func _slash() -> void:
 	if Game.rank("wave") > 0:
 		var every := 4 - Game.rank("wave")
 		if slash_count % maxi(1, every) == 0:
-			var w := Bolt.new()
-			w.setup(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
-			Game.main.add_entity(w)
+			Game.main.director.fire_bolt(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
 			Sfx.play("wave_blade", -4.0)
 
 

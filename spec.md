@@ -1788,6 +1788,27 @@ weak hardware.
       profiling says so.
   - **Quality presets** (Low/Medium/High) cut effect counts and render scale,
     **never the art style**.
+  - **Effect caps per preset** (`scripts/quality.gd`; pools are built at the
+    High size, the oldest effect is recycled when a cap is reached):
+
+    | Cap | Low | Medium | High |
+    |---|---|---|---|
+    | Blood/spark droplets | 700 | 1200 | 1800 |
+    | Floor decals | 220 | 360 | 520 |
+    | Gibs and chunks | 50 | 80 | 110 |
+    | Blood per burst, chunks per kill | 50% | 75% | 100% |
+    | Damage numbers | 18 | 28 | 40 |
+    | Lightning arcs | 36 | 60 | 96 |
+    | Blood mist | 16 | 28 | 40 |
+    | Smoke puffs | 20 | 36 | 60 |
+    | Impact flashes | 16 | 28 | 48 |
+
+    Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
+    12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
+    never capped (they heal); their pool grows. High's caps sit above what a
+    fight produces, so High looks like the prototype. Boss-only effects
+    (shockwave rings, missile markers, dash telegraph lines) are still built
+    per use: they fire a few times a minute at most.
   - **Profiling:** test on real low-end hardware throughout. Set a frame-time
     budget per system. Add a debug perf overlay (fps, frame time, draw calls).
 
@@ -1879,6 +1900,15 @@ seed | click: new seed).
     run (debug only; the seed still draws its palette number).
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
+  - `--quality=low|medium|high`: the effect-count preset (§14).
+  - `--perf`: shows the perf overlay, logs draw calls, live nodes and node
+    churn every 2 s, and prints a summary at exit.
+- **Perf overlay:** F3 in any build (fps, frame time, draw calls, nodes,
+  new nodes per second, quality preset).
+- **Perf probe:** `tools/perf_bench.sh headless|render [wave] [frames]
+  [quality]` runs the autoplay bot on a fixed seed with `--perf`. Draw calls
+  and node counts are the same on any machine; frame times only mean
+  something on real hardware.
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1897,8 +1927,7 @@ seed | click: new seed).
     (`build/linux/KatanaShotgun.x86_64`) and `"macOS"`
     (`build/macos/KatanaShotgun.zip`).
   - There is no Web preset; the game is desktop only.
-- Add: a perf overlay; automated perf captures on a fixed seed;
-  save-system tests (corrupt file, version migration, crash mid-write).
+- Add: save-system tests (corrupt file, version migration, crash mid-write).
 - CI and releases: see PART S (S4). The release workflow runs the smoke test
   before exporting.
 

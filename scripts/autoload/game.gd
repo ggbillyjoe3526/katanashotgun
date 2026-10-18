@@ -82,6 +82,7 @@ func _ready() -> void:
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
 	Settings.boot()
+	Quality.from_cmdline() # after Settings, so the command line wins
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
