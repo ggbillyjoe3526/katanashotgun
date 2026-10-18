@@ -203,6 +203,24 @@ func test_bind_a_mouse_button_on_the_slot() -> void:
 	assert_eq(_names("dash")[1], "MOUSE 4")
 
 
+func test_double_click_does_not_bind_left_mouse() -> void:
+	# the second half of a double-click on a slot must not take the katana's LMB
+	menu.tab = SettingsMenu.TABS.find("CONTROLS")
+	menu.open()
+	var at: Vector2 = menu._slot_rect(_row("JUMP"), 1).get_center()
+	_click(at)
+	var ev := InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	ev.double_click = true
+	ev.position = menu._origin + at
+	menu._gui_input(ev)
+	assert_true(menu.capturing, "still waiting for a key")
+	assert_eq(_names("katana")[0], "LMB")
+	_click(at) # a separate click on the slot does bind LMB
+	assert_eq(_names("jump")[1], "LMB")
+
+
 func test_right_click_clears_a_slot() -> void:
 	menu.tab = SettingsMenu.TABS.find("CONTROLS")
 	menu.open()

@@ -2,7 +2,7 @@ class_name SettingsMenu
 extends Control
 ## The settings screen, opened from the title and the pause screen (click
 ## SETTINGS or press Tab). Four tabs: AUDIO, VIDEO, CONTROLS and COMFORT.
-## Worked with the mouse alone (click, drag, wheel; right-click clears a key).
+## Works with the mouse alone (click, drag, wheel; right-click clears a key).
 ## The keyboard only types a new binding, and Esc goes back.
 ## Everything sits on one dark tech panel and is drawn still and flat, so every
 ## word reads at a glance (spec §9.9). Changes apply at once and are saved half
@@ -241,9 +241,6 @@ func _adjust(i: int, steps: int) -> void:
 			var cur := vals.find(r.get.call())
 			r.set.call(vals[wrapi(cur + steps, 0, vals.size())])
 			_changed()
-		"key":
-			slot = clampi(slot + steps, 0, Settings.SLOTS - 1)
-			Sfx.play("ui_hover", -10.0)
 
 
 func _set_slider(r: Dictionary, v: float) -> void:
@@ -348,7 +345,11 @@ func _gui_input(event: InputEvent) -> void:
 			return
 		if capturing:
 			# a button pressed on the waiting slot is the new binding (so LMB
-			# can be bound); a click anywhere else cancels
+			# can be bound); a click anywhere else cancels. The second half of
+			# a double-click and the wheel are ignored, so neither binds by
+			# accident (a stray LMB would take the katana's button).
+			if mb.double_click or mb.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN, MOUSE_BUTTON_WHEEL_LEFT, MOUSE_BUTTON_WHEEL_RIGHT]:
+				return
 			if _slot_rect(sel, slot).has_point(mp):
 				var ev := InputEventMouseButton.new()
 				ev.button_index = mb.button_index
@@ -364,7 +365,7 @@ func _gui_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_RIGHT:
 			if row >= 0 and rows[row].type == "key":
 				for s in Settings.SLOTS:
-					if _slot_rect(row, s).has_point(mp):
+					if _slot_rect(row, s).has_point(mp) and s < Settings.action_events(rows[row].action).size():
 						Settings.clear_binding(rows[row].action, s)
 						_changed()
 			return
