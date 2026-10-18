@@ -1018,7 +1018,7 @@ func glory_start(kind: String) -> void:
 	_bars_top.visible = true
 	_bars_bot.visible = true
 	if kind == "boss":
-		cut_in("DEATHBLOW!")
+		cut_in("ONIKIRI!")
 
 
 func speed_lines(strength: float, hold := 0.0) -> void:

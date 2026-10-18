@@ -4,13 +4,15 @@ extends Control
 ## bound key ("F") and the move's name on a dark plate. It leans left, ending
 ## just past the crosshair, so it never runs into the kill tags stacking down
 ## the right (and sits under "NO CHARGE" on the left). It shows while a staggered
-## enemy is in reach, so the prompt and the world always agree (spec §3.4).
+## enemy (or a boss with its KAMAE broken) is in reach, so the prompt and the
+## world always agree (spec §3.4, §5.5).
 ## Readability (spec §9.9): it pops in fast and then holds perfectly still in
 ## one fixed spot. Only the key cap's glow pulses; the words never move,
 ## flicker or scramble.
 
 const GOLD := Color(1.0, 0.8, 0.15)
-const DEATHBLOW_RED := Color(1.0, 0.15, 0.2)
+const BOSS_RED := Color(1.0, 0.15, 0.2)
+const BOSS_MOVE := "ONIKIRI" # the blow on a boss whose KAMAE is broken
 const INK := Color(0.03, 0.0, 0.06)
 const GAP_BELOW_CROSSHAIR := 16.0
 const RIGHT_OF_CROSSHAIR := 8.0 # the kill tags start 18 px right of it
@@ -43,7 +45,7 @@ func _init() -> void:
 
 
 ## Called by the HUD every frame with the move F would do right now
-## ("GLORY KILL", "DEATHBLOW", or "" when no enemy is in reach), the
+## ("GLORY KILL", "ONIKIRI", or "" when no enemy is in reach), the
 ## crosshair position and real (unscaled) delta time.
 func refresh(move: String, crosshair: Vector2, rd: float) -> void:
 	if move != "":
@@ -53,7 +55,7 @@ func refresh(move: String, crosshair: Vector2, rd: float) -> void:
 			_key.text = Ui.key_name("finisher")
 		_fade = 0.0
 		_text.text = move
-		_plate.outline = DEATHBLOW_RED if move == "DEATHBLOW" else GOLD
+		_plate.outline = BOSS_RED if move == BOSS_MOVE else GOLD
 	elif _shown:
 		_fade += rd
 		if _fade >= FADE_TIME:

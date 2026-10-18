@@ -5,7 +5,8 @@ extends Enemy
 ##          fans you can deflect, and blinking behind you.
 ##   mech   TETSUGUMO, CHROME BROODMOTHER: sweeping gatling, missile strikes marked
 ##          on the floor, stomp shockwaves, and calls reinforcements.
-## Both are armoured: shotgun them to stagger, then execute for a deathblow.
+## Both are armoured. Like every boss they never stagger from poise: pressure
+## fills their KAMAE bar, and a full bar breaks them for the ONIKIRI blow.
 
 var dash_dir := Vector3.ZERO
 var dash_count := 0
@@ -25,12 +26,12 @@ func setup(k: String, scale_mult := 1.0) -> void:
 	is_boss = true
 	match k:
 		"ninja":
-			hp = 2600.0; speed = 5.2; radius = 0.5; height = 2.1; head_y = 1.72; poise = 290.0
-			stagger_time = 2.6; armor = 0.55; xp = 320.0; points = 5000; mass = 3.0
+			hp = 2600.0; speed = 5.2; radius = 0.5; height = 2.1; head_y = 1.72
+			stagger_time = 2.6; armor = 0.55; xp = 320.0; points = 5000; mass = 3.0; kamae_max = 900.0
 			display_name = "KUROKAGE"; subtitle = "BLADE OF THE NULL SIGNAL"; defeat_text = "SHADOW DELETED"
 		"mech":
-			hp = 4400.0; speed = 2.6; radius = 1.7; height = 3.6; head_y = 2.5; poise = 560.0
-			stagger_time = 3.2; armor = 0.35; xp = 420.0; points = 7000; mass = 14.0
+			hp = 4400.0; speed = 2.6; radius = 1.7; height = 3.6; head_y = 2.5
+			stagger_time = 3.2; armor = 0.35; xp = 420.0; points = 7000; mass = 14.0; kamae_max = 1400.0
 			display_name = "TETSUGUMO"; subtitle = "CHROME BROODMOTHER"; defeat_text = "MACHINE DECOMMISSIONED"
 		_:
 			super.setup(k, scale_mult)
