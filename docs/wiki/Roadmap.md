@@ -4,12 +4,6 @@ What we're working on and what comes after. **These are plans, not
 promises:** the order can change as the game is played and tested. What has
 already arrived is in the [Patch Notes](Patch-Notes).
 
-## Being built now
-
-- **The Well.** The rooftop goes vertical: a shaft down to a metro station,
-  balconies, a raised north deck, a torii bridge, and a living city around it.
-  ([The Map](The-Map#coming-soon-the-well))
-
 ## Next
 
 - **The first public builds.** Versions go 0.1 Dev 1, Dev 2 and on, then

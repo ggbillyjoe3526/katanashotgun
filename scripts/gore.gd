@@ -157,9 +157,7 @@ func spawn_drop(p: Vector3, v: Vector3, life: float, size: float, kind := 0, col
 	_life[i] = life
 	_size[i] = size
 	_kind[i] = kind
-	_floor[i] = Game.arena.floor_height_at(p.x, p.z) if Game.arena else 0.0
-	if _floor[i] > p.y + 0.05:
-		_floor[i] = 0.0
+	_floor[i] = Game.arena.floor_height_at(p.x, p.z, p.y + 0.05) if Game.arena else 0.0
 	if color.a == 0.0:
 		color = _blood_color() if kind == 0 else Color(1.6, 1.3, 0.5)
 	var o := i * STRIDE + 12
@@ -202,9 +200,7 @@ func decal(p: Vector3, size: float, dark := false) -> void:
 
 
 func scorch(p: Vector3, size: float) -> void:
-	var fh := Game.arena.floor_height_at(p.x, p.z)
-	if fh > p.y + 0.5:
-		fh = 0.0
+	var fh := Game.arena.floor_height_at(p.x, p.z, p.y + 0.5)
 	_decal_i = _decal_i % mini(Quality.cap("decals"), _decals.instance_count)
 	var b := Basis(Vector3.UP, _rng.randf() * TAU).scaled(Vector3(size, 1, size))
 	_decals.set_instance_transform(_decal_i, Transform3D(b, Vector3(p.x, fh + 0.02 + float(_decal_i % 7) * 0.003, p.z)))
@@ -221,9 +217,7 @@ func _next_decal() -> void:
 
 
 func pool(p: Vector3, size: float) -> void:
-	var fh := Game.arena.floor_height_at(p.x, p.z)
-	if fh > p.y + 0.5:
-		fh = 0.0
+	var fh := Game.arena.floor_height_at(p.x, p.z, p.y + 0.5)
 	decal(Vector3(p.x, fh, p.z), size, true)
 	for k in 4:
 		decal(Vector3(p.x + _rng.randf_range(-1, 1) * size * 0.5, fh, p.z + _rng.randf_range(-1, 1) * size * 0.5), size * _rng.randf_range(0.3, 0.6))
@@ -550,9 +544,7 @@ func _update_gibs(delta: float) -> void:
 			if absf(p.z) > 31.6:
 				p.z = signf(p.z) * 31.6
 				gb.v.z *= -0.4
-			var fh := Game.arena.floor_height_at(p.x, p.z) if Game.arena else 0.0
-			if fh > n.global_position.y + 0.3:
-				fh = 0.0
+			var fh := Game.arena.floor_height_at(p.x, p.z, n.global_position.y + 0.3) if Game.arena else 0.0
 			if p.y - gb.hh < fh:
 				p.y = fh + gb.hh
 				if gb.v.y < -3.0:

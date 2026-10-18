@@ -18,7 +18,7 @@ effects**, **Ambience** (rain and the city) and **Menus/HUD**.
 | Window mode | Windowed, Full screen, Exclusive full screen | Full screen at your screen's resolution |
 | VSync | On (no tearing) or Off (less input lag) | Off |
 | Frame cap | Unlimited, or 60, 75, 120, 144, 165, 240, 360 fps | Unlimited |
-| Quality | Low, Medium, High: fewer effects on lower settings, same look | High |
+| Quality | Low, Medium, High: fewer effects and flying cars on lower settings, same look | High |
 | Render scale | 50% to 100% of the 3D view's sharpness. Lower runs faster | 100% (Low quality uses 75%) |
 | Field of view | 70 to 110 | 88 |
 

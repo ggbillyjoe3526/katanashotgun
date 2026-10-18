@@ -14,15 +14,15 @@ const DEFAULT := "high"
 const CAPS := {
 	"high": {
 		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
-		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48,
+		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48, "traffic": 40,
 	},
 	"medium": {
 		"drops": 1200, "decals": 360, "gibs": 80, "chunks_k": 0.75, "drops_k": 0.75,
-		"numbers": 28, "arcs": 60, "mists": 28, "smoke": 36, "flashes": 28,
+		"numbers": 28, "arcs": 60, "mists": 28, "smoke": 36, "flashes": 28, "traffic": 28,
 	},
 	"low": {
 		"drops": 700, "decals": 220, "gibs": 50, "chunks_k": 0.5, "drops_k": 0.5,
-		"numbers": 18, "arcs": 36, "mists": 16, "smoke": 20, "flashes": 16,
+		"numbers": 18, "arcs": 36, "mists": 16, "smoke": 20, "flashes": 16, "traffic": 16,
 	},
 }
 

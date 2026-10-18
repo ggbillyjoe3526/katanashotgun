@@ -57,9 +57,7 @@ static func line(from: Vector3, towards: Vector3, len_m: float, wide: float, wai
 
 
 func _ready() -> void:
-	var fh := Game.arena.floor_height_at(position.x, position.z)
-	if fh <= position.y + 1.0:
-		position.y = fh
+	position.y = Game.arena.floor_height_at(position.x, position.z, position.y + 1.0)
 	_mesh = MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	if shape == "zone":

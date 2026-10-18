@@ -364,7 +364,7 @@ func _chase_ninja(dist: float, dir: Vector3, delta: float) -> Vector3:
 			0, 1:
 				if special_seq % 3 == 1:
 					dash_count = 3 if enraged else 2
-					_begin_dash_windup(dir)
+					_begin_dash_windup(_to_player)
 				else:
 					_set_state(S.VOLLEY_WINDUP)
 					Sfx.play_at("windup", global_position, 0.0, 1.6)
@@ -483,7 +483,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 			target.x = clampf(target.x, -lim, lim)
 			target.z = clampf(target.z, -lim, lim)
 			target.y = p.global_position.y + 0.2
-			global_position = target
+			global_position = Game.arena.safe_point(target)
 			reset_physics_interpolation() # a blink, not a slide
 			visual.visible = true
 			collision_layer = 4
@@ -715,7 +715,7 @@ func _red_act_state(_dir: Vector3) -> Array:
 
 func _blink_to(at: Vector3) -> void:
 	var p := Game.player
-	global_position = Vector3(at.x, p.global_position.y + 0.2, at.z)
+	global_position = Game.arena.safe_point(Vector3(at.x, p.global_position.y + 0.2, at.z))
 	reset_physics_interpolation()
 	visual.visible = true
 	collision_layer = 4
