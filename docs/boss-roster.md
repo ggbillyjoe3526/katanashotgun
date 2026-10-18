@@ -25,12 +25,12 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | Damage scale | half the HP scale's increase: ×1.09 at wave 9, ×1.36 at wave 12 | LIVE |
 | Reinforcements | 1–2 grunts every 7 s (TETSUGUMO 10 s) while fewer than 4 adds are alive | LIVE |
 | Enrage | below 50% HP: speed ×1.2, shorter special cooldowns, a roar and "NAME IS ENRAGED" | LIVE |
-| Armour | katana hits deal a reduced share (+12% per Edge augment rank) until the boss is broken; shotgun is never reduced | LIVE |
+| Armour | katana hits deal a reduced share until the boss is broken; MASAMUNE EDGE's heavy third cut ignores it; shotgun is never reduced | LIVE |
 | Kill payout | "loud, then quiet" death: slow motion, silence, felled line card; BOSS BOUNTY 2000 × wave in the tally | LIVE |
 | Rewards | each boss has an ordered list; every kill unlocks its next item (cosmetic only, never random) | LIVE |
 | No glory kill | bosses never get a glory kill or poise stagger; Hyakunin-giri doesn't stagger them | LIVE |
 | KAMAE posture | pressure fills a bar; full = KAMAE BROKEN, the boss reels for its stagger time + 1.5 s, F lands the ONIKIRI for 20% max HP (kills at ≤ 20%) | LIVE |
-| KAMAE fill | katana poise ×1.6, shotgun ×0.6, returned bolt = its damage ×0.5, a glory kill on an add within 15 m = 12% of the bar | LIVE |
+| KAMAE fill | katana poise ×1.6 (MASAMUNE EDGE's heavy cut ×1.0), shotgun ×0.6, returned bolt = its damage ×0.5, a glory kill on an add within 15 m = 12% of the bar | LIVE |
 | KAMAE drain | after 2.5 s without pressure, 7% of the bar per second | LIVE |
 | Sidestep | steps or blinks aside from players hanging back at range, at most every 4 s, never mid-attack | PLANNED |
 | RED SIGNAL | one heavy move per boss: red diamond, alarm, red floor mark, 0.8 s+ warning; dash or jump only; a last-0.2 s dash = PERFECT and +15% KAMAE | PLANNED |

@@ -22,6 +22,7 @@ const BLOW_SHARE := 0.2
 ## tool; a shotgun blast counts for less than its damage.
 const SOURCE_MULT := {
 	"katana": 1.6,
+	"heavy": 1.0, # Masamune Edge's third cut: 100 poise, about 3.5 cuts' worth
 	"shotgun": 0.6,
 	"wave": 1.0,
 	"dashcut": 1.0,
