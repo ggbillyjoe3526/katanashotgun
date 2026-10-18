@@ -255,7 +255,9 @@ work list (§0.5).
 - **Don't add mechanics or systems that aren't in this spec** (§0.3). Ask
   first.
 - Keep `CHANGELOG.md` (newest first, written for players and the
-  developer) and keep this spec up to date when decisions change. **The spec
+  developer) and keep this spec up to date when decisions change. Each change
+  adds its note as a new file in `changelog.d/` (one per PR, so parallel PRs
+  don't conflict); a release gathers them into `CHANGELOG.md`. **The spec
   is the source of truth.**
 - Branching:
   - Simple is fine: commit to `main` when tests pass.
@@ -274,7 +276,7 @@ work list (§0.5).
     publishes the version in `project.godot`; a pushed tag must match it.
 - **Release when the developer asks**, or propose one at a milestone. Before
   tagging:
-  1. Update the CHANGELOG.
+  1. Gather the CHANGELOG notes (`tools/changelog.sh release`).
   2. Run the full smoke test and a 10-minute autoplay run.
   3. Make sure saves from the previous version still load (once §11 exists).
 
@@ -506,7 +508,8 @@ Notes:
 | Capture frames (Windows, real GPU) | `godot --path . --write-movie out\f.png --fixed-fps 30 --quit-after 900 -- --juicetest` |
 | Frames → mp4 | `ffmpeg -framerate 30 -i out/f%08d.png -i out/f.wav -c:v libx264 -pix_fmt yuv420p -c:a aac clip.mp4` |
 | Local Windows export (needs templates) | `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe` |
-| Release | set `config/version` + rename the CHANGELOG heading (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
+| Changelog notes | `tools/changelog.sh check` (new note: a file in `changelog.d/`) |
+| Release | set `config/version` + `tools/changelog.sh release` (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
 
 ## S6. Developer decisions log (fill in as you go)
 | Decision | Value |
@@ -516,6 +519,7 @@ Notes:
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
+| Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
@@ -1934,6 +1938,6 @@ seed | click: new seed).
 - [ ] Names follow §13 (Japanese myth or history + cyberpunk, readable,
       never copied from FromSoftware or other IP).
 - [ ] No new mechanics added without sign-off (§0.3).
-- [ ] CHANGELOG updated. For releases: the tag pushed, CI green, the Release
-      has the installer and zips, and the installer was tested by the
-      developer at least once per release.
+- [ ] Changelog note added in `changelog.d/`. For releases: the tag pushed,
+      CI green, the Release has the installer and zips, and the installer
+      was tested by the developer at least once per release.

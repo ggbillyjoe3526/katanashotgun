@@ -93,6 +93,8 @@ gdlintrc                    gdlint settings
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
+  - `tools/changelog.sh check`: the changelog notes in `changelog.d/` (one new
+    file per change instead of editing `CHANGELOG.md`; see its `README.md`).
   Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
   isn't on PATH).
 - **Licence notices:** after adding a font or other third-party asset, or
@@ -109,8 +111,10 @@ gdlintrc                    gdlint settings
   macOS, builds the Windows installer, checks it installs and uninstalls, and
   publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
   `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
-  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
-  dry run: everything is built and attached to the run, nothing is published.
+  come from that version's section of `CHANGELOG.md`, which a release gathers
+  from the one-file-per-change notes in `changelog.d/`. A pull request that
+  touches the pipeline does a dry run: everything is built and attached to
+  the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
 
