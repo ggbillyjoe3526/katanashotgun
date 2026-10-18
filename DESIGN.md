@@ -373,8 +373,9 @@ is never lost.
   composer/producer, or licensed. Layered synths, live or high-end sampled
   instruments where they fit, punchy professional drums, dynamic range that
   holds up on headphones and speakers.
-- Style target: high-energy synthwave/darksynth fused with heavy, aggressive
-  elements for combat; distinct boss themes; a memorable title theme.
+- Style target: fast, high-energy dark electronic bass music with an EDM
+  feel, like Rezz, and no string instruments (owner's call; spec §10.2);
+  distinct boss themes; a memorable title theme.
 - Must work with the systems in place: stems or intensity layers so it can
   react (boss phases, combo heat, the hush after a boss dies), loop points for
   boss and title tracks, and enough combat tracks that runs never repeat.

@@ -1587,11 +1587,12 @@ about 10 LU over the music, and heavy rain louder than the music.
     drop, short outro. Kicks four-on-the-floor or driving, hats in 16ths,
     basses in 16ths (octave, pulse or gallop) played by a formant wobble
     bass (its LFO runs on song time), an FM growl or a reese, with a sine
-    sub underneath. Everything but the drums pumps under the kick. A
+    sub underneath. Bass, sub, pad and plucks pump under the kick (the
+    lead half as much). A
     hypnotic one-bar pluck sequence, a dark detuned lead or a screech for
     the melody, a dark filtered pad, clap rolls and zaps into each section,
-    an impact on each drop. Every second bar end (and some off-beats in
-    drops) gets a seeded glitch.
+    an impact on each drop. Most second bar ends outside the intro and
+    outro (and some off-beats in drops) get a seeded glitch.
   - Every track is mastered to -14 LUFS (`tools/gen_music.py`), the level the
     mix in §10.1 was measured against.
 

@@ -594,8 +594,11 @@ def compose(name, seed, kind="combat", over=None):
     def bass_note(f, dur, t):
         subb.add(inst_sub(f * 0.5, dur), t, 0.0, 0.8)
         if bass_synth == "wob":
-            return bass.add(inst_wob(f, dur, t, wobble), t, 0.0, 0.75)
-        x = inst_reese(f, dur) if bass_synth == "reese" else inst_growl(f, dur, wobble)
+            x = inst_wob(f, dur, t, wobble)
+        elif bass_synth == "reese":
+            x = inst_reese(f, dur)
+        else:
+            x = inst_growl(f, dur, wobble)
         bass.add(x, t, 0.0, 0.75)
     kick_env = np.ones(n)
 
