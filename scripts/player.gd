@@ -31,6 +31,9 @@ const FINISHER_KEEP_REACH := 5.5
 const FINISHER_CONE := PI / 3.0 # 60 degrees
 const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
 const FINISHER_BUFFER := 0.18
+const FINISHER_HEIGHT_REACH := 1.7 # above/below the enemy's middle, as the katana
+const FINISHER_DIST_WEIGHT := 0.05 # radians of aim one metre of distance is worth
+const FINISHER_SIGHT_HEIGHT := 0.8 # the wall check aims this high up the body
 
 var head: Node3D
 var cam: Camera3D
@@ -78,6 +81,7 @@ var _auto_strafe := 1.0
 # glory kill
 var gk_ready: Enemy = null # the staggered enemy F would finish right now
 var finisher_buffer := 0.0
+var _sight_query := PhysicsRayQueryParameters3D.new() # reused: no per-frame allocation
 var gk_target: Enemy = null
 var gk_kind := ""
 var gk_t := 0.0
@@ -92,6 +96,7 @@ var _gk_dir := Vector3.FORWARD
 
 
 func _ready() -> void:
+	_sight_query.collision_mask = 1 # world only
 	collision_layer = 2
 	collision_mask = 1
 	floor_max_angle = deg_to_rad(50)
@@ -427,19 +432,20 @@ func _find_finisher_target() -> Enemy:
 		var d: float = flat.length() - e.radius
 		if d > (FINISHER_KEEP_REACH if keep else FINISHER_REACH):
 			continue
-		if absf(to.y) > e.height * 0.5 + 1.7:
+		if absf(to.y) > e.height * 0.5 + FINISHER_HEIGHT_REACH:
 			continue
 		var ang := 0.0
-		if flat.length() > 0.4:
+		if flat.length() > e.radius:
 			ang = fwd_flat.angle_to(flat.normalized())
 		if ang > (FINISHER_KEEP_CONE if keep else FINISHER_CONE):
 			continue
-		var score := ang + maxf(d, 0.0) * 0.05
+		var score := ang + maxf(d, 0.0) * FINISHER_DIST_WEIGHT
 		if score >= best_score:
 			continue
 		# never lunge through a wall (aimed high, so low cover doesn't block)
-		var q := PhysicsRayQueryParameters3D.create(origin, e.global_position + Vector3(0, e.height * 0.8, 0), 1)
-		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+		_sight_query.from = origin
+		_sight_query.to = e.global_position + Vector3(0, e.height * FINISHER_SIGHT_HEIGHT, 0)
+		if not get_world_3d().direct_space_state.intersect_ray(_sight_query).is_empty():
 			continue
 		best = e
 		best_score = score

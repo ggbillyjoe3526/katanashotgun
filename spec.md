@@ -1252,8 +1252,9 @@ the holographic cut-in (§9.8).
     Out of cells shows a steady "NO CHARGE" plate to the left of the
     crosshair.
   - **Glory kill prompt:** 16 px under the crosshair, ending 8 px right of
-    it so it clears the kill tags, while a staggered enemy is in reach (§3.4): a gold key cap with the bound key ("F") and
-    "GLORY KILL" (or "DEATHBLOW" on a boss) on a dark plate. Pops in over
+    it so it clears the kill tags, while a staggered enemy is in reach
+    (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL" (or
+    "DEATHBLOW" on a boss) on a dark plate. Pops in over
     0.1 s, then holds still; only the key cap's glow pulses. Fades in 0.08 s
     when the target is lost, and is gone during the finisher.
   - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
@@ -1759,7 +1760,8 @@ seed | click: new seed).
 ## 16. Debug, testing and tooling (keep these)
 - **Command-line flags** (after `--`):
   - `--autoplay`: a bot plays (aims, strafes, slashes, glory-kills staggered
-    enemies with the finisher key, shotguns, auto-picks augments) and logs one stats line every 2 s.
+    enemies with the finisher key, shotguns, auto-picks augments) and logs
+    one stats line every 2 s.
   - `--god`: no damage.
   - `--wave=N`, `--seed=XXXX-XXXX`, `--boss=ninja|mech|oni`, `--restart`
     (auto-restart after death), `--verbose-ai`.
