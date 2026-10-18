@@ -1016,9 +1016,9 @@ owner's request for more variety.
 | swarm | HYAKKI YAKO | 60% more grunts, at 70% HP | 1.2 | 2 |
 | snipers | TEPPO VOLLEY | Double the gunners | 1.3 | 2 |
 | ironclad | KANABO VANGUARD | Two extra brutes | 1.4 | 2 |
-| storm | RAIJIN'S STORM | Lightning, thunder and heavy rain, and every 3.5–6 s a strike lands within 2.5 m of you: a red ring for 1.2 s, then 16 damage in 2.4 m (enemies in it take 32) | 1.4 | 2 |
-| grudge | ONRYO'S GRUDGE | Each non-boss enemy that dies leaves a red ring that bursts 1.1 s later: 14 damage in 2.2 m (enemies take 28, so they chain) | 1.3 | 3 |
-| plated | KABUTO PLATE | Grunts and gunners have armour 0.4: the katana does 40% until they are staggered | 1.3 | 2 |
+| storm | RAIJIN'S STORM | Lightning, thunder and heavy rain, and every 3.5–6 s a strike lands within 2.5 m of you: a red ring for 1.2 s, then 16 damage in 2.4 m (enemies in it take 32) | 1.4 | 3 |
+| grudge | ONRYO'S GRUDGE | Each non-boss enemy that dies leaves a red ring that bursts 1.1 s later: 14 damage in 2.2 m (enemies take 28, so they chain); at most 6 rings at once | 1.3 | 3 |
+| plated | KABUTO PLATE | Grunts and gunners have armour 0.4: the katana does 40% until they are staggered | 1.3 | 4 |
 | matsuri | MATSURI RUSH | The combo window is 2 s instead of 4 s | 1.4 | 2 |
 | kanashibari | KANASHIBARI | Dashes take twice as long to recharge | 1.3 | 3 |
 | hannya | HANNYA'S WRATH | A non-boss enemy below half HP enrages once: speed ×1.4, damage ×1.3, red eyes | 1.3 | 4 |
@@ -1031,7 +1031,8 @@ decimal. Removed 2026-10-18: JOROGUMO'S BITE (kills heal 2 HP, enemies hit
 renamed OKURI-INU HUNT so it no longer shares a root with the Idaten Drive
 augment. Mid-wave hazards (storm strikes) draw from `Game.rng_hazards`,
 reseeded from the seed at every wave start, so a wave's length never shifts
-later waves.
+later waves. Clearing a wave defuses every pending ring, so nothing hurts you
+during the tally.
 
 The mutator name shows under the wave label on the HUD, with its multiplier.
 Debug: `--mutator=id` forces one on every regular wave.

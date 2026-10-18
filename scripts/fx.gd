@@ -8,6 +8,7 @@ var _temps: Array = [] # {n, t, life, kind}
 var _orbs: Array = []
 var _waves: Array = []
 var _strikes: Array = []
+const GRUDGE_CAP := 6 # Onryo's Grudge: live rings at once; deaths past it leave none
 var _tracer_mat: ShaderMaterial
 var _arc_mat: ShaderMaterial
 var _zap_flash_mat: ShaderMaterial
@@ -284,10 +285,22 @@ func smoke(pos: Vector3, size := 1.5) -> void:
 		_temps.append({"n": q, "t": 0.0, "life": _rng.randf_range(0.5, 0.8), "kind": "smoke", "m": mat, "s": size * _rng.randf_range(0.9, 1.5)})
 
 
+## Defuses every pending strike (a cleared wave must not hurt anyone during
+## the tally or the next intro).
+func clear_strikes() -> void:
+	for st in _strikes:
+		if st.missile != null and is_instance_valid(st.missile):
+			st.missile.queue_free()
+		st.n.queue_free()
+	_strikes.clear()
+
+
 ## A missile lands on `target` after `delay` seconds; the red ring shows where.
 ## `style` "lightning" (Raijin's Storm) drops a bolt from the sky instead;
 ## "grudge" (Onryo's Grudge) just bursts, with nothing falling.
 func missile_strike(target: Vector3, delay: float, radius: float, dmg: float, style := "missile") -> void:
+	if style == "grudge" and _strikes.filter(func(st): return st.style == "grudge").size() >= GRUDGE_CAP:
+		return
 	var fh := Game.arena.floor_height_at(target.x, target.z)
 	if fh > target.y + 1.0:
 		fh = 0.0

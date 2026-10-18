@@ -17,6 +17,7 @@ const STRIKE_GAP := Vector2(3.5, 6.0)
 const STRIKE_WARN := 1.2
 const STRIKE_RADIUS := 2.4
 const STRIKE_DAMAGE := 16.0
+const STRIKE_SPREAD := 2.5 # metres from the player a strike may land
 
 var wave := 0
 var queue: Array = []
@@ -282,7 +283,7 @@ func _storm_strikes(delta: float) -> void:
 	var r := Game.rng_hazards
 	_strike_t = r.randf_range(STRIKE_GAP.x, STRIKE_GAP.y)
 	var a := r.randf() * TAU
-	var p := Game.player.global_position + Vector3(cos(a), 0, sin(a)) * r.randf_range(0.0, 2.5)
+	var p := Game.player.global_position + Vector3(cos(a), 0, sin(a)) * r.randf_range(0.0, STRIKE_SPREAD)
 	Game.fx.missile_strike(p, STRIKE_WARN, STRIKE_RADIUS, STRIKE_DAMAGE, "lightning")
 
 
@@ -290,6 +291,7 @@ func _storm_strikes(delta: float) -> void:
 ## wave number, a flawless clear and the mutator multiply them.
 func _wave_cleared() -> void:
 	phase = "clear"
+	Game.fx.clear_strikes()
 	phase_t = 12.0 # fallback; the HUD's tally normally ends the clear phase
 	var st := Game.wave_stats()
 	var rows: Array = [["WAVE CLEAR", "", 250 * wave]]

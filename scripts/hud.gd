@@ -1481,7 +1481,7 @@ func _update_play(delta: float) -> void:
 		combo_label.pivot_offset = Vector2(cw - 5, 0)
 		combo_label.scale = pop
 		combo_bar.color = ccol
-		combo_bar.size = Vector2(roundf(60.0 * Game.combo_timer / Game.combo_window()), 2)
+		combo_bar.size = Vector2(roundf(60.0 * clampf(Game.combo_timer / Game.combo_window(), 0.0, 1.0)), 2)
 		combo_bar.position = Vector2(vs.x - m - combo_bar.size.x, cpos.y + ch + 3)
 		tr_bottom = combo_bar.position.y + 2
 	plate_tr.size = Vector2(maxf(score_label.size.x, combo_plate.size.x if combo_on else 0.0) + 14, tr_bottom + 3 - 3)

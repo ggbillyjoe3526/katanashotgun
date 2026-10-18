@@ -14,6 +14,10 @@ enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VO
 const GRUDGE_DELAY := 1.1
 const GRUDGE_RADIUS := 2.2
 const GRUDGE_DAMAGE := 14.0
+# Hannya's Wrath mutator: below this share of HP an enemy enrages once
+const WRATH_AT := 0.5
+const WRATH_SPEED := 1.4
+const WRATH_DAMAGE := 1.3
 
 var kind := "grunt"
 var hp := 45.0
@@ -666,7 +670,7 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 	if hp <= 0.0:
 		die(source, dir, headshot)
 		return true
-	if not _wrath and not is_boss and hp < max_hp * 0.5 and Game.mut("enrage", false):
+	if not _wrath and not is_boss and hp < max_hp * WRATH_AT and Game.mut("enrage", false):
 		_enrage()
 	if poise_dmg < 0.0:
 		poise_dmg = final
@@ -934,8 +938,8 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 ## Hannya's Wrath: a wounded enemy enrages, faster and harder hitting, eyes red.
 func _enrage() -> void:
 	_wrath = true
-	speed *= 1.4
-	damage_mult *= 1.3
+	speed *= WRATH_SPEED
+	damage_mult *= WRATH_DAMAGE
 	_eye_mat.set_shader_parameter("albedo_color", Color(1.0, 0.1, 0.1))
 	Sfx.play_at("windup", global_position, -4.0, 1.4)
 
