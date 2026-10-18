@@ -25,7 +25,7 @@ says it wasn't run; you may run `tools/smoke_test.sh` if `godot` is on PATH.
 | 5 | Readability: every new or changed text holds still and readable on a paused frame; numbers that matter never scramble; a dark plate or outline behind every word (spec §9.9) | yes |
 | 6 | Scope and hard rules: no new mechanic, weapon, system or stat unlock without sign-off; katana LMB left, shotgun RMB right; tuning values unchanged unless the spec is updated in the same diff with the reason; names follow spec §13 | yes |
 | 7 | Fits the existing architecture: extends `Game`, `Sfx`, `Main`, `Arena`/`MapRegistry` rather than adding parallel systems; typed GDScript; no magic numbers in gameplay; pause, restart and title leave no stray nodes, timers, tweens or connections | no |
-| 8 | Docs current: `CHANGELOG.md` for player-facing changes, the spec for changed decisions or values, `ASSETS.md` for any third-party asset, README for new flags or controls | no |
+| 8 | Docs current: a new `changelog.d/<short-name>.md` note for player-facing changes (never an edit to `CHANGELOG.md` itself), the spec for changed decisions or values, `ASSETS.md` for any third-party asset, README for new flags or controls | no |
 
 - Mark each failed check `measured` (a log, test or number showed it) or `judgment` (decided by reading).
 - **Verdict:** Accept when every blocking check passes and at most one non-blocking check fails; otherwise Retry.

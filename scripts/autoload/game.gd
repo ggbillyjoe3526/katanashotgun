@@ -6,8 +6,6 @@ signal hud_message(text: String, color: Color, big: bool)
 signal popup(text: String, color: Color)
 signal hint(text: String)
 
-const SCORES_PATH := "user://scores.json"
-const MAX_SCORES := 10
 const COMBO_WINDOW := 4.0
 
 var state := "title" # title | playing | levelup | paused | dead
@@ -16,6 +14,7 @@ var mouse_sensitivity := 0.0024
 var debug_autoplay := false
 var debug_god := false
 var debug_no_pause := false
+var debug_palette := "" # --palette=NAME or index: force a palette (debug only)
 
 var player: Player
 var main: Node
@@ -43,6 +42,7 @@ var executions := 0
 var headshots := 0
 var deflects := 0
 var bosses_killed := 0
+var bosses_felled: Array = [] # boss kinds felled this run, in order
 var level := 1
 var xp := 0.0
 var xp_next := 60.0
@@ -53,7 +53,10 @@ var upgrades := {}
 var hints_shown := {}
 var enemy_list: Array = []
 
-var high_scores: Array = [] # [{name, score, wave, seed}]
+## The top 10 lives in the profile (spec §7.4, §11.3).
+var high_scores: Array:
+	get:
+		return Profile.high_scores
 var real_dt := 0.016 # this frame's delta in real seconds (ignores slow-mo)
 var _wave_start := {}
 var last_rank := -1
@@ -71,12 +74,15 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
-	load_scores()
+		elif a.begins_with("--palette="):
+			debug_palette = a.substr(10)
+	Settings.boot()
+	Quality.from_cmdline() # after Settings, so the command line wins
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
@@ -90,7 +96,7 @@ func reset_run() -> void:
 	rng_map.seed = hash(run_seed * 3 + 1)
 	rng_waves.seed = hash(run_seed * 5 + 2)
 	rng_upgrades.seed = hash(run_seed * 7 + 3)
-	palette = Palette.pick(rng_map)
+	palette = Palette.pick(rng_map, debug_palette)
 	state = "title"
 	mutator = {}
 	wave_damage = 0.0
@@ -103,6 +109,7 @@ func reset_run() -> void:
 	headshots = 0
 	deflects = 0
 	bosses_killed = 0
+	bosses_felled = []
 	level = 1
 	xp = 0.0
 	xp_next = 60.0
@@ -195,47 +202,35 @@ func show_hint_once(key: String, text: String) -> void:
 
 
 # ---------------------------------------------------------------- high scores
-func load_scores() -> void:
-	high_scores = []
-	if not FileAccess.file_exists(SCORES_PATH):
-		return
-	var f := FileAccess.open(SCORES_PATH, FileAccess.READ)
-	if f == null:
-		return
-	var data = JSON.parse_string(f.get_as_text())
-	if data is Array:
-		for e in data:
-			if e is Dictionary and e.has("score"):
-				high_scores.append(e)
-	high_scores.sort_custom(func(a, b): return int(a.score) > int(b.score))
-
-
-func save_scores() -> void:
-	var f := FileAccess.open(SCORES_PATH, FileAccess.WRITE)
-	if f:
-		f.store_string(JSON.stringify(high_scores))
-
-
 func best_score() -> int:
-	return int(high_scores[0].score) if high_scores.size() > 0 else 0
+	return Profile.best_score()
 
 
 func qualifies(s: int) -> bool:
-	if s <= 0:
-		return false
-	return high_scores.size() < MAX_SCORES or s > int(high_scores[-1].score)
+	return Profile.qualifies(s)
 
 
-## Inserts the current run under `initials` and returns its table position.
+## Keeps the run's score the moment it ends, as "---" until initials are
+## typed, so quitting on the results screen can't lose it. Sets last_rank
+## (-1 if it didn't make the top 10).
+func record_score() -> void:
+	last_rank = -1
+	if qualifies(score):
+		last_rank = Profile.add_score({"name": "---", "score": score, "wave": wave, "seed": seed_string(run_seed)})
+
+
+## Names the entry record_score() kept and returns its table position.
 func submit_score(initials: String) -> int:
-	var entry := {"name": initials, "score": score, "wave": wave, "seed": seed_string(run_seed)}
-	high_scores.append(entry)
-	high_scores.sort_custom(func(a, b): return int(a.score) > int(b.score))
-	if high_scores.size() > MAX_SCORES:
-		high_scores.resize(MAX_SCORES)
-	save_scores()
-	last_rank = high_scores.find(entry)
+	if last_rank >= 0:
+		Profile.rename_score(last_rank, initials)
 	return last_rank
+
+
+## This run's totals, as Profile.finish_run() and the snapshot read them.
+func run_stats() -> Dictionary:
+	return {"score": score, "wave": wave, "bosses": bosses_killed, "kills": kills, "glory_kills": executions,
+		"headshots": headshots, "deflects": deflects, "best_combo": best_combo, "time": run_time,
+		"boss_kinds": bosses_felled.duplicate()}
 
 
 func _process(delta: float) -> void:

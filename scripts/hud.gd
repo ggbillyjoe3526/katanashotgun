@@ -8,6 +8,9 @@ const MAGENTA := Color(1.0, 0.2, 0.7)
 const CYAN := Color(0.25, 0.95, 1.0)
 const RED := Color(1.0, 0.15, 0.2)
 const YELLOW := Color(1.0, 0.85, 0.25)
+# preloaded rather than found by class name, so the HUD still compiles when
+# the editor hasn't rescanned yet (e.g. right after switching git branches)
+const FinisherPromptScript := preload("res://scripts/ui/finisher_prompt.gd")
 
 var root: Control
 var vs := Vector2(480, 270)
@@ -30,6 +33,8 @@ var score_label: Label
 var combo_label: Label
 var combo_bar: ColorRect
 var crosshair: Crosshair
+var finisher_prompt: FinisherPromptScript
+var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var center_label: Label
 var center_shadow: Label
 var center_t := 99.0
@@ -39,6 +44,7 @@ var hint_t := 99.0
 var _hint_wait := "" # a hint held back until the wave intro has finished
 var _popup_wait: Array = [] # tags held back the same way ([text, colour])
 var popups: Array = []
+var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
 var boss_root: Control
 var boss_fill: ColorRect
 var boss_name: Label
@@ -47,6 +53,8 @@ var noammo_bg: Shard
 var noammo_t := 99.0
 var blood_root: Control
 var bloods: Array = []
+var _blood_free: Array[TextureRect] = []
+var _blood_rng := RandomNumberGenerator.new() # presentation only
 var exec_rect: ColorRect
 var _hp_ghost_v := 1.0
 var _score_shown := 0.0
@@ -94,6 +102,19 @@ var initials := ""
 
 var post: PostFx
 var juice: Juice
+var settings_menu: SettingsMenu
+var title_settings: TechButton
+var pause_settings: TechButton
+
+# profile (spec §11): the Player Level on the title and results, the armory,
+# and the boss-reward card
+var title_level: LevelBar
+var armory: ArmoryPanel
+var pause_armory: ArmoryPanel
+var level_bar: LevelBar
+var reward_card: RewardCard
+var _xp_rolled := false
+var _reward_t := 99.0
 
 # persona plates behind the HUD clusters
 var plate_tl: Shard
@@ -164,6 +185,7 @@ func _ready() -> void:
 	layer = 5
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Ui.init()
+	_blood_rng.randomize()
 	Ui.pixelate_viewport(get_viewport())
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -178,6 +200,18 @@ func _ready() -> void:
 	juice = Juice.new()
 	juice.hud = self
 	root.add_child(juice)
+	reward_card = RewardCard.new()
+	root.add_child(reward_card)
+	# outside the root, so HUD shake never moves the settings screen
+	settings_menu = SettingsMenu.new()
+	settings_menu.theme = root.theme
+	add_child(settings_menu)
+	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	title_settings.pressed.connect(_open_settings)
+	title_root.add_child(title_settings)
+	pause_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	pause_settings.pressed.connect(_open_settings)
+	pause_root.add_child(pause_settings)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -257,7 +291,7 @@ func _build_play() -> void:
 	xp_fill = Ui.rect(Color(0.75, 0.35, 1.0), Vector2(1, 1), Vector2(0, 2))
 	xp_bg.add_child(xp_fill)
 	play_root.add_child(xp_bg)
-	lvl_label = Ui.label("LV 1", Ui.font_bold, 10, Color(0.85, 0.6, 1.0), 2)
+	lvl_label = Ui.label("RUN LV 1", Ui.font_bold, 10, Color(0.85, 0.6, 1.0), 2)
 	play_root.add_child(lvl_label)
 
 	wave_label = Ui.label("WAVE 1", Ui.font_big, 10, Color.WHITE, 2)
@@ -299,6 +333,8 @@ func _build_play() -> void:
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
+	finisher_prompt = FinisherPromptScript.new()
+	play_root.add_child(finisher_prompt)
 
 	var cl := _shadowed("", Ui.font_big, 16, Color.WHITE, Color(0.1, 0, 0.04), Vector2(1, 1))
 	center_label = cl[0]
@@ -356,7 +392,7 @@ func _build_title() -> void:
 	var lines := [
 		["LMB  DOJIGIRI KATANA - CHARGES THE SHOTGUN", b],
 		["RMB  RAIJIN-12 SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
-		["SLASH STAGGERED FOES FOR A GLORY KILL", a],
+		["%s  GLORY KILL A STAGGERED FOE" % Ui.key_name("finisher"), a],
 		["SLASH ENEMY BOLTS TO DEFLECT", b.lerp(Color.WHITE, 0.4)],
 		["WASD MOVE   SPACE JUMP x2   SHIFT DASH", Color(0.9, 0.9, 0.95)],
 		["EVERY 3RD WAVE: BOSS  -  HEADSHOTS x2", a.lerp(Color.WHITE, 0.3)],
@@ -397,11 +433,15 @@ func _build_title() -> void:
 	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
 	title_seed.add_theme_font_size_override("font_size", 12)
 	title_root.add_child(title_seed)
-	# build version, stamped from the release tag by CI (spec S3.2)
-	title_version = Ui.label("V" + str(ProjectSettings.get_setting("application/config/version", "0.0.0")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
+	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
+	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
 	title_root.add_child(title_version)
 	title_blink = Ui.label("CLICK TO START", Ui.font_big, 10, Color.WHITE, 2)
 	title_root.add_child(title_blink)
+	title_level = LevelBar.new().make_slim()
+	title_root.add_child(title_level)
+	armory = ArmoryPanel.new()
+	title_root.add_child(armory)
 	_refresh_title()
 
 
@@ -418,7 +458,8 @@ func _score_table(highlight := -1, count := 5) -> String:
 
 func _refresh_title() -> void:
 	title_hi.text = "HI-SCORES"
-	title_scores.text = _score_table(-1, 5)
+	title_scores.text = _score_table(-1, 3)
+	title_level.show_static(Profile.player_level, Profile.player_xp)
 	title_seed.text = "MAP  %s     PALETTE  %s     SEED  %s" % [Game.arena.map_name if Game.arena else "", Game.palette.name, Game.seed_string(Game.run_seed)]
 
 
@@ -447,6 +488,8 @@ func _build_pause() -> void:
 	lock.name = "LockHint"
 	lock.visible = false
 	pause_root.add_child(lock)
+	pause_armory = ArmoryPanel.new()
+	pause_root.add_child(pause_armory)
 
 
 func _build_death() -> void:
@@ -485,6 +528,10 @@ func _build_death() -> void:
 		var slot := Ui.label("_", Ui.font_big, 24, Color(Game.palette.neon_b), 2)
 		initials_root.add_child(slot)
 		initials_slots.append(slot)
+	level_bar = LevelBar.new()
+	level_bar.leveled.connect(_on_player_level)
+	level_bar.finished.connect(_on_level_roll_done)
+	death_root.add_child(level_bar)
 
 
 func _build_levelup() -> void:
@@ -560,6 +607,12 @@ func _build_levelup() -> void:
 func show_title() -> void:
 	_title_t = 0.0
 	_title_hit = false
+	# a suspended run is the default: click carries on, N starts over
+	var snap: Dictionary = Game.main.resume if Game.main else {}
+	if snap.is_empty():
+		title_blink.text = "CLICK TO START"
+	else:
+		title_blink.text = "CLICK  CONTINUE RUN - WAVE %d       N  NEW RUN" % int(snap.get("next_wave", 1))
 	title_root.visible = true
 	play_root.visible = false
 
@@ -576,12 +629,22 @@ func show_pause(on: bool) -> void:
 	play_root.visible = not on
 	juice.visible = not on
 	juice.process_mode = Node.PROCESS_MODE_PAUSABLE if on else Node.PROCESS_MODE_ALWAYS
+	if not on:
+		settings_menu.close()
+
+
+func _open_settings() -> void:
+	if settings_menu.can_open():
+		settings_menu.open()
 
 
 func show_death() -> void:
 	_death_t = 0.0
 	_death_lines = 0
 	_death_counted = false
+	_xp_rolled = false
+	var res: Dictionary = Game.main.results if Game.main else {}
+	level_bar.show_static(int(res.get("level_before", Profile.player_level)), int(res.get("xp_before", Profile.player_xp)))
 	score_hold = 0
 	juice.end_card()
 	# the results replace the live HUD rather than sitting on top of it
@@ -592,14 +655,14 @@ func show_death() -> void:
 	death_score.text = "SCORE  %07d" % Game.score
 	# names and numbers are two columns: padding with spaces drifts by a few
 	# pixels in this font, so the numbers would not line up
-	_death_full = PackedStringArray(["WAVE REACHED", "BOSSES SLAIN", "KILLS", "GLORY KILLS", "HEADSHOT KILLS", "DEFLECTS", "BEST COMBO", "LEVEL", "TIME", "SEED"])
-	_death_vals_full = PackedStringArray([str(Game.wave), str(Game.bosses_killed), str(Game.kills), str(Game.executions), str(Game.headshots), str(Game.deflects), "x%d" % Game.best_combo, str(Game.level), "%d:%02d" % [mins, secs], Game.seed_string(Game.run_seed)])
+	_death_full = PackedStringArray(["WAVE REACHED", "BOSSES SLAIN", "KILLS", "GLORY KILLS", "HEADSHOT KILLS", "DEFLECTS", "BEST COMBO", "RUN LV", "TIME"])
+	_death_vals_full = PackedStringArray([str(Game.wave), str(Game.bosses_killed), str(Game.kills), str(Game.executions), str(Game.headshots), str(Game.deflects), "x%d" % Game.best_combo, str(Game.level), "%d:%02d" % [mins, secs]])
 	var mpx := Ui.px(Ui.font_mono, 9)
 	_death_cols = Vector2.ZERO
 	for i in _death_full.size():
 		_death_cols.x = maxf(_death_cols.x, Ui.font_mono.get_string_size(_death_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
 		_death_cols.y = maxf(_death_cols.y, Ui.font_mono.get_string_size(_death_vals_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
-	entering = Game.qualifies(Game.score) and not Game.debug_autoplay
+	entering = Game.last_rank >= 0 and not Game.debug_autoplay
 	initials = ""
 	initials_root.visible = false # shown once the score has counted up
 	death_table.visible = false
@@ -632,13 +695,13 @@ func _finish_initials() -> void:
 
 
 func death_ready() -> bool:
-	return death_root.visible and _death_t > 2.4 and not entering
+	return death_root.visible and _death_t > 2.4 and not entering and _xp_rolled and level_bar.done()
 
 
 ## The death screen counts up: stats line by line, then the score rolls up and
 ## slams; a qualifying score then asks for initials.
 func _death_countup() -> void:
-	var lines := clampi(int((_death_t - 0.25) / 0.09), 0, 10)
+	var lines := clampi(int((_death_t - 0.25) / 0.09), 0, _death_full.size())
 	if lines > _death_lines:
 		_death_lines = lines
 		Sfx.play("type", -10.0, 0.9 + lines * 0.04, 0.0)
@@ -667,6 +730,11 @@ func _death_countup() -> void:
 			juice.later(0.25, func(): juice.firework(Vector2(vs.x * 0.75, vs.y * 0.28), Color(Game.palette.neon_b)))
 		else:
 			death_table.visible = true
+	# then, once any initials are in, the run's XP counts into the Player
+	# Level bar (spec §11.1)
+	if _death_t > 2.1 and not _xp_rolled and not entering:
+		_xp_rolled = true
+		level_bar.roll(Game.main.results if Game.main else {})
 	if _death_counted:
 		_score_bump = move_toward(_score_bump, 0.0, Game.real_dt * 4.0)
 		death_score.scale = Vector2.ONE * (1.0 + 0.4 * _score_bump * _score_bump)
@@ -690,6 +758,44 @@ func intro_ready() -> bool:
 	return juice.intro_ready()
 
 
+## Each Player Level gained on the results screen gets a LEVEL UP stamp in
+## the bar's plate, sparks and a sound as the bar fills; when the count ends, one holographic cut-in names
+## the new level (spec §11.1). One cut-in, not one per level, so a big run
+## never stacks them over the results.
+func _on_player_level(lv: int) -> void:
+	Sfx.play("levelup", -3.0, 1.0 + 0.05 * (lv % 6), 0.0)
+	juice.burst(level_bar.position + level_bar.size * 0.5, YELLOW, 30, 120.0)
+	juice.add_shake(3.0)
+
+
+func _on_level_roll_done(levels: int) -> void:
+	if levels <= 0:
+		return
+	# no cut-in here: its strip would cover the score and the level bar, which
+	# already shows the new level
+	Sfx.play("highscore", -3.0, 1.0, 0.0)
+	juice.firework(Vector2(vs.x * 0.2, vs.y * 0.7), Color(Game.palette.neon_a))
+	juice.later(0.2, func(): juice.firework(Vector2(vs.x * 0.8, vs.y * 0.7), Color(Game.palette.neon_b)))
+
+
+## A boss reward unlocked this wave: the cut-in, then the item card.
+func show_reward(def: Dictionary) -> void:
+	juice.cut_in("REWARD UNLOCKED")
+	_reward_t = 0.0
+	juice.later(0.8, func(): reward_card.play(def))
+
+
+func reward_ready() -> bool:
+	return _reward_t > 1.0 and reward_card.ready_to_continue()
+
+
+## A suspended run picked up again: the score is already earned, so it
+## shows at once rather than rolling up, and NEW HI-SCORE doesn't replay.
+func on_run_resumed() -> void:
+	_score_shown = Game.score
+	_hi_stamped = Game.score > Game.best_score()
+
+
 func show_tally(d: Dictionary) -> void:
 	score_hold += int(d.total)
 	juice.show_tally(d)
@@ -698,7 +804,7 @@ func show_tally(d: Dictionary) -> void:
 
 func _clear_tags() -> void:
 	for pp in popups:
-		pp.l.queue_free()
+		_free_popup(pp.l)
 	popups.clear()
 
 
@@ -946,14 +1052,26 @@ func add_popup(text: String, color: Color) -> void:
 		top.l.text = "%s x%d" % [text, top.n]
 		top.t = 0.0
 		return
-	var l := Ui.label(text, Ui.font_bold, 10, color, 2)
-	# a dark plate: the tags must read over gore and neon alike
-	l.add_theme_stylebox_override("normal", _popup_plate)
+	while popups.size() >= MAX_POPUPS:
+		_free_popup(popups.pop_back().l)
+	var l: Label
+	if _popup_free.is_empty():
+		l = Ui.label(text, Ui.font_bold, 10, color, 2)
+		# a dark plate: the tags must read over gore and neon alike
+		l.add_theme_stylebox_override("normal", _popup_plate)
+		play_root.add_child(l)
+	else:
+		l = _popup_free.pop_back()
+		l.text = text
+		l.add_theme_color_override("font_color", color)
+		l.visible = true
 	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
-	play_root.add_child(l)
 	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color})
-	while popups.size() > MAX_POPUPS:
-		popups.pop_back().l.queue_free()
+
+
+func _free_popup(l: Label) -> void:
+	l.visible = false
+	_popup_free.append(l)
 
 
 func damage_flash(amount: float, _from: Vector3) -> void:
@@ -963,7 +1081,7 @@ func damage_flash(amount: float, _from: Vector3) -> void:
 
 
 func execution_flash() -> void:
-	exec_rect.color = Color(1, 1, 1, 0.4)
+	exec_rect.color = Color(1, 1, 1, 0.4 * Settings.flash)
 	juice.add_shake(4.0)
 	if post:
 		post.flash(0.25)
@@ -974,14 +1092,22 @@ func no_ammo() -> void:
 
 
 func screen_blood(n: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	var rng := _blood_rng
 	for i in n + rng.randi() % 2:
-		var tr := TextureRect.new()
+		while bloods.size() >= 10:
+			_free_blood(bloods.pop_front().n)
+		var tr: TextureRect
+		if _blood_free.is_empty():
+			tr = TextureRect.new()
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_SCALE
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			blood_root.add_child(tr)
+		else:
+			tr = _blood_free.pop_back()
+			tr.visible = true
 		tr.texture = TexGen.get_tex("splat_b" if rng.randf() < 0.5 else "splat")
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_SCALE
-		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var s := rng.randf_range(40, 95)
 		tr.size = Vector2(s, s)
 		tr.pivot_offset = tr.size * 0.5
@@ -990,11 +1116,12 @@ func screen_blood(n: int) -> void:
 		var px := rng.randf_range(0, vs.x - s) if not edge else (rng.randf_range(-s * 0.4, s * 0.3) if rng.randf() < 0.5 else rng.randf_range(vs.x - s * 0.7, vs.x - s * 0.2))
 		tr.position = Vector2(px, rng.randf_range(-s * 0.3, vs.y - s * 0.6))
 		tr.modulate = Color(0.5, 0.0, 0.03, 0.7)
-		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blood_root.add_child(tr)
 		bloods.append({"n": tr, "t": 0.0, "life": rng.randf_range(1.4, 2.4)})
-	while bloods.size() > 10:
-		bloods.pop_front().n.queue_free()
+
+
+func _free_blood(tr: TextureRect) -> void:
+	tr.visible = false
+	_blood_free.append(tr)
 
 
 # ---------------------------------------------------------------- frame
@@ -1006,6 +1133,7 @@ func _fit(labels: Array) -> void:
 func _process(_delta: float) -> void:
 	var delta := Game.real_dt
 	_t += delta
+	_reward_t += delta
 	root.position = juice.shake_offset().round() if juice else Vector2.ZERO
 	_fit([center_label, center_shadow, hint_label, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats, lvl_label])
 	vs = root.get_rect().size
@@ -1025,6 +1153,8 @@ func _process(_delta: float) -> void:
 		lh.visible = Game.main and Game.main.lock_failures >= 2
 		lh.size = Vector2.ZERO
 		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
+		pause_armory.position = Vector2(8, vs.y - pause_armory.size.y - 6)
+		pause_settings.position = Vector2(roundf((vs.x - pause_settings.size.x) * 0.5), vs.y * 0.5 + 84)
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
@@ -1040,7 +1170,8 @@ func _process(_delta: float) -> void:
 		var stats_w := _death_cols.x + 12.0 + _death_cols.y
 		var col_w := stats_w + 32.0 + maxf(death_table.size.x, 190.0)
 		var x0 := (vs.x - col_w) * 0.5
-		var y0 := death_score.position.y + death_score.size.y + 2
+		level_bar.position = Vector2(roundf((vs.x - level_bar.size.x) * 0.5), roundf(death_score.position.y + death_score.size.y))
+		var y0 := level_bar.position.y + level_bar.size.y + 4
 		death_stats.position = Vector2(x0, y0)
 		death_vals.position = Vector2(x0 + _death_cols.x + 12.0, y0)
 		death_table.position = Vector2(x0 + stats_w + 32.0, y0)
@@ -1104,24 +1235,28 @@ func _layout_title() -> void:
 		logo_slash.color = Color.WHITE
 	var sub_l: Label = title_root.get_node("Sub")
 	sub_l.position = Vector2((vs.x - sub_l.size.x) * 0.5, logo_band.position.y + logo_band.size.y + 3)
-	# two columns: how to play | hi-scores
+	# the persistent Player Level under the subtitle (spec §11.1)
+	title_level.position = Vector2(roundf((vs.x - title_level.size.x) * 0.5), sub_l.position.y + sub_l.size.y + 3)
+	# two columns: how to play | hi-scores over the armory
 	var left_w := 0.0
 	for i in range(6, title_labels.size()):
 		left_w = maxf(left_w, title_labels[i].size.x)
-	var right_w := maxf(title_scores.size.x, title_hi.size.x)
+	var right_w := maxf(maxf(title_scores.size.x, title_hi.size.x), armory.size.x)
 	var total := left_w + 28.0 + right_w
 	var lx := (vs.x - total) * 0.5
-	var top := sub_l.position.y + sub_l.size.y + 6
+	var top := title_level.position.y + title_level.size.y + 5
 	for i in range(6, title_labels.size()):
 		var l: Label = title_labels[i]
 		var row: int = l.get_meta("row")
 		l.position = Vector2(lx, top + row * 15)
 	title_hi.position = Vector2(lx + left_w + 28.0, top - 2)
 	title_scores.position = Vector2(lx + left_w + 28.0, top + 16)
+	armory.position = Vector2(lx + left_w + 28.0, title_scores.position.y + title_scores.size.y + 4)
 	title_seed.position = Vector2((vs.x - title_seed.size.x) * 0.5, vs.y - 48)
 	title_version.position = Vector2(vs.x - title_version.size.x - 6, vs.y - title_version.size.y - 4)
 	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
 	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, vs.y - 30)
+	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 6)
 
 
 func _layout_levelup() -> void:
@@ -1259,7 +1394,7 @@ func _update_play(delta: float) -> void:
 	xp_bg.size = Vector2(200, 4)
 	xp_bg.position = Vector2((vs.x - 200) * 0.5, vs.y - m - 4)
 	xp_fill.size.x = 198.0 * clampf(Game.xp / Game.xp_next, 0.0, 1.0)
-	lvl_label.text = "LV %d" % Game.level
+	lvl_label.text = "RUN LV %d" % Game.level
 	lvl_label.position = Vector2((vs.x - lvl_label.size.x) * 0.5, xp_bg.position.y - 1 - lvl_label.size.y)
 	# ---- top-left: wave, hostiles, mutator
 	wave_label.text = "WAVE %02d" % Game.wave
@@ -1388,6 +1523,13 @@ func _update_play(delta: float) -> void:
 	crosshair.katana_k = clampf(1.0 - p.katana_cd / p.KATANA_FINISHER_CD, 0.0, 1.0)
 	crosshair.shotgun_k = clampf(1.0 - p.shotgun_cd / p.SHOTGUN_CD, 0.0, 1.0) if p.cells > 0 else 0.0
 	crosshair.queue_redraw()
+	# ---- glory kill prompt: a fixed spot under the crosshair
+	var move := ""
+	if is_instance_valid(p.gk_ready):
+		move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
+	elif finisher_demo:
+		move = "GLORY KILL"
+	finisher_prompt.refresh(move, crosshair.position, delta)
 	# ---- boss bar: top centre, under the best score
 	var boss: Enemy = Game.main.boss if Game.main else null
 	var boss_on := boss != null and is_instance_valid(boss) and not boss.dead
@@ -1441,7 +1583,7 @@ func _update_play(delta: float) -> void:
 		pp.t += delta
 		var l: Label = pp.l
 		if pp.t > POPUP_LEN:
-			l.queue_free()
+			_free_popup(l)
 			popups.remove_at(i)
 			continue
 		var ty := py0 + i * POPUP_STEP
@@ -1461,7 +1603,7 @@ func _update_play(delta: float) -> void:
 		b.t += delta
 		var n: TextureRect = b.n
 		if b.t > b.life:
-			n.queue_free()
+			_free_blood(n)
 			bloods.remove_at(i)
 			continue
 		n.position.y += delta * 6.0

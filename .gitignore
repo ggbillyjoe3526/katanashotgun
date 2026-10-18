@@ -6,6 +6,8 @@ dist/
 # Smoke test logs (tools/smoke_test.sh)
 import.log
 smoke.log
+# Unit test log (tools/unit_tests.sh)
+unit.log
 # OS / editors
 .DS_Store
 Thumbs.db

@@ -51,7 +51,7 @@ func _sample() -> void:
 			if _layer(p.node) != _layer(a.node):
 				continue
 			var hit: Rect2 = a.r.intersection(p.r)
-			if hit.size.x > TOL * 2 and hit.size.y > TOL * 2 and not p.r.grow(TOL).encloses(a.r):
+			if hit.size.x > TOL * 2 and hit.size.y > TOL * 2 and not p.r.grow(TOL).encloses(a.r) and not _in_tab(a, p, plates):
 				now["plate|%s|%s" % [a.id, p.id]] = "crosses    %s  %s  panel %s %s" % [_desc(a), a.r, p.id, p.r]
 	for i in texts.size():
 		for j in range(i + 1, texts.size()):
@@ -69,6 +69,15 @@ func _sample() -> void:
 			_reported[k] = true
 			print("[uiaudit] t=%.1f %s" % [Time.get_ticks_msec() / 1000.0, now[k]])
 	_seen = next
+
+
+## Text inside a small plate that straddles a bigger one (a ribbon or tab on
+## a card's edge) is where it is meant to be.
+func _in_tab(a: Dictionary, p: Dictionary, plates: Array) -> bool:
+	for q in plates:
+		if q != p and q.r.grow(TOL).encloses(a.r) and q.r.get_area() < p.r.get_area():
+			return true
+	return false
 
 
 func _desc(a: Dictionary) -> String:

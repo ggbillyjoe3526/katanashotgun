@@ -34,19 +34,22 @@ func _process(_delta: float) -> void:
 			Sfx.music_cut()
 			_hud.finish_splash()],
 		[13.25, func(): _hud.souls_card("SHADOW DELETED", Color(1.0, 0.86, 0.55), "KUROKAGE  -  BLADE OF THE NULL SIGNAL", "felled", 4.6)],
-		[18.4, func():
+		[18.4, func(): _hud.show_reward(Rewards.LIST[0])],
+		[23.4, func():
 			Sfx.resume_combat()
 			Game.pending_levelups = 1],
-		[20.6, func(): _hud._pick(1)],
-		[21.4, func():
+		[25.6, func(): _hud._pick(1)],
+		[26.4, func():
 			_hud.show_boss_intro("KUROKAGE", "BLADE OF THE NULL SIGNAL")
 			Game.popup.emit("HEADSHOT +120", Color(1.0, 0.9, 0.3))
 			Game.popup.emit("GLORY KILL +400", Color(1.0, 0.3, 0.5))
 			Game.popup.emit("DEFLECT +100", Color(0.4, 0.95, 1.0))
 			_hud.no_ammo()
+			_hud.finisher_demo = true
 			_hud.show_hint("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")],
-		[23.0, func(): Game.hud_message.emit("KUROKAGE IS ENRAGED", Color(1, 0.2, 0.3), false)],
-		[25.0, func():
+		[28.0, func(): Game.hud_message.emit("KUROKAGE IS ENRAGED", Color(1, 0.2, 0.3), false)],
+		[30.0, func():
+			_hud.finisher_demo = false
 			Game.kills = 212
 			Game.executions = 61
 			Game.headshots = 40
@@ -59,6 +62,10 @@ func _process(_delta: float) -> void:
 			Game.score = 386418
 			Game.player.dead = true
 			Game.main.on_player_died()],
+		[36.5, func():
+			if _hud.entering:
+				_hud.initials = "JCE"
+				_hud._finish_initials()],
 	]
 	while _step < steps.size() and _t >= steps[_step][0] + 0.5 and steps[_step][0] < _t - 0.6:
 		_step += 1 # skipped by --juicestart

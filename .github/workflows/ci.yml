@@ -1,7 +1,9 @@
 name: Checks
 
-# Every pull request and every push to main: import the project and let the
-# autoplay bot play. Fails on any script error.
+# Every pull request and every push to main: import the project, let the
+# autoplay bot play, run the unit tests, check the licence notices are current,
+# lint the scripts and check the changelog notes in changelog.d/. Fails on any
+# script error or failed test.
 on:
   pull_request:
   push:
@@ -36,6 +38,19 @@ jobs:
       - name: Smoke test
         run: tools/smoke_test.sh
 
+      - name: Unit tests
+        if: success() || failure()
+        run: tools/unit_tests.sh
+
+      - name: Licence notices are up to date
+        if: success() || failure()
+        run: |
+          godot --headless --path . -s res://tools/make_notices.gd
+          if ! git diff --exit-code -- THIRD_PARTY_NOTICES.txt; then
+            echo "::error::THIRD_PARTY_NOTICES.txt is out of date. Run: godot --headless --path . -s res://tools/make_notices.gd and commit the result."
+            exit 1
+          fi
+
       - name: Keep the logs
         if: always()
         uses: actions/upload-artifact@v7
@@ -44,5 +59,29 @@ jobs:
           path: |
             import.log
             smoke.log
+            unit.log
           if-no-files-found: ignore
           retention-days: 14
+
+  lint:
+    name: Lint (gdlint, changelog notes)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # the changelog preview orders notes by when they were added
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install gdtoolkit
+        run: pip install "gdtoolkit==4.5.0"
+
+      - name: gdlint (settings in gdlintrc)
+        run: gdlint scripts test tools
+
+      - name: Changelog notes (changelog.d/README.md)
+        if: success() || failure()
+        run: tools/changelog.sh check

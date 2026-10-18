@@ -244,7 +244,7 @@ func add_shake(amount: float) -> void:
 func shake_offset() -> Vector2:
 	if shake < 0.25:
 		return Vector2.ZERO
-	return Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake * randf_range(0.5, 1.0)
+	return Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake * Settings.shake * randf_range(0.5, 1.0)
 
 
 func _pair(text: String, f: Font, size: int, color: Color, shadow: Color, off := Vector2(2, 2)) -> Label:
@@ -434,7 +434,7 @@ func intro_ready() -> bool:
 ## WAVE N slams in, the mutator types itself out, 3-2-1, then FIGHT.
 ## Boss waves skip the FIGHT stamp (the boss card takes over).
 ## `sub` is up to two lines ("NAME  //  SCORE xN" and its description).
-func wave_intro(wave: int, sub: String, col: Color, boss: bool) -> void:
+func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	var pal := Game.palette
 	_intro_on = true
 	_intro_ready = false
@@ -627,13 +627,14 @@ func panel_showing() -> bool:
 
 
 ## True while a big centre-screen moment is up (a stamp, the cut-in, FINISH,
-## the boss-defeated card, the wave intro or tally, the boss name card). The
+## the boss-defeated card, the wave intro or tally, the boss name card, the
+## boss reward card). The
 ## level-up screen waits for it so the two never share the screen.
 func centre_busy() -> bool:
 	for s in _stamps:
 		if s.slot in ["center", "intro", "tally"]:
 			return true
-	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or hud.boss_title.visible
+	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or hud.boss_title.visible or hud.reward_card.visible
 
 
 ## d = {title, rows: [[name, detail, value]], chips, mults: [[name, factor]],
@@ -1054,6 +1055,9 @@ func glory_start(kind: String) -> void:
 	_bars_top.visible = true
 	_bars_bot.visible = true
 	if kind == "boss":
+		# the deathblow outranks the boss name card: the card makes way
+		hud.boss_title.visible = false
+		hud.boss_sub.visible = false
 		cut_in("DEATHBLOW!")
 
 
