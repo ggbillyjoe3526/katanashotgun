@@ -35,11 +35,13 @@ NAME_SOURCES = [
     "scripts/rewards.gd",
     "scripts/palette.gd",
     "scripts/boss.gd",
-    "scripts/enemy.gd",  # Shuten
+    "scripts/enemy.gd",  # Shuten, kill tags
+    "scripts/player.gd",  # the plunge's kill tag
     "scripts/maps/*.gd",
 ]
 NAME_RE = re.compile(
-    r'(?:"name":\s*|\bdisplay_name\s*=\s*|\bsubtitle\s*=\s*|\bdefeat_text\s*=\s*|\bmap_name\s*=\s*)"([^"]+)"'
+    r'(?:"name":\s*|\bdisplay_name\s*=\s*|\bsubtitle\s*=\s*|\bdefeat_text\s*=\s*|\bmap_name\s*=\s*'
+    r'|\btag\s*=\s*|\b[A-Z_]*TAG\s*:?=\s*)"([^"]+)"'
 )
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*#*\s*$")
@@ -163,7 +165,13 @@ def patch_notes() -> str:
 
 
 def build(out: Path) -> int:
+    out = out.resolve()
     if out.exists():
+        # only ever replace an earlier build, never a folder that holds
+        # anything else (a mistyped OUT like "." or "docs")
+        if out in (ROOT, WIKI) or out in ROOT.parents or (any(out.iterdir()) and not (out / "Home.md").is_file()):
+            print(f"{out} isn't an earlier wiki build; pick an empty or new folder such as build/wiki", file=sys.stderr)
+            return 1
         shutil.rmtree(out)
     shutil.copytree(WIKI, out, ignore=shutil.ignore_patterns(*SKIP))
     (out / "Patch-Notes.md").write_text(patch_notes(), encoding="utf-8")

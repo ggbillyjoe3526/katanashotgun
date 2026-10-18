@@ -51,7 +51,8 @@ scale. Press **F3** in a game to see your frame rate.
 ## Quit game
 
 **QUIT GAME** on the title, pause and Settings screens closes the game after
-saving. Click it twice (the first click asks "PRESS AGAIN TO QUIT").
+saving. Click it twice: the first click only asks you to confirm, so a stray
+click never quits.
 
 Settings are saved inside your profile, so they share its backup
 ([Saving and Continuing](Saving-and-Continuing)).

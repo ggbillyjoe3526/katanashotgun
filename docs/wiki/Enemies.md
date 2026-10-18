@@ -39,7 +39,7 @@ Riflemen who strafe and keep 8 to 17 m away.
 Armoured heavies with a club, and the main reason to carry cells.
 
 - **Swing:** a 0.82 s windup, then 26 damage (3.6 m).
-- **Charge:** a roar and a 0.8 s windup, then a dash at 15.5 m/s for 30
+- **Charge:** a roar and a 0.8 s windup, then a dash at 13.5 m/s for 30
   damage and a big knockback. They slam into walls. Every 6 to 8.5 s.
 - **Answer:** the katana does only 35% until they stagger. **Shotgun them to
   stagger, then glory kill.** Dash sideways out of the charge. A kill is
