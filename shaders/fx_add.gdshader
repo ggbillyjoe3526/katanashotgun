@@ -1,6 +1,6 @@
 // Additive glow for effects: muzzle flash, neon halos, tracers, slash trails.
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_add, depth_draw_never, cull_disabled, fog_disabled;
 
 uniform sampler2D tex : source_color, filter_nearest, repeat_enable;
 uniform bool use_texture = false;

@@ -1,24 +1,30 @@
 class_name Quality
-## Quality presets (spec §14): they cut effect counts, never the art style.
+## Graphics presets (spec §14): WEAK, MEDIOCRE and INSANE in game, stored as
+## the ids low, medium and high. This file owns the effect caps; Graphics
+## (scripts/graphics.gd) owns what each preset does to the lighting and which
+## renderer it runs on. Presets change counts and light, never the art style.
 ## Every pool and cap reads its size from here (the table is in spec §14).
-## HIGH keeps the full show: its caps sit above anything a fight produces;
-## MEDIUM and LOW trim the piles (blood drops, decals, gibs, numbers, arcs)
-## so a 2015 laptop holds 60 fps. Pools are built at the HIGH size, so a
-## preset can change mid-run without allocating.
+## WEAK trims the piles (blood drops, decals, gibs, numbers, arcs) so a 2015
+## laptop holds 60 fps; MEDIOCRE keeps the full show (its caps sit above
+## anything a fight produces); INSANE throws more blood and chunks per kill.
+## Pools are built at the largest size, so a preset can change mid-run
+## without allocating.
 ## The settings menu calls `Quality.apply(id)` on load and when the option
 ## changes; `--quality=low|medium|high` on the command line does the same.
 
 const PRESETS := ["low", "medium", "high"]
-const DEFAULT := "high"
+## The names the player sees.
+const NAMES := {"low": "WEAK", "medium": "MEDIOCRE", "high": "INSANE"}
+const DEFAULT := "medium"
 ## Per-preset caps. Keys are read with `Quality.cap(key)`.
 const CAPS := {
 	"high": {
-		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
-		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48,
+		"drops": 2700, "decals": 780, "gibs": 160, "chunks_k": 1.3, "drops_k": 1.5,
+		"numbers": 40, "arcs": 128, "mists": 56, "smoke": 80, "flashes": 64,
 	},
 	"medium": {
-		"drops": 1200, "decals": 360, "gibs": 80, "chunks_k": 0.75, "drops_k": 0.75,
-		"numbers": 28, "arcs": 60, "mists": 28, "smoke": 36, "flashes": 28,
+		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
+		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48,
 	},
 	"low": {
 		"drops": 700, "decals": 220, "gibs": 50, "chunks_k": 0.5, "drops_k": 0.5,
@@ -35,7 +41,7 @@ static func cap(key: String) -> int:
 	return int(CAPS[preset][key])
 
 
-## A 0..1 scale for counts that aren't hard caps (blood per burst, chunks).
+## A scale for counts that aren't hard caps (blood per burst, chunks).
 static func scale(key: String) -> float:
 	return float(CAPS[preset][key])
 

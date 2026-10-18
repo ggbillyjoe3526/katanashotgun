@@ -1,6 +1,6 @@
 // Same as fx_add but always drawn on top (slash trails, stagger markers).
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled;
+render_mode unshaded, blend_add, depth_draw_never, depth_test_disabled, cull_disabled, fog_disabled;
 
 uniform sampler2D tex : source_color, filter_nearest, repeat_enable;
 uniform bool use_texture = false;

@@ -36,6 +36,7 @@ func build() -> void:
 	_setup_environment()
 	_build_layout()
 	_build_rain()
+	Graphics.attach(self) # the quality preset's lighting, now and on change
 
 
 ## Override in a map subclass.
