@@ -523,6 +523,7 @@ Notes:
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
+| Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
@@ -624,9 +625,21 @@ charges the gun; the gun sets up the blade.**
 - **Charging the shotgun:** each katana kill gives +1 cell (+1 more per Blood
   Battery rank). Each deflect gives +1 cell.
 - **Deflect:** a slash sends back hostile bolts within reach +2.2 m and the
-  half-arc +0.35 rad. The bolt reverses toward the enemy nearest the
-  crosshair (auto-aim if the dot product > 0.96), at ≥36 m/s, for 95 damage,
-  turning cyan. Its kills are tagged "RETURN TO SENDER" (points ×1.5).
+  half-arc +0.35 rad. The bolt turns cyan and flies **straight back to the
+  enemy or boss that fired it**, locked on until it lands, at 2.4× its speed
+  (≥36 m/s), for **8× its own damage** (a gunner's 12-damage bolt returns for
+  96; the Kurokage's shuriken 80, Tetsugumo's gatling bolt 56, Shuten's volley
+  bolt 112, all scaled with the wave like the shot was). On the way back it
+  ignores cover and every other enemy. If the shooter is already dead, it
+  takes the living enemy nearest the aim (dot product > 0.8), else flies
+  straight. If its target dies mid-flight it takes the next one along its
+  path. Poise damage 140, knockback 12. On the deflect: hitstop 0.07 s, a
+  light screen flash, "DEFLECT!"; on arrival: a cyan impact and a crack,
+  plus hitstop 0.05 s if it kills. Its kills are tagged "RETURN TO SENDER"
+  (points ×1.5).
+  (Owner, 2026-10-18: a deflect always goes back and hurts the shooter, never
+  just knocks the shot away. The damage scales with the bolt so the gatling's
+  many weak bolts can't shred a boss.)
 - **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
   0.22, slash trail, slice sound.
 - **A slash just hits a staggered enemy** (full damage, armour ignored, so it

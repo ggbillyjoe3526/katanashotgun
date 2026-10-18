@@ -92,6 +92,11 @@ var pool: WaveDirector = null
 ## Built ahead of time for a pool: no spawn beam or sound, parked at once.
 var prewarm := false
 
+## Counts spawns, so a pooled enemy reads as a new one each time it is
+## handed out (`spawn_id`). A deflected bolt checks it before homing.
+static var _spawn_count := 0
+var spawn_id := 0
+
 ## Set when an enemy joins or leaves the "enemies" group, so the
 ## WaveDirector rebuilds Game.enemy_list only when it changed.
 static var list_dirty := true
@@ -170,6 +175,8 @@ func _ready() -> void:
 ## on a spawn beam. Runs on every spawn, pooled or new.
 func activate() -> void:
 	reset_physics_interpolation() # a pooled enemy jumps to its spawn point
+	Enemy._spawn_count += 1
+	spawn_id = Enemy._spawn_count
 	add_to_group("enemies")
 	Enemy.list_dirty = true
 	attack_cd = _rng.randf_range(0.5, 1.4)
@@ -659,7 +666,7 @@ func _attack(dist: float, dir: Vector3) -> void:
 				var aim := (target - origin).normalized()
 				if shots > 1:
 					aim = aim.rotated(Vector3.UP, (i - 1) * 0.12)
-				Game.main.director.fire_bolt(true, origin, aim * 11.0, 12.0 * damage_mult)
+				Game.main.director.fire_bolt(true, origin, aim * 11.0, 12.0 * damage_mult, "bolt", self)
 			Sfx.play_at("enemy_shot", global_position, 0.0)
 			Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
 			recover_time = 0.35
@@ -697,7 +704,7 @@ func _volley(dir: Vector3) -> void:
 	var target := Game.player.global_position + Vector3(0, 1.0, 0)
 	var aim := (target - origin).normalized()
 	for i in 9:
-		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult)
+		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult, "bolt", self)
 	Sfx.play_at("enemy_shot", global_position, 4.0, 0.7)
 
 
