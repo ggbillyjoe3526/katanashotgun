@@ -56,6 +56,11 @@ func _ready() -> void:
 	else:
 		hud.show_title()
 		Sfx.play_title_music()
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--settings"):
+				# debug: open the settings screen on the title, at a tab
+				hud.settings_menu.tab = maxi(0, SettingsMenu.TABS.find(a.substr(11).to_upper()))
+				hud.settings_menu.open()
 
 
 # ---------------------------------------------------------------- flow
@@ -189,12 +194,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					restart(false)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
-			var w := get_window()
-			w.mode = Window.MODE_WINDOWED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
+			Settings.toggle_fullscreen()
 		elif event.physical_keycode == KEY_BRACKETLEFT:
-			Game.mouse_sensitivity = maxf(0.0003, Game.mouse_sensitivity - 0.00024)
+			Settings.nudge_sensitivity(-0.1)
 		elif event.physical_keycode == KEY_BRACKETRIGHT:
-			Game.mouse_sensitivity = minf(0.012, Game.mouse_sensitivity + 0.00024)
+			Settings.nudge_sensitivity(0.1)
 		elif event.physical_keycode == KEY_ESCAPE and Game.state == "playing":
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			pause_game()

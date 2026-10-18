@@ -48,13 +48,14 @@ func _process(delta: float) -> void:
 	_hurt = move_toward(_hurt, 0.0, rd * 1.8)
 	_flash = move_toward(_flash, 0.0, rd * 3.0)
 	_impact -= rd
-	mat.set_shader_parameter("impact", 1.0 if _impact > 0.0 else 0.0)
-	mat.set_shader_parameter("impact_invert", fmod(_t, 0.06) < 0.03)
+	# the comfort slider softens impact frames; below full they stop strobing
+	mat.set_shader_parameter("impact", Settings.flash if _impact > 0.0 else 0.0)
+	mat.set_shader_parameter("impact_invert", Settings.flash >= 0.99 and fmod(_t, 0.06) < 0.03)
 	mat.set_shader_parameter("heat", heat)
 	var low := 0.0
 	var p := Game.player
 	if p and not p.dead and p.hp / p.max_hp < 0.3:
 		low = 0.22 + 0.12 * sin(_t * 7.0)
 	mat.set_shader_parameter("damage", maxf(_hurt, low))
-	mat.set_shader_parameter("flash", _flash)
+	mat.set_shader_parameter("flash", _flash * Settings.flash)
 	mat.set_shader_parameter("desaturate", 0.75 if (p and p.dead) else 0.0)

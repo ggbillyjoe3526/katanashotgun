@@ -6,6 +6,18 @@ must look like `## v0.3.1 (2026-10-18)`.
 
 ## Unreleased
 
+### Settings
+- A settings screen, opened with Tab or the SETTINGS button on the title and
+  pause screens. It has volume sliders for master, music, sound effects,
+  ambience and menus; window mode, VSync, frame cap, quality, render scale
+  and field of view; mouse sensitivity and key rebinding (two keys per
+  action, mouse buttons too); and comfort sliders for screen shake and
+  flashes.
+- Everything works with the mouse or the keyboard, applies at once and is
+  remembered next time. F11 and the `[` `]` sensitivity keys are remembered
+  too.
+- Turning flashes below 100% also stops the impact frames from strobing.
+
 ### Text you can actually read
 - Every number and word on screen is bigger and sits on a dark plate or
   outline, so it reads over any part of the city.

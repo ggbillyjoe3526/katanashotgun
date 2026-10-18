@@ -568,7 +568,8 @@ Notes:
 | `jump` | Space | Double jump |
 | `dash` | Shift, Q | |
 | pause | Esc | |
-| sensitivity −/+ | `[` / `]` | Temporary; move into Settings |
+| sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
+| settings | Tab (title, pause) | Settings screen (§15.4) |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -1749,6 +1750,8 @@ seed | click: new seed).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--settings=audio|video|controls|comfort`: opens the settings screen on
+    the title at that tab.
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1831,8 +1834,10 @@ seed | click: new seed).
 - [ ] Move high scores into the profile.
 
 ### 18.3 Quality of life
-- [ ] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
-      default).
+- [x] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
+      default). Built in `scripts/settings.gd` and
+      `scripts/ui/settings_menu.gd`; persistence moves into the profile when
+      §11.3 lands. Comfort: below 100% flashes, impact frames don't strobe.
 - [ ] Clear "PLAYER LV" vs "RUN LV" labelling.
 
 ### 18.4 Content (later)

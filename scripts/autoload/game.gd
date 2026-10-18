@@ -77,6 +77,7 @@ func _ready() -> void:
 			var hex := a.substr(7).replace("-", "")
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
 	load_scores()
+	Settings.boot()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
