@@ -64,8 +64,13 @@ assets/audio/               SFX (tools/gen_audio.py)
 assets/music/               soundtrack (tools/gen_music.py)
 assets/fonts/               Orbitron, Chakra Petch, Share Tech Mono, Michroma (SIL OFL)
 installer/                  Windows installer script (Inno Setup) and icon
-tools/                      smoke test, release-notes helper, icon and audio generators
-.github/                    CI (smoke test on every PR) and the release workflow
+tools/                      smoke and unit test runners, notices, release-notes helper,
+                            icon and audio generators
+test/unit/                  unit tests (Gut); never exported
+addons/gut/                 Gut test framework (MIT); never exported
+THIRD_PARTY_NOTICES.txt     licences for the engine and fonts, shipped with every download
+gdlintrc                    gdlint settings
+.github/                    CI (checks on every PR) and the release workflow
 ```
 
 ## Adding a map
@@ -78,10 +83,21 @@ tools/                      smoke test, release-notes helper, icon and audio gen
 3. Add it to `MAPS` in `scripts/maps/map_registry.gd`.
 
 ## Checks and releases
-- **Every pull request** runs `tools/smoke_test.sh` in GitHub Actions: Godot
-  imports the project, the autoplay bot plays, and any script error fails it.
-  Run it locally with `tools/smoke_test.sh` (set `GODOT=` to your Godot binary
-  if `godot` isn't on PATH).
+- **Every pull request** runs these checks in GitHub Actions:
+  - `tools/smoke_test.sh`: Godot imports the project, the autoplay bot plays,
+    and any script error fails it.
+  - `tools/unit_tests.sh`: the Gut tests in `test/unit/` (settings in
+    `.gutconfig.json`).
+  - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
+    `tools/make_notices.gd` writes.
+  - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
+  Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
+  isn't on PATH).
+- **Licence notices:** after adding a font or other third-party asset, or
+  changing the Godot version, run
+  `godot --headless --path . -s res://tools/make_notices.gd` and commit
+  `THIRD_PARTY_NOTICES.txt`. The installer and every zip ship it next to the
+  game.
 - **Releases** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`, or open
   *Actions → Release → Run workflow* and type the version. It runs the smoke
   test, exports Windows, Linux and macOS, builds the Windows installer, checks
@@ -104,6 +120,7 @@ Pass after `--` on the command line:
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
+tools/unit_tests.sh                                              # unit tests
 ```
 
 ## Regenerating audio

@@ -493,6 +493,9 @@ Notes:
 |---|---|
 | Import / rebuild class cache | `godot --headless --path . --import` |
 | Smoke test | `godot --headless --path . --quit-after 3000 -- --autoplay --god` |
+| Unit tests (Gut) | `tools/unit_tests.sh` |
+| Lint | `gdlint scripts test tools` (`pip install "gdtoolkit==4.5.0"`) |
+| Licence notices | `godot --headless --path . -s res://tools/make_notices.gd` |
 | Play a seed / wave / boss | `godot --path . -- --seed=0BAD-C0DE --wave=3 --boss=ninja` |
 | Presentation showcase | `godot --path . -- --juicetest` |
 | Capture frames (Windows, real GPU) | `godot --path . --write-movie out\f.png --fixed-fps 30 --quit-after 900 -- --juicetest` |
