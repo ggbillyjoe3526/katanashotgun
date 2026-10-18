@@ -101,6 +101,7 @@ var juice: Juice
 # and the boss-reward card
 var title_level: LevelBar
 var armory: ArmoryPanel
+var pause_armory: ArmoryPanel
 var level_bar: LevelBar
 var reward_card: RewardCard
 var _xp_rolled := false
@@ -465,6 +466,8 @@ func _build_pause() -> void:
 	lock.name = "LockHint"
 	lock.visible = false
 	pause_root.add_child(lock)
+	pause_armory = ArmoryPanel.new()
+	pause_root.add_child(pause_armory)
 
 
 func _build_death() -> void:
@@ -1029,6 +1032,7 @@ func _process(_delta: float) -> void:
 		lh.visible = Game.main and Game.main.lock_failures >= 2
 		lh.size = Vector2.ZERO
 		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
+		pause_armory.position = Vector2(8, vs.y - pause_armory.size.y - 6)
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()

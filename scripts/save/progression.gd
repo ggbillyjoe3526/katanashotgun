@@ -16,7 +16,7 @@ const LEVEL_STEP := 150 # each level after needs this much more
 const LEVEL_STEP_CAP := 30 # ...up to level 31, then the need stops growing
 
 
-## XP for one run, from its stats. Every row is shown on the results screen.
+## XP for one run, from its stats, as [label, xp] rows (zero rows dropped).
 static func run_xp(stats: Dictionary) -> Array:
 	var cleared := maxi(int(stats.get("wave", 0)) - 1, 0)
 	var rows := [

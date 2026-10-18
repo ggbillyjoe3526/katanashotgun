@@ -194,7 +194,7 @@ func test_settings_save_is_debounced_and_flushed() -> void:
 	Profile.store_settings({"v": 1, "music": 0.5})
 	Profile.store_settings({"v": 1, "music": 0.6})
 	assert_eq(SaveFile.read(Profile.profile_path(), "profile").data.settings, {}, "not written yet")
-	Profile._process(1.0)
+	Profile.tick(1.0)
 	assert_almost_eq(float(SaveFile.read(Profile.profile_path(), "profile").data.settings.music), 0.6, 0.001)
 
 
@@ -359,3 +359,16 @@ func test_player_level_never_touches_the_run() -> void:
 	Game.next_seed = 77
 	Game.reset_run()
 	assert_eq([Game.rng_waves.randi(), Game.level, Game.xp_next], before)
+
+
+func test_equipping_recolours_the_live_weapons() -> void:
+	Profile.use_dir(dir)
+	var vm := Viewmodel.new()
+	add_child_autofree(vm)
+	var stock: Color = vm.blade_edge_mat.get_shader_parameter("albedo_color")
+	Profile.boss_felled("oni")
+	Profile.equip("katana", "edge_onibi")
+	assert_ne(vm.blade_edge_mat.get_shader_parameter("albedo_color"), stock)
+	assert_eq(vm.blade_edge_mat.get_shader_parameter("albedo_color"), Rewards.get_def("edge_onibi").edge)
+	Profile.equip("katana", "")
+	assert_eq(vm.blade_edge_mat.get_shader_parameter("albedo_color"), stock)

@@ -47,7 +47,7 @@ func _init() -> void:
 	add_child(slot_label)
 	desc_label = Ui.label("", Ui.font_bold, 10, Color(0.9, 0.88, 1.0), 2)
 	add_child(desc_label)
-	hint_label = Ui.label("EQUIP IT FROM THE TITLE SCREEN", Ui.font_bold, 10, Color(0.75, 0.72, 0.9), 2)
+	hint_label = Ui.label("EQUIP IT IN THE ARMORY: PAUSE OR TITLE", Ui.font_bold, 10, Color(0.75, 0.72, 0.9), 2)
 	add_child(hint_label)
 	swatch_a = Ui.rect(Color.WHITE, Vector2.ZERO, Vector2(10, 46))
 	add_child(swatch_a)

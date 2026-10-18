@@ -101,6 +101,8 @@ func done() -> bool:
 
 
 func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	var rd := Game.real_dt
 	if _rolling:
 		xp += _speed * rd

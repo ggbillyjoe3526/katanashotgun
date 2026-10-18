@@ -3,7 +3,7 @@ extends Node
 ## XP, boss-reward unlocks, equipped cosmetics, the top 10, settings and
 ## lifetime stats. Saves on its own at the end of every run, on every unlock,
 ## shortly after a settings change, and on quit. Files go through SaveFile,
-## so a crash at any point leaves a good copy. API: design/save-system.md.
+## so a crash at any point leaves a good copy. Spec §11.3.
 
 signal changed
 
@@ -80,6 +80,10 @@ func load_profile() -> void:
 			# keep the old file as it was, in case a migration ever goes wrong
 			_keep_copy(path, ".v%d" % v)
 			data = ProfileMigrations.migrate(data, v, VERSION)
+			if data.is_empty():
+				# no way up from this version: start fresh, the .v copy keeps it
+				push_warning("save: can't migrate profile version %d" % v)
+				loaded_from = "new"
 		elif v > VERSION:
 			# written by a newer build: read what we understand, and keep the
 			# original so going back to the newer build loses nothing
@@ -123,9 +127,14 @@ func save_soon(delay := SETTINGS_DELAY) -> void:
 	_save_in = delay if _save_in < 0.0 else minf(_save_in, delay)
 
 
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
+	tick(Game.real_dt)
+
+
+## Counts down a pending save in real seconds (slow-mo doesn't stretch it).
+func tick(dt: float) -> void:
 	if _save_in >= 0.0:
-		_save_in -= delta
+		_save_in -= dt
 		if _save_in < 0.0:
 			save_now()
 
@@ -258,7 +267,7 @@ func get_equipped(slot: String) -> String:
 
 
 func equip(slot: String, id: String) -> void:
-	if id != "" and not unlocks.has(id):
+	if (id != "" and not unlocks.has(id)) or get_equipped(slot) == id:
 		return
 	equipped[slot] = id
 	save_now()

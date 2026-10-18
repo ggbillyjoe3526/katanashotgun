@@ -88,6 +88,8 @@ func _ready() -> void:
 	_build_katana()
 	_build_shotgun()
 	apply_looks()
+	# equipping from the armory (title or pause) recolours the live weapons
+	Profile.changed.connect(apply_looks)
 	_kpos = katana_idle_pos
 	_krot = katana_idle_rot
 
@@ -252,6 +254,11 @@ func _build_shotgun() -> void:
 	shotgun.position = shotgun_idle_pos
 	_spos_cur = shotgun_idle_pos
 	_srot_cur = shotgun_idle_rot
+
+
+func _exit_tree() -> void:
+	if Profile.changed.is_connected(apply_looks):
+		Profile.changed.disconnect(apply_looks)
 
 
 ## Tints the katana edge and wrap and the shotgun's coils, cells and idle

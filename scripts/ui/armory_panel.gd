@@ -1,6 +1,6 @@
 class_name ArmoryPanel
 extends Control
-## Title-screen armory (spec §11.2): the boss-reward looks, picked with 1
+## The armory, on the title and pause screens (spec §11.2): the boss-reward looks, picked with 1
 ## (katana edge) and 2 (shotgun coil). Each row shows the equipped look's
 ## colour, its name and how many of that slot's looks are owned. Redraws
 ## when the profile changes.
@@ -48,6 +48,8 @@ func refresh() -> void:
 
 
 func _process(_delta: float) -> void:
+	if not is_visible_in_tree():
+		return
 	var w := 0.0
 	header.size = Vector2.ZERO
 	header.position = Vector2.ZERO

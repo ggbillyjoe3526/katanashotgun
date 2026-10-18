@@ -93,16 +93,22 @@ func start_run() -> void:
 ## here. Its XP still counts (progress is never lost), then a new seed starts.
 func abandon_suspended_run() -> void:
 	var stats: Dictionary = resume.get("stats", {})
+	# drop the snapshot first, so a crash here can't pay the run twice
+	Profile.clear_suspended_run()
 	if not stats.is_empty():
 		Profile.finish_run(stats)
-	Profile.clear_suspended_run()
+		if Profile.qualifies(int(stats.get("score", 0))):
+			Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(int(resume.get("seed", 0)))})
 	resume = {}
 	restart(false)
 
 
 func _on_between_waves(next_wave: int) -> void:
 	var snap := RunSnapshot.capture(next_wave, director, player)
-	snap["stats"] = Game.run_stats()
+	# if this run is abandoned from the title, it counts as reaching next_wave
+	var stats := Game.run_stats()
+	stats["wave"] = next_wave
+	snap["stats"] = stats
 	Profile.suspend_run(snap)
 
 
@@ -244,7 +250,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif Game.state == "title" and event.physical_keycode == KEY_N and not resume.is_empty():
 			Sfx.play("ui_click", -4.0)
 			abandon_suspended_run()
-		elif Game.state == "title" and event.physical_keycode in [KEY_1, KEY_2]:
+		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)
 		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode == KEY_R:
