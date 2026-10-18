@@ -730,7 +730,9 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 ### 3.8 Run level and augments (in-run, resets each run)
 - XP comes from kills (grunt 10, gunner 18, brute 60, Kurokage 320, Tetsugumo
   420, Shuten 500). XP to the next level = `60 + (level − 1) × 40`.
-- **Each level-up** pauses the game (tree paused) and offers **3 augments**,
+- **Each level-up** pauses the game (tree paused) and offers **3 augments**
+  (it opens once any centre-screen moment has finished: FINISH, the payout,
+  a boss card, a stamp; see §9.9),
   drawn as a seeded Fisher–Yates pick from the pool not yet at max rank.
   Choose with click or 1/2/3. Several pending level-ups chain.
 - **Augments** (they change *how* a weapon behaves, never +2% stats):

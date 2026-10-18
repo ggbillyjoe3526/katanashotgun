@@ -315,7 +315,6 @@ func _build_play() -> void:
 	play_root.add_child(hint_bg)
 	hint_label = Ui.label("", Ui.font_bold, 10, YELLOW, 0)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_bg.add_child(hint_label)
 
 	boss_root = Control.new()
@@ -676,7 +675,12 @@ func _death_countup() -> void:
 ## The wave intro: WAVE N stamp, typed-out mutator, 3-2-1 countdown, FIGHT.
 func wave_intro(wave: int, sub_text: String, color: Color, boss: bool) -> void:
 	juice.wave_intro(wave, sub_text, color, boss)
-	# the intro has the middle of the screen to itself: older tags and hints go
+	# the intro has the middle of the screen to itself: older tags and hints
+	# go, and a fresh tag (an augment just picked: "<UPGRADE> ONLINE") waits
+	# and shows at FIGHT
+	for pp in popups:
+		if pp.t < 1.0:
+			_popup_wait.append([pp.l.text, pp.c])
 	_clear_tags()
 	hint_bg.visible = false
 	mut_label.text = ("%s  x%.1f" % [Game.mutator.name, Game.mutator.score]) if not Game.mutator.is_empty() else ""
@@ -947,7 +951,7 @@ func add_popup(text: String, color: Color) -> void:
 	l.add_theme_stylebox_override("normal", _popup_plate)
 	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
 	play_root.add_child(l)
-	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1})
+	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color})
 	while popups.size() > MAX_POPUPS:
 		popups.pop_back().l.queue_free()
 
