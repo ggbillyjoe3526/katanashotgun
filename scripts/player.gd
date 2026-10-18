@@ -46,7 +46,8 @@ const FINISHER_KEEP_REACH := 5.5
 const FINISHER_CONE := PI / 3.0 # 60 degrees
 const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
 const FINISHER_BUFFER := 0.18
-# plunge: the floor you left must be this far above the foe's feet, you must
+# plunge: the floor you left must be this far above the foe's feet (a jump
+# pad launch counts too), you must
 # still be this far above them, and they must be within a reach that grows
 # with the drop and near the crosshair
 const PLUNGE_MIN_LEVEL := 2.0
