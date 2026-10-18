@@ -1,11 +1,13 @@
 """Procedural sound generator for KATANA / SHOTGUN.
 
-Run:  python3 tools/gen_audio.py   (from the project root)
+Run:  python3 tools/gen_audio.py        (from the project root; everything)
+      python3 tools/gen_audio.py rain   (only the rain beds)
 Writes .wav SFX and .ogg loops into assets/audio/. Requires numpy, scipy, ffmpeg.
 Everything is synthesized so the prototype has no third-party audio.
 """
 import os
 import subprocess
+import sys
 import numpy as np
 from scipy.io import wavfile
 from scipy.signal import butter, lfilter
@@ -570,11 +572,12 @@ def sfx_fanfare():
 
 
 # ---------------------------------------------------------------- loops (music + rain)
-def to_ogg(name, x, q=4, stereo=None):
+def to_ogg(name, x, q=4, stereo=None, normalise=True):
     tmp = os.path.join(OUT, name + "_tmp.wav")
-    x = norm(x, 0.9)
+    if normalise:
+        x = norm(x, 0.9)
     if stereo is not None:
-        data = np.stack([x, norm(stereo, 0.9)], axis=1)
+        data = np.stack([x, norm(stereo, 0.9) if normalise else stereo], axis=1)
     else:
         data = x
     wavfile.write(tmp, SR, (data * 32767).astype(np.int16))
@@ -671,26 +674,95 @@ def music_loop():
     return master
 
 
-def rain_loop():
-    d = 6.0
-    x = lp(noise(d), 4500) * 0.5 + hp(noise(d), 5000) * 0.25
-    drops = np.zeros(int(SR * d))
-    for _ in range(260):
-        p = int(rng.uniform(0, len(drops) - 600))
-        drops[p:p + 400] += bp(noise(400 / SR), 1500, 6000) * env_exp(400 / SR, 120) * rng.uniform(0.1, 0.5)
-    x = x + drops
-    # seamless: crossfade the tail into the head
-    fadelen = int(SR * 0.5)
-    head = x[:fadelen].copy()
-    tail = x[-fadelen:].copy()
-    r = np.linspace(0, 1, fadelen)
-    x = x[:-fadelen]
-    x[:fadelen] = head * r + tail * (1 - r)
-    return x
+# ---- rain (spec §10.3): far back, band-limited, never a flat hiss. Built from
+# separate patter, droplet and drip layers with slow gusts so it comes and
+# goes. Events are placed on a circular buffer and filtered over three tiled
+# copies, so the loop has no seam.
+RAIN_SECONDS = 20.0
+
+
+def _loop_filter(x, f):
+    """Apply filter f to a looping buffer without an edge click at the seam."""
+    n = len(x)
+    return f(np.tile(x, 3))[n:2 * n]
+
+
+def _rain_events(r, n, count, ln_range, make):
+    out = np.zeros(n)
+    for _ in range(count):
+        s = int(r.uniform(0, n))
+        ev = make(int(r.uniform(*ln_range)))
+        idx = (np.arange(len(ev)) + s) % n
+        np.add.at(out, idx, ev)
+    return out
+
+
+def _gusts(r, n, period_lo=2.5, period_hi=6.0, depth=0.55):
+    """A slow, smooth, looping swell between (1 - depth) and 1."""
+    secs = n / SR
+    env = np.zeros(n)
+    t = np.arange(n) / SR
+    for _ in range(4):
+        cycles = max(1, round(secs / r.uniform(period_lo, period_hi)))
+        env += np.sin(2 * np.pi * cycles * t / secs + r.uniform(0, 2 * np.pi)) * r.uniform(0.5, 1.0)
+    env = (env - env.min()) / (np.ptp(env) or 1.0)
+    return 1.0 - depth + depth * env
+
+
+def rain_layers(heavy=False, seed=7):
+    r = np.random.default_rng(seed + (100 if heavy else 0))
+    n = int(SR * RAIN_SECONDS)
+
+    def patter_hit(ln):
+        k = r.uniform(250, 600)
+        return r.uniform(-1, 1, ln) * np.exp(-np.arange(ln) / SR * k) * r.uniform(0.05, 0.3)
+
+    def droplet(ln):
+        tt = np.arange(ln) / SR
+        f = r.uniform(1400, 3200)
+        return np.sin(2 * np.pi * f * tt * (1 - tt * 2.5)) * np.exp(-tt * r.uniform(120, 220)) * r.uniform(0.15, 0.5)
+
+    def drip(ln):
+        tt = np.arange(ln) / SR
+        f = r.uniform(600, 1300)
+        return np.sin(2 * np.pi * f * tt * (1 + tt * 4)) * np.exp(-tt * r.uniform(28, 45)) * r.uniform(0.3, 0.6)
+
+    patter = _rain_events(r, n, int(RAIN_SECONDS * (900 if heavy else 380)), (30, 140), patter_hit)
+    patter = _loop_filter(patter, lambda x: bp(x, 350, 2600 if heavy else 3200))
+    drops = _rain_events(r, n, int(RAIN_SECONDS * (40 if heavy else 22)), (300, 900), droplet)
+    drops = _loop_filter(drops, lambda x: bp(x, 700, 4200))
+    drips = _rain_events(r, n, int(RAIN_SECONDS * (1.2 if heavy else 0.7)), (2500, 5000), drip)
+    drips = _loop_filter(drips, lambda x: bp(x, 400, 2500))
+    # a little low body so heavy rain is felt; low-passed, never a hiss
+    body = _loop_filter(r.uniform(-1, 1, n), lambda x: lp(hp(x, 90), 420)) * (0.35 if heavy else 0.12)
+    g1 = _gusts(r, n, depth=0.5 if heavy else 0.65)
+    g2 = _gusts(r, n, 4.0, 9.0, 0.6)
+    left = patter * g1 + drops * g2 * 0.8 + drips + body * g1
+    # the right channel takes its own events so the bed is wide, not mono
+    patter_r = _loop_filter(_rain_events(r, n, int(RAIN_SECONDS * (900 if heavy else 380)), (30, 140), patter_hit),
+                            lambda x: bp(x, 350, 2600 if heavy else 3200))
+    drops_r = _loop_filter(_rain_events(r, n, int(RAIN_SECONDS * (40 if heavy else 22)), (300, 900), droplet),
+                           lambda x: bp(x, 700, 4200))
+    right = patter_r * g2 + drops_r * g1 * 0.8 + np.roll(drips, int(SR * 7.3)) * 0.7 + body * g2
+    # gentle top-end roll-off: nothing above about 5 kHz reaches the speakers
+    left = _loop_filter(left, lambda x: lp(x, 4800, 4))
+    right = _loop_filter(right, lambda x: lp(x, 4800, 4))
+    return left, right
+
+
+def rain_ogg():
+    for name, heavy in [("rain", False), ("rain_heavy", True)]:
+        left, right = rain_layers(heavy)
+        peak = max(np.max(np.abs(left)), np.max(np.abs(right))) or 1.0
+        # to_ogg normalises each channel; scale both by the same peak instead
+        to_ogg(name, left / peak * 0.9, 3, right / peak * 0.9, normalise=False)
 
 
 def main():
     os.makedirs(OUT, exist_ok=True)
+    if sys.argv[1:] == ["rain"]:
+        rain_ogg()
+        return
     save("shotgun", sfx_shotgun())
     save("recharge", sfx_recharge(), 0.6)
     save("empty", sfx_empty(), 0.6)
@@ -749,7 +821,7 @@ def main():
     save("mult", sfx_mult(), 0.6)
     save("deal", sfx_deal(), 0.5)
     save("fanfare", sfx_fanfare(), 0.7)
-    to_ogg("rain", rain_loop(), 2)
+    rain_ogg()
     print("audio written to", os.path.abspath(OUT))
 
 

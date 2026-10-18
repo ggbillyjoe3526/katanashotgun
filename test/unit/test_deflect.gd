@@ -113,3 +113,20 @@ func test_freed_target_is_let_go() -> void:
 	b._steer()
 	assert_false(b._returning)
 	Game.enemy_list = old_list
+
+
+func test_mirror_copy_keeps_its_heading_and_damage() -> void:
+	# a Yata Mirror copy fans out beside the returning bolt: no target, and
+	# it keeps the speed and damage it was made with
+	var shooter := _enemy(Vector3(0, 0, -20))
+	var b := Bolt.new()
+	b.prewarm = true
+	add_child_autofree(b)
+	b.setup(true, Vector3.ZERO, Vector3.FORWARD * 36.0, 96.0, "bolt", shooter)
+	var dir := Vector3.FORWARD.rotated(Vector3.UP, 0.35)
+	b.deflect(dir, true)
+	assert_false(b.hostile)
+	assert_null(b.target)
+	assert_almost_eq(b.vel.length(), 36.0, 0.01)
+	assert_almost_eq(b.vel.normalized().dot(dir), 1.0, 0.001)
+	assert_eq(b.damage, 96.0)

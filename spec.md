@@ -518,6 +518,7 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
+| Music style | Fast (140 to 165 bpm), futuristic, energetic dark electronic bass music with an EDM feel, like Rezz: wobble basses, EDM drums, glitch edits, no string instruments (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
@@ -526,6 +527,8 @@ Notes:
 | Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground or off a jump pad on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes must be staggered to plunge; bosses can never be plunged (no glory kills on bosses, owner 2026-10-18) |
 | Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
+| Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
+| Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -570,8 +573,17 @@ Notes:
 - **User data:** `application/config/use_custom_user_dir = true`,
   `custom_user_dir_name = "KatanaShotgun"`. The app name contains a slash, so
   never derive paths from it.
-- **Window:** start windowed, F11 or Alt+Enter toggles fullscreen. Pause when
-  the window loses focus or the mouse capture is lost.
+- **Window:** start full screen at the display's own resolution (borderless,
+  up to 4K and beyond); F11 or Alt+Enter toggles windowed. Windowed mode is
+  the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
+  4K), so the retro pixels stay square and sharp. The 3D view stays 960×540
+  at any screen size and is upscaled with nearest filtering, never smoothed:
+  exactly 4× on 4K and 2× on 1080p; other sizes (1440p) get nearest scaling
+  with slightly uneven pixel widths. Higher resolution never smooths away the
+  PS1/PS2 look. Pause
+  when the window loses focus or the mouse capture is lost.
+- **Frame rate:** unlimited by default with VSync off; the frame cap offers
+  60, 75, 120, 144, 165, 240 and 360, and VSync can be turned on.
 
 ### 2.1 Input map (defaults; everything rebindable)
 | Action | Default | Notes |
@@ -585,6 +597,7 @@ Notes:
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
+| quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -607,7 +620,7 @@ charges the gun; the gun sets up the blade.**
 | Gravity | 26 m/s² |
 | Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable. The double jump also adds 3 m/s toward the movement keys held (relative to the look direction), capped at 1.35× walk speed, so it never builds speed past that; with no keys held there is no push, so it can't carry the player off a ledge they didn't aim for (owner, 2026-10-18) |
 | Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
-| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (−0.3 s per Idaten Drive rank), FOV kick +14 |
+| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
 | Capsule | radius 0.4, height 1.8, eye height 1.55 |
 | Hit invulnerability | 0.12 s |
@@ -617,12 +630,11 @@ charges the gun; the gun sets up the blade.**
 - **3-hit combo:** left→right, right→left backhand, overhead chop.
   - Cooldown 0.32 s, or 0.45 s after the third hit. The combo resets if you
     don't swing for 0.65 s.
-- **Hit area:** reach 3.4 m (+0.8 per Long Reach rank), half-arc 68° (+14° per
-  rank), vertical tolerance about the enemy's half height + 1.7 m.
-- **Damage:** 50 per hit, ×(1 + 0.35 per Masamune Edge rank), ×the mutator.
+- **Hit area:** reach 3.4 m, half-arc 68°, vertical tolerance about the enemy's half height + 1.7 m.
+- **Damage:** 50 per hit, ×the mutator (Masamune Edge: the third cut ×2).
   Poise damage 18, knockback 4.
 - **Armour:** against armoured enemies (that aren't staggered) the katana does
-  `armor + 0.12 × Masamune rank` of its damage, with sparks and a clang.
+  `armor` of its damage, with sparks and a clang (a Masamune heavy cut ignores armour).
 - **Cleaves:** hits every enemy in the arc.
 - **Charging the shotgun:** each katana kill gives +1 cell (+1 more per Blood
   Battery rank). Each deflect gives +1 cell.
@@ -650,7 +662,7 @@ charges the gun; the gun sets up the blade.**
 
 ### 3.3 Shotgun (RIGHT hand, RMB): "RAIJIN-12" arc shotgun ("shotgun taser")
 - **Gameplay is exactly a shotgun.** Presentation is electric.
-- **Pellets:** 10 hitscan pellets per blast (+3 per Raijin's Fork rank).
+- **Pellets:** 10 hitscan pellets per blast (×2 on an Inazuma Overload blast).
   - Spread: a random disc of radius 0.085 rad. Range 48 m.
   - Damage 13 per pellet × falloff × mutator. Falloff is
     `clamp(1 − (dist − 7)/22, 0.3, 1)`.
@@ -658,10 +670,10 @@ charges the gun; the gun sets up the blade.**
     enemy's `head_y`. The blast counts as a headshot (popping the head on a
     kill) if any pellet hit the head and ≥3 pellets hit that enemy.
 - **Effect per enemy:** all pellet damage is summed into one hit.
-  - Poise damage = that damage × (1 + 0.6 per High Voltage rank).
-  - Knockback 6 + 8 per High Voltage rank.
+  - Poise damage = that damage × (1 + 0.6 per Ikazuchi Surge rank).
+  - Knockback 6 + 8 per Ikazuchi Surge rank.
   - Kagutsuchi Flame ignites the target (§3.6).
-- **Ammo is CELLS.** 4 max to start (+2 per Fujin Bank rank). Each blast uses
+- **Ammo is CELLS.** 4 max to start (+2 with Inazuma Overload). Each blast uses
   1 cell. Below 2 cells, they recharge by 1 every 2.5 s (the Yomi Blackout
   mutator turns this off).
 - **Empty:** a 0.3 s cooldown, the "empty" fizzle sound and a "NO CHARGE – USE
@@ -799,29 +811,69 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 - XP comes from kills (grunt 10, gunner 18, brute 60, Kurokage 320, Tetsugumo
   420, Shuten 500). XP to the next level = `60 + (level − 1) × 40`.
 - **Each level-up** pauses the game (tree paused) and offers **3 augments**,
-  drawn as a seeded Fisher–Yates pick from the pool not yet at max rank.
-  Choose with click or 1/2/3. Several pending level-ups chain.
-- **Augments** (they change *how* a weapon behaves, never +2% stats):
+  drawn as a seeded Fisher–Yates pick from the cards not yet at max rank (and
+  whose `requires` card, if any, is owned). Choose with click or 1/2/3.
+  Several pending level-ups chain.
+- **Augments change a rule of the loop**, never a plain +% number (owner,
+  2026-10-18: picks should build a way of playing, like Balatro's Jokers).
+- **Builds:** every card but Kongo Heart sits in one or two named builds of
+  three cards. Builds are labels only: no hidden set bonus.
+  - An offered card that shares a build with a different card you own shows a
+    gold **RECOMMENDED** tab above it, a gold border, and a brighter sting as
+    it deals. A rank-up of an owned card is not a link.
+  - **Linked offers:** once you own a build card, if no linking card is among
+    the three drawn, the first linking card in the shuffled order takes the
+    last slot (no extra RNG draw). Same seed and same picks give the same
+    offers.
+  - Each card's bottom lines name its builds with the count you would own
+    after picking ("RONIN 2/3"). Picking the second card of a build pops
+    "<BUILD> LINKED"; the third stamps "<BUILD> COMPLETE" once the cards
+    close. The pause screen lists your builds.
 
 | id | Name | Tag | Max | Effect |
 |---|---|---|---|---|
-| edge | MASAMUNE EDGE | KATANA | 3 | Katana damage +35%/rank; better against armour (+0.12/rank) |
-| reach | LONG REACH | KATANA | 2 | Katana range +0.8 m and arc +14°/rank |
-| wave | SUSANOO'S WAVE | KATANA | 3 | Every (4 − rank) slashes launch a piercing blood blade (26 m/s, 40 + 15 × rank damage) |
-| vamp | VAMPIRIC STEEL | KATANA | 3 | Heal 1 HP × rank per enemy the katana hits |
-| battery | BLOOD BATTERY | SYNERGY | 2 | Katana kills charge +1 extra cell per rank |
-| pellets | RAIJIN'S FORK | SHOTGUN | 3 | +3 arcs (pellets) per blast |
-| tube | FUJIN BANK | SHOTGUN | 3 | +2 max cells, charged immediately |
+| fork | RAIJIN'S FORK | SHOTGUN | 1 | From each of the first 4 enemies a blast hits, an arc leaps to the 2 nearest enemies within 7 m it missed: 40% of that enemy's blast damage (min 15), same stagger rules |
+| ikazuchi | IKAZUCHI SURGE | SHOTGUN | 2 | Blasts stagger 60% harder per rank and knock back +8 per rank |
+| inazuma | INAZUMA OVERLOAD | SHOTGUN | 1 | +2 max cells. The blast that spends the last cell fires 20 pellets and staggers every non-boss it hits (bosses take ×3 poise) |
 | dragon | KAGUTSUCHI FLAME | SHOTGUN | 2 | Arcs set enemies alight (burn, §3.6) |
-| concuss | HIGH VOLTAGE | SHOTGUN | 2 | Blasts stagger 60% harder and knock back further |
-| dash | IDATEN DRIVE | MOBILITY | 2 | +1 dash charge, faster recharge |
-| dashcut | KAGE STEP | MOBILITY | 2 | Dashing through enemies slices them (40 × rank × edge bonus) |
-| chain | HYAKUNIN-GIRI | SYNERGY | 1 | Glory kills stagger every enemy within 9 m |
-| hotbarrel | FEEDBACK LOOP | SYNERGY | 1 | Shotgun kills refund one dash charge |
+| hitodama | HITODAMA CHAIN | SHOTGUN | 1 | Requires Kagutsuchi Flame or Homura Edge. A burning enemy that dies ignites every enemy within 5 m |
+| hachiman | HACHIMAN FOCUS | SHOTGUN | 1 | Spread 0.04 rad (from 0.085); falloff starts at 18 m (from 7 m) |
+| yoichi | YOICHI'S MARK | SHOTGUN | 1 | A headshot blast (§3.3) refunds its cell |
+| gasha | GASHADOKURO BURST | SHOTGUN | 1 | A shotgun headshot kill explodes: 30 damage within 5 m and staggers non-bosses |
+| edge | MASAMUNE EDGE | KATANA | 1 | The third combo cut does ×2 damage, ignores armour and deals 100 poise |
+| wave | SUSANOO'S WAVE | KATANA | 2 | Every (4 − rank) slashes launch a piercing blood blade (26 m/s, 40 + 15 × rank damage); with Masamune Edge every heavy cut launches one too |
+| yata | YATA MIRROR | KATANA | 1 | A deflected bolt flies back to its shooter as usual and two copies fan out ±0.35 rad beside it at the same speed and damage, with no target (no extra cells, count or popup) |
+| homura | HOMURA EDGE | KATANA | 1 | Katana hits ignite (burn rank 1); burning enemies take katana damage ×1.5 |
+| chimatsuri | CHIMATSURI STEEL | KATANA | 2 | Heal 1 HP × rank per enemy the katana hits; healing past full HP banks, every 6 HP banked = +1 cell |
+| battery | BLOOD BATTERY | KATANA | 2 | Katana kills charge +1 extra cell per rank |
+| kurama | KURAMA LEAP | GLORY | 1 | Glory kill reach 9 m (kept to 10 m). The lunge takes 0.13 s × distance / 4.5 m (max 0.26 s) and every beat shifts back by the extra |
+| chain | HYAKUNIN-GIRI | GLORY | 1 | Glory kills stagger every enemy within 9 m |
+| kamaitachi | KAMAITACHI RING | GLORY | 1 | A glory kill fires 8 blood blades flat out from the body (60 damage each) |
+| taiko | TAIKO FRENZY | GLORY | 1 | A glory kill adds +5 combo and freezes the combo timer for 3 s |
+| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge; every dash charges 1 cell |
+| fujin | FUJIN'S RETURN | DASH | 1 | Shotgun kills (including Raijin's Fork leaps) refund one dash charge |
+| dashcut | KAGE STEP | DASH | 2 | Dashing through enemies slices them (40 × rank) |
+| utsusemi | UTSUSEMI SHELL | DASH | 1 | A hit that would hurt you spends a dash charge instead (0.4 s invulnerable); once every 3 s |
 | chrome | KONGO HEART | BODY | 3 | +25 max HP and a full heal |
+| sanzu | SANZU REPRIEVE | BODY | 1 | Once per wave, a killing blow leaves you on 1 HP with 1.5 s invulnerability |
 
-Tag colours: KATANA cyan, SHOTGUN electric blue, SYNERGY hot pink, MOBILITY
-acid green, BODY pale gold.
+| Build | Cards | How it plays |
+|---|---|---|
+| STORM RUNNER | Idaten Drive, Fujin's Return, Inazuma Overload | Blast, kill, dash, recharge, blast: never stop moving |
+| THUNDER CHAIN | Raijin's Fork, Ikazuchi Surge, Inazuma Overload | One blast staggers a whole pack |
+| INFERNO | Kagutsuchi Flame, Homura Edge, Hitodama Chain | Fire spreads through the crowd |
+| HEADHUNTER | Hachiman Focus, Yoichi's Mark, Gashadokuro Burst | Mid-range headshots that pay for themselves |
+| RONIN | Masamune Edge, Susanoo's Wave, Yata Mirror | Count to three; the blade does almost everything |
+| BLOOD ENGINE | Chimatsuri Steel, Blood Battery, Sanzu Reprieve | The katana feeds health and cells; live on the edge |
+| EXECUTIONER | Kurama Leap, Hyakunin-giri, Kamaitachi Ring | Glory kill to glory kill across the rooftop |
+| SHOWSTOPPER | Taiko Frenzy, Hyakunin-giri, Ikazuchi Surge | Stagger everything, glory kill for score |
+| GHOST | Kage Step, Utsusemi Shell, Idaten Drive | Dash through everything, untouchable |
+
+Tag colours: KATANA cyan, SHOTGUN electric blue, GLORY hot pink, DASH acid
+green, BODY pale gold; links and RECOMMENDED in gold.
+
+Debug: `--augments=id,id:2|all` starts a run with cards picked; `--cardtour`
+deals every card for a layout check.
 
 ---
 
@@ -999,21 +1051,41 @@ Japanese myth or history root (§13). **Never reuse FromSoftware names.**
   BUSY".
 
 ### 6.3 Mutators (seeded, from wave 2, 35% skip chance, never on boss waves)
-In-game names drop macrons (§13).
+In-game names drop macrons (§13). A roll always makes two draws from the
+wave stream (chance, pick), never repeats the previous wave's mutator, and
+only picks mutators whose `min_wave` has come (the harsher ones wait so
+waves 1 to 3 stay easy). The pool grew from 9 to 15 on 2026-10-18 at the
+owner's request for more variety.
 
-| id | Name | Effect | Score × |
-|---|---|---|---|
-| overdrive | IDATEN'S HASTE | Enemies move 25% faster | 1.5 |
-| glass | MURAMASA'S CURSE | You deal and take +50% damage | 1.3 |
-| bloodmoon | AKATSUKI | Enemies ×1.4 HP; glory kills heal double | 1.4 |
-| drymag | YOMI BLACKOUT | No passive cell recharge | 1.3 |
-| swarm | HYAKKI YAKO | 60% more grunts, at 70% HP | 1.2 |
-| snipers | TEPPO VOLLEY | Double the gunners | 1.3 |
-| ironclad | KANABO VANGUARD | Two extra brutes | 1.4 |
-| storm | RAIJIN'S STORM | Lightning flashes, thunder and heavy rain | 1.25 |
-| vampire | JOROGUMO'S BITE | Kills heal 2 HP; enemies hit 30% harder | 1.2 |
+| id | Name | Effect | Score × | From wave |
+|---|---|---|---|---|
+| overdrive | OKURI-INU HUNT | Enemies move 25% faster | 1.5 | 2 |
+| glass | MURAMASA'S CURSE | You deal and take +50% damage | 1.3 | 2 |
+| bloodmoon | AKATSUKI | Enemies ×1.4 HP; glory kills heal double | 1.4 | 2 |
+| drymag | YOMI BLACKOUT | No passive cell recharge | 1.3 | 2 |
+| swarm | HYAKKI YAKO | 60% more grunts, at 70% HP | 1.2 | 2 |
+| snipers | TEPPO VOLLEY | Double the gunners | 1.3 | 2 |
+| ironclad | KANABO VANGUARD | Two extra brutes | 1.4 | 2 |
+| storm | RAIJIN'S STORM | Lightning, thunder and heavy rain, and every 3.5–6 s a strike lands within 2.5 m of you: a red ring for 1.2 s, then 16 damage in 2.4 m (enemies in it take 32) | 1.4 | 3 |
+| grudge | ONRYO'S GRUDGE | Each non-boss enemy that dies leaves a red ring that bursts 1.1 s later: 14 damage in 2.2 m (enemies take 28, so they chain); at most 6 rings at once | 1.3 | 3 |
+| plated | KABUTO PLATE | Grunts and gunners have armour 0.4: the katana does 40% until they are staggered | 1.3 | 4 |
+| matsuri | MATSURI RUSH | The combo window is 2 s instead of 4 s | 1.4 | 2 |
+| kanashibari | KANASHIBARI | Dashes take twice as long to recharge | 1.3 | 3 |
+| hannya | HANNYA'S WRATH | A non-boss enemy below half HP enrages once: speed ×1.4, damage ×1.3, red eyes | 1.3 | 4 |
+| umibozu | UMIBOZU SWELL | Up to 60% more enemies alive at once, spawning twice as often | 1.4 | 4 |
+| senryo | SENRYO BOUNTY | Headshot and glory kills score ×2; every other kill scores half | 1.2 | 2 |
+
+Score multipliers are shown with one decimal, so they are set to one
+decimal. Removed 2026-10-18: JOROGUMO'S BITE (kills heal 2 HP, enemies hit
+30% harder), too close to Akatsuki's heal-for-risk trade. IDATEN'S HASTE was
+renamed OKURI-INU HUNT so it no longer shares a root with the Idaten Drive
+augment. Mid-wave hazards (storm strikes) draw from `Game.rng_hazards`,
+reseeded from the seed at every wave start, so a wave's length never shifts
+later waves. Clearing a wave defuses every pending ring, so nothing hurts you
+during the tally.
 
 The mutator name shows under the wave label on the HUD, with its multiplier.
+Debug: `--mutator=id` forces one on every regular wave.
 
 ---
 
@@ -1106,8 +1178,8 @@ the holographic cut-in (§9.8).
   - 35% clear, 45% light rain, 20% heavy rain.
   - The RAIJIN'S STORM mutator adds heavy rain, lightning flashes and
     thunder.
-  - Rain uses a particle field plus an ambient loop. **The loop is too loud:
-    fix it, see §10.3.**
+  - Rain uses a particle field plus two quiet ambient loops (light, and a
+    heavy layer added in storms) far back in the mix; see §10.3.
 - **The map API** (keep it): maps extend an `Arena` base class.
   - Helpers: `_solid`, `_platform` (registers floor height), `_ramp`,
     `_neon`, `_neon_box_edges`, `_light`, `_halo`, `floor_height_at`, plus
@@ -1348,19 +1420,39 @@ the holographic cut-in (§9.8).
   - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
   - A controls column and a HI-SCORES table (top 5).
   - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
+  - Bottom row: SETTINGS [TAB] on the left; the version and QUIT GAME [Q] on
+    the right. The start prompt sits just above that row.
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
-  hint if the mouse fails to lock. Music ducks to −20 dB.
+  hint if the mouse fails to lock. SETTINGS [TAB] and QUIT GAME buttons
+  under them (no Q here: Q is a dash key mid-run). Music ducks to −20 dB.
+- **Quit:** QUIT GAME on the title, the pause screen and the settings footer
+  closes the game, saving the profile and settings first. The first press only
+  arms it ("PRESS AGAIN TO QUIT" for 3 s) so a stray click or key never quits.
+  A run in progress continues from its last between-wave save (§11.3).
 - **Level-up:**
-  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
-    tech panels, tall enough for a two-line name and a five-line description
-    at a readable size; a tag ribbon in the tag colour with the [1]/[2]/[3]
-    key beside it; then name, rank pips and description, each placed under
-    the one above so nothing overlaps).
+  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (148×188
+    tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
+    beside it; then a name of up to two lines, rank pips (cards with more
+    than one rank only) and a description of up to four lines, each placed
+    under the one above; the build lines sit on the bottom edge). A linking
+    card wears a gold RECOMMENDED tab above its top edge (§3.8).
+  - **Card text must read at a glance** (owner, 2026-10-18: card text was
+    hard to read). Name and description are Chakra Petch 700 at 15 px (rank 14 px), white
+    with no outline, on a solid near-black plate inset 4 px in the card; the
+    hover and selection glow tints only the rim around the plate. Card copy
+    stays under 58 characters (a Gut test checks).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
-    (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
-    Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
-    Picking punches the card, the others drop and fade, a chime plays, and
+    (ease-out-back, staggered 0.11 s, with a "deal" sound each), then hold
+    still: until one is taken, a dealt card is never rotated or scaled, so its
+    pixel text stays sharp. Hovering lifts the card 3 px and lights its border.
+  - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
+    accident). Input is ignored for 0.45 s after the cards appear, and the
+    cursor starts below them. The first click or 1/2/3 **selects** a card
+    (lifted 6 px, white outline, rim glow) and the subtitle asks "TAKE <NAME>?";
+    clicking it again, pressing its key again or Enter **takes** it. Clicking
+    off the cards clears the selection.
+  - Taking punches the card, the others drop and fade, a chime plays, and
     the pick applies after 0.34 s.
   - Virtual cursor (mouse captured). Music ducks to −16 dB.
 - **Results (death) screen:** §9.8 "Death".
@@ -1552,6 +1644,31 @@ buses (Music, SFX, Ambience, UI) with settings sliders. Duck music slightly
 under big SFX moments, and **cut it** for the boss-death hush and the death
 card.
 
+**The mix (built; `default_bus_layout.tres`).** Five buses: Master, Music,
+SFX, Ambience, UI. The mix levels live in the layout; the settings sliders
+add on top of them, and music ducking lives on the music players, never on a
+bus's volume.
+
+| Bus | Level | Effects | Gets |
+|---|---|---|---|
+| Master | 0 dB | hard limiter, ceiling -1 dB | everything |
+| Music | +2 dB | none | the two music players |
+| SFX | -16 dB | high shelf -4 dB above 6.5 kHz (tames hiss in the placeholder SFX; drop it for professional SFX) | combat, movement, enemies, flow stingers |
+| Ambience | -16 dB | high-pass 70 Hz, low-pass 6 kHz, compressor sidechained from Music (threshold -16 dB, 3:1) so ambience ducks under the music | rain beds, thunder |
+| UI | -11 dB | none | menus, typing, tally and combo juice (each cue's `bus`, §10.5) |
+
+Big hits (glory-kill execution, explosion, loud slams, boss entrance) pull
+the music down 2 to 3 dB for about half a second (each cue's `music_duck_db`,
+§10.5). Only a
+cue played at -3 dB or louder ducks, and the duck can't retrigger for 1.5 s,
+so a horde never keeps the music pinned down.
+
+Measured on a 60 s autoplay run (seed 548A-8455, waves 1 to 2, Movie Maker,
+`--record-mix`), integrated loudness: Music -19 LUFS, SFX -21 to -22, UI -25,
+light rain -40, heavy rain -37, Master -17 with true peak under -1 dBTP. The
+prototype mix measured -6 LUFS with peaks above 0 dBFS (clipping), the SFX
+about 10 LU over the music, and heavy rain louder than the music.
+
 ### 10.2 Music: requirements for the real game
 - The prototype's procedural tracks are **PLACEHOLDERS** for testing pacing
   and the music director. **They are not the soundtrack.**
@@ -1559,9 +1676,15 @@ card.
   top tier, never basic, boring or low effort.** It is a headline feature,
   the way Doom (2016) and Persona 5 treat theirs. Properly composed,
   arranged, mixed and mastered, by a composer/producer or licensed.
-- Style: high-energy **synthwave/darksynth fused with heavy, aggressive
-  elements** for combat; distinct boss themes; a memorable title theme. It
-  must not sound repetitive.
+- Style: **fast-paced, futuristic and energetic**, matching the game's speed
+  (owner, 2026-10-18): about 140 to 155 bpm in combat, faster for bosses.
+  The sound is **dark electronic bass music with an EDM feel; think Rezz**
+  (owner, 2026-10-18, after rejecting clean synthwave and then guitars: **no
+  string instruments**): heavy distorted, talking wobble basses over a clean
+  sub, hard EDM kicks with sidechain pump and claps, hypnotic dark plucks
+  and leads, zaps and drop impacts, and glitch edits (stutters, tape stops,
+  reverses, gates, bitcrush). Distinct boss themes; a
+  memorable title theme. It must not sound repetitive.
 - **System requirements:**
   - Stems or intensity layers so the music can react (boss phases, enrage,
     combo heat, the hush after a boss dies).
@@ -1576,23 +1699,44 @@ card.
   - `music_cut()` (a fast fade to silence) and `resume_combat()`.
   - Ducking: playing −6 dB base, pause −20, level-up −16, results −14.
 - **Placeholder tracks** (prototype, generated):
-  - combat_0 108 bpm minor [0,5,2,6]; combat_1 104 minor [0,6,5,6];
-    combat_2 110 minor [0,3,5,4]; combat_3 100 dorian [5,6,0,0];
-    combat_4 112 minor [0,5,3,4]; combat_5 106 dorian [0,2,6,5].
-  - boss_0 128 phrygian; boss_1 122 harmonic minor; boss_2 132 harmonic
-    minor; title 88 dorian.
-  - Sections: intro, groove, lead, lead2, break, build, drop, outro.
+  - combat_0 148 bpm minor [0,5,2,6]; combat_1 140 minor [0,6,5,6];
+    combat_2 150 minor [0,3,5,4]; combat_3 144 dorian [5,6,0,0];
+    combat_4 152 minor [0,5,3,4]; combat_5 146 dorian [0,2,6,5]. About
+    95 to 100 s each.
+  - boss_0 160 phrygian; boss_1 156 harmonic minor; boss_2 165 harmonic
+    minor; title 118 dorian.
+  - Sections: short intro, groove, lead, lead2, break, build, drop, lead,
+    drop, short outro. Kicks four-on-the-floor or driving, hats in 16ths,
+    basses in 16ths (octave, pulse or gallop) played by a formant wobble
+    bass (its LFO runs on song time), an FM growl or a reese, with a sine
+    sub underneath. Bass, sub, pad and plucks pump under the kick (the
+    lead half as much). A
+    hypnotic one-bar pluck sequence, a dark detuned lead or a screech for
+    the melody, a dark filtered pad, clap rolls and zaps into each section,
+    an impact on each drop. Most second bar ends outside the intro and
+    outro (and some off-beats in drops) get a seeded glitch.
+  - Every track is mastered to -14 LUFS (`tools/gen_music.py`), the level the
+    mix in §10.1 was measured against.
 
 ### 10.3 Ambience (critical feedback)
 - Ambience (rain, wind, city hum, neon buzz) is fine but **must sit far back
   in the mix and never become a constant hiss.**
-- The prototype's **rain loop** reads as annoying **"white noise"**:
-  - It plays in 65% of runs, at −16 dB (light) and −8 dB (heavy).
-  - **Fix:** much quieter (about −24 dB or below, ducked under music),
-    band-limited so it isn't full-band hiss, and built from varied droplet,
-    patter and drip layers instead of flat noise.
-  - It should come and go; heavy rain is felt, not heard over the music.
-  - Apply the same to any other bed and to noise baked into SFX.
+- The prototype's rain loop read as annoying **"white noise"** (one 6 s
+  full-band noise loop at -16 dB light and -8 dB heavy; 35% of its energy
+  above 5 kHz). **Fixed:**
+  - Rebuilt by `tools/gen_audio.py rain` as two 20 s stereo loops,
+    `rain.ogg` and `rain_heavy.ogg`, made of patter, droplet, drip and a
+    little low body, with slow gusts. Band-limited: under 0.2% of the
+    energy above 5 kHz.
+  - The rain still plays in 65% of runs. Light rain plays `rain` at -2 dB;
+    heavy rain plays `rain` at -3 dB plus `rain_heavy` at -3 dB (Sfx
+    `RAIN_DB`, `RAIN_HEAVY_DB`), on the Ambience bus, so it lands about
+    20 LU (light) and 18 LU (heavy) under the music and ducks further while
+    music plays.
+  - Each layer drifts up to 6 dB below its level and back every 5 to 12 s,
+    so it comes and goes.
+  - Apply the same to any other bed and to noise baked into SFX (the SFX
+    bus's high shelf tames the placeholder SFX).
 
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
@@ -1607,10 +1751,39 @@ card.
   flatline, finish, cutin.
 - **UI:** ui_click, ui_hover, type.
 - **Juice:** tick, stamp, chime, cash, count, go, mult, deal, fanfare.
-- **Ambience:** thunder, rain loop.
-- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms),
-  random pitch variation.
+- **Ambience:** thunder, rain loops (light and heavy layers).
+- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms,
+  on real time), random pitch variation from a presentation-only RNG.
 - The same quality bar as the music applies.
+
+### 10.5 Audio pipeline (built; ready for professional audio)
+The game reads audio from data, so professional sound and music drop in
+without code changes. `assets/audio/README.md` is the how-to for a sound
+designer or composer (folders, delivery specs, replacing a cue, stems).
+- **Cues:** one `SfxCue` resource per sound effect in
+  `assets/audio/cues/<name>.tres` (variants, bus, trim, pitch variation,
+  throttle, max voices, priority, 3D distances, music duck). `Sfx.play(name)`
+  and `Sfx.play_at(name, pos)` look the cue up; a sound file with no cue yet
+  still plays with defaults. `tools/make_audio_data.gd` creates missing cue
+  and track files and never overwrites existing ones.
+- **Voices:** fixed pools (20 2D, 20 positional; `VoicePool`). A cue at its
+  max voices reuses its own oldest voice; otherwise a free voice; otherwise
+  it takes the oldest voice of the lowest priority at or below its own; else
+  it is dropped. Priorities: CRITICAL (player weapons including the arc
+  zap, hurt, enemy telegraphs such as windup, roar and slam, flow stingers
+  and boss moments), NORMAL (enemy shots and missiles, movement, UI), LOW
+  (gore, spawns), AMBIENT (thunder). Voice caps per cue: gore0-2 2 each,
+  gore_big, shotgun and gatling 3, swings 2, the rest 4 (UI hover 1).
+- Stingers that must keep their pitch (levelup, wave_clear, highscore,
+  fanfare, felled, flatline, boss_intro) have pitch variation off.
+- **Music:** one `MusicTrack` resource per piece in
+  `assets/music/tracks/<name>.tres` (role combat / boss + boss kind / title,
+  stems, per-stem intensity, loop and loop offset, bpm, trim). The combat
+  playlist is the combat tracks sorted by name, shuffled by the run seed.
+- **Intensity layers:** stem 0 always plays; further stems fade in by music
+  intensity (0 to 1): combo / 25, pinned to 1 while a boss is enraged, 0
+  after a cut. Rises 0.8 per second, falls 0.15 per second. The placeholder
+  tracks are single stems, so this is ready but not yet audible.
 
 ---
 
@@ -1754,7 +1927,22 @@ historical root with a cyberpunk twist**.
   (Kanayago-kami, the deity of ironworking), AKAGANE COIL (akagane,
   copper), ONIBI EDGE (onibi, oni-fire ghost lights), RAIKO COIL (Minamoto
   no Raiko, who slew Shuten-doji).
-- **Mutators and augments:** see §6.3 and §3.8.
+- **Mutators and augments:** see §6.3 and §3.8. Mutator roots added
+  2026-10-18: okuri-inu (the yokai dog that stalks travellers at night),
+  onryo (a vengeful ghost), kabuto (the samurai helmet), matsuri (a
+  festival), kanashibari (sleep paralysis, blamed on spirits), hannya (the
+  jealous demon mask of Noh), umibozu (the sea giant that rises from calm
+  water), senryo (a thousand ryo, a fortune). Augment roots added
+  2026-10-18: Ikazuchi (the eight thunder kami of Yomi), Inazuma
+  ("lightning"), hitodama (yokai soul-fire wisps), Hachiman (god of archery and
+  war), Nasu no Yoichi (the archer who hit the fan at Yashima), Gashadokuro
+  (the giant skeleton yokai), Yata no Kagami (the sacred mirror), Homura
+  ("flame"), chimatsuri ("blood festival"), Kurama (the mountain where the
+  tengu trained Yoshitsune), kamaitachi (the sickle-weasel wind yokai),
+  taiko (the war drum), Fujin (the wind god; dash cards are wind, shotgun
+  cards thunder), utsusemi ("cicada shell", the shinobi body swap), the
+  Sanzu river (crossed by the dead). Retired with their effects: Long
+  Reach, Vampiric Steel, Fujin Bank, High Voltage, Feedback Loop.
 
 ---
 
@@ -1879,7 +2067,7 @@ seed | click: new seed).
 ### 15.4 Recommended improvements for the full game
 - Move data tables (enemies, bosses, augments, mutators, palettes, rewards,
   names and codex) into **Resources (`.tres`)** so they can be tuned without
-  code.
+  code. (Audio cues and music tracks are done: §10.5.)
 - Use scenes where they help tooling (maps, UI screens), but keep the
   procedural look.
 - Add an **event bus** for game events (kill, glory kill, wave start and
@@ -1891,6 +2079,11 @@ seed | click: new seed).
     scale, quality preset, FPS cap, VSync.
   - Screen-shake and flash intensity sliders (accessibility), key rebinding,
     window mode.
+  - **Mouse only** (owner, 2026-10-18): click tabs, options and the footer
+    (BACK, DEFAULTS, QUIT GAME), drag or scroll sliders, click a key slot then
+    press the new key (or click the slot with a mouse button), right-click a
+    slot to clear it. No keyboard navigation and no key hints; Esc still backs
+    out.
 - **Profile and save system** (§11). **Rewards and unlock menu** (§11.2).
 
 ---
@@ -1910,11 +2103,16 @@ seed | click: new seed).
     real physics that checks jump heights, ledge climbs, walls too tall to
     climb and plunges, then exits 0 or 1. CI runs it as
     `tools/movement_test.sh`.
+  - `--augments=id,id:2|all`: start the run with those level-up cards
+    (ids in `scripts/upgrades.gd`); `--cardtour`: deals every card, three at
+    a time, for a layout check, then quits.
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
+  - `--record-mix=DIR`: records each audio bus to `DIR/<bus>.wav` on quit, to
+    measure the mix (use with `--write-movie` so audio follows game time).
   - `--quality=low|medium|high`: the effect-count preset (§14).
   - `--perf`: shows the perf overlay, logs draw calls, live nodes and node
     churn every 2 s, and prints a summary at exit.
@@ -1966,7 +2164,7 @@ seed | click: new seed).
    text is clean while held, numbers never scramble, there are no
    overlapping duplicates, and tags are decoration only.
 2. **Audio mix (§10.3).** The rain loop is far too loud; set up buses; music
-   first.
+   first. (Done: five buses, music on top, quiet layered rain; see §10.1.)
 3. **Palettes (§9.2).** Too purple; make every scene multi-colour.
    (Reworked into a six-accent multi-colour base; see §9.2.)
 4. **Pooling and performance (§14).**

@@ -156,28 +156,37 @@ func _build_wave() -> void:
 	_core = mi
 
 
-func deflect(dir: Vector3) -> void:
+## `split` is a Yata Mirror copy: it flies at its parent's speed and makes
+## no fuss of its own (no count, popup, sound or hitstop).
+func deflect(dir: Vector3, split := false) -> void:
 	if not hostile:
 		return
 	hostile = false
 	remove_from_group("enemy_projectiles")
-	var speed := maxf(vel.length() * RETURN_SPEED_MULT, RETURN_MIN_SPEED)
-	var from_enemy: Variant = shooter if _same_spawn(shooter, _shooter_spawn) else null
-	_set_target(pick_return_target(from_enemy, global_position, dir, Game.enemy_list))
-	_returning = target != null
-	if target:
-		dir = (aim_point(target) - global_position).normalized()
-		# long enough to reach the shooter wherever it stands, with margin
-		life = clampf(global_position.distance_to(aim_point(target)) / speed + 1.0, 2.0, 6.0)
-	else:
+	if split:
+		# a Yata Mirror copy: already at return speed and damage, no target
 		life = 2.0
-	vel = dir * speed
-	damage *= RETURN_DAMAGE_MULT
+		vel = dir * vel.length()
+	else:
+		var speed := maxf(vel.length() * RETURN_SPEED_MULT, RETURN_MIN_SPEED)
+		var from_enemy: Variant = shooter if _same_spawn(shooter, _shooter_spawn) else null
+		_set_target(pick_return_target(from_enemy, global_position, dir, Game.enemy_list))
+		_returning = target != null
+		if target:
+			dir = (aim_point(target) - global_position).normalized()
+			# long enough to reach the shooter wherever it stands, with margin
+			life = clampf(global_position.distance_to(aim_point(target)) / speed + 1.0, 2.0, 6.0)
+		else:
+			life = 2.0
+		vel = dir * speed
+		damage *= RETURN_DAMAGE_MULT
 	if kind == "shuriken":
 		_core_mat.set_shader_parameter("color", Color(0.4, 1.0, 1.0, 1.0))
 	else:
 		_core_mat.set_shader_parameter("albedo_color", Color(0.4, 1.0, 1.0))
 	_halo_mat.set_shader_parameter("color", Color(0.3, 0.9, 1.0, 0.9))
+	if split:
+		return
 	Game.deflects += 1
 	Sfx.play("deflect", 0.0)
 	Game.hitstop(0.07)

@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="MusicTrack" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/music_track.gd" id="1_61hqh"]
+[ext_resource type="AudioStream" path="res://assets/music/combat_4.ogg" id="2_rhjwf"]
+
+[resource]
+script = ExtResource("1_61hqh")
+stems = Array[AudioStream]([ExtResource("2_rhjwf")])
+stem_intensity = PackedFloat32Array()
+bpm = 152.0

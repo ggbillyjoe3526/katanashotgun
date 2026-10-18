@@ -26,6 +26,7 @@ and Linux).
 | Shift (or Q) | Dash (invulnerable) |
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
+| Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
 | After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
 
 ## How a run works
@@ -60,7 +61,7 @@ scripts/boss.gd             Kurokage (ninja) and Tetsugumo (spider mech)
 scripts/bolt.gd             bolts and shuriken (deflectable), Crimson Wave
 scripts/wave_director.gd    endless waves, boss waves, mutators, reinforcements
 scripts/mutators.gd         seeded wave modifiers
-scripts/upgrades.gd         the 14 level-up augments (seeded offers)
+scripts/upgrades.gd         the 24 level-up augments and their builds (seeded offers)
 scripts/palette.gd          the five synthwave palettes
 scripts/arena.gd            base class for maps (helpers, sky, weather, lightning)
 scripts/maps/rooftop.gd     Shin-Kagura Rooftop (seeded cover, signs, skyline)
@@ -75,8 +76,12 @@ scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-i
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
-assets/audio/               SFX (tools/gen_audio.py)
-assets/music/               soundtrack (tools/gen_music.py)
+scripts/audio/              sound cue, music track and voice pool classes
+assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds one
+                            settings file per sound; README.md is the audio how-to
+assets/music/               soundtrack (tools/gen_music.py); tracks/ holds one settings
+                            file per piece
+default_bus_layout.tres     the audio mix: Master, Music, SFX, Ambience, UI buses
 assets/fonts/               Orbitron, Chakra Petch, Share Tech Mono, Michroma (SIL OFL)
 installer/                  Windows installer script (Inno Setup) and icon
 tools/                      smoke and unit test runners, notices, release-notes helper,
@@ -134,22 +139,30 @@ gdlintrc                    gdlint settings
 ## Settings
 Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Audio:** volume for Master, Music, Sound effects, Ambience and Menus/HUD.
-- **Video:** window mode (windowed, fullscreen, exclusive fullscreen), VSync,
-  frame cap, quality preset, render scale (50 to 100% of the 3D view), field
-  of view (70 to 110, default 88).
+- **Video:** window mode (full screen at your screen's resolution by
+  default, windowed, or exclusive full screen), VSync (off by default), frame
+  cap (unlimited by default, or 60 to 360), quality preset, render scale (50
+  to 100% of the 3D view), field of view (70 to 110, default 88). At any
+  resolution the 3D view keeps its 960x540 pixel look, upscaled without
+  smoothing (exact 4x blocks on 4K, 2x on 1080p).
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
   frames don't strobe.
 
-Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
-Q / E change tab, R resets the tab, Esc goes back. Settings are saved in
+Everything is done with the mouse: click a tab, click the left or right half
+of an option, drag or scroll a slider. To rebind, click a slot and press the
+new key (or click the slot with the mouse button you want); right-click a slot
+to clear it. DEFAULTS resets the tab, BACK (or Esc) closes. Settings are saved in
 your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags
 Pass after `--` on the command line:
 - `--autoplay` a bot plays and logs stats · `--god` no damage
 - `--wave=6` start at a wave · `--seed=1234-5678` play a specific seed
+- `--augments=idaten,fujin,inazuma` start with those level-up cards
+  (`wave:2` for rank 2, `all` for every card at max rank); ids are in
+  `scripts/upgrades.gd`
 - `--continue` resume the suspended run (with `--autoplay`, from `user://debug/`).
   Debug runs keep their own profile in `user://debug/`, never the player's
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
@@ -162,8 +175,13 @@ Pass after `--` on the command line:
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
+- `--mutator=grudge` forces that wave mutator on every regular wave (ids in
+  `scripts/mutators.gd`)
+- `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
+- `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
+  measure the mix (use with `--write-movie` so audio follows game time)
 - `--quality=low|medium|high` effect-count preset · `--perf` perf overlay
   plus a log line every 2 s and a summary at exit
 - **F3** toggles the perf overlay (fps, frame time, draw calls, nodes) in any
@@ -179,5 +197,11 @@ tools/perf_bench.sh render 7 2400                                # perf probe (d
 
 ## Regenerating audio
 `python3 tools/gen_audio.py` (SFX) and `python3 tools/gen_music.py` (soundtrack).
+`python3 tools/gen_audio.py rain` rebuilds only the rain beds. Needs numpy,
+scipy and ffmpeg. Mix levels live in `default_bus_layout.tres` (spec §10.1).
+Each sound and track has a settings file (`assets/audio/cues/`,
+`assets/music/tracks/`); `assets/audio/README.md` explains how to drop in
+professional audio, and `godot --headless --path . -s res://tools/make_audio_data.gd`
+creates the files for new sounds.
 Both need numpy, scipy and ffmpeg. `python3 tools/make_icon.py` rebuilds
 `installer/icon.ico` from `icon.svg` (needs Pillow).

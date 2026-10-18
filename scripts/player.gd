@@ -26,6 +26,7 @@ const DOUBLE_JUMP_PUSH := 3.0
 const DOUBLE_JUMP_PUSH_CAP := 1.35 # times walk speed
 const DASH_SPEED := 21.0
 const DASH_TIME := 0.2
+const DASH_RECHARGE := 1.4 # seconds per charge
 const BASE_FOV := 88.0 # the default; the live value is Settings.fov
 const CAPSULE_RADIUS := 0.4
 const CAPSULE_HEIGHT := 1.8
@@ -38,11 +39,17 @@ const CLIMB_CARRY := 0.5 # of walk speed, kept going forward off the climb
 const KATANA_CD := 0.32
 const KATANA_FINISHER_CD := 0.45
 const SHOTGUN_CD := 0.72
+const OVERHEAL_PER_CELL := 6.0 # Chimatsuri Steel: HP of overheal per cell
+const UTSUSEMI_CD := 3.0 # Utsusemi Shell: seconds between saves
 # glory kill reach: a staggered enemy can be finished from this far (metres
 # past its body) and this close to the crosshair. The current target is kept
 # a little further out so the prompt doesn't flicker at the edge.
 const FINISHER_REACH := 4.5
 const FINISHER_KEEP_REACH := 5.5
+const KURAMA_REACH := 9.0 # Kurama Leap augment
+const KURAMA_KEEP_REACH := 10.0
+const GLORY_LUNGE := 0.13 # seconds to close FINISHER_REACH; longer leaps take longer
+const GLORY_LUNGE_MAX := 0.26
 const FINISHER_CONE := PI / 3.0 # 60 degrees
 const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
 const FINISHER_BUFFER := 0.18
@@ -112,6 +119,9 @@ var _auto_t := 0.0
 var _auto_strafe := 1.0
 var _auto_stuck_t := 0.0 # the bot jumps (and so climbs) when it's walking into something
 var _auto_jump := false
+var utsusemi_cd := 0.0
+var _overheal := 0.0 # Chimatsuri Steel: healing past full HP, banked toward cells
+var _sanzu_wave := -1 # the wave Sanzu Reprieve was last spent in
 
 # ledge climb
 var climb_t := -1.0 # seconds into the climb; below 0 when not climbing
@@ -134,6 +144,7 @@ var gk_from := Vector3.ZERO
 var gk_to := Vector3.ZERO
 var gk_cam_y := 0.0
 var gk_events: Array = []
+var gk_lunge := GLORY_LUNGE
 var _gk_yaw0 := 0.0
 var _gk_pitch0 := 0.0
 var _gk_dir := Vector3.FORWARD
@@ -253,6 +264,7 @@ func _physics_process(delta: float) -> void:
 	combo_reset -= delta
 	invuln -= delta
 	_hurt_t -= delta
+	utsusemi_cd -= delta
 	if dead:
 		_set_finisher_target(null)
 		velocity.x = move_toward(velocity.x, 0.0, 20.0 * delta)
@@ -303,8 +315,7 @@ func _physics_process(delta: float) -> void:
 	_dash_queued = false
 	if dash_pressed and dash_charges >= 1.0 and dash_t <= 0.0:
 		_start_dash(wish)
-	var dash_recharge := 1.4 - 0.3 * Game.rank("dash")
-	dash_charges = minf(float(max_dash), dash_charges + delta / dash_recharge)
+	dash_charges = minf(float(max_dash), dash_charges + delta / (DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0))))
 
 	if dash_t > 0.0:
 		dash_t -= delta
@@ -414,6 +425,8 @@ func _start_dash(wish: Vector3) -> void:
 	_dash_hit.clear()
 	Game.hud.speed_lines(0.55)
 	Sfx.play("dash", -4.0)
+	if Game.rank("idaten") > 0:
+		add_cells(1)
 
 
 ## Grabs the ledge in front if LedgeClimb finds one the hands can reach.
@@ -479,7 +492,7 @@ func _dash_cut() -> void:
 		to.y = 0.0
 		if to.length() < e.radius + 1.3:
 			_dash_hit[e] = true
-			var dmg := 40.0 * Game.rank("dashcut") * (1.0 + 0.35 * Game.rank("edge"))
+			var dmg := 40.0 * Game.rank("dashcut")
 			var killed: bool = e.take_hit(dmg, "dashcut", dash_dir, false, 30.0, 5.0)
 			Sfx.play("slice", -4.0, 1.2)
 			Game.hitstop(0.03)
@@ -512,9 +525,15 @@ func _slash() -> void:
 	var fwd := -cam.global_basis.z
 	var right := cam.global_basis.x
 	var fwd_flat := Vector3(fwd.x, 0, fwd.z).normalized()
-	var reach := 3.4 + 0.8 * Game.rank("reach")
-	var half := deg_to_rad(68.0 + 14.0 * Game.rank("reach"))
-	var dmg := 50.0 * (1.0 + 0.35 * Game.rank("edge")) * float(Game.mut("dmg_out", 1.0))
+	var reach := 3.4
+	var half := deg_to_rad(68.0)
+	var dmg := 50.0 * float(Game.mut("dmg_out", 1.0))
+	# Masamune Edge: the third cut is a heavy one that ignores armour
+	var heavy := combo_step == 2 and Game.rank("edge") > 0
+	var source := "heavy" if heavy else "katana"
+	var poise := 100.0 if heavy else 18.0
+	if heavy:
+		dmg *= 2.0
 	var sweep := right if combo_step == 0 else (-right if combo_step == 1 else Vector3.DOWN)
 	var hit_dir := (fwd_flat * 0.6 + sweep * 0.8).normalized()
 
@@ -536,15 +555,24 @@ func _slash() -> void:
 	hits.sort_custom(func(a, b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
 
 	var killed := 0
+	var homura := Game.rank("homura") > 0
 	for e in hits:
-		if e.take_hit(dmg, "katana", hit_dir, false, 18.0, 4.0):
+		var d := dmg
+		if homura:
+			# burning enemies are cut deeper; the cut then sets (or keeps) them alight
+			if e.burn_t > 0.0:
+				d *= 1.5
+			e.ignite(1)
+		if e.take_hit(d, source, hit_dir, false, poise, 4.0):
 			killed += 1
 	if hits.size() > 0:
 		Sfx.play("slice", -1.0)
-		Game.hitstop(0.045 + 0.012 * mini(hits.size(), 4))
-		add_trauma(0.22)
-		if Game.rank("vamp") > 0:
-			heal(Game.rank("vamp") * hits.size())
+		if heavy:
+			Sfx.play("slam", -6.0, 1.4)
+		Game.hitstop(0.045 + 0.012 * mini(hits.size(), 4) + (0.02 if heavy else 0.0))
+		add_trauma(0.32 if heavy else 0.22)
+		if Game.rank("chimatsuri") > 0:
+			_blood_heal(float(Game.rank("chimatsuri") * hits.size()))
 	if killed > 0:
 		add_cells(killed * (1 + Game.rank("battery")))
 
@@ -557,12 +585,35 @@ func _slash() -> void:
 			continue
 		b.deflect(fwd)
 		add_cells(1)
+		if Game.rank("yata") > 0:
+			_mirror_split(b)
 
 	if Game.rank("wave") > 0:
 		var every := 4 - Game.rank("wave")
-		if slash_count % maxi(1, every) == 0:
+		if slash_count % maxi(1, every) == 0 or heavy:
 			Game.main.director.fire_bolt(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
 			Sfx.play("wave_blade", -4.0)
+
+
+## Chimatsuri Steel: katana healing; past full HP it banks toward cells.
+func _blood_heal(amount: float) -> void:
+	var room := maxf(0.0, max_hp - hp)
+	heal(amount)
+	if amount <= room:
+		return
+	_overheal += amount - room
+	while _overheal >= OVERHEAL_PER_CELL:
+		_overheal -= OVERHEAL_PER_CELL
+		add_cells(1)
+
+
+## Yata Mirror: a deflected bolt sends two more copies out either side.
+func _mirror_split(b: Bolt) -> void:
+	for side in [-1.0, 1.0]:
+		# the parent flies back to its shooter; the copies fan out 0.35 rad
+		# either side of it at the same speed and damage
+		var nb: Bolt = Game.main.director.fire_bolt(true, b.global_position, b.vel, b.damage, b.kind)
+		nb.deflect(b.vel.normalized().rotated(Vector3.UP, side * 0.35), true)
 
 
 # ---------------------------------------------------------------- glory kills
@@ -574,6 +625,9 @@ func _find_finisher_target() -> Enemy:
 	var fwd_flat := Vector3(fwd.x, 0, fwd.z).normalized()
 	var best: Enemy = null
 	var best_score := INF
+	var leap := Game.rank("kurama") > 0
+	var reach := KURAMA_REACH if leap else FINISHER_REACH
+	var keep_reach := KURAMA_KEEP_REACH if leap else FINISHER_KEEP_REACH
 	for e in Game.enemy_list:
 		if not is_instance_valid(e) or not e.is_staggered():
 			continue
@@ -582,7 +636,7 @@ func _find_finisher_target() -> Enemy:
 		var to := center - origin
 		var flat := Vector3(to.x, 0, to.z)
 		var d: float = flat.length() - e.radius
-		if d > (FINISHER_KEEP_REACH if keep else FINISHER_REACH):
+		if d > (keep_reach if keep else reach):
 			continue
 		if absf(to.y) > e.height * 0.5 + FINISHER_HEIGHT_REACH:
 			continue
@@ -687,9 +741,13 @@ func _start_glory(e: Enemy, plunge := false) -> void:
 	gk_to = e.global_position + to_me * stand
 	gk_to.y = e.global_position.y
 	_gk_dir = -to_me
+	# a Kurama Leap from further away takes a little longer to land (a plunge
+	# times its own dive instead)
+	gk_lunge = clampf(GLORY_LUNGE * gk_from.distance_to(gk_to) / FINISHER_REACH, GLORY_LUNGE, GLORY_LUNGE_MAX)
 	if plunge:
 		_place_plunge(e, to_me)
 		_gk_dive = clampf(global_position.distance_to(_gk_perch) / PLUNGE_DIVE_SPEED, 0.12, 0.3)
+		gk_lunge = GLORY_LUNGE
 	_gk_yaw0 = yaw
 	_gk_pitch0 = pitch
 	e.glory_hold(self)
@@ -730,6 +788,12 @@ func _build_glory_events() -> void:
 			var d := _gk_dive
 			gk_len = d + 0.5
 			gk_events = [[0.0, "pose_plunge_raise"], [d, "plunge_stab"], [d + 0.1, "kill_split"], [d + 0.28, "rip_up"]]
+	# a longer leap pushes every beat back so the first one lands on arrival
+	var late := gk_lunge - GLORY_LUNGE
+	if late > 0.0:
+		gk_len += late
+		for ev in gk_events:
+			ev[0] += late
 	vm.glory_begin()
 
 
@@ -738,7 +802,7 @@ func _update_glory(rd: float) -> void:
 	gk_t += rd
 	var t := gk_t
 	# lunge + camera lock
-	var lunge := clampf(t / 0.13, 0.0, 1.0)
+	var lunge := clampf(t / gk_lunge, 0.0, 1.0)
 	lunge = 1.0 - pow(1.0 - lunge, 3.0)
 	var pos := gk_from.lerp(gk_to, lunge)
 	if gk_kind == "air":
@@ -922,10 +986,22 @@ func _glory_kill(gore_mode: String) -> void:
 	Game.hud.impact_frame(0.09)
 	if not died:
 		return
+	if Game.rank("kamaitachi") > 0:
+		# eight blood blades fan out flat from the kill
+		var c := e.global_position + Vector3(0, 1.0, 0)
+		for i in 8:
+			var dir := Vector3.FORWARD.rotated(Vector3.UP, TAU * i / 8.0)
+			Game.main.director.fire_bolt(false, c + dir * 0.6, dir * 26.0, 60.0, "wave")
+		Sfx.play("wave_blade", -1.0, 0.8)
 	if Game.rank("chain") > 0:
 		for o in Game.enemy_list:
 			if is_instance_valid(o) and not o.dead and o.global_position.distance_to(e.global_position) < 9.0:
 				o.stagger_now()
+	if Game.rank("taiko") > 0:
+		Game.combo += 5
+		Game.best_combo = maxi(Game.best_combo, Game.combo)
+		Game.combo_hold = 3.0
+		Game.popup.emit("TAIKO +5 COMBO", Upgrades.TAG_COLORS.GLORY)
 
 
 func _end_glory() -> void:
@@ -950,6 +1026,8 @@ func _fire() -> void:
 		Game.hud.no_ammo()
 		return
 	cells -= 1
+	# Inazuma Overload: the blast that spends the last cell is a big one
+	var overload := cells == 0 and Game.rank("inazuma") > 0
 	shotgun_cd = SHOTGUN_CD
 	vm.fire()
 	vm.set_cells(cells, max_cells)
@@ -958,11 +1036,20 @@ func _fire() -> void:
 	add_trauma(0.32)
 	recoil += 0.05
 	fov_kick = maxf(fov_kick, 4.0)
+	if overload:
+		Sfx.play("zap", 0.0, 0.7)
+		muzzle_light.light_energy = 12.0
+		add_trauma(0.25)
+		fov_kick = maxf(fov_kick, 9.0)
+		Game.popup.emit("OVERLOAD!", Upgrades.TAG_COLORS.SHOTGUN)
 	var space := get_world_3d().direct_space_state
 	var origin := cam.global_position
 	var basis := cam.global_basis
-	var pellets := 10 + 3 * Game.rank("pellets")
-	var spread := 0.085
+	var pellets := 10 * (2 if overload else 1)
+	# Hachiman Focus: a tight choke that keeps full strength further out
+	var focus := Game.rank("hachiman") > 0
+	var spread := 0.04 if focus else 0.085
+	var falloff_start := 18.0 if focus else 7.0
 	var per := {}
 	var muzzle := vm.muzzle_position()
 	for i in pellets:
@@ -978,7 +1065,7 @@ func _fire() -> void:
 			var col = res.collider
 			if col is Enemy and not col.dead:
 				var dist := origin.distance_to(end)
-				var falloff := clampf(1.0 - (dist - 7.0) / 22.0, 0.3, 1.0)
+				var falloff := clampf(1.0 - (dist - falloff_start) / 22.0, 0.3, 1.0)
 				var dmg := 13.0 * falloff * float(Game.mut("dmg_out", 1.0))
 				var headshot: bool = (end.y - col.global_position.y) > col.head_y
 				if headshot:
@@ -997,18 +1084,41 @@ func _fire() -> void:
 	for k in 3:
 		var sd := (basis * Vector3(randf_range(-0.5, 0.5), randf_range(-0.4, 0.4), -1.0)).normalized()
 		Game.fx.arc(muzzle, muzzle + sd * randf_range(0.5, 1.3), 0.06, 0.02, 1.3, 0)
+	var stagger_mult := 1.0 + 0.6 * Game.rank("ikazuchi")
+	var kb := 6.0 + 8.0 * Game.rank("ikazuchi")
+	# Raijin's Fork: pick the leap targets before anyone dies, so the arcs
+	# start from where the blast landed
+	var forks := _fork_targets(per) if Game.rank("fork") > 0 else []
 	var any_head := false
+	var head_blast := false
 	var kills := 0
 	var fwd := -basis.z
 	for e in per:
 		var d: Dictionary = per[e]
 		if d.head:
 			any_head = true
-		var poise: float = d.dmg * (1.0 + 0.6 * Game.rank("concuss"))
-		var kb := 6.0 + 8.0 * Game.rank("concuss")
+		var headshot: bool = d.head and d.n >= 3
+		head_blast = head_blast or headshot
+		var poise: float = d.dmg * stagger_mult
+		if overload and e.is_boss:
+			poise *= 3.0
 		if Game.rank("dragon") > 0:
 			e.ignite(Game.rank("dragon"))
-		if e.take_hit(d.dmg, "shotgun", fwd, d.head and d.n >= 3, poise, kb):
+		var at: Vector3 = e.global_position
+		if e.take_hit(d.dmg, "shotgun", fwd, headshot, poise, kb):
+			kills += 1
+			if headshot and Game.rank("gasha") > 0:
+				_skull_burst(at)
+		elif overload and not e.is_boss:
+			e.stagger_now()
+	for f in forks:
+		var t: Enemy = f.to
+		if not is_instance_valid(t) or t.dead:
+			continue
+		Game.fx.arc(f.from, t.global_position + Vector3(0, t.height * 0.55, 0), 0.14, 0.04, 1.2, 1)
+		if Game.rank("dragon") > 0:
+			t.ignite(Game.rank("dragon"))
+		if t.take_hit(f.dmg, "shotgun", (t.global_position - f.from).normalized(), false, f.dmg * stagger_mult, kb * 0.5):
 			kills += 1
 	if per.size() > 0:
 		Game.hitstop(0.035)
@@ -1017,8 +1127,54 @@ func _fire() -> void:
 		Sfx.play_at("zap", first.global_position + Vector3(0, first.height * 0.6, 0), -2.0)
 	if any_head:
 		Sfx.play("headshot", -4.0)
-	if kills > 0 and Game.rank("hotbarrel") > 0:
+	if head_blast and Game.rank("yoichi") > 0:
+		add_cells(1)
+	if kills > 0 and Game.rank("fujin") > 0:
 		dash_charges = minf(float(max_dash), dash_charges + 1.0)
+
+
+## Raijin's Fork: from each enemy the blast hit (the first four), an arc leaps
+## to the two nearest enemies within 7 m that the blast missed. Each leap
+## carries 40% of that enemy's blast damage (at least 15). Nearest first, so
+## the same fight always forks the same way.
+func _fork_targets(per: Dictionary) -> Array:
+	var out := []
+	var taken := {}
+	var sources := 0
+	for e in per:
+		if sources >= 4:
+			break
+		sources += 1
+		var from: Vector3 = e.global_position + Vector3(0, e.height * 0.55, 0)
+		var near: Array = []
+		for o in Game.enemy_list:
+			if not is_instance_valid(o) or o.dead or per.has(o) or taken.has(o):
+				continue
+			var dd: float = o.global_position.distance_to(e.global_position)
+			if dd < 7.0:
+				near.append([dd, o])
+		near.sort_custom(func(a, b): return a[0] < b[0])
+		for k in mini(2, near.size()):
+			var o: Enemy = near[k][1]
+			taken[o] = true
+			out.append({"from": from, "to": o, "dmg": maxf(15.0, per[e].dmg * 0.4)})
+	return out
+
+
+## Gashadokuro Burst: a headshot kill blows up, hurting and staggering the
+## enemies around it (bosses take the damage but keep their footing).
+func _skull_burst(at: Vector3) -> void:
+	Game.fx.explosion(at, 0.0, false, 2.0)
+	for o in Game.enemy_list.duplicate():
+		if not is_instance_valid(o) or o.dead:
+			continue
+		var to: Vector3 = o.global_position - at
+		if to.length() > 5.0:
+			continue
+		to.y = 0.0
+		var dir := to.normalized() if to.length() > 0.01 else Vector3.ZERO
+		if not o.take_hit(30.0, "explode", dir, false, 0.0, 6.0) and not o.is_boss:
+			o.stagger_now()
 
 
 func add_cells(n: int) -> void:
@@ -1039,6 +1195,28 @@ func take_damage(amount: float, from_pos: Vector3) -> void:
 	amount *= float(Game.mut("dmg_in", 1.0))
 	if Game.debug_god:
 		amount = 0.0
+	# Utsusemi Shell: a ready dash takes the hit instead
+	if Game.rank("utsusemi") > 0 and utsusemi_cd <= 0.0 and dash_charges >= 1.0 and amount > 0.0:
+		dash_charges -= 1.0
+		utsusemi_cd = UTSUSEMI_CD
+		invuln = 0.4
+		Sfx.play("dash", -2.0, 1.4)
+		Game.gore.sparks(global_position + Vector3(0, 1.0, 0), Vector3.UP, 14, Color(0.6, 2.0, 0.9))
+		Game.popup.emit("UTSUSEMI", Upgrades.TAG_COLORS.DASH)
+		return
+	# Sanzu Reprieve: once per wave, a killing blow leaves you on 1 HP
+	if hp - amount <= 0.0 and Game.rank("sanzu") > 0 and _sanzu_wave != Game.wave:
+		_sanzu_wave = Game.wave
+		amount = hp - 1.0
+		hp = 1.0
+		Game.wave_damage += amount
+		invuln = 1.5
+		add_trauma(0.6)
+		Sfx.play("hurt", -2.0)
+		Sfx.play("chime", -4.0, 0.8)
+		Game.hud.damage_flash(amount, from_pos)
+		Game.popup.emit("SANZU REPRIEVE", Upgrades.TAG_COLORS.BODY)
+		return
 	hp -= amount
 	Game.wave_damage += amount
 	invuln = 0.12
@@ -1061,10 +1239,10 @@ func on_upgrade(id: String) -> void:
 		"chrome":
 			max_hp += 25.0
 			hp = max_hp
-		"tube":
+		"inazuma":
 			max_cells += 2
 			add_cells(2)
-		"dash":
+		"idaten":
 			max_dash += 1
 			dash_charges = float(max_dash)
 	vm.set_cells(cells, max_cells)

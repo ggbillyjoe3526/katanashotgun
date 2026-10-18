@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_v6yi4"]
+[ext_resource type="AudioStream" path="res://assets/audio/jumppad.wav" id="2_ltou3"]
+
+[resource]
+script = ExtResource("1_v6yi4")
+streams = Array[AudioStream]([ExtResource("2_ltou3")])

@@ -37,7 +37,10 @@ func _process(_delta: float) -> void:
 		[18.4, func(): _hud.show_reward(Rewards.LIST[0])],
 		[23.4, func():
 			Sfx.resume_combat()
+			# own two build cards so the offer shows a RECOMMENDED card
+			Game.upgrades = {"idaten": 1, "edge": 1}
 			Game.pending_levelups = 1],
+		[24.6, func(): _hud._select(1)],
 		[25.6, func(): _hud._pick(1)],
 		[26.4, func():
 			_hud.show_boss_intro("KUROKAGE", "BLADE OF THE NULL SIGNAL")
