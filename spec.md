@@ -235,8 +235,8 @@ done.
    captures, LMB swings the katana, RMB fires the shotgun.
 
 ### Step 8: Set up the release pipeline (S4), then do a test release
-Create a `v0.3.1` (or `v0.4.0-test`) tag, watch the Actions run
-(`gh run watch`), and check that the GitHub Release has the installer, the
+Do a dry run (*Actions → Release → Run workflow* with Publish unticked; the
+version comes from `project.godot`, S3.2), watch the Actions run, and check that the GitHub Release has the installer, the
 portable zip and the other platforms. Ask the developer to download the
 installer, install, play, and uninstall. Explain the SmartScreen warning
 (S4.4) **before** they see it.
@@ -264,10 +264,14 @@ work list (§0.5).
   - Never rewrite pushed history.
 
 ### S3.2 Versioning
-- **Semantic versions:** `MAJOR.MINOR.PATCH` (0.x while in development).
-  - The tag `vX.Y.Z` triggers a release. CI writes the version into
-    `project.godot` (`config/version`), so the game shows it on the title
-    screen (add this) and in the installer.
+- **Version names** (owner's decision, 2026-10-18; details in `VERSIONING.md`):
+  `0.1 Dev 1`, `0.1 Dev 2`, ... then `0.1 Beta 1`, `0.1 Beta 2`, ... then the
+  release `0.1`. The current version is `0.1 Dev 1`.
+  - Set in one place: `config/version` in `project.godot`, written as players
+    see it. The title screen and the installer show it.
+  - `tools/version.sh` maps a name to its tag (`0.1 Dev 1` → `v0.1-dev.1`,
+    `0.1` → `v0.1`) and the Windows version number (`0.1.1.1`). Releasing
+    publishes the version in `project.godot`; a pushed tag must match it.
 - **Release when the developer asks**, or propose one at a milestone. Before
   tagging:
   1. Update the CHANGELOG.
@@ -288,8 +292,8 @@ work list (§0.5).
 
 ## S4. Release pipeline (GitHub Actions + Windows installer)
 
-**Goal:** pushing a tag `vX.Y.Z` produces a **GitHub Release** with these
-files:
+**Goal:** releasing a version (S3.2; tags like `v0.1-dev.1`, written
+`vX.Y.Z` below) produces a **GitHub Release** with these files:
 - `KatanaShotgun-vX.Y.Z-Windows-Setup.exe`: an **installer**. Installs to
   Program Files, adds Start Menu and optional desktop shortcuts, adds an
   uninstaller, and optionally launches the game at the end.
@@ -311,8 +315,9 @@ files:
 
 ### S4.2 Workflow file `.github/workflows/release.yml` (reference; check action versions)
 > **Built (2026-10-18).** The real workflow in the repo supersedes this
-> reference: it also runs from *Actions → Release → Run workflow* with a typed
-> version, does a dry run on pull requests that touch the pipeline, checks the
+> reference: it takes the version from `project.godot` (S3.2) instead of
+> stamping it from the tag, runs from *Actions → Release → Run workflow*,
+> does a dry run on pull requests that touch the pipeline, checks the
 > exported Linux build plays and the installer installs and uninstalls, and
 > takes the release notes from `CHANGELOG.md`. Every PR also runs the smoke
 > test (`.github/workflows/ci.yml`, `tools/smoke_test.sh`).
@@ -501,7 +506,7 @@ Notes:
 | Capture frames (Windows, real GPU) | `godot --path . --write-movie out\f.png --fixed-fps 30 --quit-after 900 -- --juicetest` |
 | Frames → mp4 | `ffmpeg -framerate 30 -i out/f%08d.png -i out/f.wav -c:v libx264 -pix_fmt yuv420p -c:a aac clip.mp4` |
 | Local Windows export (needs templates) | `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe` |
-| Release | update CHANGELOG → `git tag vX.Y.Z` → `git push origin vX.Y.Z` → `gh run watch` |
+| Release | set `config/version` + rename the CHANGELOG heading (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
 
 ## S6. Developer decisions log (fill in as you go)
 | Decision | Value |
@@ -510,6 +515,7 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
+| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
