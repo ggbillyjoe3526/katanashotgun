@@ -2,6 +2,10 @@ class_name Psx
 ## Material factory for the PS1 look. All world, enemy and weapon materials
 ## come through here so the look can be tuned in one place.
 
+## Lit surfaces fogged out by this distance count as the near world: on
+## Forward+ they take the Environment's fog (Graphics) instead of their own.
+const NEAR_FOG_END := 120.0
+
 static var _shaders := {}
 ## Set by the map from the run's palette before anything is built.
 static var fog_color := Color(0.12, 0.05, 0.2)
@@ -15,7 +19,10 @@ static func shader(name: String) -> Shader:
 
 static func lit(color: Color, tex: Texture2D = null, world_uv := false, uv_scale := 0.25, params := {}) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
-	m.shader = shader("psx_lit")
+	# on Forward+ the Environment fogs the world (so volumetric fog reaches
+	# it); far backdrops with their own long fog range keep the shader's
+	var own_fog := params.has("fog_start") or float(params.get("fog_end", 90.0)) > NEAR_FOG_END
+	m.shader = shader("psx_lit_hd" if Graphics.advanced() and not own_fog else "psx_lit")
 	m.set_shader_parameter("albedo_color", color)
 	if tex:
 		m.set_shader_parameter("albedo_tex", tex)
@@ -44,7 +51,7 @@ static func unlit(color: Color, energy := 1.0, tex: Texture2D = null, params := 
 
 static func cutout(color: Color, tex: Texture2D) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
-	m.shader = shader("psx_cutout")
+	m.shader = shader("psx_cutout_hd" if Graphics.advanced() else "psx_cutout")
 	m.set_shader_parameter("albedo_color", color)
 	m.set_shader_parameter("albedo_tex", tex)
 	m.set_shader_parameter("fog_color", fog_color)

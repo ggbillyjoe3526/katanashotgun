@@ -26,6 +26,9 @@ const TITLE_PX := 16 # Orbitron
 const NOTE_LEN := 3.0
 const QUIT_W := 144.0
 const QUIT_ARMED := "CLICK AGAIN TO QUIT"
+## While a graphics preset waits for the other renderer, QUIT GAME restarts.
+const RESTART := "RESTART GAME"
+const RESTART_ARMED := "CLICK TO RESTART"
 const CAPTURE_HELP := "PRESS A KEY OR CLICK THE SLOT. CLICK AWAY TO CANCEL"
 const SAVE_DELAY := 0.5
 const TEXT := Color(0.86, 0.83, 0.96)
@@ -138,10 +141,12 @@ func _build_rows(t: String) -> Array:
 			out.append(_option("FRAME CAP", Settings.FPS_CAPS, cap_names,
 				func(): return Settings.fps_cap, _set_fps_cap,
 				"HIGHEST FRAME RATE THE GAME WILL RUN AT"))
-			if Settings.quality_system():
-				out.append(_option("QUALITY", Settings.QUALITY_IDS, ["LOW", "MEDIUM", "HIGH"],
-					func(): return Settings.quality, _set_quality,
-					"FEWER EFFECTS ON LOW. THE LOOK STAYS THE SAME"))
+			var q_names := []
+			for id in Settings.QUALITY_IDS:
+				q_names.append(Quality.NAMES[id])
+			out.append(_option("GRAPHICS", Settings.QUALITY_IDS, q_names,
+				func(): return Settings.quality, _set_quality,
+				_quality_help()))
 			out.append(_slider("RENDER SCALE", Settings.RENDER_SCALE_MIN, 1.0, 0.05,
 				func(): return Settings.render_scale, _set_render_scale,
 				_pct, "SHARPNESS OF THE 3D VIEW. LOWER RUNS FASTER"))
@@ -192,6 +197,23 @@ func _set_fps_cap(v: Variant) -> void:
 func _set_quality(v: Variant) -> void:
 	Settings.set_quality(v)
 	Settings.apply_video()
+	_set_tab(tab, true) # the help line says whether a restart is needed
+
+
+## What the GRAPHICS row's help line says for the chosen preset.
+func _quality_help() -> String:
+	if restart_pending():
+		return "RESTART TO SWITCH RENDERER (BUTTON BELOW)"
+	if Settings.quality == "high" and Graphics.fell_back():
+		return "THIS PC RUNS INSANE ON THE BASIC RENDERER"
+	return {"low": "FOR OLD PCS: FEWER EFFECTS, SAME LOOK",
+		"medium": "MORE GLOW, HAZE AND BLOOD. MOST PCS",
+		"high": "FULL LIGHTING, REFLECTIONS, FOG. STRONG GPU"}[Settings.quality]
+
+
+## The chosen preset only fully applies once the game restarts.
+func restart_pending() -> bool:
+	return Graphics.restart_needed(Settings.quality)
 
 
 func _set_render_scale(v: float) -> void:
@@ -484,6 +506,8 @@ func _tab_at(p: Vector2) -> int:
 
 func foot_label(i: int) -> String:
 	if i == 2:
+		if restart_pending():
+			return RESTART_ARMED if quit_armed() else RESTART
 		return QUIT_ARMED if quit_armed() else "QUIT GAME"
 	return ["BACK", "DEFAULTS"][i]
 
@@ -492,10 +516,13 @@ func quit_armed() -> bool:
 	return _quit_t > 0.0
 
 
-## The first click arms QUIT GAME, a second one within a few seconds quits.
+## The first click arms QUIT GAME, a second one within a few seconds quits
+## (or restarts, when a graphics preset waits for the other renderer).
 func _press_quit() -> void:
 	if quit_armed():
 		_flush_save()
+		if restart_pending():
+			OS.set_restart_on_exit(true)
 		Game.quit_game()
 		return
 	_quit_t = TechButton.ARM_S

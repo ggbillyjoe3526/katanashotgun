@@ -47,6 +47,7 @@ func build() -> void:
 	if use_navigation:
 		_build_navigation()
 	_build_rain()
+	Graphics.attach(self) # the quality preset's lighting, now and on change
 
 
 ## Override in a map subclass.

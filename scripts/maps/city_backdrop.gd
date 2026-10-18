@@ -51,6 +51,9 @@ func build(a: Arena) -> void:
 	_blimp_build()
 	_searchlights()
 	_flush_batches()
+	# things that move stay out of INSANE's global illumination
+	for n: Node in [_train, _blimp] + _beams:
+		Graphics.moving(n)
 
 
 # ---------------------------------------------------------------- towers
@@ -213,6 +216,7 @@ func _traffic() -> void:
 	mmi.multimesh = _cars
 	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	mmi.custom_aabb = AABB(Vector3(-160, 0, -160), Vector3(320, 70, 320))
+	Graphics.moving(mmi)
 	add_child(mmi)
 	_update_cars(0.0)
 	_on_quality(Quality.preset)

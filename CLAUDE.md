@@ -5,7 +5,8 @@ ranges). `DESIGN.md` is the short design doc; `README.md` covers controls,
 layout and debug flags. Where the spec and the code disagree, the spec wins.
 
 ## Repo-specific
-- **Godot 4.7.2-stable**, typed GDScript, GL Compatibility. The version is
+- **Godot 4.7.2-stable**, typed GDScript, GL Compatibility (the INSANE graphics
+  preset runs on Forward+ after a restart; spec §14.1). The version is
   pinned in three places that must change together: `project.godot`
   (`config/features`), and `GODOT_VERSION` in `.github/workflows/ci.yml` and
   `release.yml`.

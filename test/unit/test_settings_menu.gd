@@ -16,6 +16,7 @@ func before_each() -> void:
 	_real_path = Settings.path
 	Settings.path = TEST_PATH
 	Profile.use_dir(PROFILE_DIR) # saves never reach the player's profile
+	Graphics.renderer_file = "user://test_menu_renderer.cfg"
 	Settings.reset_all()
 	Game.state = "title"
 	Ui.init() # the panel draws when a frame passes
@@ -29,6 +30,8 @@ func after_each() -> void:
 			DirAccess.remove_absolute(p)
 	_remove_dir(PROFILE_DIR)
 	Profile.use_dir("user://test")
+	DirAccess.remove_absolute(Graphics.renderer_file)
+	Graphics.renderer_file = "user://renderer.cfg"
 	Settings.path = _real_path
 	Settings.reset_all()
 	Settings.from_dict(_saved)
@@ -137,10 +140,16 @@ func test_keys_do_not_work_the_menu() -> void:
 	assert_false(menu.capturing)
 
 
-func test_quality_row_only_with_a_quality_system() -> void:
+func test_graphics_row_names_the_presets() -> void:
 	menu.tab = SettingsMenu.TABS.find("VIDEO")
 	menu.open()
-	assert_eq(_row("QUALITY") >= 0, Settings.quality_system() != null)
+	var i := _row("GRAPHICS")
+	assert_true(i >= 0)
+	assert_eq_deep(menu.rows[i].names, ["WEAK", "MEDIOCRE", "INSANE"])
+	# headless there is no renderer to switch, so no restart is ever asked for
+	Settings.set_quality("high")
+	assert_false(menu.restart_pending())
+	assert_eq(menu.foot_label(2), "QUIT GAME")
 
 
 func test_every_word_fits_its_box() -> void:
@@ -158,11 +167,17 @@ func test_every_word_fits_its_box() -> void:
 					assert_lt(menu._w(n, Ui.font_mono, SettingsMenu.VALUE_PX), menu._value_rect(0).size.x - 24, n)
 	for i in 2:
 		assert_lt(menu._w(menu.foot_label(i), Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(i).size.x - 4, menu.foot_label(i))
-	for lbl in ["QUIT GAME", SettingsMenu.QUIT_ARMED]:
+	for lbl in ["QUIT GAME", SettingsMenu.QUIT_ARMED, SettingsMenu.RESTART, SettingsMenu.RESTART_ARMED]:
 		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(2).size.x - 4, lbl)
 	# QUIT GAME sits bottom left, clear of BACK and DEFAULTS
 	assert_lt(menu._foot_rect(2).end.x, menu._foot_rect(0).position.x)
 	assert_lt(menu._w(SettingsMenu.CAPTURE_HELP, Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
+	# every line the GRAPHICS row can show
+	for q in Settings.QUALITY_IDS:
+		Settings.quality = q
+		assert_lt(menu._w(menu._quality_help(), Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28, q)
+	for lbl in ["RESTART TO SWITCH RENDERER (BUTTON BELOW)", "THIS PC RUNS INSANE ON THE BASIC RENDERER"]:
+		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28, lbl)
 	# the widest screen the window-mode help can name
 	assert_lt(menu._w(menu._window_help("7680x4320 360 HZ"), Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 

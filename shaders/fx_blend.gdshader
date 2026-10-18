@@ -1,6 +1,6 @@
 // Alpha-blended effects: blood mist, rain streaks, smoke.
 shader_type spatial;
-render_mode unshaded, blend_mix, depth_draw_never, cull_disabled;
+render_mode unshaded, blend_mix, depth_draw_never, cull_disabled, fog_disabled;
 
 uniform sampler2D tex : source_color, filter_nearest, repeat_enable;
 uniform bool use_texture = false;

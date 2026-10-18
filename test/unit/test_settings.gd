@@ -5,6 +5,7 @@ extends GutTest
 
 const TEST_PATH := "user://test_settings.json"
 const PROFILE_DIR := "user://test-settings"
+const RENDERER_TEST := "user://test_renderer.cfg"
 
 var _saved := {}
 var _real_path := ""
@@ -14,6 +15,7 @@ func before_each() -> void:
 	_saved = Settings.to_dict()
 	_real_path = Settings.path
 	Settings.path = TEST_PATH
+	Graphics.renderer_file = RENDERER_TEST
 	_remove_files()
 	Profile.use_dir(PROFILE_DIR)
 	Settings.reset_all()
@@ -24,6 +26,8 @@ func after_each() -> void:
 	DirAccess.remove_absolute(PROFILE_DIR)
 	Profile.use_dir("user://test")
 	Settings.path = _real_path
+	DirAccess.remove_absolute(RENDERER_TEST)
+	Graphics.renderer_file = "user://renderer.cfg"
 	Settings.reset_all()
 	Settings.from_dict(_saved)
 	Settings.apply_controls()
@@ -98,7 +102,7 @@ func test_bad_values_are_clamped_or_ignored() -> void:
 	assert_eq(Settings.render_scale, Settings.RENDER_SCALE_MIN)
 	assert_eq(Settings.fps_cap, 0)
 	assert_eq(Settings.window_mode, "fullscreen")
-	assert_eq(Settings.quality, "high")
+	assert_eq(Settings.quality, "medium")
 	assert_eq(Settings.shake, 1.0)
 	assert_eq(Settings.volume["Music"], 1.0)
 	assert_eq(Settings.volume["SFX"], 0.0)
@@ -222,6 +226,37 @@ func test_version_1_choices_are_kept() -> void:
 	Settings.from_dict({"v": 2, "window_mode": "windowed", "vsync": true})
 	assert_eq(Settings.window_mode, "windowed")
 	assert_true(Settings.vsync)
+
+
+func test_new_players_start_on_mediocre() -> void:
+	assert_eq(Settings.quality, "medium")
+
+
+func test_version_2_high_becomes_mediocre() -> void:
+	# HIGH was the old default and looks like MEDIOCRE now; INSANE switches
+	# the renderer, so nobody is moved into it
+	Settings.from_dict({"v": 2, "quality": "high"})
+	assert_eq(Settings.quality, "medium")
+	for q in ["low", "medium"]:
+		Settings.reset_all()
+		Settings.from_dict({"v": 2, "quality": q})
+		assert_eq(Settings.quality, q)
+	Settings.reset_all()
+	Settings.from_dict({"v": 3, "quality": "high"})
+	assert_eq(Settings.quality, "high", "a player who picked INSANE keeps it")
+
+
+func test_saving_writes_the_next_starts_renderer() -> void:
+	Settings.set_quality("high")
+	Settings.save()
+	var cf := ConfigFile.new()
+	assert_eq(cf.load(RENDERER_TEST), OK)
+	assert_eq(cf.get_value("rendering", "renderer/rendering_method"), "forward_plus")
+	Settings.set_quality("low")
+	Settings.save()
+	cf = ConfigFile.new()
+	cf.load(RENDERER_TEST)
+	assert_eq(cf.get_value("rendering", "renderer/rendering_method"), "gl_compatibility")
 
 
 func test_windowed_size_is_a_whole_multiple() -> void:
