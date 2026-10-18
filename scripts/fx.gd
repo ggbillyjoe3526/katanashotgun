@@ -62,9 +62,10 @@ static func arc_mesh(rx: float, ry: float, thick: float, a0: float, a1: float, s
 func damage_number(pos: Vector3, amount: float, crit := false, armored := false) -> void:
 	var l := Label3D.new()
 	l.font = Ui.font_big
-	l.font_size = 32 if crit else 16
+	# big enough to read at a glance (spec §9.9); crits and big hits larger
+	l.font_size = 40 if crit else 24
 	if amount >= 100.0:
-		l.font_size = 32
+		l.font_size = 40
 	l.pixel_size = 0.0034
 	l.fixed_size = true
 	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED

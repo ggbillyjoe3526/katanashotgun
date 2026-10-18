@@ -290,7 +290,7 @@ is never lost.
   - Tech panels: dark glass with chamfered corners, thin neon outlines,
     corner brackets, scanlines and small data tags ("> SYS.EVENT").
   - Glitch text: heavy letters that decode out of random characters, with an
-    RGB split, jitter and screen-tear slices, plus the odd glitch burst.
+    RGB split, jitter and screen-tear slices, only on the way in and out.
 - **Readability rule (feedback, CRITICAL):** the UI must follow the aesthetic
   *and* be readable. The current text effects are too messy. Anything that
   flashes on screen must be **instantly readable**; the player should never
@@ -315,8 +315,9 @@ is never lost.
 - **Game feel ("juice"):** it should be visually overwhelming, but the
   information inside it stays readable (see the rule above).
   - Wave intro: a tech panel snaps open, WAVE 04 decodes in, the mutator types
-    itself out ("> SWARM - ..._"), then a 3-2-1 countdown and a FIGHT slam
-    with data streaks and an impact frame.
+    itself out on two lines (name and score, then what it does), then a 3-2-1
+    countdown and a FIGHT slam below the panel with data streaks and an
+    impact frame.
   - Kills: neon pixel fragments and a target-lock ring burst from the body;
     a pitch-rising tick per kill; the combo label pops and heats up.
   - Combo milestones (x10, x20, x30, x50, x75, x100...): a glitch stamp. From

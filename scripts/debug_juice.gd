@@ -23,7 +23,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	_t += Game.real_dt
 	var steps := [
-		[0.2, func(): _hud.wave_intro(4, "HYAKKI YAKO  -  60% MORE GRUNTS, BUT WEAKER  -  SCORE x1.2", Color.WHITE, false)],
+		[0.2, func(): _hud.wave_intro(4, "HYAKKI YAKO  //  SCORE x1.2\n60% MORE GRUNTS, BUT WEAKER", Color.WHITE, false)],
 		[4.0, func(): _fake_kills(10)],
 		[5.2, func(): _fake_kills(10)],
 		[6.4, func():
@@ -38,7 +38,15 @@ func _process(_delta: float) -> void:
 			Sfx.resume_combat()
 			Game.pending_levelups = 1],
 		[20.6, func(): _hud._pick(1)],
-		[22.4, func():
+		[21.4, func():
+			_hud.show_boss_intro("KUROKAGE", "BLADE OF THE NULL SIGNAL")
+			Game.popup.emit("HEADSHOT +120", Color(1.0, 0.9, 0.3))
+			Game.popup.emit("GLORY KILL +400", Color(1.0, 0.3, 0.5))
+			Game.popup.emit("DEFLECT +100", Color(0.4, 0.95, 1.0))
+			_hud.no_ammo()
+			_hud.show_hint("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")],
+		[23.0, func(): Game.hud_message.emit("KUROKAGE IS ENRAGED", Color(1, 0.2, 0.3), false)],
+		[25.0, func():
 			Game.kills = 212
 			Game.executions = 61
 			Game.headshots = 40
