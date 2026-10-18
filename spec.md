@@ -1669,6 +1669,27 @@ weak hardware.
       profiling says so.
   - **Quality presets** (Low/Medium/High) cut effect counts and render scale,
     **never the art style**.
+  - **Effect caps per preset** (`scripts/quality.gd`; pools are built at the
+    High size, the oldest effect is recycled when a cap is reached):
+
+    | Cap | Low | Medium | High |
+    |---|---|---|---|
+    | Blood/spark droplets | 700 | 1200 | 1800 |
+    | Floor decals | 220 | 360 | 520 |
+    | Gibs and chunks | 50 | 80 | 110 |
+    | Blood per burst, chunks per kill | 50% | 75% | 100% |
+    | Damage numbers | 18 | 28 | 40 |
+    | Lightning arcs | 36 | 60 | 96 |
+    | Blood mist | 16 | 28 | 40 |
+    | Smoke puffs | 20 | 36 | 60 |
+    | Impact flashes | 16 | 28 | 48 |
+
+    Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
+    12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
+    never capped (they heal); their pool grows. High's caps sit above what a
+    fight produces, so High looks like the prototype. Boss-only effects
+    (shockwave rings, missile markers, dash telegraph lines) are still built
+    per use: they fire a few times a minute at most.
   - **Profiling:** test on real low-end hardware throughout. Set a frame-time
     budget per system. Add a debug perf overlay (fps, frame time, draw calls).
 

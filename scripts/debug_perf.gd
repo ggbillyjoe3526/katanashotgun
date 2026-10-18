@@ -49,7 +49,6 @@ func _ready() -> void:
 	_label = Ui.label("", Ui.font_mono, 7, Color(0.7, 1.0, 0.8))
 	_label.position = Vector2(8, 5)
 	add_child(_label)
-	_set_shown(_log)
 	get_tree().node_added.connect(_on_node_added)
 	# script time: a clock that runs first and one that runs last, every
 	# process and physics step (process priority is global)
@@ -62,9 +61,18 @@ func _ready() -> void:
 	_last.start = _first
 	add_child(_first)
 	add_child(_last)
+	_set_shown(_log)
+
+
+## Samples only while the overlay is up or --perf is logging, so a release
+## build pays nothing for it.
+func _active() -> bool:
+	return _log or _label.visible
 
 
 func _on_node_added(_n: Node) -> void:
+	if not _label.visible and not _log:
+		return
 	_added += 1
 	_frame_added += 1
 
@@ -72,6 +80,11 @@ func _on_node_added(_n: Node) -> void:
 func _set_shown(on: bool) -> void:
 	_plate.visible = on
 	_label.visible = on
+	if _first:
+		var mode := Node.PROCESS_MODE_ALWAYS if (on or _log) else Node.PROCESS_MODE_DISABLED
+		_first.process_mode = mode
+		_last.process_mode = mode
+		_last.acc = 0
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -82,6 +95,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(_delta: float) -> void:
+	if not _active():
+		return
 	var rd := Game.real_dt
 	var draw := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
@@ -98,7 +113,8 @@ func _process(_delta: float) -> void:
 		_draw_sum += draw
 		_draw_max = maxi(_draw_max, draw)
 		_prim_max = maxi(_prim_max, prims)
-		_script_ms.append(script_ms)
+		if _log:
+			_script_ms.append(script_ms) # --perf runs are bounded by --quit-after
 		if _frame_added >= 40:
 			_spike_frames += 1
 	_nodes_max = maxi(_nodes_max, nodes)
@@ -156,9 +172,6 @@ class _Clock:
 	var start: _Clock
 	var t0 := 0
 	var acc := 0
-
-	func _ready() -> void:
-		process_mode = Node.PROCESS_MODE_ALWAYS
 
 	func _process(_d: float) -> void:
 		_mark()

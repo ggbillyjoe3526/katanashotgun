@@ -9,7 +9,7 @@ extends Node3D
 
 const ORB_POOL := 64
 ## Pools whose size doesn't depend on the quality preset.
-const FIXED := {"beam": 12, "trail": 6, "boom": 8, "light": 4}
+const FIXED := {"beam": 16, "trail": 8, "boom": 12, "light": 4}
 
 var _numbers: Array = [] # live damage numbers, oldest first
 var _number_free: Array = []

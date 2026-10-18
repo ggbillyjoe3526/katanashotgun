@@ -1,6 +1,7 @@
 class_name Quality
 ## Quality presets (spec §14): they cut effect counts, never the art style.
-## Every pool and cap reads its size from here. HIGH keeps the full show;
+## Every pool and cap reads its size from here (the table is in spec §14).
+## HIGH keeps the full show: its caps sit above anything a fight produces;
 ## MEDIUM and LOW trim the piles (blood drops, decals, gibs, numbers, arcs)
 ## so a 2015 laptop holds 60 fps. Pools are built at the HIGH size, so a
 ## preset can change mid-run without allocating.
@@ -13,15 +14,15 @@ const DEFAULT := "high"
 const CAPS := {
 	"high": {
 		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
-		"numbers": 40, "arcs": 64, "mists": 40, "smoke": 30, "flashes": 24,
+		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48,
 	},
 	"medium": {
 		"drops": 1200, "decals": 360, "gibs": 80, "chunks_k": 0.75, "drops_k": 0.75,
-		"numbers": 28, "arcs": 44, "mists": 28, "smoke": 20, "flashes": 16,
+		"numbers": 28, "arcs": 60, "mists": 28, "smoke": 36, "flashes": 28,
 	},
 	"low": {
 		"drops": 700, "decals": 220, "gibs": 50, "chunks_k": 0.5, "drops_k": 0.5,
-		"numbers": 18, "arcs": 28, "mists": 16, "smoke": 12, "flashes": 10,
+		"numbers": 18, "arcs": 36, "mists": 16, "smoke": 20, "flashes": 16,
 	},
 }
 

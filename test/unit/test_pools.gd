@@ -67,3 +67,30 @@ func test_health_orbs_grow_instead_of_dropping() -> void:
 	add_child_autofree(fx)
 	fx.health_orbs(Vector3.ZERO, Fx.ORB_POOL + 5)
 	assert_eq(fx._orbs.size(), Fx.ORB_POOL + 5, "every orb spawns: they heal")
+
+
+func test_enemy_reuse_resets_run_state() -> void:
+	var e := Enemy.new()
+	e.prewarm = true
+	e.setup("grunt", 1.0)
+	add_child_autofree(e)
+	assert_false(Enemy._defaults.is_empty(), "starting values were captured")
+	assert_false(e.visible, "a prewarmed enemy waits hidden")
+	e.hp = 1.0
+	e.dead = true
+	e.frozen = true
+	e.state = Enemy.S.STAGGER
+	e.glory_gore = "split"
+	e.visual.scale = Vector3(1.2, 0.8, 1.2)
+	e.marker.visible = true
+	e.reuse()
+	e.setup("grunt", 1.0)
+	assert_false(e.dead)
+	assert_false(e.frozen)
+	assert_eq(e.state, Enemy.S.SPAWN)
+	assert_eq(e.glory_gore, "")
+	assert_eq(e.hp, e.max_hp)
+	assert_eq(e.kind, "grunt", "kind survives (pools are per kind)")
+	assert_eq(e.visual.scale, Vector3.ONE)
+	assert_false(e.marker.visible)
+	assert_true(e.visible)
