@@ -122,6 +122,11 @@ the prototype already works.
     shockwaves, bolt fans. Felled line: **DAEMON PURGED**.
   - First cycle: the two lighter bosses in seeded order, then Shuten. Later
     cycles are shuffled, and each cycle is tougher.
+  - Every boss fights Souls-style (spec §5.6): it sidesteps if you hang back
+    and aim, holds some swings a beat longer, and has one area move and one
+    RED SIGNAL attack (dash through it for a PERFECT). Big moves leave a
+    punish window with its armour down. In the first cycle the area move and
+    RED SIGNAL wait until it's enraged.
 
 ### Boss names (FromSoftware-style, cyberpunk theme)
 Every boss gets its own unique name, the way FromSoftware names bosses, but

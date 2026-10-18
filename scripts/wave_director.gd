@@ -228,10 +228,12 @@ func _pick_spawn() -> Vector3:
 	return cands[_rng.randi() % cands.size()]
 
 
-func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
+func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()) -> Enemy:
 	var at := pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
+		# only horde kinds are pooled, so `before_ready` (bosses) never runs here
+		assert(not before_ready.is_valid(), "pooled spawns take no before_ready")
 		var pe: Enemy = free.pop_front()[0]
 		pe.reuse()
 		pe.setup(kind, scale)
@@ -239,7 +241,7 @@ func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
 		pe.activate()
 		return pe
 	var e: Enemy
-	if kind in ["ninja", "mech"]:
+	if kind in BOSS_KINDS:
 		e = Boss.new()
 	else:
 		e = Enemy.new()
@@ -247,6 +249,8 @@ func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
 		e.pool = self
 	e.setup(kind, scale)
 	e.position = at
+	if before_ready.is_valid():
+		before_ready.call(e)
 	add_child(e)
 	return e
 
@@ -265,7 +269,11 @@ func spawn_adds(n: int, near: Vector3) -> void:
 
 func _spawn_boss() -> void:
 	var cycle_scale := 1.0 + 0.45 * (_cycle_count - 1) + 0.03 * (wave - 3)
-	boss = _spawn(boss_kind, cycle_scale, Game.arena.boss_spawn)
+	boss = _spawn(boss_kind, cycle_scale, Game.arena.boss_spawn, func(b: Boss) -> void:
+		b.cycle = _cycle_count
+		# the boss's own dice come from the seed without drawing from the
+		# wave stream, so the same seed gives the same fight
+		b.dice_seed = hash(Game.run_seed * 13 + wave) & 0x7fffffff)
 	Game.main.boss = boss
 	Game.hud.show_boss_intro(boss.display_name, boss.subtitle)
 	Sfx.play("boss_intro", 0.0)
