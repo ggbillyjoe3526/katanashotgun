@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="MusicTrack" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/music_track.gd" id="1_3tlkd"]
+[ext_resource type="AudioStream" path="res://assets/music/boss_2.ogg" id="2_udkrd"]
+
+[resource]
+script = ExtResource("1_3tlkd")
+role = "boss"
+boss_kind = "oni"
+stems = Array[AudioStream]([ExtResource("2_udkrd")])
+stem_intensity = PackedFloat32Array()
+loop = true
+bpm = 165.0

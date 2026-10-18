@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_4kmlg"]
+[ext_resource type="AudioStream" path="res://assets/audio/slice.wav" id="2_6gagn"]
+
+[resource]
+script = ExtResource("1_4kmlg")
+streams = Array[AudioStream]([ExtResource("2_6gagn")])
+priority = 3

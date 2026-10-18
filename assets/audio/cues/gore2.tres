@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_kfit4"]
+[ext_resource type="AudioStream" path="res://assets/audio/gore2.wav" id="2_ytshr"]
+
+[resource]
+script = ExtResource("1_kfit4")
+streams = Array[AudioStream]([ExtResource("2_ytshr")])
+max_voices = 2
+priority = 1

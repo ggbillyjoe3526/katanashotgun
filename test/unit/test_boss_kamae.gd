@@ -54,6 +54,7 @@ func test_sources() -> void:
 	assert_gt(BossKamae.gain_for("katana", 18.0), 18.0, "the katana is the pressure tool")
 	assert_lt(BossKamae.gain_for("shotgun", 100.0), 100.0)
 	assert_eq(BossKamae.gain_for("burn", 50.0), 0.0, "burning never breaks a stance")
+	assert_eq(BossKamae.gain_for("heavy", 100.0), 100.0, "Masamune Edge's heavy cut counts")
 	assert_eq(BossKamae.gain_for("katana", -1.0), 0.0)
 	assert_almost_eq(BossKamae.gain_for("deflect", 140.0, 80.0), 80.0 * BossKamae.DEFLECT_PER_DAMAGE, 0.001, "a returned bolt counts by its damage")
 
