@@ -235,8 +235,8 @@ done.
    captures, LMB swings the katana, RMB fires the shotgun.
 
 ### Step 8: Set up the release pipeline (S4), then do a test release
-Create a `v0.3.1` (or `v0.4.0-test`) tag, watch the Actions run
-(`gh run watch`), and check that the GitHub Release has the installer, the
+Do a dry run (*Actions → Release → Run workflow* with Publish unticked; the
+version comes from `project.godot`, S3.2), watch the Actions run, and check that the GitHub Release has the installer, the
 portable zip and the other platforms. Ask the developer to download the
 installer, install, play, and uninstall. Explain the SmartScreen warning
 (S4.4) **before** they see it.
@@ -264,10 +264,14 @@ work list (§0.5).
   - Never rewrite pushed history.
 
 ### S3.2 Versioning
-- **Semantic versions:** `MAJOR.MINOR.PATCH` (0.x while in development).
-  - The tag `vX.Y.Z` triggers a release. CI writes the version into
-    `project.godot` (`config/version`), so the game shows it on the title
-    screen (add this) and in the installer.
+- **Version names** (owner's decision, 2026-10-18; details in `VERSIONING.md`):
+  `0.1 Dev 1`, `0.1 Dev 2`, ... then `0.1 Beta 1`, `0.1 Beta 2`, ... then the
+  release `0.1`. The current version is `0.1 Dev 1`.
+  - Set in one place: `config/version` in `project.godot`, written as players
+    see it. The title screen and the installer show it.
+  - `tools/version.sh` maps a name to its tag (`0.1 Dev 1` → `v0.1-dev.1`,
+    `0.1` → `v0.1`) and the Windows version number (`0.1.1.1`). Releasing
+    publishes the version in `project.godot`; a pushed tag must match it.
 - **Release when the developer asks**, or propose one at a milestone. Before
   tagging:
   1. Update the CHANGELOG.
@@ -288,8 +292,8 @@ work list (§0.5).
 
 ## S4. Release pipeline (GitHub Actions + Windows installer)
 
-**Goal:** pushing a tag `vX.Y.Z` produces a **GitHub Release** with these
-files:
+**Goal:** releasing a version (S3.2; tags like `v0.1-dev.1`, written
+`vX.Y.Z` below) produces a **GitHub Release** with these files:
 - `KatanaShotgun-vX.Y.Z-Windows-Setup.exe`: an **installer**. Installs to
   Program Files, adds Start Menu and optional desktop shortcuts, adds an
   uninstaller, and optionally launches the game at the end.
@@ -311,8 +315,9 @@ files:
 
 ### S4.2 Workflow file `.github/workflows/release.yml` (reference; check action versions)
 > **Built (2026-10-18).** The real workflow in the repo supersedes this
-> reference: it also runs from *Actions → Release → Run workflow* with a typed
-> version, does a dry run on pull requests that touch the pipeline, checks the
+> reference: it takes the version from `project.godot` (S3.2) instead of
+> stamping it from the tag, runs from *Actions → Release → Run workflow*,
+> does a dry run on pull requests that touch the pipeline, checks the
 > exported Linux build plays and the installer installs and uninstalls, and
 > takes the release notes from `CHANGELOG.md`. Every PR also runs the smoke
 > test (`.github/workflows/ci.yml`, `tools/smoke_test.sh`).
@@ -501,7 +506,7 @@ Notes:
 | Capture frames (Windows, real GPU) | `godot --path . --write-movie out\f.png --fixed-fps 30 --quit-after 900 -- --juicetest` |
 | Frames → mp4 | `ffmpeg -framerate 30 -i out/f%08d.png -i out/f.wav -c:v libx264 -pix_fmt yuv420p -c:a aac clip.mp4` |
 | Local Windows export (needs templates) | `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe` |
-| Release | update CHANGELOG → `git tag vX.Y.Z` → `git push origin vX.Y.Z` → `gh run watch` |
+| Release | set `config/version` + rename the CHANGELOG heading (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
 
 ## S6. Developer decisions log (fill in as you go)
 | Decision | Value |
@@ -510,8 +515,10 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
+| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
+| Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -567,6 +574,7 @@ Notes:
 | `move_*` | WASD + arrows | |
 | `jump` | Space | Double jump |
 | `dash` | Shift, Q | |
+| `finisher` | **F** | Glory kill the staggered enemy near the crosshair (§3.4) |
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
@@ -581,7 +589,7 @@ can be added).
 
 ## 3. Core loop and mechanics
 
-**The rhythm:** blast → stagger → slash → glory kill → recharge. **The blade
+**The rhythm:** blast → stagger → slash → glory kill (press F) → recharge. **The blade
 charges the gun; the gun sets up the blade.**
 
 ### 3.1 Player
@@ -616,7 +624,8 @@ charges the gun; the gun sets up the blade.**
   turning cyan. Its kills are tagged "RETURN TO SENDER" (points ×1.5).
 - **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
   0.22, slash trail, slice sound.
-- **Slashing a staggered enemy starts a GLORY KILL** (§3.4).
+- **A slash just hits a staggered enemy** (full damage, armour ignored, so it
+  can kill it outright). The GLORY KILL is its own key, F (§3.4).
 - **Look:** see §9.6. The glowing edge flares on each swing.
 
 ### 3.3 Shotgun (RIGHT hand, RMB): "RAIJIN-12" arc shotgun ("shotgun taser")
@@ -663,8 +672,19 @@ charges the gun; the gun sets up the blade.**
   - After a shot: recoil kick, then a roll as the drum turns.
 
 ### 3.4 Glory kills (Doom 2016 style)
-**Trigger:** a katana slash that hits a **staggered** enemy (the first
-staggered enemy in the arc). This replaces the old "execution".
+**Trigger:** pressing **F** (the `finisher` action, rebindable) while a
+**staggered** enemy is in reach, like Doom (2016). This replaces the old
+"execution" and the earlier slash trigger (owner's request, 2026-10-18).
+- **Reach:** within 4.5 m of the enemy's body, within 60° of the crosshair,
+  with no wall in between. Of several, the one nearest the crosshair is
+  taken. The current target is kept out to 5.5 m and 80° so the prompt never
+  flickers at the edge.
+- **Window:** the whole stagger (`stagger_time`, 1.8–3.2 s by enemy; unchanged).
+- **Input buffer:** 0.18 s, as for the katana: pressing F just before an
+  enemy staggers or comes into reach still counts.
+- **Prompt:** while a target is in reach, a gold key cap with the bound key
+  and "GLORY KILL" ("DEATHBLOW" on bosses) sits in a fixed spot under the
+  crosshair (§9.7), and that enemy's stagger marker turns gold and grows.
 
 **On start:**
 - Executions +1, **+3 cells**, **heal 20** (×2 under the Akatsuki mutator).
@@ -716,7 +736,8 @@ hop back (−dir × 3 + up 2), katana cooldown 0.12.
 ### 3.5 Stagger and poise (all enemies)
 - Each enemy has **poise**. Damage reduces it. When it hits 0 the enemy is
   **STAGGERED** for `stagger_time`: a pulsing marker, dim eyes and a windup
-  sound. Hint the first time: "STAGGERED! SLASH IT FOR A GLORY KILL".
+  sound. Hint the first time: "STAGGERED! PRESS F FOR A GLORY KILL" (the
+  bound key's name).
 - Poise regenerates once no hits land for 2.0 s (bosses 1.4 s). It regains 35%
   of max per second (bosses 50%).
 - The shotgun is the main stagger tool. Armoured enemies (brutes, bosses)
@@ -1092,21 +1113,37 @@ the holographic cut-in (§9.8).
     never be a single-hue wash.
   - Signs, neon tubes, UI, effects and the sky should not all share one hue.
     Purple can be one colour among many, not the base of everything.
-- The five prototype palettes (seeded; each sets sky top/mid/horizon, sun
-  top/bottom, fog, ambient, neon_a/b/c, grid, floor, mountain). Rework them
-  into a multi-colour base:
+- **The multi-colour base (built, `scripts/palette.gd`).** Five palettes,
+  picked by `rng_map` (one draw, so the rest of the map stream never moves).
+  Each sets sky top/mid/horizon, sun top/bottom, fog, ambient, grid, floor,
+  mountain and **six accent hues**. `neon_a/b/c` are the first three accents
+  (the HUD and effects use them; `neon_c` is always bright enough for text).
+  The big areas (sky top, fog, ambient, floor) stay dark and fairly neutral
+  so the accents carry the colour; the sky gradient crosses at least two hue
+  families.
 
-| Palette | sky_top | sky_mid | horizon | sun top→bottom | neon_a | neon_b | neon_c | grid | floor |
+| Palette | sky_top | sky_mid | horizon | sun top→bottom | fog | ambient | grid | floor | accents (a, b, c, then 3 more) |
 |---|---|---|---|---|---|---|---|---|---|
-| SUNSET DRIVE | 12002b | 5a0f6e | ff3d7f | ffe14d→ff2a8a | ff2a8a | 2af6ff | ffd23f | ff3df0 | 150a26 |
-| MIAMI NIGHTS | 070a2e | 2b1d74 | ff6ec7 | fff07a→ff4f6e | ff4fb8 | 3dfcd8 | ff9e3d | 3dfcd8 | 0c0c26 |
-| ULTRAVIOLET | 090018 | 3b0a7a | c45dff | ffb3ff→7b2cff | b44dff | 4df0ff | ff3d9e | b44dff | 100626 |
-| BLOOD CHROME | 120006 | 4a0820 | ff4b3b | ffd27a→ff1f4d | ff2b4a | 29e7ff | ffb52b | ff2b4a | 1a0810 |
-| TOXIC TOKYO | 001312 | 04404a | 19ffc1 | f6ff7a→19ff9c | 19ffc1 | ff3df2 | f6ff4a | 19ffc1 | 041416 |
+| SUNSET DRIVE | 060b2e | a3195b | ff7a2a | ffe14d→ff2a8a | 161a30 | 565c82 | 2af6ff | 0c0e1e | ff2a8a 2af6ff ffc23a 3d6bff 9dff3a ff4a1f |
+| MIAMI NIGHTS | 050a2a | 1d3590 | ff6ec7 | fff07a→ff4f6e | 0f1c32 | 4a6688 | 3dfcd8 | 08101e | ff4fb8 3dfcd8 ff9e3d 4d8bff c6ff3d b45cff |
+| ULTRAVIOLET | 05021a | 24127a | 2fd0ff | e8ff6a→ff3d9e | 12112c | 54568a | 9dff3a | 0a0a1c | b44dff 4df0ff e8ff3a ff3d9e 3dff8a ff7a1f |
+| BLOOD CHROME | 05060c | 1e2a40 | ff3b2b | ffd27a→ff1f4d | 171a22 | 66687a | ff2b4a | 100c10 | ff2b4a 29e7ff ffb52b ff3df0 3d7bff b8ff3d |
+| TOXIC TOKYO | 020818 | 064a50 | ff3da8 | f6ff7a→19ff9c | 0b1c1e | 46666e | 19ffc1 | 061012 | 19ffc1 ff3df2 f6ff4a ff7a1f 2f8bff ff3d5a |
 
-  - Suggested fix: every scene uses **at least 4–5 distinct accent hues**
-    (assign sign, tube and prop colours from a multi-hue set, not just neon
-    a/b/c), and limit how much one hue covers the sky and fog.
+  ULTRAVIOLET keeps its name as a blacklight look: violet is its one purple
+  accent, surrounded by UV-reactive cyan, acid yellow, pink and green.
+- **Rules every palette must pass** (`Palette.problems()`, run on every
+  palette by `test/unit/test_palette.gd`): at least 5 accents, each a strong
+  neon (saturation ≥ 0.6, value ≥ 0.8) and at least 25° of hue from every
+  other; at most one purple accent (hue 255–300°); `neon_c` luminance ≥ 0.5;
+  fog and ambient saturation ≤ 0.75 and fog value ≤ 0.25; sky_mid and
+  horizon at least 30° apart; at most two of the large areas (sky top, sky
+  mid, fog, ambient, floor, mountain) purple.
+- **Accent distribution:** maps take colours with `Arena._accent(i)` or pick
+  from `pal.accents`, never just neon a/b/c. On the rooftop each perimeter
+  side, catwalk, crate and obelisk gets its own hue; signs, building edges,
+  palms and lit windows pick from all six; the torii keeps one hue (neon_a)
+  and jump pads stay neon_c so they read as one kind of object.
 - **Palette unlocks** (boss rewards) can be **tints** over the multi-colour
   base (a warm sunset tint, a toxic green tint, a cold chrome tint), so every
   palette stays colourful.
@@ -1240,6 +1277,12 @@ the holographic cut-in (§9.8).
     repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking.
     Out of cells shows a steady "NO CHARGE" plate to the left of the
     crosshair.
+  - **Glory kill prompt:** 16 px under the crosshair, ending 8 px right of
+    it so it clears the kill tags, while a staggered enemy is in reach
+    (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL" (or
+    "DEATHBLOW" on a boss) on a dark plate. Pops in over
+    0.1 s, then holds still; only the key cap's glow pulses. Fades in 0.08 s
+    when the target is lost, and is gone during the finisher.
   - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
     on a dark plate.
   - **Hints:** bottom centre on a dark plate, above the run level, 4.5 s,
@@ -1742,14 +1785,18 @@ seed | click: new seed).
 
 ## 16. Debug, testing and tooling (keep these)
 - **Command-line flags** (after `--`):
-  - `--autoplay`: a bot plays (aims, strafes, slashes staggered enemies,
-    shotguns, auto-picks augments) and logs one stats line every 2 s.
+  - `--autoplay`: a bot plays (aims, strafes, slashes, glory-kills staggered
+    enemies with the finisher key, shotguns, auto-picks augments) and logs
+    one stats line every 2 s.
   - `--god`: no damage.
   - `--wave=N`, `--seed=XXXX-XXXX`, `--boss=ninja|mech|oni`, `--restart`
     (auto-restart after death), `--verbose-ai`.
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
+    1.5 s each, then quits; `--palette=` also forces the palette in a normal
+    run (debug only; the seed still draws its palette number).
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
 - **Headless smoke test:**
@@ -1797,6 +1844,7 @@ seed | click: new seed).
 2. **Audio mix (§10.3).** The rain loop is far too loud; set up buses; music
    first.
 3. **Palettes (§9.2).** Too purple; make every scene multi-colour.
+   (Reworked into a six-accent multi-colour base; see §9.2.)
 4. **Pooling and performance (§14).**
 5. **Katana model (§9.6).** Thermal-katana look (red-hot orange edge), our
    own design.
@@ -1819,7 +1867,8 @@ seed | click: new seed).
       paused-frame test.
 - [ ] Audio buses and the new mix; quiet, filtered, varied rain; music first
       (§10.1, §10.3).
-- [ ] Multi-colour palettes and accent distribution (§9.2).
+- [x] Multi-colour palettes and accent distribution (§9.2). Feel on a real
+      GPU still to be confirmed by the owner.
 - [ ] Pool every runtime-spawned object; cap and recycle; shader warm-up;
       perf overlay; hit the frame-time targets (§14).
 

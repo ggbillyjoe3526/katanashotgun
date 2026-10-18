@@ -14,11 +14,15 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
   CI builds releases.
 - **Smoke test:** `tools/smoke_test.sh` (import, then the autoplay bot for 3000
   frames; fails on any script error). CI runs the same script on every PR.
-- **Releases:** `.github/workflows/release.yml`. A `vX.Y.Z` tag or Actions →
-  Release → Run workflow publishes; a PR touching the pipeline does a dry run.
-  Never create a tag unless the owner asks for a release. The release notes
-  come from this version's `CHANGELOG.md` section (`tools/changelog_section.sh`):
-  before releasing, rename `## Unreleased` to `## vX.Y.Z (date)`.
+- **Version:** one value, `config/version` in `project.godot`, named like
+  `0.1 Dev 1`, `0.1 Beta 2`, `0.1` (`VERSIONING.md`). `tools/version.sh` maps it
+  to the tag (`v0.1-dev.1`) and the Windows version number.
+- **Releases:** `.github/workflows/release.yml`. Actions → Release → Run
+  workflow releases the version in `project.godot` (or push its matching tag);
+  a PR touching the pipeline does a dry run. Never create a tag unless the
+  owner asks for a release. The release notes come from this version's
+  `CHANGELOG.md` section (`tools/changelog_section.sh`): before releasing, set
+  the new version and rename `## Unreleased` to `## 0.1 Dev 2 (date)`.
 - **Installer:** `installer/KatanaShotgun.iss` (Inno Setup 6). Never change its
   `AppId`. No slash in file, folder or shortcut names.
 - **Review:** before marking a PR that touches code ready, run the `critic`
