@@ -10,4 +10,4 @@ boss_kind = "oni"
 stems = Array[AudioStream]([ExtResource("2_udkrd")])
 stem_intensity = PackedFloat32Array()
 loop = true
-bpm = 132.0
+bpm = 165.0

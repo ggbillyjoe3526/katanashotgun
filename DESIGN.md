@@ -344,9 +344,9 @@ is never lost.
   - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" between them.
 
 ## Audio
-- Six procedurally composed combat tracks (own key, tempo, progression,
-  groove, lead and melodies, arranged in sections), shuffled per run and
-  crossfaded. One theme per boss, plus a title theme. The music cuts to
+- Six procedurally composed, fast (140 to 152 bpm) synthwave combat tracks
+  (own key, tempo, progression, groove, lead and melodies, arranged in
+  sections), shuffled per run and crossfaded. One theme per boss, plus a title theme. The music cuts to
   silence when a boss dies and when you die.
 - **Mix priority (fixed; levels in spec §10.1):** **music is the focus**, then combat
   SFX, then ambience. Ambience (rain, wind, city hum, neon buzz) is fine

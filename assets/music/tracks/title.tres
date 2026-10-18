@@ -9,4 +9,4 @@ role = "title"
 stems = Array[AudioStream]([ExtResource("2_rvnvs")])
 stem_intensity = PackedFloat32Array()
 loop = true
-bpm = 88.0
+bpm = 118.0

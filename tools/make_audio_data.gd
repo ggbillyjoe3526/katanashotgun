@@ -34,8 +34,8 @@ const MUSIC_DUCK := {"execution": -3.0, "explosion": -2.5, "slam": -2.0, "boss_i
 const NO_PITCH := ["levelup", "wave_clear", "highscore", "fanfare", "felled", "flatline", "boss_intro"]
 const BOSS_KINDS := {"boss_0": "ninja", "boss_1": "mech", "boss_2": "oni"}
 const BPM := {
-	"combat_0": 108, "combat_1": 104, "combat_2": 110, "combat_3": 100, "combat_4": 112, "combat_5": 106,
-	"boss_0": 128, "boss_1": 122, "boss_2": 132, "title": 88,
+	"combat_0": 148, "combat_1": 140, "combat_2": 150, "combat_3": 144, "combat_4": 152, "combat_5": 146,
+	"boss_0": 160, "boss_1": 156, "boss_2": 165, "title": 118,
 }
 
 

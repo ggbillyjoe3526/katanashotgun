@@ -10,4 +10,4 @@ boss_kind = "mech"
 stems = Array[AudioStream]([ExtResource("2_efkeo")])
 stem_intensity = PackedFloat32Array()
 loop = true
-bpm = 122.0
+bpm = 156.0

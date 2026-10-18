@@ -515,6 +515,7 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
+| Music style | Fast, futuristic, energetic synthwave/retrowave (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
@@ -1534,9 +1535,11 @@ about 10 LU over the music, and heavy rain louder than the music.
   top tier, never basic, boring or low effort.** It is a headline feature,
   the way Doom (2016) and Persona 5 treat theirs. Properly composed,
   arranged, mixed and mastered, by a composer/producer or licensed.
-- Style: high-energy **synthwave/darksynth fused with heavy, aggressive
-  elements** for combat; distinct boss themes; a memorable title theme. It
-  must not sound repetitive.
+- Style: **fast-paced, futuristic, energetic synthwave/retrowave** that
+  matches the game's speed (owner, 2026-10-18): outrun tempos (about 140 to
+  155 bpm in combat, faster for bosses), driving kicks, 16th-note basses and
+  arps, bright leads, aggressive edges welcome. Distinct boss themes; a
+  memorable title theme. It must not sound repetitive.
 - **System requirements:**
   - Stems or intensity layers so the music can react (boss phases, enrage,
     combo heat, the hush after a boss dies).
@@ -1551,12 +1554,17 @@ about 10 LU over the music, and heavy rain louder than the music.
   - `music_cut()` (a fast fade to silence) and `resume_combat()`.
   - Ducking: playing −6 dB base, pause −20, level-up −16, results −14.
 - **Placeholder tracks** (prototype, generated):
-  - combat_0 108 bpm minor [0,5,2,6]; combat_1 104 minor [0,6,5,6];
-    combat_2 110 minor [0,3,5,4]; combat_3 100 dorian [5,6,0,0];
-    combat_4 112 minor [0,5,3,4]; combat_5 106 dorian [0,2,6,5].
-  - boss_0 128 phrygian; boss_1 122 harmonic minor; boss_2 132 harmonic
-    minor; title 88 dorian.
-  - Sections: intro, groove, lead, lead2, break, build, drop, outro.
+  - combat_0 148 bpm minor [0,5,2,6]; combat_1 140 minor [0,6,5,6];
+    combat_2 150 minor [0,3,5,4]; combat_3 144 dorian [5,6,0,0];
+    combat_4 152 minor [0,5,3,4]; combat_5 146 dorian [0,2,6,5]. About
+    95 to 100 s each.
+  - boss_0 160 phrygian; boss_1 156 harmonic minor; boss_2 165 harmonic
+    minor; title 118 dorian.
+  - Sections: short intro, groove, lead, lead2, break, build, drop, lead,
+    drop, short outro. Kicks four-on-the-floor or driving, hats in 16ths,
+    basses in 16ths (octave, pulse or gallop).
+  - Every track is mastered to -14 LUFS (`tools/gen_music.py`), the level the
+    mix in §10.1 was measured against.
 
 ### 10.3 Ambience (critical feedback)
 - Ambience (rain, wind, city hum, neon buzz) is fine but **must sit far back

@@ -7,4 +7,4 @@
 script = ExtResource("1_br3hm")
 stems = Array[AudioStream]([ExtResource("2_di0ws")])
 stem_intensity = PackedFloat32Array()
-bpm = 106.0
+bpm = 146.0

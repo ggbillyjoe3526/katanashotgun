@@ -10,4 +10,4 @@ boss_kind = "ninja"
 stems = Array[AudioStream]([ExtResource("2_x7p33")])
 stem_intensity = PackedFloat32Array()
 loop = true
-bpm = 128.0
+bpm = 160.0

@@ -375,26 +375,30 @@ def gen_melody(rng, root, scale, chords_per_bar, bars, octave_low, octave_high):
 def compose(name, seed, kind="combat", over=None):
     over = over or {}
     rng = Rng(seed)
+    # fast, futuristic, energetic synthwave (owner's call, 2026-10-18): outrun
+    # tempos, four-on-the-floor or driving kicks, 16th-note octave basses and
+    # arps, short intros and breaks so the energy never drops for long
     if kind == "combat":
-        bpm = rng.choice([100, 104, 106, 108, 110, 112])
+        bpm = rng.choice([140, 144, 146, 148, 150, 152])
         scale_name = rng.choice(["minor", "minor", "dorian"])
         progs = [[0, 5, 2, 6], [0, 6, 5, 6], [0, 3, 5, 4], [5, 6, 0, 0], [0, 5, 3, 4], [0, 2, 6, 5], [3, 4, 0, 0]]
-        sections = [("intro", 4), ("groove", 8), ("lead", 8), ("lead2", 8), ("break", 4), ("build", 4), ("drop", 8), ("outro", 4)]
+        sections = [("intro", 2), ("groove", 8), ("lead", 8), ("lead2", 8), ("break", 4), ("build", 2), ("drop", 8),
+                    ("lead", 8), ("drop", 8), ("outro", 2)]
     elif kind == "boss":
-        bpm = rng.choice([122, 126, 128, 132])
+        bpm = rng.choice([156, 160, 165])
         scale_name = rng.choice(["harmonic", "phrygian", "minor"])
         progs = [[0, 0, 5, 6], [0, 1, 0, 4], [0, 5, 1, 4], [0, 6, 5, 4]]
-        sections = [("drop", 8), ("lead", 8), ("break", 4), ("build", 4), ("drop", 8)]
-    else:  # title
-        bpm = 88
+        sections = [("drop", 8), ("lead", 8), ("break", 4), ("build", 2), ("drop", 8), ("lead2", 8)]
+    else:  # title: energetic but not combat
+        bpm = 118
         scale_name = "dorian"
         progs = [[0, 5, 3, 4]]
-        sections = [("intro", 4), ("dream", 8), ("dream", 8)]
+        sections = [("intro", 4), ("groove", 8), ("lead", 8), ("dream", 4)]
     root = rng.choice([45, 46, 47, 48, 49, 50, 52])  # A2..E3 (bass register root)
     prog = rng.choice(progs)
-    drum_style = rng.choice(["four", "drive", "halftime"]) if kind == "combat" else ("drive" if kind == "boss" else "none")
+    drum_style = rng.choice(["four", "four", "drive"]) if kind != "title" else "four"
     bass_kind = rng.choice(["saw", "square"])
-    bass_style = rng.choice(["pulse8", "gallop", "offbeat"]) if kind == "combat" else ("octave16" if kind == "boss" else "long")
+    bass_style = rng.choice(["octave16", "pulse16", "gallop"]) if kind != "title" else "pulse8"
     lead_kind = rng.choice(["saw", "square", "fm", "brass"])
     arp_kind = rng.choice(["saw", "square"])
     arp_pattern = rng.choice(["up", "updown", "random", "pairs"])
@@ -471,8 +475,9 @@ def compose(name, seed, kind="combat", over=None):
                             drums.add(d_snare(rng, True), tk, 0.05, 0.85)
                             if sec in ("drop", "lead2"):
                                 drums.add(d_clap(rng), tk, -0.1, 0.4)
-                        for h in range(4 if drum_style == "drive" or sec == "drop" else 2):
-                            sub = h * (beat / (4 if drum_style == "drive" or sec == "drop" else 2))
+                        hats = 4 if drum_style in ("drive", "four") or sec == "drop" else 2
+                        for h in range(hats):
+                            sub = h * (beat / hats)
                             open_ = (h == 2 and drum_style != "drive") or (drum_style == "drive" and h == 2 and k % 2 == 1)
                             drums.add(d_hat(rng, open_), tk + sub, 0.35 * (1 if h % 2 else -1), 0.5 if h % 2 else 0.35)
                     if last_bar and sec != "outro":
@@ -508,7 +513,9 @@ def compose(name, seed, kind="combat", over=None):
                                 continue
                         elif bass_style == "octave16":
                             m = croot + (12 if k % 2 else 0)
-                        dur = s16 * (1.6 if bass_style == "pulse8" else 0.85)
+                        elif bass_style == "pulse16" and k in (7, 15) and rng.f() < 0.4:
+                            m += 12
+                        dur = s16 * (1.6 if bass_style == "pulse8" else (0.7 if bass_style == "pulse16" else 0.85))
                         bass.add(inst_bass(midi(m), dur, bass_kind), tk, 0.0, 0.75)
             # ---- pad
             v = voice(ch, 55, 74)
@@ -519,7 +526,7 @@ def compose(name, seed, kind="combat", over=None):
                 l, r = inst_supersaw(midi(m), bar, rng, bright)
                 pad.add_st(l, r, tb, 0.33 if sec != "dream" else 0.45)
             # ---- arp
-            if sec in ("intro", "groove", "lead2", "drop", "build", "dream", "lead") and (sec != "lead" or kind == "boss"):
+            if sec in ("intro", "groove", "lead2", "drop", "build", "dream", "lead"):
                 tones = voice(ch, 62, 76) + [x + 12 for x in voice(ch, 62, 76)]
                 seq = []
                 if arp_pattern == "up":
@@ -530,7 +537,7 @@ def compose(name, seed, kind="combat", over=None):
                     seq = [tones[i // 2] if i % 2 == 0 else tones[-1 - i // 2] for i in range(len(tones) * 2)]
                 else:
                     seq = [rng.choice(tones) for _ in range(16)]
-                cutoff = 1800 if sec == "intro" else (5500 if sec == "drop" else 3500)
+                cutoff = 2400 if sec == "intro" else (7000 if sec == "drop" else 4800)
                 for k in range(16):
                     m = seq[k % len(seq)]
                     arp.add(inst_pluck(midi(m), s16 * 0.9, arp_kind, cutoff), tb + k * s16, 0.25 if k % 2 else -0.25, 0.32)
@@ -591,10 +598,24 @@ def compose(name, seed, kind="combat", over=None):
     return np.stack([L, R], axis=1), dict(name=name, bpm=bpm, scale=scale_name, root=root, prog=prog, drums=drum_style, bass=bass_style, lead=lead_kind, seconds=round(len(L) / SR, 1))
 
 
+# Every track is mastered to the same loudness so the mix (spec §10.1, measured
+# against tracks at this level) holds whichever track plays.
+TARGET_LUFS = -14.0
+
+
+def _loudness(path):
+    out = subprocess.run(["ffmpeg", "-nostats", "-i", path, "-af", "ebur128", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    return float(out.rsplit("I:", 1)[1].split("LUFS")[0])
+
+
 def write_ogg(name, data, q):
     tmp = os.path.join(OUT, name + "_tmp.wav")
     wavfile.write(tmp, SR, (data * 32767).astype(np.int16))
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-c:a", "libvorbis", "-q:a", str(q), os.path.join(OUT, name + ".ogg")], check=True)
+    gain = TARGET_LUFS - _loudness(tmp)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-af",
+                    f"volume={gain:.2f}dB,alimiter=limit=0.89:level=false",
+                    "-c:a", "libvorbis", "-q:a", str(q), os.path.join(OUT, name + ".ogg")], check=True)
     os.remove(tmp)
 
 
@@ -603,15 +624,15 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     # Each track gets its own key, tempo, progression, groove and lead voice.
     jobs = [
-        ("combat_0", 1001, "combat", dict(bpm=108, scale="minor", root=45, prog=[0, 5, 2, 6], drums="four", bass="pulse8", bass_kind="saw", lead="saw", arp="up", arp_kind="saw", bell=False)),
-        ("combat_1", 1037, "combat", dict(bpm=104, scale="minor", root=54 - 12, prog=[0, 6, 5, 6], drums="halftime", bass="offbeat", bass_kind="square", lead="fm", arp="updown", arp_kind="square", bell=True)),
-        ("combat_2", 1074, "combat", dict(bpm=110, scale="minor", root=48, prog=[0, 3, 5, 4], drums="drive", bass="gallop", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw", bell=False)),
-        ("combat_3", 1111, "combat", dict(bpm=100, scale="dorian", root=52, prog=[5, 6, 0, 0], drums="halftime", bass="pulse8", bass_kind="saw", lead="square", arp="random", arp_kind="square", bell=True)),
-        ("combat_4", 1148, "combat", dict(bpm=112, scale="minor", root=50, prog=[0, 5, 3, 4], drums="four", bass="gallop", bass_kind="square", lead="saw", arp="updown", arp_kind="saw", bell=False)),
-        ("combat_5", 1185, "combat", dict(bpm=106, scale="dorian", root=55 - 12, prog=[0, 2, 6, 5], drums="drive", bass="pulse8", bass_kind="saw", lead="fm", arp="up", arp_kind="square", bell=True)),
-        ("boss_0", 5000, "boss", dict(bpm=128, scale="phrygian", root=52, prog=[0, 1, 0, 4], drums="drive", bass="octave16", bass_kind="saw", lead="brass", arp="random", arp_kind="square")),
-        ("boss_1", 5053, "boss", dict(bpm=122, scale="harmonic", root=48, prog=[0, 0, 5, 6], drums="four", bass="octave16", bass_kind="square", lead="saw", arp="updown", arp_kind="saw")),
-        ("boss_2", 5106, "boss", dict(bpm=132, scale="harmonic", root=45, prog=[0, 5, 1, 4], drums="drive", bass="octave16", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw")),
+        ("combat_0", 1001, "combat", dict(bpm=148, scale="minor", root=45, prog=[0, 5, 2, 6], drums="four", bass="octave16", bass_kind="saw", lead="saw", arp="up", arp_kind="saw", bell=False)),
+        ("combat_1", 1037, "combat", dict(bpm=140, scale="minor", root=54 - 12, prog=[0, 6, 5, 6], drums="drive", bass="gallop", bass_kind="square", lead="fm", arp="updown", arp_kind="square", bell=True)),
+        ("combat_2", 1074, "combat", dict(bpm=150, scale="minor", root=48, prog=[0, 3, 5, 4], drums="four", bass="pulse16", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw", bell=False)),
+        ("combat_3", 1111, "combat", dict(bpm=144, scale="dorian", root=52, prog=[5, 6, 0, 0], drums="four", bass="octave16", bass_kind="square", lead="square", arp="random", arp_kind="square", bell=True)),
+        ("combat_4", 1148, "combat", dict(bpm=152, scale="minor", root=50, prog=[0, 5, 3, 4], drums="drive", bass="gallop", bass_kind="saw", lead="saw", arp="updown", arp_kind="saw", bell=False)),
+        ("combat_5", 1185, "combat", dict(bpm=146, scale="dorian", root=55 - 12, prog=[0, 2, 6, 5], drums="four", bass="pulse16", bass_kind="saw", lead="fm", arp="up", arp_kind="square", bell=True)),
+        ("boss_0", 5000, "boss", dict(bpm=160, scale="phrygian", root=52, prog=[0, 1, 0, 4], drums="four", bass="octave16", bass_kind="saw", lead="brass", arp="random", arp_kind="square")),
+        ("boss_1", 5053, "boss", dict(bpm=156, scale="harmonic", root=48, prog=[0, 0, 5, 6], drums="four", bass="octave16", bass_kind="square", lead="saw", arp="updown", arp_kind="saw")),
+        ("boss_2", 5106, "boss", dict(bpm=165, scale="harmonic", root=45, prog=[0, 5, 1, 4], drums="drive", bass="pulse16", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw")),
         ("title", 777, "title", dict()),
     ]
     only = sys.argv[1:]
@@ -619,7 +640,7 @@ def main():
         if only and name not in only:
             continue
         data, info = compose(name, seed, kind, over)
-        write_ogg(name, data, 2)
+        write_ogg(name, data, 3)
         print(info, flush=True)
 
 
