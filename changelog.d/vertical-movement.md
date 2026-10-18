@@ -8,7 +8,8 @@
   tag, SAKAHOKO DROP. Brutes need staggering first, and bosses can't be
   plunged.
 - The double jump goes much higher: about 4 m at the top instead of about
-  3 m.
+  3 m, and it gives you a small push toward the keys you're holding. Hold
+  no keys and it goes straight up.
 - Smoother on fast screens: your movement and the camera now glide between
   game updates instead of stepping 60 times a second, so a 144 or 240 Hz
   monitor shows every frame of a run, jump, dash or climb.

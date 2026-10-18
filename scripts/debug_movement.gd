@@ -16,6 +16,7 @@ var _course: Node3D
 var _climbed := false
 var _plunge_seen := false
 var _max_y := -INF
+var _max_h := 0.0 # top horizontal speed seen in the check
 var _enemy: Enemy
 var _fails := 0
 var _executions0 := 0
@@ -42,6 +43,7 @@ func _ready() -> void:
 		{"name": "double jump plus climb onto a 5.6 m tower", "blocks": [[5.6, 1.2]], "keys": ["jump", "double"], "want_climb": true, "want_top": 5.6},
 		{"name": "a 7 m wall can never be climbed", "blocks": [[7.0, 1.2]], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0},
 		{"name": "double jump height on open floor", "blocks": [], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0, "measure": true, "forward": false},
+		{"name": "double jump pushes a little toward the keys held", "blocks": [], "keys": ["jump", "double"], "push": true},
 		{"name": "no plunge from a jump on the same level", "blocks": [], "keys": ["jump", "double"], "enemy": Vector3(0, 0, -2.0), "want_plunge": false, "forward": false, "pitch": -0.9},
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
 		{"name": "plunge onto a grunt at the foot of the wall lands clear of it", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -1.5), "want_plunge": true, "want_top": 0.0, "max_z": -1.4, "pitch": -1.3},
@@ -92,6 +94,7 @@ func _next() -> void:
 	_double_sent = false
 	_finisher_sent = false
 	_max_y = -INF
+	_max_h = 0.0
 	for n in _course.get_children().slice(1):
 		n.queue_free()
 	if is_instance_valid(_enemy):
@@ -159,6 +162,7 @@ func _physics_process(_delta: float) -> void:
 	if p.climb_t >= 0.0:
 		_climbed = true
 	_max_y = maxf(_max_y, p.global_position.y)
+	_max_h = maxf(_max_h, Vector2(p.velocity.x, p.velocity.z).length())
 	if OS.get_cmdline_user_args().has("--movetrace"):
 		print("[trace] %d f=%d y=%.2f vy=%.2f floor=%s jl=%d climb=%.2f ready=%s plunge=%s gk=%s" % [_i, _f, p.global_position.y, p.velocity.y, p.is_on_floor(), p.jumps_left, p.climb_t, p.gk_ready != null, p.gk_ready_plunge, p.gk_target != null])
 	if p.gk_ready_plunge:
@@ -188,6 +192,13 @@ func _finish(c: Dictionary, p: Player) -> void:
 		errs.append("ended at y=%.2f, wanted %.2f" % [y, c.want_top])
 	if c.has("max_z") and p.global_position.z - ORIGIN.z > float(c.max_z):
 		errs.append("ended inside the ledge (z=%.2f)" % (p.global_position.z - ORIGIN.z))
+	if c.get("measure", false) and _max_h > 0.5:
+		errs.append("drifted %.2f m/s with no keys held" % _max_h)
+	if c.get("push", false):
+		var lo := Player.WALK_SPEED + 1.0
+		var hi := Player.WALK_SPEED * Player.DOUBLE_JUMP_PUSH_CAP + 0.05
+		if _max_h < lo or _max_h > hi:
+			errs.append("top speed %.2f m/s, wanted %.1f to %.1f" % [_max_h, lo, hi])
 	if c.get("measure", false):
 		var want := (Player.JUMP_VEL * Player.JUMP_VEL + Player.DOUBLE_JUMP_VEL * Player.DOUBLE_JUMP_VEL) / (2.0 * Player.GRAVITY)
 		if absf(_max_y - want) > 0.25:
@@ -198,7 +209,7 @@ func _finish(c: Dictionary, p: Player) -> void:
 		if c.want_plunge and not (_enemy_gone() and Game.executions == _executions0 + 1):
 			errs.append("plunge did not kill (executions +%d)" % (Game.executions - _executions0))
 	if errs.is_empty():
-		print("[movetest] ok    %s (y=%.2f, peak %.2f)" % [c.name, y, _max_y])
+		print("[movetest] ok    %s (y=%.2f, peak %.2f, top speed %.1f)" % [c.name, y, _max_y, _max_h])
 	else:
 		_fails += 1
 		print("[movetest] FAIL  %s: %s" % [c.name, ", ".join(errs)])

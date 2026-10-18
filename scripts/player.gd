@@ -20,6 +20,10 @@ const AIR_ACCEL := 28.0
 const GRAVITY := 26.0
 const JUMP_VEL := 9.4
 const DOUBLE_JUMP_VEL := 10.6
+# the double jump also pushes toward the keys held (none held: straight up),
+# up to a little over walk speed; air drag eases it back within about 0.4 s
+const DOUBLE_JUMP_PUSH := 3.0
+const DOUBLE_JUMP_PUSH_CAP := 1.35 # times walk speed
 const DASH_SPEED := 21.0
 const DASH_TIME := 0.2
 const BASE_FOV := 88.0 # the default; the live value is Settings.fov
@@ -327,6 +331,13 @@ func _physics_process(delta: float) -> void:
 		elif jumps_left > 0:
 			jumps_left -= 1
 			velocity.y = DOUBLE_JUMP_VEL
+			if wish.length() > 0.1:
+				var hv := Vector3(velocity.x, 0, velocity.z)
+				var cap := maxf(hv.length(), WALK_SPEED * DOUBLE_JUMP_PUSH_CAP)
+				hv = (hv + wish.normalized() * DOUBLE_JUMP_PUSH).limit_length(cap)
+				velocity.x = hv.x
+				velocity.z = hv.z
+				fov_kick = maxf(fov_kick, 4.0)
 			Sfx.play("jump", -6.0, 1.3)
 			Game.gore.sparks(global_position, Vector3.DOWN, 6, Color(0.5, 1.6, 2.0))
 
