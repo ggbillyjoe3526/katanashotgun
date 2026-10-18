@@ -12,18 +12,20 @@ class_name Graphics
 ## run's palette and the dither post-process. Higher tiers add light, never
 ## realism. WEAK and MEDIOCRE run on Compatibility (OpenGL 3), INSANE on
 ## Forward+ (Vulkan or Direct3D 12). Godot picks the renderer at start-up, so
-## the game writes the choice to RENDERER_FILE (read through the project
+## the game writes the choice to renderer_file (read through the project
 ## setting application/config/project_settings_override) and a switch takes
 ## a restart. A PC that can't run Forward+ falls back to OpenGL by itself.
 
-const RENDERER_FILE := "user://renderer.cfg"
 const COMPAT := "gl_compatibility"
 const FORWARD_PLUS := "forward_plus"
 ## The renderer each preset wants.
 const RENDERERS := {"low": COMPAT, "medium": COMPAT, "high": FORWARD_PLUS}
 
+## Must match application/config/project_settings_override in project.godot
+## (tests point it elsewhere).
+static var renderer_file := "user://renderer.cfg"
 static var _method := ""
-static var _boot_file := "" # what RENDERER_FILE asked for when the game started
+static var _boot_file := "" # what renderer_file asked for when the game started
 static var _boot_read := false
 
 
@@ -55,7 +57,7 @@ static func fell_back() -> bool:
 ## renderer). Never after a fallback, nor on a headless or dummy renderer.
 static func restart_needed(preset: String) -> bool:
 	var now := renderer()
-	if now != COMPAT and now != FORWARD_PLUS:
+	if DisplayServer.get_name() == "headless" or (now != COMPAT and now != FORWARD_PLUS):
 		return false
 	var want := wanted_renderer(preset)
 	if want == FORWARD_PLUS and fell_back():
@@ -68,15 +70,15 @@ static func restart_needed(preset: String) -> bool:
 static func save_renderer(preset: String) -> void:
 	_read_boot_file()
 	var want := wanted_renderer(preset)
-	if _read_file() == want or (want == COMPAT and not FileAccess.file_exists(RENDERER_FILE)):
+	if _read_file() == want or (want == COMPAT and not FileAccess.file_exists(renderer_file)):
 		return
 	var cf := ConfigFile.new()
 	cf.set_value("rendering", "renderer/rendering_method", want)
-	var tmp := RENDERER_FILE + ".tmp"
+	var tmp := renderer_file + ".tmp"
 	if cf.save(tmp) != OK:
 		push_warning("Graphics: could not write %s" % tmp)
 		return
-	DirAccess.rename_absolute(tmp, RENDERER_FILE)
+	DirAccess.rename_absolute(tmp, renderer_file)
 
 
 static func _read_boot_file() -> void:
@@ -86,10 +88,10 @@ static func _read_boot_file() -> void:
 
 
 static func _read_file() -> String:
-	if not FileAccess.file_exists(RENDERER_FILE):
+	if not FileAccess.file_exists(renderer_file):
 		return ""
 	var cf := ConfigFile.new()
-	if cf.load(RENDERER_FILE) != OK:
+	if cf.load(renderer_file) != OK:
 		return ""
 	return str(cf.get_value("rendering", "renderer/rendering_method", ""))
 
@@ -158,7 +160,7 @@ static func apply(arena: Arena) -> void:
 	_apply_moon(arena.moon, mid, top)
 	_apply_lamps(arena, mid, top)
 	_apply_haze(arena, mid and not top)
-	_apply_forward_plus(arena, env, top, base)
+	_apply_forward_plus(env, top, base)
 	_apply_server(tier, top)
 
 
@@ -215,7 +217,7 @@ static func _apply_haze(arena: Arena, on: bool) -> void:
 			q.visible = on
 
 
-static func _apply_forward_plus(arena: Arena, env: Environment, top: bool, base: Dictionary) -> void:
+static func _apply_forward_plus(env: Environment, top: bool, base: Dictionary) -> void:
 	if not advanced():
 		return
 	# psx_lit_hd leaves fog to the Environment: the shader's own curve over
@@ -280,7 +282,6 @@ static func _apply_server(tier: String, top: bool) -> void:
 		return
 	RenderingServer.environment_set_ssao_quality(RenderingServer.ENV_SSAO_QUALITY_HIGH if top else RenderingServer.ENV_SSAO_QUALITY_MEDIUM, true, 0.5, 2, 50.0, 300.0)
 	RenderingServer.environment_set_ssil_quality(RenderingServer.ENV_SSIL_QUALITY_HIGH, true, 0.5, 4, 50.0, 300.0)
-	RenderingServer.environment_set_ssr_roughness_quality(RenderingServer.ENV_SSR_ROUGHNESS_QUALITY_HIGH)
 	RenderingServer.environment_set_sdfgi_ray_count(RenderingServer.ENV_SDFGI_RAY_COUNT_64)
 	RenderingServer.environment_set_volumetric_fog_volume_size(96, 96)
 	RenderingServer.gi_set_use_half_resolution(false)

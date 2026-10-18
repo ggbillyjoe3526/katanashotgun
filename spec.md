@@ -527,6 +527,7 @@ Notes:
 | Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground or off a jump pad on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes must be staggered to plunge; bosses can never be plunged (no glory kills on bosses, owner 2026-10-18) |
 | Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
+| Graphics presets | WEAK (old PCs, today's look), MEDIOCRE (a clear step up, default), INSANE (everything Godot offers, Forward+ renderer; ray and path tracing dropped). Every tier keeps the PS1 look (owner, 2026-10-18; §14.1) |
 | Tougher boss movesets | Souls-style boss fights: sidesteps, delayed swings, an area move and a RED SIGNAL attack per boss, punish windows; the first cycle keeps the big moves for after the enrage (owner, 2026-10-18; §5.6) |
 | Bosses: posture, no glory kills | Bosses have a posture bar (KAMAE) that aggressive play fills; a full bar breaks the boss and F lands the ONIKIRI blow. Bosses never get a glory kill; only the horde does (owner, 2026-10-18; §5.5) |
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
@@ -557,8 +558,12 @@ Notes:
 - **Engine:** Godot **4.7** (or the latest 4.x stable), **GDScript** (typed).
   Use C# or GDExtension only if profiling demands it for hot loops.
 - **Renderer:** **Compatibility (OpenGL 3.3)**, for the widest hardware
-  support (§14). Consider Mobile or Forward+ only if profiling shows a clear
-  win without losing low-end support.
+  support (§14), on the WEAK and MEDIOCRE graphics presets. The INSANE
+  preset runs on **Forward+** (Vulkan or Direct3D 12) for global
+  illumination, reflections and volumetric fog (owner, 2026-10-18; §14.1).
+  Godot picks the renderer at start-up from `user://renderer.cfg`
+  (`application/config/project_settings_override`), so switching to or from
+  INSANE takes a restart; a PC that can't run Forward+ falls back to OpenGL.
 - **Targets:** Windows x86_64 first (the developer's PC is Windows x64), then
   Mac and Linux. Export Windows with `embed_pck = true` for a single exe.
 - **Display:**
@@ -2084,31 +2089,70 @@ weak hardware.
       (respawn, the end of a finisher, pooled reuse).
     - Move hot loops (gore, mass AI) to typed GDScript, C# or GDExtension if
       profiling says so.
-  - **Quality presets** (Low/Medium/High) cut effect counts and render scale,
-    **never the art style**.
+  - **Graphics presets** WEAK / MEDIOCRE / INSANE (ids `low`, `medium`,
+    `high`) set effect counts, render scale and lighting, **never the art
+    style** (§14.1).
   - **Effect caps per preset** (`scripts/quality.gd`; pools are built at the
     High size, the oldest effect is recycled when a cap is reached):
 
-    | Cap | Low | Medium | High |
+    | Cap | WEAK | MEDIOCRE | INSANE |
     |---|---|---|---|
-    | Blood/spark droplets | 700 | 1200 | 1800 |
-    | Floor decals | 220 | 360 | 520 |
-    | Gibs and chunks | 50 | 80 | 110 |
-    | Blood per burst, chunks per kill | 50% | 75% | 100% |
-    | Damage numbers | 18 | 28 | 40 |
-    | Lightning arcs | 36 | 60 | 96 |
-    | Blood mist | 16 | 28 | 40 |
-    | Smoke puffs | 20 | 36 | 60 |
-    | Impact flashes | 16 | 28 | 48 |
+    | Blood/spark droplets | 700 | 1800 | 2700 |
+    | Floor decals | 220 | 520 | 780 |
+    | Gibs and chunks | 50 | 110 | 160 |
+    | Blood per burst | 50% | 100% | 150% |
+    | Chunks per kill | 50% | 100% | 130% |
+    | Damage numbers | 18 | 40 | 40 |
+    | Lightning arcs | 36 | 96 | 128 |
+    | Blood mist | 16 | 40 | 56 |
+    | Smoke puffs | 20 | 60 | 80 |
+    | Impact flashes | 16 | 48 | 64 |
 
     Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
     12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
-    never capped (they heal); their pool grows. High's caps sit above what a
-    fight produces, so High looks like the prototype. Boss-only effects
+    never capped (they heal); their pool grows. MEDIOCRE's caps sit above
+    what a fight produces, so it shows the full prototype show; INSANE throws
+    more blood and chunks per kill. Damage numbers stop at 40 so the screen
+    stays readable. Boss-only effects
     (shockwave rings, missile markers, dash telegraph lines) are still built
     per use: they fire a few times a minute at most.
   - **Profiling:** test on real low-end hardware throughout. Set a frame-time
     budget per system. Add a debug perf overlay (fps, frame time, draw calls).
+
+
+### 14.1 Graphics presets
+Owner, 2026-10-18: WEAK is today's look, MEDIOCRE a noticeable step up,
+INSANE "lives up to the name" and uses what Godot does best. Ray and path
+tracing are dropped. Every tier keeps the PS1/PS2 direction: 960x540,
+vertex snap, Gouraud (per-vertex) lighting, the run's palette and the
+dither post-process. Higher tiers add light, never realism.
+`scripts/graphics.gd` applies the lighting to the map's Environment, moon and
+lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
+
+| | WEAK (`low`) | MEDIOCRE (`medium`, default) | INSANE (`high`) |
+|---|---|---|---|
+| Renderer | Compatibility | Compatibility | Forward+ |
+| Render scale it picks | 75% | 100% | 100% |
+| Lighting | the map as built | + ambient occlusion, moon shadows, shadows from the 4 brightest lamps | + global illumination (SDFGI: neon bounces onto floors), indirect light (SSIL), shadows from every lamp, soft high-quality shadow filtering |
+| Glow | the map's own | wider neon halos | HDR glow that only catches light brighter than white |
+| Atmosphere | — | a faint additive haze around each lamp | volumetric fog lit by the lamps and moon |
+| Floors | — | — | wet: screen-space reflections on flat floors |
+| Edges | no MSAA | MSAA 2x | MSAA 4x |
+
+- Forward+ shades the world with `psx_lit_hd` / `psx_cutout_hd`: the same
+  surface, but fogged by the Environment's depth fog (the shader's own curve,
+  10 to 100 m) so volumetric fog reaches it, and with low roughness on
+  up-facing faces. Far backdrops with their own long fog range keep the
+  shader's fog. Effect shaders have `fog_disabled`, so they look the same on
+  both renderers.
+- HDR glow on Forward+ has no bloom: bloom or wide glow levels turn the whole
+  picture milky.
+- Switching to or from INSANE writes `user://renderer.cfg` and asks for a
+  restart (the settings footer's QUIT GAME becomes RESTART GAME). Old saves
+  on HIGH (the old default) move to MEDIOCRE (settings v3).
+- Command line `--quality=` changes the preset for that run only and never
+  writes the renderer file; pass `--rendering-method forward_plus` to try
+  INSANE's renderer.
 
 ---
 

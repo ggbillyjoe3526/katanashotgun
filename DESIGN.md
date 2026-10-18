@@ -414,9 +414,9 @@ is never lost.
 
 ## Tech
 - Godot 4.7, Compatibility renderer (OpenGL 3.3 / GLES3), chosen because it
-  runs on the widest range of old and weak hardware. Mobile or Forward+ are
-  options only if profiling shows a clear win without dropping low-end
-  support. It exports to Windows, Mac and Linux.
+  runs on the widest range of old and weak hardware. The INSANE graphics
+  preset switches to Forward+ (after a restart) for global illumination,
+  reflections and volumetric fog. It exports to Windows, Mac and Linux.
 - Procedural textures, meshes, SFX and music: `tools/gen_audio.py` and
   `tools/gen_music.py` regenerate the audio.
 
@@ -456,8 +456,9 @@ How (guidelines for the build):
   (time-sliced updates for far enemies).
 - Move hot loops (gore simulation, many-enemy AI) to typed GDScript, C# or
   GDExtension if profiling says so.
-- Quality presets (Low/Medium/High) that cut effect counts and render scale,
-  never the art style. Even Low still looks like the game.
+- Graphics presets WEAK / MEDIOCRE / INSANE that set effect counts, render
+  scale and lighting, never the art style. Even WEAK still looks like the
+  game (spec §14.1).
 - Profile on real low-end hardware throughout development, with a frame-time
   budget per system and an on-screen perf overlay (fps, frame time, draw
   calls) in debug builds.

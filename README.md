@@ -149,7 +149,8 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Audio:** volume for Master, Music, Sound effects, Ambience and Menus/HUD.
 - **Video:** window mode (full screen at your screen's resolution by
   default, windowed, or exclusive full screen), VSync (off by default), frame
-  cap (unlimited by default, or 60 to 360), quality preset, render scale (50
+  cap (unlimited by default, or 60 to 360), graphics preset (WEAK, MEDIOCRE,
+  INSANE), render scale (50
   to 100% of the 3D view), field of view (70 to 110, default 88). At any
   resolution the 3D view keeps its 960x540 pixel look, upscaled without
   smoothing (exact 4x blocks on 4K, 2x on 1080p).

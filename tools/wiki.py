@@ -106,6 +106,12 @@ def check(base: str = "") -> int:
                 continue  # https:, mailto:
             page, _, anchor = target.partition("#")
             page = page or name
+            if page.startswith("images/"):
+                # a picture shipped with the wiki (docs/wiki/images/)
+                if not (WIKI / page).is_file():
+                    print(f"::error file={path}::Image that doesn't exist: ({target}). Put it in docs/wiki/images/.")
+                    bad = 1
+                continue
             if page not in known:
                 print(f"::error file={path}::Link to a page that doesn't exist: ({target}). Pages are file names without .md, like (Bosses).")
                 bad = 1
