@@ -526,6 +526,7 @@ Notes:
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
 | Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
+| Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
@@ -571,8 +572,17 @@ Notes:
 - **User data:** `application/config/use_custom_user_dir = true`,
   `custom_user_dir_name = "KatanaShotgun"`. The app name contains a slash, so
   never derive paths from it.
-- **Window:** start windowed, F11 or Alt+Enter toggles fullscreen. Pause when
-  the window loses focus or the mouse capture is lost.
+- **Window:** start full screen at the display's own resolution (borderless,
+  up to 4K and beyond); F11 or Alt+Enter toggles windowed. Windowed mode is
+  the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
+  4K), so the retro pixels stay square and sharp. The 3D view stays 960×540
+  at any screen size and is upscaled with nearest filtering, never smoothed:
+  exactly 4× on 4K and 2× on 1080p; other sizes (1440p) get nearest scaling
+  with slightly uneven pixel widths. Higher resolution never smooths away the
+  PS1/PS2 look. Pause
+  when the window loses focus or the mouse capture is lost.
+- **Frame rate:** unlimited by default with VSync off; the frame cap offers
+  60, 75, 120, 144, 165, 240 and 360, and VSync can be turned on.
 
 ### 2.1 Input map (defaults; everything rebindable)
 | Action | Default | Notes |
@@ -586,6 +596,7 @@ Notes:
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
+| quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -1378,9 +1389,16 @@ the holographic cut-in (§9.8).
   - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
   - A controls column and a HI-SCORES table (top 5).
   - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
+  - Bottom row: SETTINGS [TAB] on the left; the version and QUIT GAME [Q] on
+    the right. The start prompt sits just above that row.
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
-  hint if the mouse fails to lock. Music ducks to −20 dB.
+  hint if the mouse fails to lock. SETTINGS [TAB] and QUIT GAME buttons
+  under them (no Q here: Q is a dash key mid-run). Music ducks to −20 dB.
+- **Quit:** QUIT GAME on the title, the pause screen and the settings footer
+  closes the game, saving the profile and settings first. The first press only
+  arms it ("PRESS AGAIN TO QUIT" for 3 s) so a stray click or key never quits.
+  A run in progress continues from its last between-wave save (§11.3).
 - **Level-up:**
   - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (148×188
     tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
@@ -2020,6 +2038,11 @@ seed | click: new seed).
     scale, quality preset, FPS cap, VSync.
   - Screen-shake and flash intensity sliders (accessibility), key rebinding,
     window mode.
+  - **Mouse only** (owner, 2026-10-18): click tabs, options and the footer
+    (BACK, DEFAULTS, QUIT GAME), drag or scroll sliders, click a key slot then
+    press the new key (or click the slot with a mouse button), right-click a
+    slot to clear it. No keyboard navigation and no key hints; Esc still backs
+    out.
 - **Profile and save system** (§11). **Rewards and unlock menu** (§11.2).
 
 ---

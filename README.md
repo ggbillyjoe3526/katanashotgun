@@ -25,6 +25,7 @@ and Linux).
 | Shift (or Q) | Dash (invulnerable) |
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
+| Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
 | After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
 
 ## How a run works
@@ -137,16 +138,21 @@ gdlintrc                    gdlint settings
 ## Settings
 Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Audio:** volume for Master, Music, Sound effects, Ambience and Menus/HUD.
-- **Video:** window mode (windowed, fullscreen, exclusive fullscreen), VSync,
-  frame cap, quality preset, render scale (50 to 100% of the 3D view), field
-  of view (70 to 110, default 88).
+- **Video:** window mode (full screen at your screen's resolution by
+  default, windowed, or exclusive full screen), VSync (off by default), frame
+  cap (unlimited by default, or 60 to 360), quality preset, render scale (50
+  to 100% of the 3D view), field of view (70 to 110, default 88). At any
+  resolution the 3D view keeps its 960x540 pixel look, upscaled without
+  smoothing (exact 4x blocks on 4K, 2x on 1080p).
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
   frames don't strobe.
 
-Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
-Q / E change tab, R resets the tab, Esc goes back. Settings are saved in
+Everything is done with the mouse: click a tab, click the left or right half
+of an option, drag or scroll a slider. To rebind, click a slot and press the
+new key (or click the slot with the mouse button you want); right-click a slot
+to clear it. DEFAULTS resets the tab, BACK (or Esc) closes. Settings are saved in
 your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags

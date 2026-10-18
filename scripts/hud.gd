@@ -102,6 +102,8 @@ var juice: Juice
 var settings_menu: SettingsMenu
 var title_settings: TechButton
 var pause_settings: TechButton
+var title_quit: TechButton
+var pause_quit: TechButton
 
 # profile (spec §11): the Player Level on the title and results, the armory,
 # and the boss-reward card
@@ -216,6 +218,10 @@ func _ready() -> void:
 	pause_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
 	pause_settings.pressed.connect(_open_settings)
 	pause_root.add_child(pause_settings)
+	title_quit = _quit_button("QUIT GAME  [Q]")
+	title_root.add_child(title_quit)
+	pause_quit = _quit_button("QUIT GAME")
+	pause_root.add_child(pause_quit)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -649,6 +655,7 @@ func show_title() -> void:
 		title_blink.text = "CLICK  CONTINUE RUN - WAVE %d       N  NEW RUN" % int(snap.get("next_wave", 1))
 	title_root.visible = true
 	play_root.visible = false
+	title_quit.disarm()
 
 
 func hide_title() -> void:
@@ -658,11 +665,19 @@ func hide_title() -> void:
 
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
+	pause_quit.disarm()
 	var lines := Upgrades.build_lines(Game.upgrades)
 	var bl: Label = pause_root.get_node("Builds")
 	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
 	if not on:
 		settings_menu.close()
+
+
+func _quit_button(label: String) -> TechButton:
+	var b := TechButton.make(label, Color(Game.palette.neon_b))
+	b.confirm_text = "PRESS AGAIN TO QUIT"
+	b.pressed.connect(Game.quit_game)
+	return b
 
 
 func _open_settings() -> void:
@@ -1169,6 +1184,7 @@ func _process(_delta: float) -> void:
 		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
 		pause_armory.position = Vector2(8, vs.y - pause_armory.size.y - 6)
 		pause_settings.position = Vector2(roundf((vs.x - pause_settings.size.x) * 0.5), vs.y * 0.5 + 84)
+		pause_quit.position = Vector2(roundf((vs.x - pause_quit.size.x) * 0.5), pause_settings.position.y + 20)
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
@@ -1260,10 +1276,14 @@ func _layout_title() -> void:
 	title_scores.position = Vector2(lx + left_w + 28.0, top + 16)
 	armory.position = Vector2(lx + left_w + 28.0, title_scores.position.y + title_scores.size.y + 4)
 	title_seed.position = Vector2((vs.x - title_seed.size.x) * 0.5, vs.y - 48)
-	title_version.position = Vector2(vs.x - title_version.size.x - 6, vs.y - title_version.size.y - 4)
+	# bottom row: SETTINGS left, version and QUIT right; the start prompt sits
+	# just above it, so even the long continue-run prompt clears both buttons
+	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 4)
+	title_quit.position = Vector2(vs.x - title_quit.size.x - 8, title_settings.position.y)
+	title_version.position = Vector2(title_quit.position.x - title_version.size.x - 6,
+		roundf(title_quit.position.y + (title_quit.size.y - title_version.size.y) * 0.5))
 	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
-	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, vs.y - 30)
-	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 6)
+	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, title_settings.position.y - title_blink.size.y)
 
 
 func _layout_levelup() -> void:
