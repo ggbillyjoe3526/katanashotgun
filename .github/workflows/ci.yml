@@ -2,7 +2,8 @@ name: Checks
 
 # Every pull request and every push to main: import the project, let the
 # autoplay bot play, run the unit tests, check the licence notices are current,
-# lint the scripts and check the changelog notes in changelog.d/. Fails on any script error or failed test.
+# lint the scripts and check the changelog notes in changelog.d/. Fails on any
+# script error or failed test.
 on:
   pull_request:
   push:

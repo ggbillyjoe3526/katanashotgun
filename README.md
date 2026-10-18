@@ -91,6 +91,8 @@ gdlintrc                    gdlint settings
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
+  - `tools/changelog.sh check`: the changelog notes in `changelog.d/` (one new
+    file per change instead of editing `CHANGELOG.md`; see its `README.md`).
   Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
   isn't on PATH).
 - **Licence notices:** after adding a font or other third-party asset, or

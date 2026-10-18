@@ -1933,6 +1933,6 @@ seed | click: new seed).
 - [ ] Names follow §13 (Japanese myth or history + cyberpunk, readable,
       never copied from FromSoftware or other IP).
 - [ ] No new mechanics added without sign-off (§0.3).
-- [ ] Changelog note added in `changelog.d/`. For releases: the tag pushed, CI green, the Release
-      has the installer and zips, and the installer was tested by the
-      developer at least once per release.
+- [ ] Changelog note added in `changelog.d/`. For releases: the tag pushed,
+      CI green, the Release has the installer and zips, and the installer
+      was tested by the developer at least once per release.
