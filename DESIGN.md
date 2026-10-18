@@ -207,7 +207,7 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
 - **Enemies:** grunts *Ashigaru* (foot soldiers), gunners *Teppō* (the
   matchlock corps), brutes *Kanabō* (after the oni's iron club).
 - **Mutators** (keep the plain-English description underneath):
-  - Overdrive → **IDATEN'S HASTE**
+  - Overdrive → **OKURI-INU HUNT** (was Idaten's Haste)
   - Glass Cannon → **MURAMASA'S CURSE**
   - Blood Moon → **AKATSUKI** (the red dawn)
   - Brownout → **YOMI BLACKOUT**
@@ -215,13 +215,15 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
   - Sniper Nest → **TEPPŌ VOLLEY**
   - Ironclad → **KANABŌ VANGUARD**
   - Neon Storm → **RAIJIN'S STORM**
-  - Vampire → **JORŌGUMO'S BITE**
+  - Vampire → JORŌGUMO'S BITE, removed 2026-10-18 (too close to Akatsuki)
+  - Seven more since 2026-10-18 (Onryō's Grudge, Kabuto Plate, Matsuri Rush,
+    Kanashibari, Hannya's Wrath, Umibōzu Swell, Senryō Bounty): spec §6.3.
 - **Augments:** Monoblade → **Masamune Edge**, Crimson Wave → **Susanoo's
   Wave**, Phantom Cut → **Kage Step**, Chain Glory → **Hyakunin-giri** (a
   hundred-man cut), Overclocked Legs → **Idaten Drive**, Chrome Heart →
   **Kongō Heart** (vajra, unbreakable), Forked Lightning → **Raijin's Fork**,
-  Capacitor Bank → **Fūjin Bank**, Plasma Burn → **Kagutsuchi Flame** (the
-  fire kami). Keep the rest unless a better myth fits.
+  Plasma Burn → **Kagutsuchi Flame** (the fire kami). The full card list,
+  its builds and the newer names are in spec §3.8 and §13.
 - **Variants and future bosses** should follow the same rule. Example:
   "Orochi Protocol, the Eight-Headed Network"; "Jorōgumo, Silk-Server
   Matriarch"; "Gashadokuro, the Scrapyard Colossus"; "Nue, Chimera of the

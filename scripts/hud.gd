@@ -42,6 +42,7 @@ var hint_label: Label
 var hint_bg: ColorRect
 var hint_t := 99.0
 var popups: Array = []
+var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
 var boss_root: Control
 var boss_fill: ColorRect
 var boss_name: Label
@@ -50,6 +51,8 @@ var noammo_bg: Shard
 var noammo_t := 99.0
 var blood_root: Control
 var bloods: Array = []
+var _blood_free: Array[TextureRect] = []
+var _blood_rng := RandomNumberGenerator.new() # presentation only
 var exec_rect: ColorRect
 var _hp_ghost_v := 1.0
 var _score_shown := 0.0
@@ -127,7 +130,15 @@ var _title_hit := false
 
 # juice state
 const COMBO_MILESTONES := [10, 20, 30, 50, 75, 100, 150, 200, 300]
-const CARD_SIZE := Vector2(138, 180) # level-up augment card: a two-line name and a five-line description fit
+## Level-up input is ignored this long after the cards appear, so a click or
+## key already flying from combat can't select anything.
+const CARD_ARM_TIME := 0.45
+const LEVELUP_PROMPT := "CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)"
+const CARD_SIZE := Vector2(148, 188) # level-up augment card: a two-line name and a four-line description fit
+const CARD_GAP := 8.0
+const CARD_TEXT_W := 136.0 # text width inside the card's solid plate
+const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
+const CARD_DESC_PT := 12
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const CENTER_LEN := 2.4 # centre message, seconds
 const POPUP_LEN := 1.4 # kill tags, seconds
@@ -144,6 +155,7 @@ var _last_combo := 0
 var _combo_pop := 0.0
 var _deal_t := 0.0
 var _picked := -1
+var _selected := -1 # level-up: the card a first click or key chose; a second one takes it
 var _pick_t := 0.0
 var _death_lines := 0
 var _death_full: PackedStringArray = []
@@ -179,6 +191,7 @@ func _ready() -> void:
 	layer = 5
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Ui.init()
+	_blood_rng.randomize()
 	Ui.pixelate_viewport(get_viewport())
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -487,6 +500,12 @@ func _build_pause() -> void:
 	pause_root.add_child(lock)
 	pause_armory = ArmoryPanel.new()
 	pause_root.add_child(pause_armory)
+	# your builds so far, top left, out of the way of the menu
+	var bl := Ui.label("", Ui.font_bold, 10, Upgrades.LINK_COLOR, 2)
+	bl.name = "Builds"
+	bl.position = Vector2(8, 44) # under the wave plate, on a plate of its own
+	bl.add_theme_stylebox_override("normal", _popup_plate)
+	pause_root.add_child(bl)
 
 
 func _build_death() -> void:
@@ -540,14 +559,14 @@ func _build_levelup() -> void:
 	var t := Ui.label("LEVEL UP", Ui.font_big, 16, YELLOW, 2)
 	t.name = "Title"
 	levelup_root.add_child(t)
-	var st := Ui.label("CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)", Ui.font_bold, 10, Color(0.85, 0.8, 1.0), 2)
+	var st := Ui.label(LEVELUP_PROMPT, Ui.font_bold, 10, Color(0.85, 0.8, 1.0), 2)
 	st.name = "Sub"
 	levelup_root.add_child(st)
 	for i in 3:
 		var card := Control.new()
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.size = CARD_SIZE
-		var bg := Shard.make(Color(0.03, 0.02, 0.08, 0.95), 12.0, Color(Game.palette.neon_a), Color.WHITE)
+		var bg := Shard.make(Color(0.03, 0.02, 0.08, 1.0), 12.0, Color(Game.palette.neon_a), Color.WHITE)
 		bg.size = CARD_SIZE
 		bg.shadow_off = Vector2(0, 4)
 		bg.brackets = Color(1, 1, 1, 0.6)
@@ -559,6 +578,13 @@ func _build_levelup() -> void:
 		ribbon.position = Vector2(14, 3)
 		ribbon.name = "Ribbon"
 		card.add_child(ribbon)
+		# a solid plate under the text: the glow only tints the rim around it,
+		# so nothing shows through behind the words
+		var text_plate := Shard.make(Color(0.012, 0.008, 0.03, 1.0), 8.0)
+		text_plate.position = Vector2(4, 20)
+		text_plate.size = CARD_SIZE - Vector2(8, 24)
+		text_plate.name = "Plate"
+		card.add_child(text_plate)
 		for b in 4:
 			var br := Ui.rect(Color.WHITE, Vector2.ZERO, Vector2.ONE)
 			br.name = "B%d" % b
@@ -574,22 +600,43 @@ func _build_levelup() -> void:
 		tag.name = "Tag"
 		tag.position = Vector2(19, 3)
 		card.add_child(tag)
-		var nm := Ui.label("", Ui.font_big, 10, Color.WHITE, 2)
+		# the text sits on the solid plate, so it needs no outline to read
+		var nm := Ui.label("", Ui.font_bold, CARD_NAME_PT, Color.WHITE)
 		nm.name = "Name"
-		nm.position = Vector2(6, 22)
-		nm.size = Vector2(128, 32)
+		nm.position = Vector2(10, 23)
+		nm.size = Vector2(CARD_TEXT_W, 34)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
+		nm.add_theme_constant_override("line_spacing", -4)
 		card.add_child(nm)
-		var rk := Ui.label("", Ui.font_bold, 10, YELLOW, 2)
+		var rk := Ui.label("", Ui.font_bold, 11, YELLOW)
 		rk.name = "Rank"
-		rk.position = Vector2(6, 54)
+		rk.position = Vector2(10, 56)
 		card.add_child(rk)
-		var desc := Ui.label("", Ui.font_bold, 10, Color(0.88, 0.88, 0.95), 2)
+		var desc := Ui.label("", Ui.font_bold, CARD_DESC_PT, Color(0.96, 0.95, 1.0))
 		desc.name = "Desc"
-		desc.position = Vector2(6, 70)
-		desc.size = Vector2(126, 100)
+		desc.position = Vector2(10, 72)
+		desc.size = Vector2(CARD_TEXT_W, 80)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+		desc.add_theme_constant_override("line_spacing", -3)
 		card.add_child(desc)
+		# the builds this card belongs to, pinned to the bottom edge
+		var bl := Ui.label("", Ui.font_bold, 10, Color(0.7, 0.7, 0.82))
+		bl.name = "Builds"
+		bl.position = Vector2(10, CARD_SIZE.y - 33)
+		bl.size = Vector2(CARD_TEXT_W, 26)
+		bl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		bl.add_theme_constant_override("line_spacing", -4)
+		card.add_child(bl)
+		# a tab above the card when it links to a card you already own
+		var rec := Ui.label("RECOMMENDED", Ui.font_bold, 10, Color(0.08, 0.04, 0.0))
+		rec.name = "Rec"
+		var plate := StyleBoxFlat.new()
+		plate.bg_color = Upgrades.LINK_COLOR
+		plate.content_margin_left = 4
+		plate.content_margin_right = 4
+		rec.add_theme_stylebox_override("normal", plate)
+		rec.visible = false
+		card.add_child(rec)
 		levelup_root.add_child(card)
 		cards.append(card)
 	cursor = Ui.label("+", Ui.font_big, 8, Color.WHITE, 2)
@@ -619,6 +666,9 @@ func hide_title() -> void:
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
 	pause_quit.disarm()
+	var lines := Upgrades.build_lines(Game.upgrades)
+	var bl: Label = pause_root.get_node("Builds")
+	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
 	if not on:
 		settings_menu.close()
 
@@ -849,12 +899,18 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 	hovered = -1
 	_deal_t = 0.0
 	_picked = -1
+	_selected = -1
 	_pick_t = 0.0
-	cursor_pos = vs * Vector2(0.5, 0.82)
+	# the cursor starts below the cards, never on one
+	cursor_pos = Vector2(vs.x * 0.5, vs.y - 8)
+	levelup_root.get_node("Sub").text = LEVELUP_PROMPT
 	levelup_root.visible = true
 	# deal the cards one by one
 	for i in choices.size():
 		juice.later(0.06 + i * 0.11, func(): Sfx.play("deal", -4.0, 0.95 + i * 0.1, 0.0))
+		# a card that links to your build lands with a brighter sting
+		if Upgrades.is_recommended(choices[i].id, Game.upgrades):
+			juice.later(0.2 + i * 0.11, func(): Sfx.play("chime", -5.0, 1.25, 0.0))
 	juice.later(0.06, func(): juice.add_shake(3.0))
 	for i in cards.size():
 		var card: Control = cards[i]
@@ -870,15 +926,30 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 		var pips := ""
 		for k in u.max:
 			pips += "#" if k <= r else "-"
-		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else "UNIQUE"
+		# single-pick cards skip the rank line to leave room for the text
+		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else ""
 		card.get_node("Desc").text = u.desc
+		var rec := Upgrades.is_recommended(u.id, Game.upgrades)
+		var lit: Label = card.get_node("Rec")
+		lit.visible = rec
+		lit.size = Vector2.ZERO
+		lit.position = Vector2(roundf((CARD_SIZE.x - lit.get_minimum_size().x) * 0.5), -lit.get_minimum_size().y)
+		# each build line counts what you would own after this pick
+		var after := Game.upgrades.duplicate()
+		after[u.id] = Game.rank(u.id) + 1
+		var lines := []
+		for b in Upgrades.builds_of(u.id):
+			lines.append("%s %d/3" % [b.name, Upgrades.build_count(b, after)])
+		var bl: Label = card.get_node("Builds")
+		bl.text = "\n".join(lines)
+		bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else Color(0.7, 0.7, 0.82))
+		card.set_meta("rec", rec)
 		# the rank and description sit under the name, which may take two lines
-		var npx := Ui.px(Ui.font_big, 10)
-		var nh := Ui.font_big.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
-		var nl := maxi(1, roundi(nh / Ui.font_big.get_height(npx)))
-		var ry := 22.0 + nh + (nl - 1) * 3.0 + 1.0
+		var nm: Label = card.get_node("Name")
+		nm.size = Vector2(CARD_TEXT_W, 0)
+		var ry := nm.position.y + nm.get_minimum_size().y
 		card.get_node("Rank").position.y = ry
-		card.get_node("Desc").position.y = ry + 18.0
+		card.get_node("Desc").position.y = ry + (18.0 if u.max > 1 else 3.0)
 		card.set_meta("col", col)
 
 
@@ -918,17 +989,26 @@ func _input(event: InputEvent) -> void:
 			if h != hovered and h >= 0:
 				Sfx.play("ui_hover", -8.0)
 			hovered = h
+		elif _deal_t < CARD_ARM_TIME:
+			pass # the cards are still landing: swallow stray combat input
 		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if hovered >= 0:
+			# first click selects, a second click on the same card takes it
+			if hovered >= 0 and hovered == _selected:
 				_pick(hovered)
+			else:
+				_select(hovered)
 		elif event is InputEventKey and event.pressed and not event.echo:
 			var idx := -1
 			match event.physical_keycode:
 				KEY_1, KEY_KP_1: idx = 0
 				KEY_2, KEY_KP_2: idx = 1
 				KEY_3, KEY_KP_3: idx = 2
+				KEY_ENTER, KEY_KP_ENTER: idx = _selected
 			if idx >= 0 and idx < _choices.size():
-				_pick(idx)
+				if idx == _selected:
+					_pick(idx)
+				else:
+					_select(idx)
 		get_viewport().set_input_as_handled()
 
 
@@ -938,6 +1018,20 @@ func _card_at(p: Vector2) -> int:
 		if c.visible and Rect2(c.get_meta("base", c.position), c.size).has_point(p):
 			return i
 	return -1
+
+
+## A first click or key lifts a card and asks to confirm; -1 clears it.
+func _select(i: int) -> void:
+	if _picked >= 0 or i == _selected or i >= _choices.size():
+		return
+	_selected = i
+	if i >= 0:
+		Sfx.play("ui_hover", -4.0, 1.3, 0.0)
+	var st: Label = levelup_root.get_node("Sub")
+	if i < 0:
+		st.text = LEVELUP_PROMPT
+	else:
+		st.text = "TAKE %s?   CLICK IT AGAIN, OR PRESS %d OR ENTER" % [_choices[i].name, i + 1]
 
 
 ## Picking punches the chosen card and drops the others, then applies it.
@@ -987,14 +1081,26 @@ func add_popup(text: String, color: Color) -> void:
 		top.l.text = "%s x%d" % [text, top.n]
 		top.t = 0.0
 		return
-	var l := Ui.label(text, Ui.font_bold, 10, color, 2)
-	# a dark plate: the tags must read over gore and neon alike
-	l.add_theme_stylebox_override("normal", _popup_plate)
+	while popups.size() >= MAX_POPUPS:
+		_free_popup(popups.pop_back().l)
+	var l: Label
+	if _popup_free.is_empty():
+		l = Ui.label(text, Ui.font_bold, 10, color, 2)
+		# a dark plate: the tags must read over gore and neon alike
+		l.add_theme_stylebox_override("normal", _popup_plate)
+		play_root.add_child(l)
+	else:
+		l = _popup_free.pop_back()
+		l.text = text
+		l.add_theme_color_override("font_color", color)
+		l.visible = true
 	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
-	play_root.add_child(l)
 	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1})
-	while popups.size() > MAX_POPUPS:
-		popups.pop_back().l.queue_free()
+
+
+func _free_popup(l: Label) -> void:
+	l.visible = false
+	_popup_free.append(l)
 
 
 func damage_flash(amount: float, _from: Vector3) -> void:
@@ -1015,14 +1121,22 @@ func no_ammo() -> void:
 
 
 func screen_blood(n: int) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	var rng := _blood_rng
 	for i in n + rng.randi() % 2:
-		var tr := TextureRect.new()
+		while bloods.size() >= 10:
+			_free_blood(bloods.pop_front().n)
+		var tr: TextureRect
+		if _blood_free.is_empty():
+			tr = TextureRect.new()
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_SCALE
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			blood_root.add_child(tr)
+		else:
+			tr = _blood_free.pop_back()
+			tr.visible = true
 		tr.texture = TexGen.get_tex("splat_b" if rng.randf() < 0.5 else "splat")
-		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		tr.stretch_mode = TextureRect.STRETCH_SCALE
-		tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		var s := rng.randf_range(40, 95)
 		tr.size = Vector2(s, s)
 		tr.pivot_offset = tr.size * 0.5
@@ -1031,11 +1145,12 @@ func screen_blood(n: int) -> void:
 		var px := rng.randf_range(0, vs.x - s) if not edge else (rng.randf_range(-s * 0.4, s * 0.3) if rng.randf() < 0.5 else rng.randf_range(vs.x - s * 0.7, vs.x - s * 0.2))
 		tr.position = Vector2(px, rng.randf_range(-s * 0.3, vs.y - s * 0.6))
 		tr.modulate = Color(0.5, 0.0, 0.03, 0.7)
-		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		blood_root.add_child(tr)
 		bloods.append({"n": tr, "t": 0.0, "life": rng.randf_range(1.4, 2.4)})
-	while bloods.size() > 10:
-		bloods.pop_front().n.queue_free()
+
+
+func _free_blood(tr: TextureRect) -> void:
+	tr.visible = false
+	_blood_free.append(tr)
 
 
 # ---------------------------------------------------------------- frame
@@ -1182,35 +1297,38 @@ func _layout_levelup() -> void:
 	var tk := clampf(_deal_t / 0.1, 0.0, 1.0)
 	t.scale = Vector2.ONE * (lerpf(2.6, 1.0, tk * tk) if tk < 1.0 else 1.0 - 0.12 * sin((_deal_t - 0.1) * 30.0) * exp(-(_deal_t - 0.1) * 9.0))
 	t.rotation = 0.0
-	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 112)
+	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 119)
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 88)
+	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 100)
 	var n := _choices.size()
-	var total := n * CARD_SIZE.x + (n - 1) * 10
+	var total := n * CARD_SIZE.x + (n - 1) * CARD_GAP
 	for i in cards.size():
 		var card: Control = cards[i]
 		if not card.visible:
 			continue
 		var hov := i == hovered and _picked < 0
-		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + 10), vs.y * 0.5 - 64).round()
+		var sel := i == _selected and _picked < 0
+		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + CARD_GAP), vs.y * 0.5 - 64).round()
 		card.set_meta("base", base)
-		# deal in from below with a spin, then sway gently
+		# deal in from below with a spin, then hold still: once dealt a card is
+		# never rotated or scaled, so its pixel text stays sharp (§9.9)
 		var dk := clampf((_deal_t - (0.06 + i * 0.11)) / 0.3, 0.0, 1.0)
 		var e := Juice.ease_out_back(dk)
 		var off_y := (1.0 - e) * 190.0
-		var rot := (1.0 - e) * (0.4 if i % 2 == 0 else -0.4) + sin(_t * 1.7 + i * 1.9) * 0.015
+		var rot := (1.0 - e) * (0.4 if i % 2 == 0 else -0.4) if dk < 1.0 else 0.0
 		var sc := 1.0
 		card.modulate.a = 1.0 if dk > 0.0 else 0.0
 		if hov:
-			sc = 1.06
+			off_y -= 3.0
+		if sel:
+			# selected: lifted higher and held there until confirmed
 			off_y -= 6.0
-			rot += clampf((cursor_pos.x - (base.x + card.size.x * 0.5)) / (card.size.x * 0.5), -1.0, 1.0) * 0.05
 		if _picked >= 0:
 			var pk := clampf(_pick_t / 0.3, 0.0, 1.0)
 			if i == _picked:
-				sc = 1.08 + 0.14 * sin(pk * PI)
-				off_y -= 8.0 * sin(pk * PI)
+				sc = 1.0 + 0.14 * sin(pk * PI)
+				off_y -= 6.0 + 8.0 * sin(pk * PI)
 			else:
 				off_y += pk * pk * 220.0
 				rot += pk * (0.5 if i < _picked else -0.5)
@@ -1221,6 +1339,8 @@ func _layout_levelup() -> void:
 		card.position = base + Vector2(0, roundf(off_y))
 		var col: Color = card.get_meta("col", Color.WHITE)
 		var bcol := col if hov else col.darkened(0.45)
+		if card.get_meta("rec", false):
+			bcol = Upgrades.LINK_COLOR if hov else Upgrades.LINK_COLOR.darkened(0.2)
 		var w := card.size.x
 		var h := card.size.y
 		var b0: ColorRect = card.get_node("B0")
@@ -1238,11 +1358,11 @@ func _layout_levelup() -> void:
 		for b in [b0, b1, b2, b3]:
 			b.color = bcol
 		var bg: Shard = card.get_node("Bg")
-		var glow := 0.18 if hov else 0.0
+		var glow := 0.3 if sel else (0.18 if hov else 0.0)
 		if i == _picked:
 			glow = 0.85 * exp(-_pick_t * 6.0) + 0.25
 		bg.color = Color(0.06, 0.03, 0.1, 0.95).lerp(Color(col.r, col.g, col.b, 0.95), glow)
-		bg.outline = bcol if not hov else Color.WHITE
+		bg.outline = Color.WHITE if (hov or sel) else bcol
 		bg.shadow = col if hov else col.darkened(0.5)
 		var rib: Shard = card.get_node("Ribbon")
 		rib.color = col
@@ -1416,7 +1536,7 @@ func _update_play(delta: float) -> void:
 		combo_label.pivot_offset = Vector2(cw - 5, 0)
 		combo_label.scale = pop
 		combo_bar.color = ccol
-		combo_bar.size = Vector2(roundf(60.0 * Game.combo_timer / Game.COMBO_WINDOW), 2)
+		combo_bar.size = Vector2(roundf(60.0 * clampf(Game.combo_timer / Game.combo_window(), 0.0, 1.0)), 2)
 		combo_bar.position = Vector2(vs.x - m - combo_bar.size.x, cpos.y + ch + 3)
 		tr_bottom = combo_bar.position.y + 2
 	plate_tr.size = Vector2(maxf(score_label.size.x, combo_plate.size.x if combo_on else 0.0) + 14, tr_bottom + 3 - 3)
@@ -1485,7 +1605,7 @@ func _update_play(delta: float) -> void:
 		pp.t += delta
 		var l: Label = pp.l
 		if pp.t > POPUP_LEN:
-			l.queue_free()
+			_free_popup(l)
 			popups.remove_at(i)
 			continue
 		var ty := py0 + i * POPUP_STEP
@@ -1505,7 +1625,7 @@ func _update_play(delta: float) -> void:
 		b.t += delta
 		var n: TextureRect = b.n
 		if b.t > b.life:
-			n.queue_free()
+			_free_blood(n)
 			bloods.remove_at(i)
 			continue
 		n.position.y += delta * 6.0

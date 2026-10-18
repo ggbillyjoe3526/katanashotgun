@@ -3,7 +3,9 @@ extends Node3D
 ## Endless arcade waves. Every third wave is a boss fight; the boss order,
 ## wave line-ups and mutators all come from the run seed. Difficulty keeps
 ## climbing, so a run ends when you do.
-## Enemies, bolts and blade waves live under this node.
+## Enemies, bolts and blade waves live under this node, and it keeps their
+## pools (spec §14): grunts, gunners, brutes and bolts are built at load and
+## recycled, so a spawn or a shot never builds a node mid-fight.
 
 ## Fired between waves, after the tally (and any boss reward card), just
 ## before `next_wave` starts: the moment a run can be suspended.
@@ -11,6 +13,20 @@ signal between_waves(next_wave: int)
 
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
+# Raijin's Storm: a telegraphed strike near the player every few seconds
+const STRIKE_FIRST := 3.0
+const STRIKE_GAP := Vector2(3.5, 6.0)
+const STRIKE_WARN := 1.2
+const STRIKE_RADIUS := 2.4
+const STRIKE_DAMAGE := 16.0
+const STRIKE_SPREAD := 2.5 # metres from the player a strike may land
+## Enemies built at load, per kind. The pool grows if a fight needs more.
+const ENEMY_PREWARM := {"grunt": 14, "gunner": 6, "brute": 3}
+## Bolts built at load, per kind ("wave" is the player's Crimson Wave).
+const BOLT_PREWARM := {"bolt": 24, "shuriken": 12, "wave": 4}
+## A dead enemy waits this long (game time) before it is handed out again,
+## so anything still holding it (a finisher, a deflected bolt) lets go first.
+const REUSE_DELAY := 2.5
 
 var wave := 0
 var queue: Array = []
@@ -26,12 +42,76 @@ var _cleanup: Array = []
 var _cleanup_t := 0.0
 var _rng: RandomNumberGenerator
 var boss_bounty := 0
+var last_mutator := "" # never the same mutator twice in a row
+var _strike_t := 0.0
 var boss_bounty_name := ""
 var pending_reward: Dictionary = {} # unlocked by this wave's boss, shown after its tally
+var _enemy_pool := {} # kind -> [[Enemy, ready_at]], oldest first
+var _bolt_pool := {} # kind -> [Bolt]
+var _clock := 0.0
 
 
 func _ready() -> void:
 	_rng = Game.rng_waves
+	Enemy.list_dirty = true
+	for kind in ENEMY_PREWARM:
+		_enemy_pool[kind] = []
+		for i in ENEMY_PREWARM[kind]:
+			var e := Enemy.new()
+			e.prewarm = true
+			e.pool = self
+			e.setup(kind, 1.0)
+			add_child(e)
+			_enemy_pool[kind].append([e, 0.0])
+	for kind in BOLT_PREWARM:
+		_bolt_pool[kind] = []
+		for i in BOLT_PREWARM[kind]:
+			var b := Bolt.new()
+			b.kind = kind
+			b.pool = self
+			b.prewarm = true
+			add_child(b)
+			_bolt_pool[kind].append(b)
+
+
+## One parked enemy and bolt of each kind, for the shader warm-up.
+func warmup_nodes() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for kind in _enemy_pool:
+		if not _enemy_pool[kind].is_empty():
+			out.append(_enemy_pool[kind][0][0])
+	for kind in _bolt_pool:
+		if not _bolt_pool[kind].is_empty():
+			out.append(_bolt_pool[kind][0])
+	return out
+
+
+## Takes a dead pooled enemy back (called from Enemy.die).
+func recycle(e: Enemy) -> void:
+	_enemy_pool[e.kind].append([e, _clock + REUSE_DELAY])
+
+
+## Takes a spent bolt back (called by the bolt).
+func recycle_bolt(b: Bolt) -> void:
+	_bolt_pool[b.kind].append(b)
+
+
+## Fires a bolt from the pool: hostile bolts and shuriken from enemies, or
+## the player's Crimson Wave. Returns it so the caller can adjust it.
+## `from` is the enemy firing it; a deflect sends the bolt back to it.
+func fire_bolt(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "bolt", from: Enemy = null) -> Bolt:
+	var free: Array = _bolt_pool[k]
+	if free.is_empty():
+		var nb := Bolt.new()
+		nb.pool = self
+		nb.setup(is_hostile, pos, velocity, dmg, k, from)
+		add_child(nb)
+		return nb
+	var b: Bolt = free.pop_back()
+	b.reuse()
+	b.setup(is_hostile, pos, velocity, dmg, k, from)
+	b.activate()
+	return b
 
 
 func start(first_wave := 1) -> void:
@@ -78,6 +158,8 @@ func _next_wave() -> void:
 	Game.wave = wave
 	Game.wave_damage = 0.0
 	Game.begin_wave_stats()
+	Game.seed_hazards(wave)
+	_strike_t = STRIKE_FIRST
 	boss_bounty = 0
 	boss_bounty_name = ""
 	phase = "intro"
@@ -89,7 +171,13 @@ func _next_wave() -> void:
 		Game.hud.wave_intro(wave, "BOSS INCOMING", Color(Game.palette.neon_a), true)
 		Sfx.play("alarm", -3.0)
 	else:
-		Game.mutator = Mutators.roll(_rng, wave)
+		Game.mutator = Mutators.roll(_rng, wave, last_mutator)
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--mutator="):
+				# debug: force one on every regular wave (the roll still draws)
+				Game.mutator = Mutators.get_def(a.substr(10))
+		if not Game.mutator.is_empty():
+			last_mutator = Game.mutator.id
 		queue = _composition(wave)
 		var sub := ""
 		if not Game.mutator.is_empty():
@@ -125,7 +213,7 @@ func _composition(w: int) -> Array:
 
 
 func _max_alive() -> int:
-	return mini(8 + wave * 2, 22)
+	return int(mini(8 + wave * 2, 22) * float(Game.mut("max_alive", 1.0)))
 
 
 func _pick_spawn() -> Vector3:
@@ -141,13 +229,24 @@ func _pick_spawn() -> Vector3:
 
 
 func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
+	var at := pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
+	var free: Array = _enemy_pool.get(kind, [])
+	if not free.is_empty() and free[0][1] <= _clock:
+		var pe: Enemy = free.pop_front()[0]
+		pe.reuse()
+		pe.setup(kind, scale)
+		pe.position = at
+		pe.activate()
+		return pe
 	var e: Enemy
 	if kind in ["ninja", "mech"]:
 		e = Boss.new()
 	else:
 		e = Enemy.new()
+	if _enemy_pool.has(kind):
+		e.pool = self
 	e.setup(kind, scale)
-	e.position = pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
+	e.position = at
 	add_child(e)
 	return e
 
@@ -189,7 +288,10 @@ func on_boss_killed(b: Enemy) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	Game.enemy_list = get_tree().get_nodes_in_group("enemies")
+	_clock += delta
+	if Enemy.list_dirty:
+		Enemy.list_dirty = false
+		Game.enemy_list = get_tree().get_nodes_in_group("enemies")
 	if Game.state != "playing":
 		return
 	if not _cleanup.is_empty():
@@ -199,6 +301,8 @@ func _physics_process(delta: float) -> void:
 			var e = _cleanup.pop_front()
 			if is_instance_valid(e) and not e.dead:
 				e.die("explode", Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)))
+	if phase in ["spawning", "boss"] and Game.mut("strikes", false):
+		_storm_strikes(delta)
 	match phase:
 		"intro":
 			phase_t -= delta
@@ -217,7 +321,7 @@ func _physics_process(delta: float) -> void:
 					var item: Array = queue.pop_front()
 					var off := Vector3(_rng.randf_range(-2.0, 2.0), 0, _rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
 					_spawn(item[0], item[1], sp + off)
-				spawn_t = maxf(0.8, 1.8 - wave * 0.06)
+				spawn_t = maxf(0.8, 1.8 - wave * 0.06) * float(Game.mut("spawn_rate", 1.0))
 			if queue.is_empty() and alive == 0:
 				_wave_cleared()
 		"boss":
@@ -255,10 +359,24 @@ func _end_break() -> void:
 	_next_wave()
 
 
+## Raijin's Storm: lightning picks a spot near the player (from the hazard
+## stream), rings it red for STRIKE_WARN seconds, then hits everything there.
+func _storm_strikes(delta: float) -> void:
+	_strike_t -= delta
+	if _strike_t > 0.0:
+		return
+	var r := Game.rng_hazards
+	_strike_t = r.randf_range(STRIKE_GAP.x, STRIKE_GAP.y)
+	var a := r.randf() * TAU
+	var p := Game.player.global_position + Vector3(cos(a), 0, sin(a)) * r.randf_range(0.0, STRIKE_SPREAD)
+	Game.fx.missile_strike(p, STRIKE_WARN, STRIKE_RADIUS, STRIKE_DAMAGE, "lightning")
+
+
 ## End-of-wave tally, chips x mult: what you did this wave adds chips, the
 ## wave number, a flawless clear and the mutator multiply them.
 func _wave_cleared() -> void:
 	phase = "clear"
+	Game.fx.clear_strikes()
 	phase_t = 12.0 # fallback; the HUD's tally normally ends the clear phase
 	var st := Game.wave_stats()
 	var rows: Array = [["WAVE CLEAR", "", 250 * wave]]
