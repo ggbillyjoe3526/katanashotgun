@@ -71,6 +71,7 @@ func _ready() -> void:
 	_mesh.mesh = pm
 	_mesh.material_override = _mat
 	_mesh.position.y = 0.07
+	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF # a telegraph on the floor
 	add_child(_mesh)
 
 

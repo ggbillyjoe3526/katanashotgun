@@ -29,12 +29,14 @@ the live description).
 - Link pages as `[Bosses](Bosses)` or `[Plunge](Glory-Kills#plunge)` (the
   anchor is the heading in lowercase, spaces as dashes, punctuation dropped).
 - A new page gets a line in `_Sidebar.md`.
+- Pictures go in `images/` and are shown with `![what it shows](images/name.png)`.
+  Keep them small (a few hundred KB): they are published with every page.
 
 ## Checks
 
 `python3 tools/wiki.py check` (CI runs it on every pull request) fails when:
 
-- a link points to a page or heading that doesn't exist,
+- a link points to a page, heading or picture that doesn't exist,
 - a page is missing from the sidebar,
 - an in-game name (every card, build, mutator, reward, palette, boss name,
   title and felled line, and map) isn't mentioned on any page. The names come

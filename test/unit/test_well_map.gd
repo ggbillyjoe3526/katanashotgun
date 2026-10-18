@@ -95,3 +95,24 @@ func test_traffic_follows_the_quality_preset() -> void:
 	assert_eq(arena.backdrop._cars.visible_instance_count, Quality.cap("traffic"))
 	Quality.apply("high")
 	assert_eq(arena.backdrop._cars.visible_instance_count, mini(Quality.cap("traffic"), arena.backdrop._cars.instance_count))
+	# the spec and wiki say MEDIOCRE and INSANE both show every car
+	for q in ["medium", "high"]:
+		assert_eq(Quality.CAPS[q].traffic, arena.backdrop._cars.instance_count, q)
+
+
+func test_graphics_presets_reach_the_well() -> void:
+	# the lamp haze is MEDIOCRE's; WEAK leaves the map as built
+	assert_gt(arena.find_children("*", "OmniLight3D", true, false).size(), 0, "the Well has lamps")
+	Quality.apply("medium")
+	var haze: Array = arena.get_meta(&"gfx_haze", [])
+	assert_gt(haze.size(), 0)
+	assert_true(haze.all(func(q): return q.visible))
+	Quality.apply("low")
+	assert_true(haze.all(func(q): return not q.visible))
+
+
+func test_backdrop_traffic_stays_out_of_global_illumination() -> void:
+	var movers := arena.backdrop.find_children("*", "MultiMeshInstance3D", true, false).filter(
+		func(m): return (m as MultiMeshInstance3D).multimesh.instance_count > 0 and m.custom_aabb.size.x > 300.0)
+	assert_eq(movers.size(), 1, "the traffic MultiMesh")
+	assert_eq(movers[0].gi_mode, GeometryInstance3D.GI_MODE_DISABLED)

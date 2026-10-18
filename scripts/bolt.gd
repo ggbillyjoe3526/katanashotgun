@@ -136,6 +136,7 @@ func _ready() -> void:
 		_core.mesh = sm
 		_core_mat = Psx.unlit(Color(1.0, 0.55, 0.2), 3.0, null, {"fog_amount": 0.2})
 		_core.material_override = _core_mat
+		_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF # it glows
 		add_child(_core)
 		_halo_mat = Psx.fx(Color(1.0, 0.4, 0.1, 0.9), TexGen.get_tex("glow"), true, true, false, 1.4)
 		_halo = Psx.quad(Vector2(1.3, 1.3), _halo_mat)
@@ -152,6 +153,7 @@ func _build_wave() -> void:
 	mi.mesh = Fx.arc_mesh(1.6, 0.55, 0.32, -2.2, -0.9)
 	mi.material_override = Psx.fx(Color(1.0, 0.1, 0.2, 1.0), null, true, false, false, 2.2)
 	mi.material_override.set_shader_parameter("use_vertex_color", true)
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
 	_core = mi
 

@@ -8,7 +8,7 @@ class_name Settings
 ## Saved as plain data (to_dict / from_dict) inside the player's profile
 ## (Profile, spec §11.3), which writes it atomically with a backup.
 
-const VERSION := 2 # 2: full screen, VSync off and no frame cap by default
+const VERSION := 3 # 2: full screen, VSync off and no frame cap by default; 3: WEAK/MEDIOCRE/INSANE
 const BUSES: Array[String] = ["Master", "Music", "SFX", "Ambience", "UI"]
 const SENS_BASE := 0.0024 # radians per mouse pixel at sensitivity 1.0
 const SENS_MIN := 0.1
@@ -21,7 +21,7 @@ const FPS_CAPS: Array[int] = [0, 60, 75, 120, 144, 165, 240, 360] # 0 = unlimite
 ## The 3D view's fixed internal size (spec §2); windowed mode scales it by a
 ## whole number so every retro pixel stays square and sharp.
 const BASE_SIZE := Vector2i(960, 540)
-const QUALITY_IDS: Array[String] = ["low", "medium", "high"]
+const QUALITY_IDS: Array[String] = ["low", "medium", "high"] # WEAK, MEDIOCRE, INSANE
 ## Picking a preset sets render scale to this as a starting point.
 const QUALITY_RENDER_SCALE := {"low": 0.75, "medium": 1.0, "high": 1.0}
 ## Actions the player can rebind, in menu order. Actions missing from the
@@ -49,7 +49,7 @@ static var window_mode := "fullscreen"
 static var vsync := false
 static var fps_cap := 0
 static var render_scale := 1.0
-static var quality := "high"
+static var quality := "medium"
 static var fov := DEFAULT_FOV
 static var sensitivity := 1.0
 static var shake := 1.0 # comfort: 0 = no screen shake, 1 = full
@@ -70,6 +70,7 @@ static func boot() -> void:
 	reset_all()
 	load_saved()
 	apply_all()
+	Graphics.save_renderer(quality) # the next start's renderer follows the saved preset
 
 
 static func reset_all() -> void:
@@ -89,7 +90,7 @@ static func reset_video() -> void:
 	window_mode = "fullscreen"
 	vsync = false
 	fps_cap = 0
-	quality = "high"
+	quality = "medium"
 	render_scale = 1.0
 	fov = DEFAULT_FOV
 
@@ -424,6 +425,8 @@ static func to_dict() -> Dictionary:
 static func from_dict(d: Dictionary) -> void:
 	if _is_num(d.get("v")) and int(d.v) < 2:
 		d = _migrate_v1(d)
+	if _is_num(d.get("v")) and int(d.v) < 3:
+		d = _migrate_v2(d)
 	var vol: Variant = d.get("volume")
 	if vol is Dictionary:
 		for b in BUSES:
@@ -485,6 +488,18 @@ static func _migrate_v1(d: Dictionary) -> Dictionary:
 	return out
 
 
+## Version 2 to 3: the presets became WEAK, MEDIOCRE and INSANE. HIGH was
+## the default and looks like MEDIOCRE now; INSANE switches the renderer, so
+## only a player who picks it gets it.
+static func _migrate_v2(d: Dictionary) -> Dictionary:
+	var out := d.duplicate(true)
+	var q: Variant = out.get("quality")
+	if q is String and q == "high":
+		out["quality"] = "medium"
+	out["v"] = 3
+	return out
+
+
 static func _is_num(v: Variant) -> bool:
 	return v is float or v is int
 
@@ -494,6 +509,7 @@ static func _is_num(v: Variant) -> bool:
 ## moment later (several changes in a row write once) and on quit.
 static func save() -> bool:
 	Profile.store_settings(to_dict())
+	Graphics.save_renderer(quality)
 	return true
 
 
