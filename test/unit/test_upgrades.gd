@@ -96,14 +96,14 @@ func test_offers_are_distinct_and_never_maxed() -> void:
 		assert_eq(uniq.size(), 3, "a card offered twice")
 
 
-func test_onibi_needs_a_fire_card() -> void:
+func test_hitodama_needs_a_fire_card() -> void:
 	for s in 200:
-		assert_false("onibi" in _ids(Upgrades.roll({}, 3, _rng(s))))
+		assert_false("hitodama" in _ids(Upgrades.roll({}, 3, _rng(s))))
 	var seen := false
 	for s in 200:
-		if "onibi" in _ids(Upgrades.roll({"homura": 1}, 3, _rng(s))):
+		if "hitodama" in _ids(Upgrades.roll({"homura": 1}, 3, _rng(s))):
 			seen = true
-	assert_true(seen, "Onibi Chain is never offered with Homura Edge owned")
+	assert_true(seen, "Hitodama Chain is never offered with Homura Edge owned")
 
 
 func test_a_linking_card_is_always_offered() -> void:

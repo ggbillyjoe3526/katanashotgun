@@ -226,7 +226,10 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
   "Orochi Protocol, the Eight-Headed Network"; "Jorōgumo, Silk-Server
   Matriarch"; "Gashadokuro, the Scrapyard Colossus"; "Nue, Chimera of the
   Grid"; "Tamamo, Nine-Tailed Phantom of the Wire".
-## Progression & saving (CRITICAL, not built yet)
+## Progression & saving (CRITICAL)
+Built: the profile and save system (spec §11). The XP formula and the boss
+reward drop rules are working defaults until the owner decides (spec §19).
+
 The high score is not the only thing the player is chasing. A persistent
 **Player Level** keeps rising across runs, and the game must save so progress
 is never lost.

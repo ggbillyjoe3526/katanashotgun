@@ -1,9 +1,10 @@
 extends GutTest
-## Settings (spec §15.4, §11.3): saved values come back the same, damaged or
-## hostile files never break the game, the file is replaced atomically with a
-## backup, and rebinding never leaves one key on two actions.
+## Settings (spec §15.4, §11.3): saved values come back the same through the
+## profile, the old settings.json is imported once, damaged or hostile files
+## never break the game, and rebinding never leaves one key on two actions.
 
 const TEST_PATH := "user://test_settings.json"
+const PROFILE_DIR := "user://test-settings"
 
 var _saved := {}
 var _real_path := ""
@@ -14,11 +15,14 @@ func before_each() -> void:
 	_real_path = Settings.path
 	Settings.path = TEST_PATH
 	_remove_files()
+	Profile.use_dir(PROFILE_DIR)
 	Settings.reset_all()
 
 
 func after_each() -> void:
 	_remove_files()
+	DirAccess.remove_absolute(PROFILE_DIR)
+	Profile.use_dir("user://test")
 	Settings.path = _real_path
 	Settings.reset_all()
 	Settings.from_dict(_saved)
@@ -29,6 +33,14 @@ func _remove_files() -> void:
 	for p in [TEST_PATH, TEST_PATH + ".bak", TEST_PATH + ".tmp"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
+	if DirAccess.dir_exists_absolute(PROFILE_DIR):
+		for f in DirAccess.get_files_at(PROFILE_DIR):
+			DirAccess.remove_absolute(PROFILE_DIR.path_join(f))
+
+
+## Writes an old stand-in settings file by hand, as the settings menu used to.
+func _write_legacy(p: String, d: Dictionary) -> void:
+	_write(p, JSON.stringify(d))
 
 
 func _write(p: String, text: String) -> void:
@@ -63,8 +75,10 @@ func test_save_and_load_round_trip() -> void:
 	Settings.flash = 0.4
 	var before := Settings.to_dict()
 	assert_true(Settings.save())
+	assert_true(Profile.save_now())
+	Profile.use_dir(PROFILE_DIR) # read back from disk, not memory
 	Settings.reset_all()
-	assert_true(Settings.load_file())
+	assert_true(Settings.load_saved())
 	assert_eq_deep(Settings.to_dict(), before)
 
 
@@ -91,23 +105,19 @@ func test_bad_values_are_clamped_or_ignored() -> void:
 	assert_true(Settings.vsync)
 
 
-func test_corrupt_file_falls_back_to_backup() -> void:
+func test_corrupt_legacy_file_falls_back_to_backup() -> void:
 	Settings.fov = 95.0
-	Settings.save()
-	Settings.fov = 105.0
-	Settings.save() # the 95 file is now the backup
+	_write_legacy(TEST_PATH + ".bak", Settings.to_dict())
 	_write(TEST_PATH, "{ this is not json")
 	Settings.reset_all()
 	assert_true(Settings.load_file())
 	assert_eq(Settings.fov, 95.0)
 
 
-func test_crash_mid_write_keeps_last_good_settings() -> void:
-	# a crash after the old file became the backup but before the new one
-	# was renamed into place: only the .bak and a half-written .tmp exist
+func test_half_written_legacy_file_keeps_last_good_settings() -> void:
+	# an old crash left only the .bak and a half-written .tmp
 	Settings.fov = 99.0
-	Settings.save()
-	DirAccess.rename_absolute(TEST_PATH, TEST_PATH + ".bak")
+	_write_legacy(TEST_PATH + ".bak", Settings.to_dict())
 	_write(TEST_PATH + ".tmp", "{\"v\": 1, \"fo")
 	Settings.reset_all()
 	assert_true(Settings.load_file())
@@ -115,8 +125,24 @@ func test_crash_mid_write_keeps_last_good_settings() -> void:
 
 
 func test_missing_files_keep_defaults() -> void:
-	assert_false(Settings.load_file())
+	assert_false(Settings.load_saved())
 	assert_eq(Settings.fov, Settings.DEFAULT_FOV)
+
+
+func test_legacy_file_is_imported_once() -> void:
+	# settings saved before the profile existed move into it on first load
+	Settings.fov = 104.0
+	_write_legacy(TEST_PATH, Settings.to_dict())
+	Settings.reset_all()
+	assert_true(Settings.load_saved())
+	assert_eq(Settings.fov, 104.0)
+	assert_eq(float(Profile.get_settings_dict().get("fov", 0.0)), 104.0)
+	# from now on the profile wins over the old file
+	Settings.fov = 88.0
+	Settings.save()
+	Settings.reset_all()
+	assert_true(Settings.load_saved())
+	assert_eq(Settings.fov, 88.0)
 
 
 func test_rebinding_to_a_used_key_swaps() -> void:
@@ -137,7 +163,7 @@ func test_bindings_survive_save_and_load() -> void:
 	Settings.save()
 	Settings.reset_all()
 	assert_does_not_have(_names("jump"), "C")
-	Settings.load_file()
+	Settings.load_saved()
 	Settings.apply_controls()
 	assert_has(_names("jump"), "C")
 	assert_eq(_names("dash")[0], "MOUSE 4")

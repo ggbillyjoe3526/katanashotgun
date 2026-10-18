@@ -255,7 +255,9 @@ work list (§0.5).
 - **Don't add mechanics or systems that aren't in this spec** (§0.3). Ask
   first.
 - Keep `CHANGELOG.md` (newest first, written for players and the
-  developer) and keep this spec up to date when decisions change. **The spec
+  developer) and keep this spec up to date when decisions change. Each change
+  adds its note as a new file in `changelog.d/` (one per PR, so parallel PRs
+  don't conflict); a release gathers them into `CHANGELOG.md`. **The spec
   is the source of truth.**
 - Branching:
   - Simple is fine: commit to `main` when tests pass.
@@ -274,7 +276,7 @@ work list (§0.5).
     publishes the version in `project.godot`; a pushed tag must match it.
 - **Release when the developer asks**, or propose one at a milestone. Before
   tagging:
-  1. Update the CHANGELOG.
+  1. Gather the CHANGELOG notes (`tools/changelog.sh release`).
   2. Run the full smoke test and a 10-minute autoplay run.
   3. Make sure saves from the previous version still load (once §11 exists).
 
@@ -506,7 +508,8 @@ Notes:
 | Capture frames (Windows, real GPU) | `godot --path . --write-movie out\f.png --fixed-fps 30 --quit-after 900 -- --juicetest` |
 | Frames → mp4 | `ffmpeg -framerate 30 -i out/f%08d.png -i out/f.wav -c:v libx264 -pix_fmt yuv420p -c:a aac clip.mp4` |
 | Local Windows export (needs templates) | `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe` |
-| Release | set `config/version` + rename the CHANGELOG heading (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
+| Changelog notes | `tools/changelog.sh check` (new note: a file in `changelog.d/`) |
+| Release | set `config/version` + `tools/changelog.sh release` (PR) → *Actions → Release → Run workflow* (`VERSIONING.md`) |
 
 ## S6. Developer decisions log (fill in as you go)
 | Decision | Value |
@@ -516,9 +519,11 @@ Notes:
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
+| Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
+| Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
@@ -781,7 +786,7 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 | ikazuchi | IKAZUCHI SURGE | SHOTGUN | 2 | Blasts stagger 60% harder per rank and knock back +8 per rank |
 | inazuma | INAZUMA OVERLOAD | SHOTGUN | 1 | +2 max cells. The blast that spends the last cell fires 20 pellets and staggers every non-boss it hits (bosses take ×3 poise) |
 | dragon | KAGUTSUCHI FLAME | SHOTGUN | 2 | Arcs set enemies alight (burn, §3.6) |
-| onibi | ONIBI CHAIN | SHOTGUN | 1 | Requires Kagutsuchi Flame or Homura Edge. A burning enemy that dies ignites every enemy within 5 m |
+| hitodama | HITODAMA CHAIN | SHOTGUN | 1 | Requires Kagutsuchi Flame or Homura Edge. A burning enemy that dies ignites every enemy within 5 m |
 | hachiman | HACHIMAN FOCUS | SHOTGUN | 1 | Spread 0.04 rad (from 0.085); falloff starts at 18 m (from 7 m) |
 | yoichi | YOICHI'S MARK | SHOTGUN | 1 | A headshot blast (§3.3) refunds its cell |
 | gasha | GASHADOKURO BURST | SHOTGUN | 1 | A shotgun headshot kill explodes: 30 damage within 5 m and staggers non-bosses |
@@ -806,7 +811,7 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 |---|---|---|
 | STORM RUNNER | Idaten Drive, Fujin's Return, Inazuma Overload | Blast, kill, dash, recharge, blast: never stop moving |
 | THUNDER CHAIN | Raijin's Fork, Ikazuchi Surge, Inazuma Overload | One blast staggers a whole pack |
-| INFERNO | Kagutsuchi Flame, Homura Edge, Onibi Chain | Fire spreads through the crowd |
+| INFERNO | Kagutsuchi Flame, Homura Edge, Hitodama Chain | Fire spreads through the crowd |
 | HEADHUNTER | Hachiman Focus, Yoichi's Mark, Gashadokuro Burst | Mid-range headshots that pay for themselves |
 | RONIN | Masamune Edge, Susanoo's Wave, Yata Mirror | Count to three; the blade does almost everything |
 | BLOOD ENGINE | Chimatsuri Steel, Blood Battery, Sanzu Reprieve | The katana feeds health and cells; live on the edge |
@@ -1050,8 +1055,9 @@ the holographic cut-in (§9.8).
 
 ### 7.4 High scores
 - Local top 10 entries `{name (3 chars), score, wave, seed}`, sorted.
-  - Prototype: `user://scores.json`.
-  - Final: part of the profile save (§11.3).
+  - Kept in the profile save (§11.3). A prototype `user://scores.json` is
+    imported once. The score is kept the moment the run ends (as `---`),
+    so quitting before typing initials doesn't lose it.
 - The HUD shows "HI 0000000" centre top. Passing the best score triggers a
   stamp/cut-in "NEW HI-SCORE" once per run.
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
@@ -1611,7 +1617,12 @@ card.
 
 ---
 
-## 11. Progression and saving (CRITICAL — NOT BUILT YET)
+## 11. Progression and saving (CRITICAL)
+
+Built in PR "Profile and save system" (2026-10-18): `Profile` autoload,
+`scripts/save/`, `Rewards`, the results XP roll-up, the title armory and
+CONTINUE RUN. The two OPEN items below run on the defaults stated there
+until the owner decides.
 
 The high score is not the only thing the player chases. There must be a
 visible, persistent **Player Level**, and the game **must save** so progress
@@ -1622,6 +1633,10 @@ is never lost.
   on score, waves reached, bosses felled, glory kills and so on (formula
   **OPEN**; aim for a steady pace with the first levels coming quickly; never
   grindy).
+  - **Default in use** (`scripts/save/progression.gd`): 60 per wave cleared,
+    250 per boss, 4 per kill, 15 per glory kill, +1 per 500 points. Level
+    1→2 needs 400 XP, each level after 150 more, flat from level 31.
+    A first run that dies on wave 3 reaches level 2.
 - **Seeing it rise:** after each run, the results screen counts XP into the
   level bar (Balatro-style roll-up). Every level gained gets a celebration (a
   holographic cut-in, a stamp, a sound). The level shows on the title screen
@@ -1644,6 +1659,13 @@ is never lost.
   seeded pools. Skins and cosmetics are picked in a simple menu.
 - **OPEN:** the drop rules (a guaranteed first-kill reward per boss? chance
   per kill? reward tables per boss and cycle?) and the full reward list.
+  - **Drop rule decided** (owner, 2026-10-18; `scripts/rewards.gd`): each
+    boss has an ordered list and every kill unlocks its next item until the
+    list is done. Never
+    random, so rewards never touch the seeded RNG. The first six are
+    weapon looks: a katana edge and a shotgun coil per boss, picked on the
+    title or pause screen (1 and 2). Palettes, maps, mutators and boss variants can
+    join the lists once they exist.
 
 ### 11.3 Saving (critical)
 - **Profile save:** Player Level and XP, unlocks, equipped cosmetics, high
@@ -1663,6 +1685,15 @@ is never lost.
   - Never wipe a profile when loading fails; fall back to the backup.
 - Location `user://` (folder `KatanaShotgun`). Later, Steam Cloud or
   similar.
+- **As built:** `profile.json` and `run.json`, each with a `.bak`. Every file
+  is a header line (`KSAVE <kind> <version> <sha256>`) then JSON; a file
+  that fails its checksum is skipped. Load order: a finished `.tmp`, the
+  file, the backup. If every copy is bad they are renamed
+  `*.corrupt-<time>` (never deleted) and a new profile starts. Debug runs
+  (`--autoplay`, `--juicetest`, `--showcase`) use `user://debug/`. The run
+  snapshot is taken after each wave's tally (and boss reward card), deleted
+  the moment the player dies. Starting a NEW RUN over a suspended run pays
+  that run's XP first. Format and API: `scripts/autoload/profile.gd`.
 
 ---
 
@@ -1718,9 +1749,14 @@ historical root with a cyberpunk twist**.
 - **RAIJIN-12** (the shotgun): Raijin, the thunder god.
 - **Enemies:** Ashigaru (grunts), Teppo (gunners; the matchlock corps),
   Kanabo (brutes; after the oni's iron club).
+- **Boss rewards** (§11.2, `scripts/rewards.gd`): KAGEROU EDGE (kagero, the
+  heat haze), KITSUNEBI COIL (kitsunebi, fox-fire), KANAYAGO EDGE
+  (Kanayago-kami, the deity of ironworking), AKAGANE COIL (akagane,
+  copper), ONIBI EDGE (onibi, oni-fire ghost lights), RAIKO COIL (Minamoto
+  no Raiko, who slew Shuten-doji).
 - **Mutators and augments:** see §6.3 and §3.8. Augment roots added
   2026-10-18: Ikazuchi (the eight thunder kami of Yomi), Inazuma
-  ("lightning"), Onibi (yokai fire wisps), Hachiman (god of archery and
+  ("lightning"), hitodama (yokai soul-fire wisps), Hachiman (god of archery and
   war), Nasu no Yoichi (the archer who hit the fan at Yashima), Gashadokuro
   (the giant skeleton yokai), Yata no Kagami (the sacred mirror), Homura
   ("flame"), chimatsuri ("blood festival"), Kurama (the mountain where the
@@ -1808,7 +1844,8 @@ seed | click: new seed).
 | UI pieces | `Shard` (tech panel), `GlitchText`, `CutIn`, `SpeedLines` (data streaks), `ShardBurst` (kill burst) |
 | `PostFx` | Post-process material, hurt/flash/impact/heat |
 | `Psx`, `TexGen`, `Ui` | Material factory, procedural textures, fonts and UI helpers |
-| `Palette`, `Mutators`, `Upgrades` | Data tables |
+| `Profile` (autoload) | The profile and the suspended run (§11): Player Level and XP, unlocks, equipped looks, top 10, settings, lifetime stats. Crash-safe files through `SaveFile`, migrations in `ProfileMigrations`, run snapshots in `RunSnapshot` |
+| `Palette`, `Mutators`, `Upgrades`, `Rewards`, `Progression` | Data tables |
 
 ### 15.3 Time
 - Gameplay uses scaled delta. Presentation (UI, juice, glory-kill
@@ -1933,21 +1970,22 @@ seed | click: new seed).
       perf overlay; hit the frame-time targets (§14).
 
 ### 18.2 Progression and saving (critical)
-- [ ] Profile save with versioning, atomic writes and a backup (§11.3).
-- [ ] Player Level XP formula, results roll-up and level-up celebration
-      (§11.1).
-- [ ] Run suspend/resume between waves, with CONTINUE RUN on the title
+- [x] Profile save with versioning, atomic writes and a backup (§11.3).
+- [x] Player Level XP formula, results roll-up and level-up celebration
+      (§11.1). The formula is a default until the owner decides (§19).
+- [x] Run suspend/resume between waves, with CONTINUE RUN on the title
       (§11.3).
-- [ ] Boss rewards: drop rules, reward card, unlock pools, a simple
-      cosmetics menu (§11.2).
-- [ ] Move high scores into the profile.
+- [x] Boss rewards: drop rules, reward card, a simple cosmetics menu
+      (§11.2). Drop rules and the list are defaults (§19); unlock pools for
+      maps, palettes and mutators wait for that content.
+- [x] Move high scores into the profile.
 
 ### 18.3 Quality of life
 - [x] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
       default). Built in `scripts/settings.gd` and
-      `scripts/ui/settings_menu.gd`; persistence moves into the profile when
-      §11.3 lands. Comfort: below 100% flashes, impact frames don't strobe.
-- [ ] Clear "PLAYER LV" vs "RUN LV" labelling.
+      `scripts/ui/settings_menu.gd`; settings are stored in the profile
+      (§11.3). Comfort: below 100% flashes, impact frames don't strobe.
+- [x] Clear "PLAYER LV" vs "RUN LV" labelling.
 
 ### 18.4 Content (later)
 - [ ] Thermal-katana redesign; final shotgun design (OPEN).
@@ -1962,7 +2000,8 @@ seed | click: new seed).
 
 ## 19. Open decisions (ask the developer; don't invent)
 - The Player Level **XP formula** and pacing.
-- **Boss reward** drop rules and the full reward list.
+- The full **boss reward** list (the drop rule is decided: every kill
+  unlocks that boss's next reward, §11.2).
 - The **final shotgun look** (the katana reference is decided: Thermal
   Katana style).
 - The **full difficulty curve** past the early waves (tune by playtesting;
@@ -1994,6 +2033,6 @@ seed | click: new seed).
 - [ ] Names follow §13 (Japanese myth or history + cyberpunk, readable,
       never copied from FromSoftware or other IP).
 - [ ] No new mechanics added without sign-off (§0.3).
-- [ ] CHANGELOG updated. For releases: the tag pushed, CI green, the Release
-      has the installer and zips, and the installer was tested by the
-      developer at least once per release.
+- [ ] Changelog note added in `changelog.d/`. For releases: the tag pushed,
+      CI green, the Release has the installer and zips, and the installer
+      was tested by the developer at least once per release.

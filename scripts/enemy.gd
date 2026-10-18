@@ -905,8 +905,8 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		orbs += 4
 	if orbs > 0:
 		Game.fx.health_orbs(pos, orbs)
-	if burn_t > 0.0 and Game.rank("onibi") > 0:
-		_onibi_burst()
+	if burn_t > 0.0 and Game.rank("hitodama") > 0:
+		_hitodama_burst()
 	var hk := float(Game.mut("heal_kill", 0.0))
 	if hk > 0.0:
 		Game.player.heal(hk)
@@ -915,8 +915,8 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 	queue_free()
 
 
-## Onibi Chain: a burning enemy's death spreads the fire to everyone close.
-func _onibi_burst() -> void:
+## Hitodama Chain: a burning enemy's death spreads the fire to everyone close.
+func _hitodama_burst() -> void:
 	var c := global_position + Vector3(0, height * 0.5, 0)
 	Game.gore.embers(global_position, 8)
 	Game.gore.sparks(c, Vector3.UP, 18, Color(2.0, 0.9, 0.3))

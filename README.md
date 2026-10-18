@@ -34,11 +34,23 @@ and level-up offers. Waves never end and keep getting harder. Every third wave i
 a boss (Kurokage, Tetsugumo or Shuten). Scores are saved locally (top 10) with
 your initials, wave and seed.
 
+Every run pays XP into your **Player Level**, which keeps rising across runs.
+Bosses unlock new weapon looks; pick them on the title or pause screen with
+**1** (katana edge) and **2** (shotgun coil). The game saves on its own; if you quit
+mid-run, the title offers **CONTINUE RUN** from the start of the wave you were
+on (**N** starts a new run instead). Saves live in
+`%APPDATA%\KatanaShotgun\` on Windows (`profile.json`, `run.json`, each with a
+`.bak` copy).
+
 ## Project layout
 ```
 scenes/main.tscn            entry scene (everything else is built in code)
 scripts/main.gd             boot + game-state flow (title, pause, level-up, death)
-scripts/autoload/game.gd    run seed, score/combo, XP, mutator, high scores, hitstop
+scripts/autoload/game.gd    run seed, score/combo, XP, mutator, hitstop
+scripts/autoload/profile.gd the saved profile: Player Level, unlocks, top 10, settings,
+                            the suspended run (files in scripts/save/)
+scripts/save/               crash-safe save files, migrations, run snapshots, XP formula
+scripts/rewards.gd          boss rewards (cosmetic weapon looks)
 scripts/autoload/sfx.gd     sound pools + music director (playlist, boss themes)
 scripts/player.gd           movement, katana, arc shotgun, glory kills, deflects
 scripts/viewmodel.gd        first-person weapons, glory-kill poses, arc shotgun
@@ -93,6 +105,8 @@ gdlintrc                    gdlint settings
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
+  - `tools/changelog.sh check`: the changelog notes in `changelog.d/` (one new
+    file per change instead of editing `CHANGELOG.md`; see its `README.md`).
   Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
   isn't on PATH).
 - **Licence notices:** after adding a font or other third-party asset, or
@@ -109,8 +123,10 @@ gdlintrc                    gdlint settings
   macOS, builds the Windows installer, checks it installs and uninstalls, and
   publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
   `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
-  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
-  dry run: everything is built and attached to the run, nothing is published.
+  come from that version's section of `CHANGELOG.md`, which a release gathers
+  from the one-file-per-change notes in `changelog.d/`. A pull request that
+  touches the pipeline does a dry run: everything is built and attached to
+  the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
 
@@ -126,9 +142,8 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
   frames don't strobe.
 
 Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
-Q / E change tab, R resets the tab, Esc goes back. Settings are saved to
-`settings.json` in the game's user folder (`%APPDATA%\KatanaShotgun` on
-Windows), with a backup next to it.
+Q / E change tab, R resets the tab, Esc goes back. Settings are saved in
+your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags
 Pass after `--` on the command line:
@@ -137,9 +152,12 @@ Pass after `--` on the command line:
 - `--augments=idaten,fujin,inazuma` start with those level-up cards
   (`wave:2` for rank 2, `all` for every card at max rank); ids are in
   `scripts/upgrades.gd`
+- `--continue` resume the suspended run (with `--autoplay`, from `user://debug/`).
+  Debug runs keep their own profile in `user://debug/`, never the player's
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
 - `--juicetest` plays every presentation moment back to back (intro, combos,
-  tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
+  tally, FINISH + boss card, boss reward card, level-up, boss name card, kill
+  tags, hint, death and the Player Level roll-up);
   `--boss=ninja|mech|oni` forces a boss
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour

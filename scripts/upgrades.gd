@@ -15,7 +15,7 @@ const LIST := [
 		"desc": "+2 cells. The blast that spends your last cell fires double arcs and staggers all it hits."},
 	{"id": "dragon", "name": "KAGUTSUCHI FLAME", "tag": "SHOTGUN", "max": 2,
 		"desc": "Arcs set enemies alight. Burning enemies take damage over time."},
-	{"id": "onibi", "name": "ONIBI CHAIN", "tag": "SHOTGUN", "max": 1, "requires": ["dragon", "homura"],
+	{"id": "hitodama", "name": "HITODAMA CHAIN", "tag": "SHOTGUN", "max": 1, "requires": ["dragon", "homura"],
 		"desc": "Burning enemies that die burst and set everyone within 5m alight."},
 	{"id": "hachiman", "name": "HACHIMAN FOCUS", "tag": "SHOTGUN", "max": 1,
 		"desc": "A tight choke: arcs fly closer together and hit full strength out to 18m."},
@@ -67,7 +67,7 @@ const LIST := [
 const BUILDS := [
 	{"id": "storm", "name": "STORM RUNNER", "cards": ["idaten", "fujin", "inazuma"]},
 	{"id": "thunder", "name": "THUNDER CHAIN", "cards": ["fork", "ikazuchi", "inazuma"]},
-	{"id": "inferno", "name": "INFERNO", "cards": ["dragon", "homura", "onibi"]},
+	{"id": "inferno", "name": "INFERNO", "cards": ["dragon", "homura", "hitodama"]},
 	{"id": "headhunter", "name": "HEADHUNTER", "cards": ["hachiman", "yoichi", "gasha"]},
 	{"id": "ronin", "name": "RONIN", "cards": ["edge", "wave", "yata"]},
 	{"id": "blood", "name": "BLOOD ENGINE", "cards": ["chimatsuri", "battery", "sanzu"]},

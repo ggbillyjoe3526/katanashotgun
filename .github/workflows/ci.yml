@@ -1,8 +1,9 @@
 name: Checks
 
 # Every pull request and every push to main: import the project, let the
-# autoplay bot play, run the unit tests, check the licence notices are current
-# and lint the scripts. Fails on any script error or failed test.
+# autoplay bot play, run the unit tests, check the licence notices are current,
+# lint the scripts and check the changelog notes in changelog.d/. Fails on any
+# script error or failed test.
 on:
   pull_request:
   push:
@@ -63,11 +64,13 @@ jobs:
           retention-days: 14
 
   lint:
-    name: Lint (gdlint)
+    name: Lint (gdlint, changelog notes)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # the changelog preview orders notes by when they were added
 
       - uses: actions/setup-python@v6
         with:
@@ -78,3 +81,7 @@ jobs:
 
       - name: gdlint (settings in gdlintrc)
         run: gdlint scripts test tools
+
+      - name: Changelog notes (changelog.d/README.md)
+        if: success() || failure()
+        run: tools/changelog.sh check
