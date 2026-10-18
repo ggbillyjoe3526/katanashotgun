@@ -16,12 +16,13 @@ it resets every run. PLAYER LV is your lifetime level and never goes down.
 **Why can't I glory kill this enemy?**
 It has to be **staggered** first (its marker pulses), close (about 4.5 m) and
 near your crosshair, with no wall in the way. Shotgun it until it staggers,
-then press F. Bosses can't be glory killed; F on a staggered boss is a
-DEATHBLOW instead. ([Glory Kills](Glory-Kills))
+then press F. Bosses can't be glory killed: fill and break their KAMAE bar,
+then press F for the ONIKIRI. ([Glory Kills](Glory-Kills))
 
 **My katana does almost nothing to the big ones.**
-Brutes and bosses are armoured: the katana does only part of its damage until
-they're staggered. Blast them with the shotgun first.
+Brutes and bosses are armoured: the katana does only part of its damage. Blast
+brutes with the shotgun to stagger them first. Bosses take full katana damage
+while their KAMAE is broken and in the moment after a big attack.
 
 **I'm out of cells.**
 Use the katana: every katana kill gives a cell back, and so does every
@@ -59,7 +60,7 @@ the long-vowel marks (DOJIGIRI, not Dōjigiri).
 ## Known issues
 
 - On some seeds, waves after the first few can differ slightly between runs
-  of the same seed, and boss attacks don't follow the seed yet. Both are
-  known and on the list to fix, so seed races stay fair.
+  of the same seed. It's known and on the list to fix, so seed races stay
+  fair.
 - The music and sound effects are stand-ins until the professional
   soundtrack arrives.

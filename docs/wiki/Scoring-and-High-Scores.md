@@ -19,6 +19,7 @@ Each kill pays **base points × combo multiplier × mutator multiplier**.
 | Kill type | Bonus |
 | --- | --- |
 | Glory kill or plunge | ×2 |
+| ONIKIRI (a boss killed by its break blow) | ×2 |
 | Headshot kill | ×1.5 |
 | Deflect kill (RETURN TO SENDER) | ×1.5 |
 

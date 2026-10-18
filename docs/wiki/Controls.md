@@ -14,6 +14,7 @@ rebound in [Settings](Settings) (two keys or mouse buttons each).
 | Slash at an incoming shot | **Deflect** it straight back at whoever fired it |
 | **F** (near a staggered enemy) | **Glory kill**: a finisher that heals and refills cells. A gold "F GLORY KILL" prompt shows when one is in reach |
 | **F** (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows |
+| **F** (on a boss whose KAMAE is broken) | **ONIKIRI**: the boss break blow, 20% of its health. A red "F ONIKIRI" prompt shows |
 | W A S D or arrow keys | Move |
 | **Space** | Jump, press again in the air to double jump. Jump at a ledge just out of reach and hold forward to **climb** it |
 | **Shift** (or Q) | Dash: a quick burst, and you can't be hurt during it |

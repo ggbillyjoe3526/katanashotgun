@@ -31,7 +31,7 @@ Card colours: KATANA cyan, SHOTGUN blue, GLORY pink, DASH green, BODY gold.
 | --- | --- | --- | --- |
 | **RAIJIN'S FORK** | 1 | From each of the first 4 enemies a blast hits, an arc leaps to the 2 nearest enemies within 7 m that the blast missed, for 40% of that hit's damage (at least 15). The leaps stagger too | THUNDER CHAIN |
 | **IKAZUCHI SURGE** | 2 | Blasts stagger 60% harder and knock enemies back further, per rank | THUNDER CHAIN, SHOWSTOPPER |
-| **INAZUMA OVERLOAD** | 1 | +2 max cells. The blast that spends your last cell fires 20 pellets instead of 10 and staggers every non-boss it hits (bosses take triple stagger) | STORM RUNNER, THUNDER CHAIN |
+| **INAZUMA OVERLOAD** | 1 | +2 max cells. The blast that spends your last cell fires 20 pellets instead of 10 and staggers every non-boss it hits (on a boss it fills the KAMAE bar three times as fast) | STORM RUNNER, THUNDER CHAIN |
 | **KAGUTSUCHI FLAME** | 2 | Shotgun arcs set enemies on fire: 10 damage per second per rank for 3 s | INFERNO |
 | **HITODAMA CHAIN** | 1 | A burning enemy that dies sets fire to every enemy within 5 m. Only offered once you own Kagutsuchi Flame or Homura Edge | INFERNO |
 | **HACHIMAN FOCUS** | 1 | A tight choke: about half the spread, and full damage out to 18 m instead of 7 m | HEADHUNTER |
@@ -51,12 +51,13 @@ Card colours: KATANA cyan, SHOTGUN blue, GLORY pink, DASH green, BODY gold.
 
 ## Glory kill cards
 
-These work on regular enemies; bosses don't get glory kills.
+These work on regular enemies; bosses don't get glory kills. A glory kill on
+a boss's add still fills the boss's [KAMAE](Bosses#kamae-and-the-onikiri).
 
 | Card | Max | What it does | Builds |
 | --- | --- | --- | --- |
 | **KURAMA LEAP** | 1 | Glory kill from 9 m away instead of 4.5 m: you leap to the target | EXECUTIONER |
-| **HYAKUNIN-GIRI** | 1 | Every glory kill staggers every enemy within 9 m, ready for the next one | EXECUTIONER, SHOWSTOPPER |
+| **HYAKUNIN-GIRI** | 1 | Every glory kill staggers every enemy within 9 m (not bosses), ready for the next one | EXECUTIONER, SHOWSTOPPER |
 | **KAMAITACHI RING** | 1 | Every glory kill fires 8 blood blades out in a ring around you (60 damage each) | EXECUTIONER |
 | **TAIKO FRENZY** | 1 | Every glory kill adds +5 to your combo and freezes the combo timer for 3 s | SHOWSTOPPER |
 

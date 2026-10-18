@@ -17,7 +17,8 @@ named after the legendary blade that slew the oni king Shuten-doji.
 
 - **Armour:** against armoured enemies that aren't staggered, the katana does
   only part of its damage, with sparks and a clang (brutes take 35%, bosses
-  35 to 55%). Stagger them first.
+  35 to 55%). Stagger brutes first; bosses take full katana damage while
+  their KAMAE is broken or they're recovering from a big attack.
 - **Staggered enemies** take full damage through armour.
 
 ### Deflecting
@@ -47,7 +48,7 @@ forking lightning: the "shotgun taser".
 | Headshots | **×2 damage**. A blast where 3 or more pellets hit and one hits the head is a headshot, and it pops the head on a kill |
 | Fire rate | one blast every 0.72 s |
 | Ammo | **cells**: 4 to start, one per blast (see [How to Play](How-to-Play#shotgun-cells)) |
-| Stagger | the main way to stagger enemies; every point of damage wears down poise |
+| Stagger | the main way to stagger enemies; every point of damage wears down poise. On bosses it fills the KAMAE bar |
 
 All the pellets that hit an enemy add up into one big hit, which knocks it
 back and leaves it crackling with electricity for a moment.

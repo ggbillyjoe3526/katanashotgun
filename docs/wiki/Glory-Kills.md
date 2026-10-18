@@ -61,12 +61,11 @@ be (up to 7 m sideways).
 
 ## Glory kills and bosses
 
-Bosses don't get glory kills. Pressing F on a **staggered boss** lands a
-**DEATHBLOW**: an X-cut and a point-blank blast that takes **15% of its max
-HP** and knocks it back. A boss on 15% or less dies to it.
-
-> **Coming soon:** the deathblow is being replaced by the boss **KAMAE**
-> posture bar and the **ONIKIRI** break blow. See [Bosses](Bosses#coming-soon).
+Bosses can't be staggered, glory killed or plunged. Instead you fill a
+boss's **KAMAE** bar by attacking it, and when the bar breaks, **F** lands the
+**ONIKIRI**: an X-cut and a point-blank blast for 20% of its max HP. Glory
+kills on a boss's adds fill its bar too. See
+[Bosses](Bosses#kamae-and-the-onikiri).
 
 ## Cards that change glory kills
 

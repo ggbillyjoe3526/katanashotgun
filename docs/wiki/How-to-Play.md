@@ -46,9 +46,13 @@ BLADE**.
 ## Staggering
 
 Every enemy has hidden **poise**. Damage wears it down, and at zero the enemy
-staggers. The shotgun is your main staggering tool; armoured enemies (brutes
-and bosses) barely notice the katana until you blast them. Poise comes back
+staggers. The shotgun is your main staggering tool; armoured brutes barely notice
+the katana until you blast them. Poise comes back
 if you leave an enemy alone for about 2 seconds.
+
+Bosses are different: they never stagger. You break them by filling their
+**KAMAE** bar instead, then press F for the **ONIKIRI** blow
+([Bosses](Bosses#kamae-and-the-onikiri)).
 
 A staggered enemy takes full katana damage through its armour, so a slash can
 just kill it. A glory kill gives you more (health, cells, double points).

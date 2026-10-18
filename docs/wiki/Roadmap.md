@@ -6,12 +6,6 @@ already arrived is in the [Patch Notes](Patch-Notes).
 
 ## Being built now
 
-- **Boss posture (KAMAE).** A posture bar on every boss that fills as you
-  press the attack. Break it and land the **ONIKIRI** blow. Replaces the
-  boss DEATHBLOW. ([Bosses](Bosses#coming-soon))
-- **Tougher boss fights.** Sidesteps, delayed swings, an area attack each and
-  one heavy, clearly warned **RED SIGNAL** move per boss, with clear windows
-  to punish them. The first boss stays gentle for new players.
 - **The Well.** The rooftop goes vertical: a shaft down to a metro station,
   balconies, a raised north deck, a torii bridge, and a living city around it.
   ([The Map](The-Map#coming-soon-the-well))
