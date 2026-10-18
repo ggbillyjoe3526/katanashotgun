@@ -1557,7 +1557,10 @@ func _update_play(delta: float) -> void:
 	# ---- glory kill prompt: a fixed spot under the crosshair
 	var move := ""
 	if is_instance_valid(p.gk_ready):
-		move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
+		if p.gk_ready_plunge:
+			move = "PLUNGE"
+		else:
+			move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
 	elif finisher_demo:
 		move = "GLORY KILL"
 	finisher_prompt.refresh(move, crosshair.position, delta)

@@ -19,9 +19,10 @@ and Linux).
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
 | RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
 | F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow). A gold "F GLORY KILL" prompt shows when one is in reach |
+| F (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows when one is lined up |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
-| Space | Jump / double jump |
+| Space | Jump / double jump. Jump at a ledge just out of reach and hold forward to **climb** it |
 | Shift (or Q) | Dash (invulnerable) |
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
@@ -169,6 +170,8 @@ Pass after `--` on the command line:
   tally, FINISH + boss card, boss reward card, level-up, boss name card, kill
   tags, hint, death and the Player Level roll-up);
   `--boss=ninja|mech|oni` forces a boss
+- `--movetest` (with `--headless --fixed-fps 60`) runs the scripted movement
+  course: jump heights, ledge climbs, walls too tall to climb, plunges
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
@@ -188,6 +191,7 @@ Pass after `--` on the command line:
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
+tools/movement_test.sh                                           # movement course
 tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
 ```
 

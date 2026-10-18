@@ -8,6 +8,7 @@ import.log
 smoke.log
 # Unit test log (tools/unit_tests.sh)
 unit.log
+movement.log
 # OS / editors
 .DS_Store
 Thumbs.db

@@ -53,9 +53,10 @@ the prototype already works.
 | Slash | LMB | 3-hit katana combo, cleaves. **Katana kills charge the shotgun (+1 cell)** |
 | Blast | RMB | Arc shotgun: hitscan "pellets" drawn as lightning, headshots x2, **staggers** |
 | Glory kill | F near a staggered enemy | First-person finisher (see below): heals 20, +3 cells. On bosses: a 15% deathblow |
+| Plunge | F while dropping from high ground onto a foe | A glory kill from above: the katana goes down through it |
 | Deflect | Slash an incoming bolt | Sends it back as a lethal, staggering shot |
 | Dash | Shift | 2 charges, invulnerable while dashing |
-| Jump | Space (x2) | Double jump, jump pads |
+| Jump | Space (x2) | Double jump, jump pads; a ledge a jump falls just short of is climbed |
 
 ### The arc shotgun (RAIJIN-12)
 - A futuristic "shotgun taser". Gameplay is exactly a shotgun: a spread of
@@ -88,6 +89,17 @@ the prototype already works.
   - **Boss:** an X-cut, then a point-blank blast. It takes 15%, unless that is the killing blow.
 - Presentation: cinematic bars, data streaks, impact frames on each hit,
   hitstop, a hop back out of the gore when it ends.
+- **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe
+  (or flying off a jump pad), look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
+  katana through its collarbone (it splits in two), rip it out and step
+  down. Same rewards as any glory kill. Brutes must be staggered first; bosses
+  can't be plunged.
+
+### Climbing
+- A jump that falls just short of a ledge you're pushing into grabs it and
+  pulls you up (about 0.25–0.4 s). Only ledges your hands could reach count
+  (up to 2 m above your feet), and only with room to stand on top, so tall
+  walls are never climbable.
 
 ## Run structure (arcade)
 - **Difficulty rises the further the player gets.** Every wave is harder than

@@ -321,6 +321,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 			target.z = clampf(target.z, -lim, lim)
 			target.y = p.global_position.y + 0.2
 			global_position = target
+			reset_physics_interpolation() # a blink, not a slide
 			visual.visible = true
 			collision_layer = 4
 			Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)

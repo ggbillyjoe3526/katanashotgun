@@ -239,6 +239,7 @@ func floor_height_at(x: float, z: float) -> float:
 # ---------------------------------------------------------------- weather
 func _build_rain() -> void:
 	rain = CPUParticles3D.new()
+	rain.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # follows the player every frame
 	rain.amount = 700
 	rain.lifetime = 0.9
 	rain.preprocess = 1.0
