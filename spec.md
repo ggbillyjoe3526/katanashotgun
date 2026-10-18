@@ -527,6 +527,7 @@ Notes:
 | Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground or off a jump pad on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes must be staggered to plunge; bosses can never be plunged (no glory kills on bosses, owner 2026-10-18) |
 | Deflects | A deflected shot flies straight back to whoever fired it and hurts them (owner, 2026-10-18; §3.2) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
+| Bosses: posture, no glory kills | Bosses have a posture bar (KAMAE) that aggressive play fills; a full bar breaks the boss and F lands the ONIKIRI blow. Bosses never get a glory kill; only the horde does (owner, 2026-10-18; §5.5) |
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
@@ -715,7 +716,7 @@ charges the gun; the gun sets up the blade.**
 - **Input buffer:** 0.18 s, as for the katana: pressing F just before an
   enemy staggers or comes into reach still counts.
 - **Prompt:** while a target is in reach, a gold key cap with the bound key
-  and "GLORY KILL" ("DEATHBLOW" on bosses) sits in a fixed spot under the
+  and "GLORY KILL" ("ONIKIRI" on a boss whose KAMAE is broken, §5.5) sits in a fixed spot under the
   crosshair (§9.7), and that enemy's stagger marker turns gold and grows.
 
 **Plunge (owner's request, 2026-10-18):** a glory kill from above, always
@@ -757,7 +758,7 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
 **Finisher selection:**
 | Situation | Finisher | Beats (seconds from start) | Gore |
 |---|---|---|---|
-| Boss | X-cut then point-blank blast | 0.12 slash, 0.26 slash, 0.46 aim, 0.56 blast + kill; length 0.95 | Deathblow, or full kill |
+| Boss with its KAMAE broken (the ONIKIRI, §5.5) | X-cut then point-blank blast | 0.12 slash, 0.26 slash, 0.46 aim, 0.56 blast + kill; length 0.95 | The blow, or full kill |
 | Brute | Climb up, chop the skull, blast down into the neck | 0.02 raise overhead, 0.20 chop, 0.42 aim down, 0.52 blast + kill; length 0.95; the camera rises 0.9 m | headpop |
 | Plunge (see above) | Dive, stab down through the collarbone, rip out | dive 0.12–0.3, stab at the dive's end, kill +0.1, rip +0.28; length dive + 0.5 | split |
 | Player airborne and >0.9 m above the enemy | Falling overhead cut | 0.02 raise, 0.16 chop, 0.20 kill; length 0.72 | split |
@@ -779,11 +780,13 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
 - Kill tag "GLORY KILL", points ×2, +4 extra health orbs.
 - Hyakunin-giri staggers every enemy within 9 m.
 
-**Bosses:**
-- The finisher deals a **15% max-HP deathblow**, with a DEATHBLOW stamp (or
-  cut-in) and a blood geyser. The boss's stagger ends and it is knocked back.
-- If the boss has ≤15% HP left, the deathblow kills it.
-- A boss glory kill also triggers the holographic cut-in "DEATHBLOW!".
+**Bosses never get a glory kill** (owner, 2026-10-18). F on a boss whose
+KAMAE is broken plays the boss finisher above as the **ONIKIRI** blow (§5.5):
+- It deals **20% of max HP** with a blood geyser and a big damage number; the
+  break ends and the boss is knocked back. At ≤20% HP left it kills.
+- The holographic cut-in "ONIKIRI!" plays as it starts (no stamp at the
+  blow, so the cut-in is read in full).
+- It heals and charges cells like a glory kill but doesn't count as one.
 
 **On end:** release the enemy if it is alive, keep 0.35 s of invulnerability,
 hop back (−dir × 3 + up 2), katana cooldown 0.12.
@@ -793,10 +796,11 @@ hop back (−dir × 3 + up 2), katana cooldown 0.12.
   **STAGGERED** for `stagger_time`: a pulsing marker, dim eyes and a windup
   sound. Hint the first time: "STAGGERED! PRESS F FOR A GLORY KILL" (the
   bound key's name).
-- Poise regenerates once no hits land for 2.0 s (bosses 1.4 s). It regains 35%
-  of max per second (bosses 50%).
-- The shotgun is the main stagger tool. Armoured enemies (brutes, bosses)
-  need it.
+- Poise regenerates once no hits land for 2.0 s. It regains 35% of max per
+  second.
+- The shotgun is the main stagger tool. Armoured enemies (brutes) need it.
+- **Bosses have no poise** and are never staggered by hits or Hyakunin-giri;
+  they have the KAMAE bar instead (§5.5).
 
 ### 3.6 Damage over time (Kagutsuchi Flame)
 Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
@@ -916,14 +920,16 @@ windups, staggers.
   adds are alive. Tetsugumo can also call 3 adds herself.
 - **Enrage at 50% HP:** speed ×1.2 (Shuten goes to 5.6), faster specials, a
   roar, and a "<NAME> IS ENRAGED" message.
-- **Glory kill on a boss** = a 15% deathblow (§3.4).
-- **Boss bar:** top centre, showing "NAME – EPITHET".
+- **No glory kills on bosses:** pressure breaks their KAMAE, then F lands
+  the ONIKIRI (§5.5).
+- **Boss bar:** top centre, showing "NAME – EPITHET", the HP bar and the
+  KAMAE bar.
 
 ### 5.2 The bosses
 
 **Kurokage, Blade of the Null Signal** (the ninja)
 - Felled line: **SHADOW DELETED**.
-- HP 2600, speed 5.2, radius 0.5, height 2.1, head_y 1.72, poise 290, stagger
+- HP 2600, speed 5.2, radius 0.5, height 2.1, head_y 1.72, KAMAE 900, stagger
   2.6 s, armour 0.55, XP 320, points 5000.
 - **Dash-slash chain:** 2 dashes (3 when enraged). Each has a floor
   telegraph line 16 m long (neon). Windup 0.62 s (0.42 enraged), shortened on
@@ -937,7 +943,7 @@ windups, staggers.
 
 **Tetsugumo, Chrome Broodmother** (the spider mech)
 - Felled line: **MACHINE DECOMMISSIONED**.
-- HP 4400, speed 2.6, radius 1.7, height 3.6, head_y 2.5, poise 560, stagger
+- HP 4400, speed 2.6, radius 1.7, height 3.6, head_y 2.5, KAMAE 1400, stagger
   3.2 s, armour 0.35, XP 420, points 7000, mass 14.
 - **Sweeping gatling:** windup, then a sweep of 7-damage, 14 m/s bolts that
   can be deflected.
@@ -951,7 +957,7 @@ windups, staggers.
 **Shuten, the Overclocked Daemon** (the oni)
 - Felled line: **DAEMON PURGED**.
 - HP 5200, speed 4.4 (5.6 enraged), radius 1.05, height 3.4, head_y 2.8,
-  poise 500, stagger 3.0 s, armour 0.5, XP 500, points 8000, mass 9.
+  KAMAE 1600, stagger 3.0 s, armour 0.5, XP 500, points 8000, mass 9.
 - **Melee:** 2–3 hit combo, windup 0.7 s (0.45 on follow-ups), 32 damage each
   within 4.6 m + radius, with knockback.
 - **Leap slam:** a 24 m shockwave that does 26 damage; jump over it. Hint:
@@ -1015,6 +1021,43 @@ Japanese myth or history root (§13). **Never reuse FromSoftware names.**
   - Gashadokuro, the Scrapyard Colossus
   - Nue, Chimera of the Grid
   - Tamamo, Nine-Tailed Phantom of the Wire
+
+### 5.5 KAMAE and the ONIKIRI (boss posture; owner, 2026-10-18)
+Bosses have a posture bar, **KAMAE** (a fighting stance). Fighting
+aggressively fills it; when it is full the stance **breaks**, the boss
+reels, and the player lands a devastating blow, the **ONIKIRI**. It replaces
+glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
+- **Size:** Kurokage 900, Tetsugumo 1400, Shuten 1600, × the boss's
+  `damage_mult` (so later cycles take a little more).
+- **What fills it** (poise damage × a factor per source): katana ×1.6 (an
+  18-poise hit gives about 29, armour or not: the blade is the pressure
+  tool), shotgun ×0.6 (a point-blank blast gives about 78, less at range),
+  a returned bolt by its HP damage ×0.5 instead (about 48 for today's 95;
+  steady for a returned gatling stream, a big swing for a shuriken fan),
+  MASAMUNE EDGE's heavy third cut ×1.0 (100), Susanoo's Wave and Kage
+  Step ×1.0, burning nothing (explosions never
+  hit bosses).
+- **Glory kills nearby:** a glory kill on an add within **15 m** of the boss
+  fills **12%** of its bar. The adds feed the boss fight.
+- **Backing off:** after **2.5 s** without pressure the bar drains at **7%
+  per second**. Gentle: a short retreat to heal costs little.
+- **The break:** at full, a heavy clang, hitstop 0.12, shake 0.5, an impact
+  frame and the centre stamp **KAMAE BROKEN** (gold). The boss reels (its
+  STAGGER state, armour off) for its stagger time **+1.5 s** (Kurokage 4.1 s,
+  Tetsugumo 4.7 s, Shuten 4.5 s). The first time, the hint "KAMAE BROKEN!
+  PRESS F FOR ONIKIRI". The bar then shows the time left to strike, glowing
+  gold to white.
+- **The ONIKIRI:** F (the `finisher` action, same reach and buffer as a
+  glory kill, red prompt "ONIKIRI") plays the boss finisher (§3.4): 20% of
+  max HP, or the kill at ≤20%. When it kills, the boss falls "loud, then
+  quiet" (§5.3) and the kill tag reads ONIKIRI.
+- **After a break** (blow landed or window missed) the bar is empty and fills
+  again. No limit on breaks; at the bot's relentless pace a first-cycle boss
+  breaks once or twice per fight.
+- **The bar:** under the HP bar, a gold "KAMAE" label and a 190 px bar that
+  fills from the middle out; it runs white-hot from 80%. The word never
+  moves or changes. The first boss shows the hint "KEEP ATTACKING TO FILL
+  ITS KAMAE BAR - A FULL BAR BREAKS IT".
 
 ---
 
@@ -1402,11 +1445,11 @@ the holographic cut-in (§9.8).
   - **Glory kill prompt:** 16 px under the crosshair, ending 8 px right of
     it so it clears the kill tags, while a staggered enemy is in reach
     (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL" (or
-    "DEATHBLOW" on a boss) on a dark plate. Pops in over
+    "ONIKIRI" on a broken boss, red-edged, §5.5) on a dark plate. Pops in over
     0.1 s, then holds still; only the key cap's glow pulses. Fades in 0.08 s
     when the target is lost, and is gone during the finisher.
   - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
-    on a dark plate.
+    on a dark plate, with the KAMAE row under it (§5.5).
   - **Hints:** bottom centre on a dark plate, above the run level, 4.5 s,
     each shown once.
   - **Messages:** a fixed spot under the boss bar (e.g. "<NAME> IS
@@ -1511,7 +1554,7 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     mask** as a neon wireframe hologram: helmet, cheek plates, vents, a hot
     accent visor with two sharp white eyes. The hex grid, scanlines and
     sweeping scan bar stay inside the portrait box.
-  - Large glitch text beside it ("X20 COMBO", "DEATHBLOW!", "NEW HI-SCORE")
+  - Large glitch text beside it ("X20 COMBO", "ONIKIRI!", "NEW HI-SCORE")
     on plain dark glass. (The old "LINK//KAGE-07" and "SYNC n%" data lines
     were dropped: they changed every frame and crowded the text.)
   - RGB-split ghosts on entry and exit only, a "cutin" whoosh-shing sound
@@ -1588,7 +1631,7 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     edges, scanlines, 26 px, in 0.08 s).
   - Dash adds data streaks. Executions flash white at 0.4 alpha. Damage
     shakes the HUD in proportion.
-  - DEATHBLOW stamp on bosses.
+  - KAMAE BROKEN stamp when a boss's stance breaks (§5.5).
 
 ### 9.9 READABILITY RULE (critical feedback; this overrides any style choice)
 The prototype's text effects are **too messy**. Text and numbers must follow
@@ -1927,6 +1970,10 @@ historical root with a cyberpunk twist**.
   (Kanayago-kami, the deity of ironworking), AKAGANE COIL (akagane,
   copper), ONIBI EDGE (onibi, oni-fire ghost lights), RAIKO COIL (Minamoto
   no Raiko, who slew Shuten-doji).
+- **KAMAE** (the boss posture bar): kamae, a fighting stance; literally
+  "posture" in kenjutsu.
+- **ONIKIRI** (the break blow): "oni-cutter", the name legend gives to
+  blades that cut down demons, like Dojigiri against Shuten-doji.
 - **Mutators and augments:** see §6.3 and §3.8. Mutator roots added
   2026-10-18: okuri-inu (the yokai dog that stalks travellers at night),
   onryo (a vengeful ghost), kabuto (the samurai helmet), matsuri (a

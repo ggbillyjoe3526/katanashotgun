@@ -8,7 +8,8 @@ extends CharacterBody3D
 ## Glory kills (Doom 2016 style): pressing F (the `finisher` action) near a
 ## staggered enemy locks the camera on, lunges you in and plays a short
 ## contextual finisher while you are invulnerable. The world runs in slow
-## motion; the finisher runs in real time.
+## motion; the finisher runs in real time. Bosses never get a glory kill: F
+## on a boss whose KAMAE is broken lands the ONIKIRI blow instead.
 ## Plunge: falling from a ledge well above a foe, F drives the katana down
 ## into it. It is a glory kill (same rewards) with its own finisher.
 ##   Shift dash (i-frames), Space jump / double jump, and a ledge climb when
@@ -713,7 +714,8 @@ func _find_plunge_target() -> Enemy:
 func _start_glory(e: Enemy, plunge := false) -> void:
 	_set_finisher_target(null)
 	dash_t = 0.0 # a dash cut short by the finisher doesn't resume after it
-	Game.executions += 1
+	if not e.is_boss:
+		Game.executions += 1 # the ONIKIRI on a broken boss is not a glory kill
 	add_cells(3)
 	heal(20.0 * float(Game.mut("exec_heal", 1.0)))
 	var to_me := global_position - e.global_position

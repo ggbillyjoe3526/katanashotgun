@@ -270,6 +270,7 @@ func _spawn_boss() -> void:
 	Game.hud.show_boss_intro(boss.display_name, boss.subtitle)
 	Sfx.play("boss_intro", 0.0)
 	Sfx.play_boss_music(boss_kind)
+	Game.show_hint_once("kamae", "KEEP ATTACKING TO FILL ITS KAMAE BAR - A FULL BAR BREAKS IT")
 	_adds_t = 8.0
 
 

@@ -41,6 +41,8 @@ var is_boss := false
 var display_name := ""
 var subtitle := ""
 var defeat_text := "TARGET TERMINATED" # the big card when a boss dies
+var kamae_max := 0.0 # bosses: size of the KAMAE bar before cycle scaling
+var kamae: BossKamae = null # bosses only: the posture bar that replaces poise
 
 var state: S = S.SPAWN
 var state_t := 0.0
@@ -145,8 +147,8 @@ func setup(k: String, scale_mult := 1.0) -> void:
 			hp = 520.0; speed = 3.8; radius = 0.75; height = 2.6; head_y = 2.12; poise = 160.0
 			stagger_time = 2.8; armor = 0.35; xp = 60.0; points = 600; mass = 3.5
 		"oni":
-			hp = 5200.0; speed = 4.4; radius = 1.05; height = 3.4; head_y = 2.8; poise = 500.0
-			stagger_time = 3.0; armor = 0.5; xp = 500.0; points = 8000; mass = 9.0
+			hp = 5200.0; speed = 4.4; radius = 1.05; height = 3.4; head_y = 2.8
+			stagger_time = 3.0; armor = 0.5; xp = 500.0; points = 8000; mass = 9.0; kamae_max = 1600.0
 			is_boss = true; display_name = "SHUTEN"; subtitle = "THE OVERCLOCKED DAEMON"; defeat_text = "DAEMON PURGED"
 	if not is_boss:
 		hp *= float(Game.mut("enemy_hp", 1.0))
@@ -161,6 +163,9 @@ func _finish_setup(scale_mult: float) -> void:
 	max_hp = hp
 	max_poise = poise
 	damage_mult = 1.0 + (scale_mult - 1.0) * 0.5
+	if is_boss:
+		# later cycles take more pressure to break, at the same pace as damage
+		kamae = BossKamae.new(kamae_max * damage_mult)
 
 
 func _ready() -> void:
@@ -405,7 +410,7 @@ func _build_body() -> void:
 	_part(leg_l, "LegL", leg_size, m_pants, Vector3(0, -_leg_len * 0.5, 0))
 	_part(leg_r, "LegR", leg_size, m_pants, Vector3(0, -_leg_len * 0.5, 0))
 
-	# Sekiro-style deathblow marker
+	# stagger marker over the head (gold when F would finish it)
 	marker = Psx.quad(Vector2(0.5, 0.5), Psx.fx(MARKER_RED, TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.55, 0))
 	marker.visible = false
 	add_child(marker)
@@ -506,7 +511,7 @@ func _physics_process(delta: float) -> void:
 					_set_state(S.CHASE)
 			S.STAGGER:
 				face = Vector3(sin(face_yaw), 0, cos(face_yaw))
-				if state_t >= stagger_time:
+				if state_t >= stagger_length():
 					_end_stagger()
 			S.CHARGE_WINDUP:
 				if state_t > 0.8:
@@ -779,7 +784,10 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 		_enrage()
 	if poise_dmg < 0.0:
 		poise_dmg = final
-	_apply_poise(poise_dmg)
+	if is_boss:
+		press_kamae(BossKamae.gain_for(source, poise_dmg, dmg))
+	else:
+		_apply_poise(poise_dmg)
 	return false
 
 
@@ -813,8 +821,9 @@ func glory_hit(dir: Vector3, amount := 1.0) -> void:
 
 func execute(dir: Vector3, gore_mode := "execution", tag := "GLORY KILL") -> bool:
 	visual.rotation.x = 0.0
-	if is_boss and hp > max_hp * 0.15 + 1.0:
-		var dmg := max_hp * 0.15
+	if is_boss and hp > max_hp * BossKamae.BLOW_SHARE + 1.0:
+		# the ONIKIRI blow on a broken boss; its name was the cut-in
+		var dmg := max_hp * BossKamae.BLOW_SHARE
 		hp -= dmg
 		Game.fx.damage_number(global_position + Vector3(0, height + 0.5, 0), dmg, true, false)
 		var chest := global_position + Vector3(0, height * 0.7, 0)
@@ -823,7 +832,6 @@ func execute(dir: Vector3, gore_mode := "execution", tag := "GLORY KILL") -> boo
 		Game.gore.chunks(chest, 8, 7.0)
 		Game.gore.emitter(self, Vector3(0, height * 0.75, 0), Vector3.UP, 90.0, 1.4, 8.0, 0.3)
 		Game.gore.pool(global_position, 4.5)
-		Game.hud.stamp("DEATHBLOW", Color(1, 0.12, 0.18), 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 0.6, "rot": -0.05, "shake": 6.0, "vol": -2.0, "pitch": 0.85, "burst": 30, "shadow": Color(0.25, 0, 0.04)})
 		knock += Vector3(dir.x, 0, dir.z).normalized() * 6.0
 		_end_stagger()
 		return false
@@ -841,17 +849,53 @@ func ignite(rank: int) -> void:
 	burn_t = 3.0
 
 
+## Staggers on the spot (Hyakunin-giri). Bosses only reel when their KAMAE
+## breaks, never from this.
 func stagger_now() -> void:
-	if dead or state == S.STAGGER or state == S.SPAWN:
+	if dead or is_boss or state == S.STAGGER or state == S.SPAWN:
 		return
 	_stagger()
+
+
+## How long a stagger lasts; a boss's KAMAE break runs a little longer so
+## the ONIKIRI is never a race.
+func stagger_length() -> float:
+	return stagger_time + (BossKamae.BREAK_EXTRA if is_boss else 0.0)
+
+
+## Bosses: adds pressure to the KAMAE bar and breaks the stance when it fills.
+func press_kamae(amount: float) -> void:
+	if kamae == null or dead or state == S.STAGGER or state == S.SPAWN:
+		return
+	if kamae.add(amount):
+		_break_kamae()
+
+
+## The stance shatters: a heavy clang, a held frame, KAMAE BROKEN, and the
+## boss reels for the ONIKIRI.
+func _break_kamae() -> void:
+	_stagger()
+	knock = Vector3.ZERO
+	# a break can land mid-blink: always reel where the player can see it
+	visual.visible = true
+	collision_layer = 4
+	Game.hitstop(0.12)
+	Sfx.play("deflect", 4.0, 0.55, 0.0)
+	Sfx.play_at("slam", global_position, 0.0, 1.3)
+	Game.gore.sparks(global_position + Vector3(0, height * 0.7, 0), Vector3.UP, 40, Color(2.0, 1.5, 0.4))
+	if Game.player:
+		Game.player.add_trauma(0.5)
+	Game.hud.kamae_broken()
+	if Game.debug_autoplay:
+		print("[kamae] %s broken hp=%.0f/%.0f frame=%d" % [kind, hp, max_hp, Engine.get_frames_drawn()])
+	Game.show_hint_once("kamae_break", "KAMAE BROKEN!  PRESS %s FOR ONIKIRI" % Ui.key_name("finisher"))
 
 
 func _apply_poise(amount: float) -> void:
 	if state == S.STAGGER or state == S.SPAWN:
 		return
 	poise -= amount
-	poise_t = 1.4 if is_boss else 2.0
+	poise_t = 2.0
 	if poise <= 0.0:
 		_stagger()
 
@@ -862,21 +906,26 @@ func _stagger() -> void:
 	marker.visible = true
 	_eye_mat.set_shader_parameter("energy", 0.8)
 	Sfx.play_at("windup", global_position, -2.0, 0.45)
-	Game.show_hint_once("stagger", "STAGGERED!  PRESS %s FOR A GLORY KILL" % Ui.key_name("finisher"))
+	if not is_boss:
+		Game.show_hint_once("stagger", "STAGGERED!  PRESS %s FOR A GLORY KILL" % Ui.key_name("finisher"))
 
 
 func _end_stagger() -> void:
 	set_finisher_lit(false)
 	marker.visible = false
 	poise = max_poise
+	if kamae:
+		kamae.recover()
 	_eye_mat.set_shader_parameter("energy", 3.0)
 	_set_state(S.CHASE)
 
 
 func _update_poise(delta: float) -> void:
 	poise_t -= delta
-	if poise_t <= 0.0 and state != S.STAGGER:
-		poise = minf(max_poise, poise + max_poise * (0.5 if is_boss else 0.35) * delta)
+	if kamae:
+		kamae.update(delta)
+	elif poise_t <= 0.0 and state != S.STAGGER:
+		poise = minf(max_poise, poise + max_poise * 0.35 * delta)
 	if marker.visible:
 		var k := 1.0 + sin(Time.get_ticks_msec() * 0.02) * 0.25
 		if finisher_lit:
@@ -966,9 +1015,11 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 	var pts := points
 	match source:
 		"execution":
-			tag = _exec_tag
+			tag = "ONIKIRI" if is_boss else _exec_tag
 			col = Color(1.0, 0.15, 0.2)
 			pts *= 2
+			if not is_boss:
+				_feed_boss_kamae()
 		"deflect":
 			tag = "RETURN TO SENDER"
 			col = Color(0.3, 0.95, 1.0)
@@ -1046,6 +1097,15 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		pool.recycle(self)
 	else:
 		queue_free()
+
+
+## A glory kill close to the boss shakes its stance (spec §5.5).
+func _feed_boss_kamae() -> void:
+	var b: Enemy = Game.main.boss if Game.main else null
+	if b == null or not is_instance_valid(b) or b.dead or b.kamae == null:
+		return
+	if b.global_position.distance_to(global_position) <= BossKamae.GLORY_RANGE:
+		b.press_kamae(b.kamae.max_value * BossKamae.GLORY_SHARE)
 
 
 ## Hannya's Wrath: a wounded enemy enrages, faster and harder hitting, eyes red.
