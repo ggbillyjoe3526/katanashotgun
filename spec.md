@@ -919,6 +919,7 @@ windups, staggers.
 
 ### 5.1 Rules
 - **Every 3rd wave is a boss wave** (3, 6, 9, …). A boss wave has no mutator.
+  (A proposal to spread bosses across map stages is in §6.4; not built.)
   Its intro reads "BOSS INCOMING" with an alarm, then the **boss intro card**:
   the name and epithet slide in on a band, with the boss_intro sound and the
   boss's own music.
@@ -1185,6 +1186,166 @@ during the tally.
 
 The mutator name shows under the wave label on the HUD, with its multiplier.
 Debug: `--mutator=id` forces one on every regular wave.
+
+### 6.4 Map stages and the boss schedule (PROPOSAL, not built; owner idea, 2026-10-18)
+**Status: an idea to build once a second map exists. Nothing here is in the
+game yet.** Today a boss comes every 3rd wave (§5.1) and the seed picks one
+map for the whole run (§7.5). The open decision is in §19.
+
+**The idea, in the owner's words (2026-10-18):** "Maybe each map has its own
+boss. For example, if a boss appears every 3rd wave then essentially the map
+changes after every boss defeat." And: "first boss on 10th wave / map 1,
+second on 15th and third on 20th (both map 2). The idea is that bosses become
+more frequent but no more than every 3rd wave and each map has more bosses
+than previous." And: "Seeds can also determine which order maps/bosses
+appear." He asked for it to be documented and balanced before it is built.
+
+**How it would play.** A run becomes a journey through **stages**. Each stage
+is one map. Stage 1 holds 1 boss, stage 2 holds 2, stage 3 holds 3, and so
+on. The last boss of a stage is that map's own boss, its **guardian**;
+felling it ends the stage, and after its tally and reward card the run moves
+to the next map. The other bosses in a stage are **rematches** with bosses
+already felled earlier in the run, so every new boss arrives as a stage's
+climax. Difficulty never resets on a new map: it follows the wave number, as
+today. (Working words for this section; any player-facing name for a stage
+comes from §13 when it is built.)
+
+**Rules that hold in every version of the schedule:**
+- Never two boss waves closer than 3 waves apart (the owner's floor).
+- The gaps between bosses only shrink or stay the same as a run goes on.
+- Waves 1 to 3 are never boss waves, and stay as easy as today (§6.1).
+- Each stage holds at least as many bosses as the one before (one more each
+  stage, up to a cap so the scenery keeps changing; default cap 4).
+- A boss wave still has no mutator (§6.3).
+- The same seed gives the same map order, the same boss on the same wave and
+  the same rematches (§7.5).
+
+**Two schedules.** Boss waves, with the stage each belongs to (| = map
+change):
+
+| | Stage 1 | Stage 2 | Stage 3 | Stage 4 | After |
+|---|---|---|---|---|---|
+| Today (one map) | 3, 6, 9, 12, 15… | | | | every 3rd |
+| Owner's sketch | 10 | 15, 20 | 24, 28, 32 | 35, 38, 41, 44 | every 3rd |
+| **Balanced (recommended)** | **5** | **9, 13** | **16, 19, 22** | **25, 28, 31, 34** | every 3rd, 4 per stage |
+
+The sketch's stages 3 and 4 extend the owner's numbers with the same rule
+(gaps of 10, then 5, then 4, then 3). The balanced schedule's gaps are 5,
+then 4, then 3 from stage 3 on.
+
+**What a run pays, by the wave a player dies on** (bosses felled / BOSS
+BOUNTY chips before the tally mult / Player Level XP from bosses at 250
+each; §7.3, §11.1). Bosses are also the only source of unlocks (§11.2), one
+per kill:
+
+| Dies on wave | Today | Owner's sketch | Balanced |
+|---|---|---|---|
+| 6 | 1 / 6,000 / 250 | 0 / 0 / 0 | 1 / 10,000 / 250 |
+| 11 | 3 / 36,000 / 750 | 1 / 20,000 / 250 | 2 / 28,000 / 500 |
+| 16 | 5 / 90,000 / 1,250 | 2 / 50,000 / 500 | 3 / 54,000 / 750 |
+| 21 | 6 / 126,000 / 1,500 | 3 / 90,000 / 750 | 5 / 124,000 / 1,250 |
+| 31 | 10 / 330,000 / 2,500 | 5 / 194,000 / 1,250 | 8 / 274,000 / 2,000 |
+
+**Why the balanced schedule is recommended:**
+- **The sketch hides the showpiece.** A player who dies before wave 10 never
+  meets a boss, and bosses are the game's centrepiece (market research,
+  2026-10-18). Nine regular waves in a row also means nine mutator rolls
+  with no change of rhythm.
+- **The sketch halves the payoff.** Fewer bosses means half the boss XP and
+  half the unlocks for the same play, so new players level and unlock
+  much more slowly. The balanced schedule stays close to today's totals
+  while still spreading the bosses the way the owner described.
+- **Wave 5 is a fair first boss.** Waves 1 to 3 stay easy, brutes first
+  appear on wave 4 (§6.2), and the first boss comes one wave later, still
+  with the softer first-meeting rules below.
+- Both keep the owner's shape: fewer bosses early, more per map later, never
+  closer than every 3rd wave.
+
+**Seeded order, kept fair** (owner, 2026-10-18: "Seeds can also determine
+which order maps/bosses appear"):
+- **Map order:** the seed shuffles the maps at run start. A map is not used
+  again until every map has had a stage; after the last map the seed
+  shuffles them again for the next lap, never repeating the map just left.
+- **A fair first stage:** each map is marked as a fair opener or not. Stage 1
+  is drawn only from openers (readable layout, short sightlines, no long
+  falls near spawns). Shin-Kagura is an opener. A map built to be harder
+  (for example a tall vertical climb) can be marked "not before stage 2".
+- **Guardians:** each map has its own guardian boss. Until a map has one,
+  the seed picks its guardian from the bosses not yet met this run. The
+  run's first boss is never the heaviest: today SHUTEN can't be first
+  (§5.1 keeps that rule), so a map whose guardian is SHUTEN is not an
+  opener.
+- **Rematches:** drawn by the seed from bosses already felled this run,
+  never the same boss twice in a row.
+- **Scaling depends on the wave, not on the boss or map**, so whatever order
+  a seed deals, every boss on a given wave is scaled the same:
+  - Boss HP scale `1 + 0.065 × (wave − 3)`: ×1.13 at wave 5, ×1.39 at
+    wave 9, ×1.85 at wave 16, ×2.43 at wave 25, ×3.02 at wave 34. This
+    replaces the cycle formula (§5.1), which only works when bosses come
+    every 3rd wave; it lands near today's values at each depth without
+    today's jumps at waves 12, 21 and 30.
+  - Damage keeps half the HP scale's increase, and KAMAE scales with HP, as
+    today.
+  - **First meeting:** the first time a boss is met in a run, before wave
+    12, it keeps big moves for after its enrage and the run's first boss
+    telegraphs 25% longer (today's first-cycle rules, §5.6, tied to the
+    meeting instead of the cycle).
+- **Drawn up front:** the map order and every stage's boss list come from
+  the seed at run start, from their own hashed stream (like the boss dice,
+  hash of the seed and the stage), never from draws made during play, so
+  nothing the player does can shift them.
+- **Not from unlocks:** the journey uses every map in the game, never only
+  the maps a profile has unlocked. Otherwise two friends with different
+  unlocks would get different runs from one seed, which breaks seed sharing
+  (§7.5). This would take maps out of the boss reward pool (§11.2): you
+  reach a map by playing, not by unlocking it.
+
+**How it meets the other systems:**
+- **Waves and difficulty:** `hp_scale` and the line-ups keep following the
+  wave number across map changes (§6.2). Each map sets its own max alive
+  and spawn points (a small map holds fewer at once).
+- **Mutators:** boss waves stay mutator-free. The first wave on a new map
+  has no mutator either (default, so the player can read the new layout);
+  the roll still makes its two draws so the stream stays in step. The
+  no-repeat rule and every `min_wave` carry across maps.
+- **End-of-wave tally:** unchanged. A guardian wave pays BOSS BOUNTY like
+  any boss wave. The map change comes after the tally and the reward card,
+  so "loud, then quiet" (§5.3) stays intact.
+- **The map change:** a short travel card naming the next map, a quick
+  glitch out and in (§9.9), the new map built behind it with its shaders
+  warmed up before the first wave, so combat never hitches. HP, cells, run
+  level and augments carry over; the old map leaves no nodes, timers,
+  tweens or signal connections behind.
+- **Boss rewards:** unchanged: every kill unlocks that boss's next item
+  (§11.2), rematches included.
+- **Run suspend:** the snapshot is taken after the map change, so CONTINUE
+  RUN opens on the new map. It also stores the stage number and the bosses
+  met so far; the map order and boss lists re-derive from the seed. A run
+  saved before this ships continues by its wave number (wave 7 resumes in
+  stage 2), through a save migration.
+- **High scores:** comparable within a version, as today. A seed shared
+  between different game versions may deal a different journey (maps
+  added), as noted for seed codes in §19.
+
+**Open questions for the owner:** in §19.
+
+**Checks to run when it is built:**
+- A unit test over 500 seeds and waves 1 to 100: no boss on waves 1 to 3,
+  never two boss waves less than 3 apart, gaps never grow, stage k holds
+  min(k, cap) bosses, the guardian is always last, stage 1 is always an
+  opener, and the run's first boss is never SHUTEN.
+- The same seed twice, and once with a suspend and continue at every map
+  change: the same maps, bosses, rematches, waves and offers.
+- A 10-minute autoplay run (`--god`, with a debug flag to start at a late
+  stage) that crosses at least two map changes with zero script errors and
+  no leftover nodes.
+- An old run snapshot still loads.
+- On the owner's PC: the map change has no hitch and loads quickly;
+  the first boss on wave 5 feels fair to a new player; a rematch feels
+  harder than the first meeting.
+- Docs in the same PR: §5.1 and this section, `docs/boss-roster.md` and the
+  Boss Roster doc (shared rules: arrival, HP scale, pacing), and the wiki
+  (Bosses, The Map, Waves and Mutators, Seeds, Home).
 
 ---
 
@@ -2024,6 +2185,8 @@ is never lost.
 
 ## 12. Maps (future; not the current priority)
 Maps register in `MapRegistry` and the seed picks among the unlocked ones.
+(Proposal, not built: a run moves to a new map after each map's boss,
+§6.4.)
 Planned (names from §13):
 - **Tokaido Expressway:** a horizontal, **long, open, procedurally generated
   stretch** (an elevated highway / market street, after the old Edo–Kyoto
@@ -2441,6 +2604,19 @@ seed | click: new seed).
 
 ## 19. Open decisions (ask the developer; don't invent)
 - The Player Level **XP formula** and pacing.
+- **Map stages and the boss schedule** (owner idea, 2026-10-18; proposal
+  in §6.4, built once a second map exists). To decide, with the defaults
+  §6.4 recommends:
+  1. The schedule: the balanced one (bosses on waves 5 | 9, 13 | 16, 19,
+     22 | …) or the owner's sketch (10 | 15, 20 | …).
+  2. Seeded map order with a fair-opener rule for stage 1 (recommended).
+  3. Which boss guards which map. Default: KUROKAGE guards Shin-Kagura;
+     TETSUGUMO and SHUTEN guard the next maps until those get new bosses.
+  4. Maps leave the boss reward pool, so one seed deals every player the
+     same journey (recommended).
+  5. Up to 4 bosses per stage, then the maps repeat in a new seeded order.
+  6. The first wave on a new map has no mutator (default yes); no extra
+     heal on a map change (default).
 - The full **boss reward** list (the drop rule is decided: every kill
   unlocks that boss's next reward, §11.2).
 - The **final shotgun look** (the katana reference is decided: Thermal

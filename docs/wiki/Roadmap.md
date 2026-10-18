@@ -20,6 +20,9 @@ already arrived is in the [Patch Notes](Patch-Notes).
   elevated highway and market street), Takamagahara Spire (fight floor by
   floor up a megastructure), Ryugu Arcade (a neon mall) and Kurama Dojo (a
   dojo in the rain).
+  We're also thinking about runs that **travel from map to map**: beat a
+  map's boss and the fight carries on somewhere new, with the seed choosing
+  the order. Not decided yet.
 - **A redesigned thermal katana**, and the final look for the arc shotgun.
 - **Boss variants** (the same boss with a new title and new tricks) and
   **new bosses**.
