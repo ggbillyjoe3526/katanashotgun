@@ -1009,8 +1009,9 @@ the holographic cut-in (§9.8).
 
 ### 7.4 High scores
 - Local top 10 entries `{name (3 chars), score, wave, seed}`, sorted.
-  - Prototype: `user://scores.json`.
-  - Final: part of the profile save (§11.3).
+  - Kept in the profile save (§11.3). A prototype `user://scores.json` is
+    imported once. The score is kept the moment the run ends (as `---`),
+    so quitting before typing initials doesn't lose it.
 - The HUD shows "HI 0000000" centre top. Passing the best score triggers a
   stamp/cut-in "NEW HI-SCORE" once per run.
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
@@ -1563,7 +1564,12 @@ card.
 
 ---
 
-## 11. Progression and saving (CRITICAL — NOT BUILT YET)
+## 11. Progression and saving (CRITICAL)
+
+Built in PR "Profile and save system" (2026-10-18): `Profile` autoload,
+`scripts/save/`, `Rewards`, the results XP roll-up, the title armory and
+CONTINUE RUN. The two OPEN items below run on the defaults stated there
+until the owner decides.
 
 The high score is not the only thing the player chases. There must be a
 visible, persistent **Player Level**, and the game **must save** so progress
@@ -1574,6 +1580,10 @@ is never lost.
   on score, waves reached, bosses felled, glory kills and so on (formula
   **OPEN**; aim for a steady pace with the first levels coming quickly; never
   grindy).
+  - **Default in use** (`scripts/save/progression.gd`): 60 per wave cleared,
+    250 per boss, 4 per kill, 15 per glory kill, +1 per 500 points. Level
+    1→2 needs 400 XP, each level after 150 more, flat from level 31.
+    A first run that dies on wave 3 reaches level 2.
 - **Seeing it rise:** after each run, the results screen counts XP into the
   level bar (Balatro-style roll-up). Every level gained gets a celebration (a
   holographic cut-in, a stamp, a sound). The level shows on the title screen
@@ -1596,6 +1606,12 @@ is never lost.
   seeded pools. Skins and cosmetics are picked in a simple menu.
 - **OPEN:** the drop rules (a guaranteed first-kill reward per boss? chance
   per kill? reward tables per boss and cycle?) and the full reward list.
+  - **Default in use** (`scripts/rewards.gd`): each boss has an ordered list
+    and every kill unlocks its next item until the list is done. Never
+    random, so rewards never touch the seeded RNG. The first six are
+    weapon looks: a katana edge and a shotgun coil per boss, picked on the
+    title screen (1 and 2). Palettes, maps, mutators and boss variants can
+    join the lists once they exist.
 
 ### 11.3 Saving (critical)
 - **Profile save:** Player Level and XP, unlocks, equipped cosmetics, high
@@ -1615,6 +1631,15 @@ is never lost.
   - Never wipe a profile when loading fails; fall back to the backup.
 - Location `user://` (folder `KatanaShotgun`). Later, Steam Cloud or
   similar.
+- **As built:** `profile.json` and `run.json`, each with a `.bak`. Every file
+  is a header line (`KSAVE <kind> <version> <sha256>`) then JSON; a file
+  that fails its checksum is skipped. Load order: a finished `.tmp`, the
+  file, the backup. If every copy is bad they are renamed
+  `*.corrupt-<time>` (never deleted) and a new profile starts. Debug runs
+  (`--autoplay`, `--juicetest`, `--showcase`) use `user://debug/`. The run
+  snapshot is taken after each wave's tally (and boss reward card), deleted
+  the moment the player dies. Starting a NEW RUN over a suspended run pays
+  that run's XP first. Format and API: `scripts/autoload/profile.gd`.
 
 ---
 
@@ -1670,6 +1695,11 @@ historical root with a cyberpunk twist**.
 - **RAIJIN-12** (the shotgun): Raijin, the thunder god.
 - **Enemies:** Ashigaru (grunts), Teppo (gunners; the matchlock corps),
   Kanabo (brutes; after the oni's iron club).
+- **Boss rewards** (§11.2, `scripts/rewards.gd`): KAGEROU EDGE (kagero, the
+  heat haze), KITSUNEBI COIL (kitsunebi, fox-fire), KANAYAGO EDGE
+  (Kanayago-kami, the deity of ironworking), AKAGANE COIL (akagane,
+  copper), ONIBI EDGE (onibi, oni-fire ghost lights), RAIKO COIL (Minamoto
+  no Raiko, who slew Shuten-doji).
 - **Mutators and augments:** see §6.3 and §3.8.
 
 ---
@@ -1750,7 +1780,8 @@ seed | click: new seed).
 | UI pieces | `Shard` (tech panel), `GlitchText`, `CutIn`, `SpeedLines` (data streaks), `ShardBurst` (kill burst) |
 | `PostFx` | Post-process material, hurt/flash/impact/heat |
 | `Psx`, `TexGen`, `Ui` | Material factory, procedural textures, fonts and UI helpers |
-| `Palette`, `Mutators`, `Upgrades` | Data tables |
+| `Profile` (autoload) | The profile and the suspended run (§11): Player Level and XP, unlocks, equipped looks, top 10, settings, lifetime stats. Crash-safe files through `SaveFile`, migrations in `ProfileMigrations`, run snapshots in `RunSnapshot` |
+| `Palette`, `Mutators`, `Upgrades`, `Rewards`, `Progression` | Data tables |
 
 ### 15.3 Time
 - Gameplay uses scaled delta. Presentation (UI, juice, glory-kill
@@ -1870,19 +1901,20 @@ seed | click: new seed).
       perf overlay; hit the frame-time targets (§14).
 
 ### 18.2 Progression and saving (critical)
-- [ ] Profile save with versioning, atomic writes and a backup (§11.3).
-- [ ] Player Level XP formula, results roll-up and level-up celebration
-      (§11.1).
-- [ ] Run suspend/resume between waves, with CONTINUE RUN on the title
+- [x] Profile save with versioning, atomic writes and a backup (§11.3).
+- [x] Player Level XP formula, results roll-up and level-up celebration
+      (§11.1). The formula is a default until the owner decides (§19).
+- [x] Run suspend/resume between waves, with CONTINUE RUN on the title
       (§11.3).
-- [ ] Boss rewards: drop rules, reward card, unlock pools, a simple
-      cosmetics menu (§11.2).
-- [ ] Move high scores into the profile.
+- [x] Boss rewards: drop rules, reward card, a simple cosmetics menu
+      (§11.2). Drop rules and the list are defaults (§19); unlock pools for
+      maps, palettes and mutators wait for that content.
+- [x] Move high scores into the profile.
 
 ### 18.3 Quality of life
 - [ ] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
       default).
-- [ ] Clear "PLAYER LV" vs "RUN LV" labelling.
+- [x] Clear "PLAYER LV" vs "RUN LV" labelling.
 
 ### 18.4 Content (later)
 - [ ] Thermal-katana redesign; final shotgun design (OPEN).

@@ -33,11 +33,23 @@ and level-up offers. Waves never end and keep getting harder. Every third wave i
 a boss (Kurokage, Tetsugumo or Shuten). Scores are saved locally (top 10) with
 your initials, wave and seed.
 
+Every run pays XP into your **Player Level**, which keeps rising across runs.
+Bosses unlock new weapon looks; pick them on the title screen with **1**
+(katana edge) and **2** (shotgun coil). The game saves on its own; if you quit
+mid-run, the title offers **CONTINUE RUN** from the start of the wave you were
+on (**N** starts a new run instead). Saves live in
+`%APPDATA%\KatanaShotgun\` on Windows (`profile.json`, `run.json`, each with a
+`.bak` copy).
+
 ## Project layout
 ```
 scenes/main.tscn            entry scene (everything else is built in code)
 scripts/main.gd             boot + game-state flow (title, pause, level-up, death)
-scripts/autoload/game.gd    run seed, score/combo, XP, mutator, high scores, hitstop
+scripts/autoload/game.gd    run seed, score/combo, XP, mutator, hitstop
+scripts/autoload/profile.gd the saved profile: Player Level, unlocks, top 10, settings,
+                            the suspended run (files in scripts/save/)
+scripts/save/               crash-safe save files, migrations, run snapshots, XP formula
+scripts/rewards.gd          boss rewards (cosmetic weapon looks)
 scripts/autoload/sfx.gd     sound pools + music director (playlist, boss themes)
 scripts/player.gd           movement, katana, arc shotgun, glory kills, deflects
 scripts/viewmodel.gd        first-person weapons, glory-kill poses, arc shotgun
@@ -116,9 +128,12 @@ gdlintrc                    gdlint settings
 Pass after `--` on the command line:
 - `--autoplay` a bot plays and logs stats · `--god` no damage
 - `--wave=6` start at a wave · `--seed=1234-5678` play a specific seed
+- `--continue` resume the suspended run (with `--autoplay`, from `user://debug/`).
+  Debug runs keep their own profile in `user://debug/`, never the player's
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
 - `--juicetest` plays every presentation moment back to back (intro, combos,
-  tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
+  tally, FINISH + boss card, boss reward card, level-up, boss name card, kill
+  tags, hint, death and the Player Level roll-up);
   `--boss=ninja|mech|oni` forces a boss
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
