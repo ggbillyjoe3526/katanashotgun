@@ -60,9 +60,11 @@ func test_cues_route_to_their_bus() -> void:
 	assert_eq(Sfx.rain_heavy.bus, Sfx.BUS_AMBIENCE)
 
 
-func test_every_routed_cue_exists() -> void:
-	for n in Sfx.UI_CUES + Sfx.AMBIENCE_CUES + Sfx.IMPACT_CUES.keys():
-		assert_true(n in Sfx.NAMES, "%s is not a known cue" % n)
+func test_ducking_cues_are_the_big_hits() -> void:
+	for n in ["execution", "explosion", "slam", "boss_intro"]:
+		assert_lt(Sfx.cue(n).music_duck_db, 0.0, "%s should duck the music" % n)
+	for n in ["shotgun", "gore_big", "gore0", "swing0"]:
+		assert_eq(Sfx.cue(n).music_duck_db, 0.0, "%s plays too often to duck the music" % n)
 
 
 func test_rain_levels_stay_quiet() -> void:
@@ -79,13 +81,13 @@ func test_rain_levels_stay_quiet() -> void:
 func test_big_hits_duck_the_music_briefly() -> void:
 	Sfx._impact = 0.0
 	Sfx._impact_ready_at = 0.0
-	Sfx._on_played("slam", -8.0)
+	Sfx._on_played(Sfx.cue("slam"), -8.0)
 	assert_eq(Sfx._impact, 0.0, "a quiet, far slam leaves the music alone")
-	Sfx._on_played("execution", 2.0)
-	assert_eq(Sfx._impact, Sfx.IMPACT_CUES["execution"])
+	Sfx._on_played(Sfx.cue("execution"), 2.0)
+	assert_eq(Sfx._impact, Sfx.cue("execution").music_duck_db)
 	Sfx._impact = 0.0
-	Sfx._on_played("explosion", 0.0)
+	Sfx._on_played(Sfx.cue("explosion"), 0.0)
 	assert_eq(Sfx._impact, 0.0, "the duck can't retrigger straight away")
-	Sfx._on_played("shotgun", 0.0)
-	assert_eq(Sfx._impact, 0.0, "ordinary hits never duck")
 	Sfx._impact_ready_at = 0.0
+	Sfx._on_played(Sfx.cue("shotgun"), 0.0)
+	assert_eq(Sfx._impact, 0.0, "ordinary hits never duck")

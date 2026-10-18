@@ -1595,6 +1595,31 @@ about 10 LU over the music, and heavy rain louder than the music.
   on real time), random pitch variation from a presentation-only RNG.
 - The same quality bar as the music applies.
 
+### 10.5 Audio pipeline (built; ready for professional audio)
+The game reads audio from data, so professional sound and music drop in
+without code changes. `assets/audio/README.md` is the how-to for a sound
+designer or composer (folders, delivery specs, replacing a cue, stems).
+- **Cues:** one `SfxCue` resource per sound effect in
+  `assets/audio/cues/<name>.tres` (variants, bus, trim, pitch variation,
+  throttle, max voices, priority, 3D distances, music duck). `Sfx.play(name)`
+  and `Sfx.play_at(name, pos)` look the cue up; a sound file with no cue yet
+  still plays with defaults. `tools/make_audio_data.gd` creates missing cue
+  and track files and never overwrites existing ones.
+- **Voices:** fixed pools (20 2D, 20 positional; `VoicePool`). A cue at its
+  max voices reuses its own oldest voice; otherwise a free voice; otherwise
+  it takes the oldest voice of the lowest priority at or below its own; else
+  it is dropped. Priorities: CRITICAL (player weapons, hurt, enemy
+  telegraphs, flow and boss moments), NORMAL (enemy attacks, movement, UI),
+  LOW (gore, spawns), AMBIENT (thunder).
+- **Music:** one `MusicTrack` resource per piece in
+  `assets/music/tracks/<name>.tres` (role combat / boss + boss kind / title,
+  stems, per-stem intensity, loop and loop offset, bpm, trim). The combat
+  playlist is the combat tracks sorted by name, shuffled by the run seed.
+- **Intensity layers:** stem 0 always plays; further stems fade in by music
+  intensity (0 to 1): combo / 25, pinned to 1 while a boss is enraged, 0
+  after a cut. Rises 0.8 per second, falls 0.15 per second. The placeholder
+  tracks are single stems, so this is ready but not yet audible.
+
 ---
 
 ## 11. Progression and saving (CRITICAL — NOT BUILT YET)
@@ -1800,7 +1825,7 @@ seed | click: new seed).
 ### 15.4 Recommended improvements for the full game
 - Move data tables (enemies, bosses, augments, mutators, palettes, rewards,
   names and codex) into **Resources (`.tres`)** so they can be tuned without
-  code.
+  code. (Audio cues and music tracks are done: §10.5.)
 - Use scenes where they help tooling (maps, UI screens), but keep the
   procedural look.
 - Add an **event bus** for game events (kill, glory kill, wave start and

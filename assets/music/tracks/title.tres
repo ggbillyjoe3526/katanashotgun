@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="MusicTrack" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/music_track.gd" id="1_7cmg7"]
+[ext_resource type="AudioStream" path="res://assets/music/title.ogg" id="2_rvnvs"]
+
+[resource]
+script = ExtResource("1_7cmg7")
+role = "title"
+stems = Array[AudioStream]([ExtResource("2_rvnvs")])
+stem_intensity = PackedFloat32Array()
+loop = true
+bpm = 88.0

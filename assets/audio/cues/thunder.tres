@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_opevb"]
+[ext_resource type="AudioStream" path="res://assets/audio/thunder.wav" id="2_4frn3"]
+
+[resource]
+script = ExtResource("1_opevb")
+streams = Array[AudioStream]([ExtResource("2_4frn3")])
+bus = "Ambience"
+max_voices = 2
+priority = 0
