@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <rect width="32" height="32" fill="#12061f"/>
+  <rect x="4" y="25" width="24" height="2" fill="#ff2a8a"/>
+  <!-- katana -->
+  <rect x="6" y="4" width="2" height="16" fill="#dfe6ff"/>
+  <rect x="8" y="4" width="1" height="16" fill="#3ff2ff"/>
+  <rect x="4" y="20" width="6" height="1" fill="#d9a441"/>
+  <rect x="6" y="21" width="2" height="4" fill="#8c1420"/>
+  <!-- shotgun -->
+  <rect x="14" y="12" width="14" height="2" fill="#2a2c36"/>
+  <rect x="16" y="14" width="10" height="2" fill="#5c2a16"/>
+  <rect x="14" y="14" width="3" height="5" fill="#2a2c36"/>
+  <rect x="18" y="11" width="6" height="1" fill="#ff5a26"/>
+  <rect x="12" y="15" width="2" height="5" fill="#5c2a16"/>
+</svg>

@@ -1,0 +1,12 @@
+# Godot 4
+.godot/
+build/
+dist/
+*.tmp
+# Smoke test logs (tools/smoke_test.sh)
+import.log
+smoke.log
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
