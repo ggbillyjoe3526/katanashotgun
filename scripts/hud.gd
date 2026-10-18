@@ -206,6 +206,9 @@ func _ready() -> void:
 	settings_menu = SettingsMenu.new()
 	settings_menu.theme = root.theme
 	add_child(settings_menu)
+	# the settings screen covers the title or pause screen; the text behind it
+	# would peek out at its edges
+	settings_menu.visibility_changed.connect(func(): root.visible = not settings_menu.visible)
 	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
 	title_settings.pressed.connect(_open_settings)
 	title_root.add_child(title_settings)
@@ -507,13 +510,13 @@ func _build_death() -> void:
 	death_score = Ui.label("", Ui.font_big, 16, Color(Game.palette.neon_c), 2)
 	death_root.add_child(death_score)
 	death_stats = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.85, 0.9), 2)
-	death_stats.add_theme_constant_override("line_spacing", -3)
+	death_stats.add_theme_constant_override("line_spacing", 0)
 	death_root.add_child(death_stats)
 	death_vals = Ui.label("", Ui.font_mono, 9, Color.WHITE, 2)
-	death_vals.add_theme_constant_override("line_spacing", -3)
+	death_vals.add_theme_constant_override("line_spacing", 0)
 	death_root.add_child(death_vals)
 	death_table = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.92, 1.0), 2)
-	death_table.add_theme_constant_override("line_spacing", -3)
+	death_table.add_theme_constant_override("line_spacing", 0)
 	death_root.add_child(death_table)
 	death_prompt = Ui.label("", Ui.font_bold, 10, Color.WHITE, 2)
 	death_root.add_child(death_prompt)
@@ -904,9 +907,10 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else "UNIQUE"
 		card.get_node("Desc").text = u.desc
 		# the rank and description sit under the name, which may take two lines
-		var npx := Ui.px(Ui.font_big, 10)
-		var nh := Ui.font_big.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
-		var nl := maxi(1, roundi(nh / Ui.font_big.get_height(npx)))
+		var nf := Ui.face(Ui.font_big, 10)
+		var npx := Ui.px(nf, 10)
+		var nh := nf.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
+		var nl := maxi(1, roundi(nh / nf.get_height(npx)))
 		var ry := 22.0 + nh + (nl - 1) * 3.0 + 1.0
 		card.get_node("Rank").position.y = ry
 		card.get_node("Desc").position.y = ry + 18.0
@@ -995,9 +999,11 @@ func show_message(text: String, color: Color, big := true) -> void:
 	center_label.text = text
 	center_shadow.text = text
 	center_label.add_theme_color_override("font_color", color)
-	var sz := Ui.px(Ui.font_big, 16 if big else 10)
-	center_label.add_theme_font_size_override("font_size", sz)
-	center_shadow.add_theme_font_size_override("font_size", sz)
+	var f := Ui.face(Ui.font_big, 16 if big else 10)
+	var sz := Ui.px(f, 16 if big else 10)
+	for l in [center_label, center_shadow]:
+		l.add_theme_font_override("font", f)
+		l.add_theme_font_size_override("font_size", sz)
 	center_label.size = Vector2.ZERO
 	center_shadow.size = Vector2.ZERO
 	center_label.visible = true
@@ -1463,7 +1469,7 @@ func _update_play(delta: float) -> void:
 	score_label.pivot_offset = Vector2(score_label.size.x, score_label.size.y * 0.5)
 	score_label.scale = Vector2.ONE * (1.0 + 0.2 * _score_bump * _score_bump)
 	score_label.add_theme_color_override("font_color", Color.WHITE.lerp(Juice.GOLD, minf(1.0, _score_bump * 1.5)))
-	score_label.position = Vector2(vs.x - m - score_label.size.x, m - 5)
+	score_label.position = Vector2(vs.x - m - score_label.size.x, m - 2)
 	var score_bottom := score_label.position.y + score_label.size.y - 2.0
 	# ---- combo: pops on every kill, the plate heats up, milestones stamp
 	if Game.combo == 0:

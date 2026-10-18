@@ -7,7 +7,7 @@ signal pressed
 
 var text := ""
 var accent := Color(1.0, 0.2, 0.7)
-var font_px := 12
+var font_px := Ui.PIX
 var _hover := false
 
 
@@ -44,5 +44,6 @@ func _draw() -> void:
 	draw_rect(r, accent, false, 1.0)
 	var f := Ui.font_bold
 	var w := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_px).x
-	var pos := Vector2((size.x - w) * 0.5, 2.0 + f.get_ascent(font_px)).round()
+	# capitals centred in the button
+	var pos := Vector2((size.x - w) * 0.5, (size.y + Ui.PIX_CAP) * 0.5).round()
 	draw_string(f, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_px, Color(0.03, 0.015, 0.07) if _hover else Color.WHITE)

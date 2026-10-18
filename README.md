@@ -76,7 +76,7 @@ scripts/psx.gd              material factory for the retro look
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
 assets/audio/               SFX (tools/gen_audio.py)
 assets/music/               soundtrack (tools/gen_music.py)
-assets/fonts/               Orbitron, Chakra Petch, Share Tech Mono, Michroma (SIL OFL)
+assets/fonts/               Jersey 10, Orbitron, Michroma (SIL OFL)
 installer/                  Windows installer script (Inno Setup) and icon
 tools/                      smoke and unit test runners, notices, release-notes helper,
                             icon and audio generators

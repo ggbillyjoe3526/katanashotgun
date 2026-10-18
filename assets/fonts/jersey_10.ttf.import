@@ -2,13 +2,13 @@
 
 importer="font_data_dynamic"
 type="FontFile"
-uid="uid://0gcsp36as422"
-path="res://.godot/imported/chakra_petch_700.woff2-4b632b7db643fa9b7bd80abd207273a0.fontdata"
+uid="uid://c1u0t1ywhmohd"
+path="res://.godot/imported/jersey_10.ttf-da00712c4439b19826761b861697517f.fontdata"
 
 [deps]
 
-source_file="res://assets/fonts/chakra_petch_700.woff2"
-dest_files=["res://.godot/imported/chakra_petch_700.woff2-4b632b7db643fa9b7bd80abd207273a0.fontdata"]
+source_file="res://assets/fonts/jersey_10.ttf"
+dest_files=["res://.godot/imported/jersey_10.ttf-da00712c4439b19826761b861697517f.fontdata"]
 
 [params]
 

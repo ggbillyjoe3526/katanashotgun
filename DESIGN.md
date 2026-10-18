@@ -288,8 +288,9 @@ is never lost.
   one colour.
 - **UI: cyberpunk, drawn pixel-retro.** All UI/UX and text are cyberpunk style
   and use our own visual language, not Persona 5's:
-  - Faces: Orbitron 900 (display, big numbers), Chakra Petch (labels),
-    Share Tech Mono (data, seeds, rolling numbers), Michroma (the big cards).
+  - Faces: Jersey 10, a true pixel face, for all small text (labels, card
+    text, data and rolling numbers, with its fixed-width digits); Orbitron
+    900 for big display words and numbers; Michroma for the big cards.
     They are rendered at the UI's low internal resolution (480x270) with no
     antialiasing and nearest upscaling, so they look pixelated like the 3D
     world.

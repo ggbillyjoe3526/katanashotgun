@@ -7,8 +7,7 @@ the generated placeholder audio) and needs no entry.
 | Asset | Files | Source | Licence |
 |---|---|---|---|
 | Orbitron (Black 900) | `assets/fonts/orbitron_900.woff2` | The League of Moveable Type, github.com/theleagueof/orbitron | SIL OFL 1.1 (`assets/fonts/LICENSE_orbitron.txt`) |
-| Chakra Petch (SemiBold 600, Bold 700) | `assets/fonts/chakra_petch_600.woff2`, `chakra_petch_700.woff2` | Cadson Demak, github.com/m4rc1e/Chakra-Petch | SIL OFL 1.1 (`assets/fonts/LICENSE_chakra_petch.txt`) |
-| Share Tech Mono | `assets/fonts/share_tech_mono.woff2` | Carrois Type Design (Google Fonts) | SIL OFL 1.1 (`assets/fonts/LICENSE_share_tech_mono.txt`) |
+| Jersey 10 | `assets/fonts/jersey_10.ttf` | The Soft Type Project Authors (Google Fonts), github.com/scfried/soft-type-jersey | SIL OFL 1.1 (`assets/fonts/LICENSE_jersey_10.txt`) |
 | Michroma | `assets/fonts/michroma.woff2` | Vernon Adams, github.com/googlefonts/Michroma-font | SIL OFL 1.1 (`assets/fonts/LICENSE_michroma.txt`) |
 
 Their licence texts, with Godot's, are collected into `THIRD_PARTY_NOTICES.txt`

@@ -1242,11 +1242,15 @@ the holographic cut-in (§9.8).
 ### 9.7 UI: cyberpunk, rendered pixel-retro
 **Our own cyberpunk visual language, not Persona 5's.**
 - **Faces** (all SIL OFL, bundled):
-  - **Orbitron 900:** display text and big numbers (×1.25 size boost).
-  - **Chakra Petch 600/700:** labels (×1.25).
-  - **Share Tech Mono:** data, seeds, tables and rolling numbers (×1.5);
-    monospaced digits stop count-ups from jittering.
-  - **Michroma:** the big slow cards (glyph spacing +2).
+  - **Jersey 10:** all body text, labels, card text, tags and data. A true
+    pixel face, drawn only at its own size (19 px, capitals 10 px) or a
+    whole multiple, so every stroke is one even pixel wide. Numbers, seeds,
+    tables and rolling counters use its fixed-width digits, which stop
+    count-ups from jittering.
+  - **Orbitron 900:** big display words and numbers only (×1.25 size boost);
+    anything below its 16 px minimum is drawn in Jersey 10 instead.
+  - **Michroma:** the big slow cards (glyph spacing +2); its small subtitle
+    line is Jersey 10.
   - All are pixel-rendered (§2). Latin subsets only, so **in-game text has no
     macrons** (DOJIGIRI, not DŌJIGIRI). Optionally add a Latin-Extended
     fallback font and restore them.
@@ -1483,12 +1487,13 @@ something.
   and the text must be fully legible.
 
 **How the UI meets the rule (implemented 2026-10-18):**
-- Smallest sizes at 480×270, chosen by rendering every face at every size:
-  Orbitron 13 px (with +1 px glyph spacing everywhere, or neighbouring
-  letters merge: "LI" read as "U"), Share Tech Mono 14 px, Chakra Petch 12 px
-  (13 px for anything that matters), Michroma 12 px. Smaller sizes break the
-  letter shapes (0 reads as A, O as D) and are not used for anything the
-  player reads.
+- Sizes at 480×270, chosen by rendering every face at every size: small
+  text is Jersey 10 at 19 px (10 px capitals, one-pixel strokes; it is
+  never drawn between sizes, where its pixels would turn uneven). Orbitron
+  starts at 16 px (with +1 px glyph spacing everywhere, or neighbouring
+  letters merge: "LI" read as "U") and Michroma at 16 px; below that the
+  vector faces break the letter shapes (0 reads as A, O as D, uneven stems),
+  so small text never uses them.
 - Glitch text (`GlitchText`): decode capped at 0.1 s; digits and punctuation
   never scramble; no glitch bursts while held, only `glitch_out()` on the way
   out; RGB split 1 px at rest; a dark outline under every glyph.
