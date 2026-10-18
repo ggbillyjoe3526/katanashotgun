@@ -1513,10 +1513,11 @@ bus's volume.
 | Music | +2 dB | none | the two music players |
 | SFX | -16 dB | high shelf -4 dB above 6.5 kHz (tames hiss in the placeholder SFX; drop it for professional SFX) | combat, movement, enemies, flow stingers |
 | Ambience | -16 dB | high-pass 70 Hz, low-pass 6 kHz, compressor sidechained from Music (threshold -16 dB, 3:1) so ambience ducks under the music | rain beds, thunder |
-| UI | -11 dB | none | menus, typing, tally and combo juice (`Sfx.UI_CUES`) |
+| UI | -11 dB | none | menus, typing, tally and combo juice (each cue's `bus`, §10.5) |
 
 Big hits (glory-kill execution, explosion, loud slams, boss entrance) pull
-the music down 2 to 3 dB for about half a second (`Sfx.IMPACT_CUES`). Only a
+the music down 2 to 3 dB for about half a second (each cue's `music_duck_db`,
+§10.5). Only a
 cue played at -3 dB or louder ducks, and the duck can't retrigger for 1.5 s,
 so a horde never keeps the music pinned down.
 
@@ -1608,9 +1609,13 @@ designer or composer (folders, delivery specs, replacing a cue, stems).
 - **Voices:** fixed pools (20 2D, 20 positional; `VoicePool`). A cue at its
   max voices reuses its own oldest voice; otherwise a free voice; otherwise
   it takes the oldest voice of the lowest priority at or below its own; else
-  it is dropped. Priorities: CRITICAL (player weapons, hurt, enemy
-  telegraphs, flow and boss moments), NORMAL (enemy attacks, movement, UI),
-  LOW (gore, spawns), AMBIENT (thunder).
+  it is dropped. Priorities: CRITICAL (player weapons including the arc
+  zap, hurt, enemy telegraphs such as windup, roar and slam, flow stingers
+  and boss moments), NORMAL (enemy shots and missiles, movement, UI), LOW
+  (gore, spawns), AMBIENT (thunder). Voice caps per cue: gore0-2 2 each,
+  gore_big, shotgun and gatling 3, swings 2, the rest 4 (UI hover 1).
+- Stingers that must keep their pitch (levelup, wave_clear, highscore,
+  fanfare, felled, flatline, boss_intro) have pitch variation off.
 - **Music:** one `MusicTrack` resource per piece in
   `assets/music/tracks/<name>.tres` (role combat / boss + boss kind / title,
   stems, per-stem intensity, loop and loop offset, bpm, trim). The combat

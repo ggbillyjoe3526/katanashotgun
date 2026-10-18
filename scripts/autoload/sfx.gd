@@ -58,6 +58,8 @@ var title_track := ""
 var pool_2d: VoicePool
 var pool_3d: VoicePool
 var _last := {}
+var _missing := {} # names with no cue and no file, so a miss costs one lookup
+var _key3d := {} # name -> throttle key for positional plays, built once
 var rain: AudioStreamPlayer
 var rain_heavy: AudioStreamPlayer
 var _rain_level := 0
@@ -150,7 +152,7 @@ func _load_tracks() -> void:
 ## writes its cue file).
 func cue(name: StringName) -> SfxCue:
 	var c: SfxCue = cues.get(name)
-	if c == null:
+	if c == null and not _missing.has(name):
 		for ext in ["wav", "ogg"]:
 			var path := "%s%s.%s" % [SOUND_DIR, name, ext]
 			if ResourceLoader.exists(path):
@@ -158,6 +160,8 @@ func cue(name: StringName) -> SfxCue:
 				c.streams = [load(path)]
 				cues[name] = c
 				break
+		if c == null:
+			_missing[name] = true
 	return c
 
 
@@ -212,7 +216,11 @@ func play(name: StringName, vol_db := 0.0, pitch := 1.0, pitch_var := 0.06) -> v
 ## Plays a sound at a point in the world.
 func play_at(name: StringName, pos: Vector3, vol_db := 0.0, pitch := 1.0, pitch_var := 0.08) -> void:
 	var c := cue(name)
-	if c == null or _throttled(StringName(name + "@3d"), c.throttle_ms + POSITIONAL_THROTTLE_EXTRA_MS):
+	if c == null:
+		return
+	if not _key3d.has(name):
+		_key3d[name] = StringName(name + "@3d")
+	if _throttled(_key3d[name], c.throttle_ms + POSITIONAL_THROTTLE_EXTRA_MS):
 		return
 	var i := pool_3d.acquire(name, c.priority, c.max_voices, _clock)
 	if i < 0:
@@ -279,6 +287,7 @@ func play_title_music() -> void:
 	if _mode == "title":
 		return
 	_mode = "title"
+	_enraged = false
 	_crossfade_to(title_track)
 
 

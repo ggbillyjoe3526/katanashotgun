@@ -7,3 +7,4 @@
 script = ExtResource("1_ca3lf")
 streams = Array[AudioStream]([ExtResource("2_sw6s8")])
 music_duck_db = -2.0
+priority = 3

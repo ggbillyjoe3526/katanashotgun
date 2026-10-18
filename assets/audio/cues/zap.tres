@@ -6,3 +6,4 @@
 [resource]
 script = ExtResource("1_jgatq")
 streams = Array[AudioStream]([ExtResource("2_hjw06")])
+priority = 3

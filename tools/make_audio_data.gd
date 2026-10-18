@@ -22,7 +22,7 @@ const UI_CUES := [
 const AMBIENCE_CUES := ["thunder"]
 const CRITICAL := [
 	"shotgun", "recharge", "empty", "swing0", "swing1", "swing2", "slice", "execution", "deflect", "headshot",
-	"hurt", "windup", "alarm", "player_death", "felled", "flatline", "finish", "cutin", "boss_intro",
+	"hurt", "windup", "roar", "slam", "zap", "alarm", "player_death", "felled", "flatline", "finish", "cutin", "boss_intro",
 	"levelup", "wave_clear", "highscore",
 ]
 const LOW := ["gore0", "gore1", "gore2", "gore_big", "spawn", "ignite"]

@@ -51,11 +51,16 @@ func test_same_seed_gives_same_playlist() -> void:
 	Sfx.start_combat_music(1234)
 	assert_eq(Sfx._playlist, a)
 	Sfx.music_cut()
+	for m in Sfx._mus:
+		m.stop()
+	Sfx._playlist = []
 
 
 func test_critical_cues_outrank_gore() -> void:
 	assert_eq(Sfx.cue("shotgun").priority, SfxCue.Priority.CRITICAL)
-	assert_eq(Sfx.cue("windup").priority, SfxCue.Priority.CRITICAL, "telegraphs must always be heard")
+	for n in ["windup", "roar", "slam"]:
+		assert_eq(Sfx.cue(n).priority, SfxCue.Priority.CRITICAL, "telegraph %s must always be heard" % n)
+	assert_eq(Sfx.cue("zap").priority, SfxCue.Priority.CRITICAL)
 	assert_lt(Sfx.cue("gore0").priority, Sfx.cue("shotgun").priority)
 
 
