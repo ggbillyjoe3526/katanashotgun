@@ -3,6 +3,9 @@ extends CharacterBody3D
 ## One script for all enemy types (grunt, gunner, brute, oni boss).
 ## Bodies are blocky humanoids built from boxes so they can be torn apart into
 ## gibs. Every attack is telegraphed (wind-up pose, glowing eyes, sound).
+## Grunts, gunners and brutes are pooled by the WaveDirector (spec §14): a
+## dead one is parked, hidden, and later reset with `reuse()` instead of
+## being freed and rebuilt.
 
 # stagger marker: red while staggered, gold on the one a glory kill would take
 const MARKER_RED := Color(1.0, 0.05, 0.1)
@@ -83,6 +86,42 @@ var _glow_mat: ShaderMaterial
 var marker: MeshInstance3D
 var finisher_lit := false # the player's glory kill would take this one
 var _rng := RandomNumberGenerator.new()
+var _jacket_mat: ShaderMaterial
+var _mohawk: Node3D
+var _pipe: Node3D
+## The pool that takes this enemy back when it dies (null: freed instead).
+var pool: WaveDirector = null
+## Built ahead of time for a pool: no spawn beam or sound, parked at once.
+var prewarm := false
+
+## Counts spawns, so a pooled enemy reads as a new one each time it is
+## handed out (`spawn_id`). A deflected bolt checks it before homing.
+static var _spawn_count := 0
+var spawn_id := 0
+
+## Set when an enemy joins or leaves the "enemies" group, so the
+## WaveDirector rebuilds Game.enemy_list only when it changed.
+static var list_dirty := true
+## Every member's starting value, taken from the first plain Enemy, so
+## `reuse()` resets all run state, including members added later.
+static var _defaults := {}
+## Members `reuse()` keeps: the body built once in `_ready`, its kind (pools
+## are per kind) and the pool.
+const _KEEP := [
+	"kind", "visual", "hips", "torso_pivot", "leg_l", "leg_r", "arm_l", "arm_r", "head_mesh", "muzzle",
+	"_leg_len", "_parts", "_mats", "_eye_mat", "_eye_color", "_glow_mat", "marker", "_rng",
+	"_jacket_mat", "_mohawk", "_pipe", "pool", "prewarm", "_defaults",
+]
+
+
+func _init() -> void:
+	if _defaults.is_empty() and get_script() == Enemy:
+		for prop in get_property_list():
+			if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE) or prop.name in _KEEP:
+				continue
+			var v: Variant = get(prop.name)
+			if typeof(v) != TYPE_OBJECT:
+				_defaults[prop.name] = v
 
 
 func setup(k: String, scale_mult := 1.0) -> void:
@@ -131,7 +170,20 @@ func _ready() -> void:
 	cs.position.y = height * 0.5
 	add_child(cs)
 	_build_body()
+	if prewarm:
+		_park()
+		return
+	activate()
+
+
+## Enters the fight: joins the enemy list, rolls its timers and drops in
+## on a spawn beam. Runs on every spawn, pooled or new.
+func activate() -> void:
+	reset_physics_interpolation() # a pooled enemy jumps to its spawn point
+	Enemy._spawn_count += 1
+	spawn_id = Enemy._spawn_count
 	add_to_group("enemies")
+	Enemy.list_dirty = true
 	attack_cd = _rng.randf_range(0.5, 1.4)
 	special_cd = _rng.randf_range(3.0, 6.0)
 	strafe = 1.0 if _rng.randf() < 0.5 else -1.0
@@ -140,6 +192,58 @@ func _ready() -> void:
 	Sfx.play_at("spawn", global_position, -6.0)
 	if kind == "oni":
 		Sfx.play("roar", 2.0, 0.7)
+
+
+## Back to a fresh enemy of the same kind (call `setup` and `activate`
+## after). Run state returns to its starting values; the body is kept.
+func reuse() -> void:
+	for k in _defaults:
+		var v: Variant = _defaults[k]
+		if v is Array or v is Dictionary:
+			v = v.duplicate()
+		set(k, v)
+	visible = true
+	process_mode = Node.PROCESS_MODE_INHERIT
+	collision_layer = 4
+	velocity = Vector3.ZERO
+	visual.scale = Vector3.ONE
+	visual.rotation = Vector3.ZERO
+	hips.position.y = _leg_len
+	torso_pivot.rotation = Vector3.ZERO
+	for limb: Node3D in [leg_l, leg_r, arm_l, arm_r]:
+		limb.rotation = Vector3.ZERO
+	marker.visible = false
+	marker.scale = Vector3.ONE
+	for m in _mats:
+		m.set_shader_parameter("flash", 0.0)
+		m.set_shader_parameter("flash_color", Color(1, 1, 1))
+	_eye_mat.set_shader_parameter("energy", 3.0)
+	_eye_mat.set_shader_parameter("albedo_color", _eye_color)
+	if _glow_mat:
+		_glow_mat.set_shader_parameter("energy", 1.0)
+	_roll_look()
+
+
+## Hidden and still until the pool hands it out again.
+func _park() -> void:
+	visible = false
+	marker.visible = false
+	collision_layer = 0
+	velocity = Vector3.ZERO
+	knock = Vector3.ZERO
+	process_mode = Node.PROCESS_MODE_DISABLED
+
+
+## Grunts vary: jacket colour, mohawk, and a pipe in the hand.
+func _roll_look() -> void:
+	if kind != "grunt" or _jacket_mat == null:
+		return
+	var jackets := [Color(0.45, 0.08, 0.12), Color(0.3, 0.1, 0.4), Color(0.08, 0.3, 0.32), Color(0.4, 0.25, 0.08)]
+	var jacket: Color = jackets[_rng.randi() % jackets.size()]
+	_jacket_mat.set_shader_parameter("albedo_color", jacket)
+	_jacket_mat.set_shader_parameter("emission_color", jacket)
+	_mohawk.visible = _rng.randf() < 0.7
+	_pipe.visible = _rng.randf() < 0.5
 
 
 # ---------------------------------------------------------------- body
@@ -168,9 +272,7 @@ func _build_body() -> void:
 	var skin := Color(0.78, 0.62, 0.55)
 	match kind:
 		"grunt":
-			var jackets := [Color(0.45, 0.08, 0.12), Color(0.3, 0.1, 0.4), Color(0.08, 0.3, 0.32), Color(0.4, 0.25, 0.08)]
-			jacket = jackets[_rng.randi() % jackets.size()]
-			_eye_color = Color(0.2, 1.0, 1.0)
+			_eye_color = Color(0.2, 1.0, 1.0) # jacket colour: _roll_look()
 		"gunner":
 			jacket = Color(0.3, 0.34, 0.45)
 			_eye_color = Color(1.0, 0.5, 0.1)
@@ -192,6 +294,7 @@ func _build_body() -> void:
 			_eye_color = Game.palette.get("neon_a", Color(1, 0.2, 0.5))
 			bw = 0.95
 	var m_jacket := _mat(jacket, "cloth" if kind != "brute" else "panel")
+	_jacket_mat = m_jacket
 	var m_pants := _mat(pants, "cloth")
 	var m_skin := _mat(skin, "skin")
 	var m_dark := _mat(Color(0.1, 0.1, 0.13), "noise")
@@ -226,8 +329,8 @@ func _build_body() -> void:
 	head_mesh.add_child(Psx.box(Vector3(0.23, 0.06, 0.02) * s, _eye_mat, Vector3(0, 0.03 * s, 0.14 * s)))
 	match kind:
 		"grunt":
-			if _rng.randf() < 0.7:
-				head_mesh.add_child(Psx.box(Vector3(0.05, 0.14, 0.24) * s, Psx.unlit(Color(1.0, 0.2, 0.7), 1.8), Vector3(0, 0.2 * s, -0.01 * s)))
+			_mohawk = Psx.box(Vector3(0.05, 0.14, 0.24) * s, Psx.unlit(Color(1.0, 0.2, 0.7), 1.8), Vector3(0, 0.2 * s, -0.01 * s))
+			head_mesh.add_child(_mohawk)
 		"brute":
 			head_mesh.add_child(Psx.box(Vector3(0.3, 0.12, 0.3) * s, _mat(Color(0.82, 0.62, 0.12), "panel"), Vector3(0, 0.14 * s, 0)))
 		"oni":
@@ -273,9 +376,10 @@ func _build_body() -> void:
 		arm_r.add_child(muzzle)
 	else:
 		var ar := _part(arm_r, "ArmR", arm_size, arm_mat, Vector3(0, -0.31 * s, 0))
-		if kind == "grunt" and _rng.randf() < 0.5:
+		if kind == "grunt":
 			# a pipe/blade
-			ar.add_child(Psx.box(Vector3(0.05, 0.05, 0.6) * s, _mat(Color(0.6, 0.6, 0.65), "noise"), Vector3(0, -0.3 * s, 0.25 * s)))
+			_pipe = Psx.box(Vector3(0.05, 0.05, 0.6) * s, _mat(Color(0.6, 0.6, 0.65), "noise"), Vector3(0, -0.3 * s, 0.25 * s))
+			ar.add_child(_pipe)
 		elif kind == "oni":
 			var blade := Psx.box(Vector3(0.06, 0.5, 1.5) * s, _mat(Color(0.7, 0.7, 0.75), "panel"), Vector3(0, -0.33 * s, 0.75 * s))
 			blade.add_child(Psx.box(Vector3(0.07, 0.04, 1.5) * s, Psx.unlit(Color(1.0, 0.15, 0.1), 3.0), Vector3(0, -0.24 * s, 0)))
@@ -297,6 +401,7 @@ func _build_body() -> void:
 	marker = Psx.quad(Vector2(0.5, 0.5), Psx.fx(MARKER_RED, TexGen.get_tex("star"), true, true, true, 2.5), Vector3(0, height + 0.55, 0))
 	marker.visible = false
 	add_child(marker)
+	_roll_look()
 
 
 func get_gib_parts() -> Array[Node3D]:
@@ -566,9 +671,7 @@ func _attack(dist: float, dir: Vector3) -> void:
 				var aim := (target - origin).normalized()
 				if shots > 1:
 					aim = aim.rotated(Vector3.UP, (i - 1) * 0.12)
-				var b := Bolt.new()
-				b.setup(true, origin, aim * 11.0, 12.0 * damage_mult)
-				get_parent().add_child(b)
+				Game.main.director.fire_bolt(true, origin, aim * 11.0, 12.0 * damage_mult, "bolt", self)
 			Sfx.play_at("enemy_shot", global_position, 0.0)
 			Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
 			recover_time = 0.35
@@ -606,9 +709,7 @@ func _volley(dir: Vector3) -> void:
 	var target := Game.player.global_position + Vector3(0, 1.0, 0)
 	var aim := (target - origin).normalized()
 	for i in 9:
-		var b := Bolt.new()
-		b.setup(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult)
-		get_parent().add_child(b)
+		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult, "bolt", self)
 	Sfx.play_at("enemy_shot", global_position, 4.0, 0.7)
 
 
@@ -885,6 +986,7 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		return
 	dead = true
 	remove_from_group("enemies")
+	Enemy.list_dirty = true
 	collision_layer = 0
 	var tag := ""
 	var col := Color.WHITE
@@ -960,7 +1062,11 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		Game.player.heal(hk)
 	if is_boss:
 		Game.main.on_boss_killed(self)
-	queue_free()
+	if pool:
+		_park()
+		pool.recycle(self)
+	else:
+		queue_free()
 
 
 ## A glory kill close to the boss shakes its stance (spec §5.5).
