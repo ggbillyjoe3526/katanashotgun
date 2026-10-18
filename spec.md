@@ -1375,14 +1375,14 @@ the holographic cut-in (§9.8).
     under the one above; the build lines sit on the bottom edge). A linking
     card wears a gold RECOMMENDED tab above its top edge (§3.8).
   - **Card text must read at a glance** (owner, 2026-10-18: card text was
-    hard to read). Name and description are Chakra Petch 700 at 15 px, white
+    hard to read). Name and description are Chakra Petch 700 at 15 px (rank 14 px), white
     with no outline, on a solid near-black plate inset 4 px in the card; the
     hover and selection glow tints only the rim around the plate. Card copy
     stays under 58 characters (a Gut test checks).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then hold
-    still: a dealt card is never rotated or scaled, so its pixel text stays
-    sharp. Hovering lifts the card 3 px and lights its border.
+    still: until one is taken, a dealt card is never rotated or scaled, so its
+    pixel text stays sharp. Hovering lifts the card 3 px and lights its border.
   - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
     accident). Input is ignored for 0.45 s after the cards appear, and the
     cursor starts below them. The first click or 1/2/3 **selects** a card

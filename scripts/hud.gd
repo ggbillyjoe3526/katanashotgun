@@ -598,7 +598,7 @@ func _build_levelup() -> void:
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
 		nm.add_theme_constant_override("line_spacing", -4)
 		card.add_child(nm)
-		var rk := Ui.label("", Ui.font_bold, 10, YELLOW)
+		var rk := Ui.label("", Ui.font_bold, 11, YELLOW)
 		rk.name = "Rank"
 		rk.position = Vector2(10, 56)
 		card.add_child(rk)
@@ -930,7 +930,7 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 		nm.size = Vector2(CARD_TEXT_W, 0)
 		var ry := nm.position.y + nm.get_minimum_size().y
 		card.get_node("Rank").position.y = ry
-		card.get_node("Desc").position.y = ry + (16.0 if u.max > 1 else 3.0)
+		card.get_node("Desc").position.y = ry + (18.0 if u.max > 1 else 3.0)
 		card.set_meta("col", col)
 
 
