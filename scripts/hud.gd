@@ -107,7 +107,7 @@ var _title_hit := false
 
 # juice state
 const COMBO_MILESTONES := [10, 20, 30, 50, 75, 100, 150, 200, 300]
-const CARD_SIZE := Vector2(138, 150) # level-up augment card
+const CARD_SIZE := Vector2(138, 180) # level-up augment card: a two-line name and a five-line description fit
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const CENTER_LEN := 2.4 # centre message, seconds
 const POPUP_LEN := 1.4 # kill tags, seconds
@@ -515,8 +515,11 @@ func _build_levelup() -> void:
 			br.name = "B%d" % b
 			br.visible = false
 			card.add_child(br)
+		# the key sits on the ribbon row, so a long description never reaches it
 		var key := Ui.label("[%d]" % (i + 1), Ui.font_bold, 10, Color(0.75, 0.75, 0.85))
-		key.position = Vector2(6, CARD_SIZE.y - 18)
+		key.position = Vector2(CARD_SIZE.x - 40, 2)
+		key.size = Vector2(34, 15)
+		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		card.add_child(key)
 		var tag := Ui.label("", Ui.font_bold, 10, Color.WHITE)
 		tag.name = "Tag"
@@ -535,7 +538,7 @@ func _build_levelup() -> void:
 		var desc := Ui.label("", Ui.font_bold, 10, Color(0.88, 0.88, 0.95), 2)
 		desc.name = "Desc"
 		desc.position = Vector2(6, 70)
-		desc.size = Vector2(126, 60)
+		desc.size = Vector2(126, 100)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
 		card.add_child(desc)
 		levelup_root.add_child(card)
@@ -753,6 +756,13 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 			pips += "#" if k <= r else "-"
 		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else "UNIQUE"
 		card.get_node("Desc").text = u.desc
+		# the rank and description sit under the name, which may take two lines
+		var npx := Ui.px(Ui.font_big, 10)
+		var nh := Ui.font_big.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
+		var nl := maxi(1, roundi(nh / Ui.font_big.get_height(npx)))
+		var ry := 22.0 + nh + (nl - 1) * 3.0 + 1.0
+		card.get_node("Rank").position.y = ry
+		card.get_node("Desc").position.y = ry + 18.0
 		card.set_meta("col", col)
 
 

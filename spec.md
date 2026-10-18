@@ -1224,7 +1224,7 @@ the holographic cut-in (§9.8).
     never into the score) and heats from yellow to pink to rainbow at ≥50,
     with the combo timer bar.
   - **Bottom-left:** HP number + HP bar (red, with a white "ghost" trail that
-    drains slowly; flashes below 30%) and dash pips.
+    drains slowly; pulses softly below 30%, the number never flashes) and dash pips.
   - **Bottom-centre:** XP bar and `LV n` (run level).
   - **Bottom-right:** **cell icons** (little power cells: body, terminal nub,
     highlight; newly charged cells flash and pop) and the "CELLS" label.
@@ -1250,14 +1250,16 @@ the holographic cut-in (§9.8).
     bursts.
   - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
   - A controls column and a HI-SCORES table (top 5).
-  - "MAP · PALETTE · SEED" line and a blinking "CLICK TO START".
+  - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
   - The title music plays while the camera drifts.
 - **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
   hint if the mouse fails to lock. Music ducks to −20 dB.
 - **Level-up:**
-  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×150
-    tech panels, tall enough for the description at a readable size; a tag
-    ribbon in the tag colour; name, rank pips, description, [1]/[2]/[3]).
+  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
+    tech panels, tall enough for a two-line name and a five-line description
+    at a readable size; a tag ribbon in the tag colour with the [1]/[2]/[3]
+    key beside it; then name, rank pips and description, each placed under
+    the one above so nothing overlaps).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
     Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
@@ -1310,6 +1312,8 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
   - ×10: a glitch stamp "X10 COMBO" (tag "> CHAIN SYNC") above the
     crosshair.
   - ×20 and up: the **holographic cut-in** instead of a stamp.
+  - While the boss name card is up, milestones play their sound only (the
+    HUD combo counter still shows the number), so the card is never covered.
 - **Holographic cut-in** (1.0 s, long enough to read its text):
   - A full-width comm-feed strip (70 px, chamfered, cyan top edge and accent
     bottom edge, hazard ticks) snaps in from the side in 0.08 s, holds still,

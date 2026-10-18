@@ -462,12 +462,13 @@ func wave_intro(wave: int, sub: String, col: Color, boss: bool) -> void:
 	var pitches := [1.0, 1.12, 1.26]
 	for i in 3:
 		later(1.2 + i * 0.55, func():
-			if not _intro_on:
+			if not _intro_on or _intro_ready:
 				return
 			stamp(str(3 - i), Color.WHITE, 32, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": count_at, "from": 2.2, "hold": 0.3, "fade": 0.1, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i], "slot": "intro"}))
 	later(2.85, func():
+		var cut := _intro_ready # the boss card already ended the intro
 		_intro_ready = true
-		if not boss and _intro_on:
+		if not boss and _intro_on and not cut:
 			stamp("FIGHT", Color.WHITE, 40, {"glitch": true, "brackets": true, "tag": "> ENGAGE", "accent": Color(pal.neon_a), "anchor": count_at, "from": 3.0, "hold": 0.45, "fade": 0.2, "shake": 8.0, "sound": "go", "vol": -2.0, "burst": 40, "slot": "intro"})
 			_lines.kick(1.0, 0.2)
 			_shards.burst(vs * count_at, Color(pal.neon_a), 18, 300.0, true)
@@ -978,6 +979,12 @@ func _update_card(rd: float) -> void:
 
 
 func combo_stamp(n: int, idx: int) -> void:
+	if hud.boss_title.visible:
+		# the boss name card owns the middle of the screen: sound only, and
+		# the HUD combo counter still shows the number
+		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
+		_lines.kick(0.5, 0.1)
+		return
 	if idx >= 1:
 		# bigger milestones get the holographic cut-in instead of a stamp
 		_lines.kick(0.5 + idx * 0.1, 0.1)
