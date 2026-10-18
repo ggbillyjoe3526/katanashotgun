@@ -345,7 +345,7 @@ is never lost.
   groove, lead and melodies, arranged in sections), shuffled per run and
   crossfaded. One theme per boss, plus a title theme. The music cuts to
   silence when a boss dies and when you die.
-- **Mix priority (feedback, to fix):** **music is the focus**, then combat
+- **Mix priority (fixed; levels in spec §10.1):** **music is the focus**, then combat
   SFX, then ambience. Ambience (rain, wind, city hum, neon buzz) is fine
   but must sit far back in the mix and never become a constant hiss. The
   prototype's rain loop reads as an annoying "white noise" bed: it is too

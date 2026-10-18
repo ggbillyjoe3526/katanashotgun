@@ -117,6 +117,8 @@ Pass after `--` on the command line:
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
   `--boss=ninja|mech|oni` forces a boss
+- `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
+  measure the mix (use with `--write-movie` so audio follows game time)
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
@@ -126,5 +128,7 @@ tools/unit_tests.sh                                              # unit tests
 
 ## Regenerating audio
 `python3 tools/gen_audio.py` (SFX) and `python3 tools/gen_music.py` (soundtrack).
+`python3 tools/gen_audio.py rain` rebuilds only the rain beds. Needs numpy,
+scipy and ffmpeg. Mix levels live in `default_bus_layout.tres` (spec §10.1).
 Both need numpy, scipy and ffmpeg. `python3 tools/make_icon.py` rebuilds
 `installer/icon.ico` from `icon.svg` (needs Pillow).

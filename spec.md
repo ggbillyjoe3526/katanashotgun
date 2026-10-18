@@ -1458,6 +1458,28 @@ buses (Music, SFX, Ambience, UI) with settings sliders. Duck music slightly
 under big SFX moments, and **cut it** for the boss-death hush and the death
 card.
 
+**The mix (built; `default_bus_layout.tres`).** Five buses: Master, Music,
+SFX, Ambience, UI. The mix levels live in the layout; the settings sliders
+add on top of them, and music ducking lives on the music players, never on a
+bus's volume.
+
+| Bus | Level | Effects | Gets |
+|---|---|---|---|
+| Master | 0 dB | hard limiter, ceiling -1 dB | everything |
+| Music | +2 dB | none | the two music players |
+| SFX | -16 dB | high shelf -4 dB above 6.5 kHz (tames hiss in the placeholder SFX; drop it for professional SFX) | combat, movement, enemies, flow stingers |
+| Ambience | -16 dB | high-pass 70 Hz, low-pass 6 kHz, compressor sidechained from Music (threshold -16 dB, 3:1) so ambience ducks under the music | rain beds, thunder |
+| UI | -11 dB | none | menus, typing, tally and combo juice (`Sfx.UI_CUES`) |
+
+Big hits (execution, gore_big, explosion, slam, boss_intro) pull the music
+down 2 to 3 dB for about half a second (`Sfx.IMPACT_CUES`).
+
+Measured on a 60 s autoplay run (seed 548A-8455, waves 1 to 2, Movie Maker,
+`--record-mix`), integrated loudness: Music -19 LUFS, SFX -21 to -22, UI -25,
+light rain -40, heavy rain -37, Master -17 with true peak under -1 dBTP. The
+prototype mix measured -6 LUFS with peaks above 0 dBFS (clipping), the SFX
+about 10 LU over the music, and heavy rain louder than the music.
+
 ### 10.2 Music: requirements for the real game
 - The prototype's procedural tracks are **PLACEHOLDERS** for testing pacing
   and the music director. **They are not the soundtrack.**
@@ -1492,13 +1514,22 @@ card.
 ### 10.3 Ambience (critical feedback)
 - Ambience (rain, wind, city hum, neon buzz) is fine but **must sit far back
   in the mix and never become a constant hiss.**
-- The prototype's **rain loop** reads as annoying **"white noise"**:
-  - It plays in 65% of runs, at −16 dB (light) and −8 dB (heavy).
-  - **Fix:** much quieter (about −24 dB or below, ducked under music),
-    band-limited so it isn't full-band hiss, and built from varied droplet,
-    patter and drip layers instead of flat noise.
-  - It should come and go; heavy rain is felt, not heard over the music.
-  - Apply the same to any other bed and to noise baked into SFX.
+- The prototype's rain loop read as annoying **"white noise"** (one 6 s
+  full-band noise loop at -16 dB light and -8 dB heavy; 35% of its energy
+  above 5 kHz). **Fixed:**
+  - Rebuilt by `tools/gen_audio.py rain` as two 20 s stereo loops,
+    `rain.ogg` and `rain_heavy.ogg`, made of patter, droplet, drip and a
+    little low body, with slow gusts. Band-limited: under 0.2% of the
+    energy above 5 kHz.
+  - The rain still plays in 65% of runs. Light rain plays `rain` at -2 dB;
+    heavy rain plays `rain` at -3 dB plus `rain_heavy` at -3 dB (Sfx
+    `RAIN_DB`, `RAIN_HEAVY_DB`), on the Ambience bus, so it lands about
+    20 LU (light) and 18 LU (heavy) under the music and ducks further while
+    music plays.
+  - Each layer drifts up to 6 dB below its level and back every 5 to 12 s,
+    so it comes and goes.
+  - Apply the same to any other bed and to noise baked into SFX (the SFX
+    bus's high shelf tames the placeholder SFX).
 
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
@@ -1513,9 +1544,9 @@ card.
   flatline, finish, cutin.
 - **UI:** ui_click, ui_hover, type.
 - **Juice:** tick, stamp, chime, cash, count, go, mult, deal, fanfare.
-- **Ambience:** thunder, rain loop.
-- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms),
-  random pitch variation.
+- **Ambience:** thunder, rain loops (light and heavy layers).
+- Pools: 20 2D and 20 positional 3D players, per-sound throttling (30–45 ms,
+  on real time), random pitch variation from a presentation-only RNG.
 - The same quality bar as the music applies.
 
 ---
