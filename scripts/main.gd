@@ -34,6 +34,7 @@ func _ready() -> void:
 	Game.gore = gore
 	var fx := Fx.new()
 	fx.process_mode = Node.PROCESS_MODE_PAUSABLE
+	fx.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # moved every frame, not per tick
 	add_child(fx)
 	Game.fx = fx
 	director = WaveDirector.new()

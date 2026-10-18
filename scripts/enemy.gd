@@ -463,6 +463,7 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < -8.0:
 		global_position = Vector3(0, 6, -20)
 		velocity = Vector3.ZERO
+		reset_physics_interpolation()
 
 
 ## Boss subclasses handle their own states here. Returns [move, face].

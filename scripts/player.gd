@@ -93,6 +93,7 @@ var fov_kick := 0.0
 var exec_zoom := 0.0
 var tilt := 0.0
 var head_y := EYE_HEIGHT # the eye above the feet, with bob, dips and finisher lifts
+var _head_base := Vector3.ZERO # the feet spot the head was last drawn on
 var bob_t := 0.0
 var land_dip := 0.0
 var _was_on_floor := true
@@ -231,6 +232,7 @@ func _process(delta: float) -> void:
 ## finisher drives the body frame by frame), turned by the live mouse look.
 func _place_head() -> void:
 	var base := global_position if gk_target != null else get_global_transform_interpolated().origin
+	_head_base = base
 	head.global_transform = Transform3D(Basis.from_euler(Vector3(pitch + recoil, yaw, 0.0)), base + Vector3(0, head_y, 0))
 
 
@@ -664,7 +666,7 @@ func _start_glory(e: Enemy, plunge := false) -> void:
 		gk_kind = "front_a" if randf() < 0.5 else "front_b"
 	gk_target = e
 	gk_t = 0.0
-	gk_from = global_position
+	gk_from = _head_base # where the camera is drawn now (a tick behind the body), so it doesn't pop
 	var stand := e.radius + (1.25 if gk_kind in ["brute", "boss"] else 0.85)
 	gk_to = e.global_position + to_me * stand
 	gk_to.y = e.global_position.y
