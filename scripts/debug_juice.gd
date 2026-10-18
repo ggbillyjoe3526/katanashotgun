@@ -39,6 +39,7 @@ func _process(_delta: float) -> void:
 			# own two build cards so the offer shows a RECOMMENDED card
 			Game.upgrades = {"idaten": 1, "edge": 1}
 			Game.pending_levelups = 1],
+		[19.6, func(): _hud._select(1)],
 		[20.6, func(): _hud._pick(1)],
 		[21.4, func():
 			_hud.show_boss_intro("KUROKAGE", "BLADE OF THE NULL SIGNAL")

@@ -1345,13 +1345,19 @@ the holographic cut-in (§9.8).
   - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
     tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
     beside it; then a name of up to two lines, rank pips (cards with more
-    than one rank only) and a description of up to four lines, each placed
+    than one rank only) and a description of up to five lines, each placed
     under the one above; the build lines sit on the bottom edge). A linking
     card wears a gold RECOMMENDED tab above its top edge (§3.8).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
     Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
-    Picking punches the card, the others drop and fade, a chime plays, and
+  - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
+    accident). Input is ignored for 0.45 s after the cards appear, and the
+    cursor starts below them. The first click or 1/2/3 **selects** a card
+    (lifted 12 px, ×1.08, white outline) and the subtitle asks "TAKE <NAME>?";
+    clicking it again, pressing its key again or Enter **takes** it. Clicking
+    off the cards clears the selection.
+  - Taking punches the card, the others drop and fade, a chime plays, and
     the pick applies after 0.34 s.
   - Virtual cursor (mouse captured). Music ducks to −16 dB.
 - **Results (death) screen:** §9.8 "Death".
@@ -1845,6 +1851,9 @@ seed | click: new seed).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--augments=id,id:2|all`: start the run with those level-up cards
+    (ids in `scripts/upgrades.gd`); `--cardtour`: deals every card, three at
+    a time, for a layout check, then quits.
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).

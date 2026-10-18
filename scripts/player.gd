@@ -459,9 +459,10 @@ func _blood_heal(amount: float) -> void:
 func _mirror_split(b: Bolt) -> void:
 	for side in [-1.0, 1.0]:
 		var nb := Bolt.new()
-		nb.setup(true, b.global_position, b.vel, b.damage)
+		nb.setup(true, b.global_position, b.vel, b.damage, b.kind)
 		Game.main.add_entity(nb)
-		nb.deflect(b.vel.normalized().rotated(Vector3.UP, side * 0.3), true)
+		# 0.35 rad stays outside the deflect auto-aim cone, so the copies fan out
+		nb.deflect(b.vel.normalized().rotated(Vector3.UP, side * 0.35), true)
 
 
 # ---------------------------------------------------------------- glory kills

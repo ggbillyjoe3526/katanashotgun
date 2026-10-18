@@ -716,8 +716,9 @@ func execute(dir: Vector3, gore_mode := "execution") -> bool:
 func ignite(rank: int) -> void:
 	if burn_t <= 0.0:
 		Sfx.play_at("ignite", global_position, -6.0)
+	# a weaker flame refreshes the burn but never cools a stronger one
+	burn_dps = maxf(burn_dps, 10.0 * rank) if burn_t > 0.0 else 10.0 * rank
 	burn_t = 3.0
-	burn_dps = 10.0 * rank
 
 
 func stagger_now() -> void:

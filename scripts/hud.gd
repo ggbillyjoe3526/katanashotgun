@@ -115,6 +115,10 @@ var _title_hit := false
 
 # juice state
 const COMBO_MILESTONES := [10, 20, 30, 50, 75, 100, 150, 200, 300]
+## Level-up input is ignored this long after the cards appear, so a click or
+## key already flying from combat can't select anything.
+const CARD_ARM_TIME := 0.45
+const LEVELUP_PROMPT := "CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)"
 const CARD_SIZE := Vector2(138, 180) # level-up augment card: a two-line name and a five-line description fit
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const CENTER_LEN := 2.4 # centre message, seconds
@@ -132,6 +136,7 @@ var _last_combo := 0
 var _combo_pop := 0.0
 var _deal_t := 0.0
 var _picked := -1
+var _selected := -1 # level-up: the card a first click or key chose; a second one takes it
 var _pick_t := 0.0
 var _death_lines := 0
 var _death_full: PackedStringArray = []
@@ -465,7 +470,8 @@ func _build_pause() -> void:
 	# your builds so far, top left, out of the way of the menu
 	var bl := Ui.label("", Ui.font_bold, 10, Upgrades.LINK_COLOR, 2)
 	bl.name = "Builds"
-	bl.position = Vector2(10, 8)
+	bl.position = Vector2(8, 44) # under the wave plate, on a plate of its own
+	bl.add_theme_stylebox_override("normal", _popup_plate)
 	pause_root.add_child(bl)
 
 
@@ -516,7 +522,7 @@ func _build_levelup() -> void:
 	var t := Ui.label("LEVEL UP", Ui.font_big, 16, YELLOW, 2)
 	t.name = "Title"
 	levelup_root.add_child(t)
-	var st := Ui.label("CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)", Ui.font_bold, 10, Color(0.85, 0.8, 1.0), 2)
+	var st := Ui.label(LEVELUP_PROMPT, Ui.font_bold, 10, Color(0.85, 0.8, 1.0), 2)
 	st.name = "Sub"
 	levelup_root.add_child(st)
 	for i in 3:
@@ -787,8 +793,11 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 	hovered = -1
 	_deal_t = 0.0
 	_picked = -1
+	_selected = -1
 	_pick_t = 0.0
-	cursor_pos = vs * Vector2(0.5, 0.82)
+	# the cursor starts below the cards, never on one
+	cursor_pos = Vector2(vs.x * 0.5, vs.y - 8)
+	levelup_root.get_node("Sub").text = LEVELUP_PROMPT
 	levelup_root.visible = true
 	# deal the cards one by one
 	for i in choices.size():
@@ -875,17 +884,26 @@ func _input(event: InputEvent) -> void:
 			if h != hovered and h >= 0:
 				Sfx.play("ui_hover", -8.0)
 			hovered = h
+		elif _deal_t < CARD_ARM_TIME:
+			pass # the cards are still landing: swallow stray combat input
 		elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if hovered >= 0:
+			# first click selects, a second click on the same card takes it
+			if hovered >= 0 and hovered == _selected:
 				_pick(hovered)
+			else:
+				_select(hovered)
 		elif event is InputEventKey and event.pressed and not event.echo:
 			var idx := -1
 			match event.physical_keycode:
 				KEY_1, KEY_KP_1: idx = 0
 				KEY_2, KEY_KP_2: idx = 1
 				KEY_3, KEY_KP_3: idx = 2
+				KEY_ENTER, KEY_KP_ENTER: idx = _selected
 			if idx >= 0 and idx < _choices.size():
-				_pick(idx)
+				if idx == _selected:
+					_pick(idx)
+				else:
+					_select(idx)
 		get_viewport().set_input_as_handled()
 
 
@@ -895,6 +913,20 @@ func _card_at(p: Vector2) -> int:
 		if c.visible and Rect2(c.get_meta("base", c.position), c.size).has_point(p):
 			return i
 	return -1
+
+
+## A first click or key lifts a card and asks to confirm; -1 clears it.
+func _select(i: int) -> void:
+	if _picked >= 0 or i == _selected or i >= _choices.size():
+		return
+	_selected = i
+	if i >= 0:
+		Sfx.play("ui_hover", -4.0, 1.3, 0.0)
+	var st: Label = levelup_root.get_node("Sub")
+	if i < 0:
+		st.text = LEVELUP_PROMPT
+	else:
+		st.text = "TAKE %s?   CLICK IT AGAIN, OR PRESS %d OR ENTER" % [_choices[i].name, i + 1]
 
 
 ## Picking punches the chosen card and drops the others, then applies it.
@@ -1139,6 +1171,7 @@ func _layout_levelup() -> void:
 		if not card.visible:
 			continue
 		var hov := i == hovered and _picked < 0
+		var sel := i == _selected and _picked < 0
 		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + 10), vs.y * 0.5 - 64).round()
 		card.set_meta("base", base)
 		# deal in from below with a spin, then sway gently
@@ -1152,6 +1185,10 @@ func _layout_levelup() -> void:
 			sc = 1.06
 			off_y -= 6.0
 			rot += clampf((cursor_pos.x - (base.x + card.size.x * 0.5)) / (card.size.x * 0.5), -1.0, 1.0) * 0.05
+		if sel:
+			# selected: lifted higher and held there until confirmed
+			sc = 1.08
+			off_y -= 12.0
 		if _picked >= 0:
 			var pk := clampf(_pick_t / 0.3, 0.0, 1.0)
 			if i == _picked:
@@ -1186,11 +1223,11 @@ func _layout_levelup() -> void:
 		for b in [b0, b1, b2, b3]:
 			b.color = bcol
 		var bg: Shard = card.get_node("Bg")
-		var glow := 0.18 if hov else 0.0
+		var glow := 0.3 if sel else (0.18 if hov else 0.0)
 		if i == _picked:
 			glow = 0.85 * exp(-_pick_t * 6.0) + 0.25
 		bg.color = Color(0.06, 0.03, 0.1, 0.95).lerp(Color(col.r, col.g, col.b, 0.95), glow)
-		bg.outline = bcol if not hov else Color.WHITE
+		bg.outline = Color.WHITE if (hov or sel) else bcol
 		bg.shadow = col if hov else col.darkened(0.5)
 		var rib: Shard = card.get_node("Ribbon")
 		rib.color = col

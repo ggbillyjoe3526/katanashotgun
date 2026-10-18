@@ -150,7 +150,9 @@ func _on_upgrade(id: String) -> void:
 	# a pick that moves a build forward says so instead of the plain name
 	var news := Upgrades.build_news(id, Game.upgrades)
 	if news.ends_with("COMPLETE"):
-		_build_stamp = news # stamped once the cards are gone, never over them
+		# stamped once the cards are gone, never over them; two completed in
+		# one chain of level-ups share the stamp
+		_build_stamp = news if _build_stamp == "" else "%s + %s" % [_build_stamp.trim_suffix(" COMPLETE"), news]
 	elif news != "":
 		Game.popup.emit(news, Upgrades.LINK_COLOR)
 	else:
