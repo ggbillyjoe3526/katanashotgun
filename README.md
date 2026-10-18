@@ -107,8 +107,10 @@ gdlintrc                    gdlint settings
   macOS, builds the Windows installer, checks it installs and uninstalls, and
   publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
   `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
-  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
-  dry run: everything is built and attached to the run, nothing is published.
+  come from that version's section of `CHANGELOG.md`, which a release gathers
+  from the one-file-per-change notes in `changelog.d/`. A pull request that
+  touches the pipeline does a dry run: everything is built and attached to
+  the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
 

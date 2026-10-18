@@ -22,7 +22,11 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
   a PR touching the pipeline does a dry run. Never create a tag unless the
   owner asks for a release. The release notes come from this version's
   `CHANGELOG.md` section (`tools/changelog_section.sh`): before releasing, set
-  the new version and rename `## Unreleased` to `## 0.1 Dev 2 (date)`.
+  the new version and run `tools/changelog.sh release` (`VERSIONING.md`).
+- **Changelog:** never edit `CHANGELOG.md` in a feature PR (parallel PRs
+  conflict there). Add one new file `changelog.d/<short-name>.md`: a
+  `### Title` line, then `- ` bullets in player words (`changelog.d/README.md`).
+  CI runs `tools/changelog.sh check`.
 - **Installer:** `installer/KatanaShotgun.iss` (Inno Setup 6). Never change its
   `AppId`. No slash in file, folder or shortcut names.
 - **Review:** before marking a PR that touches code ready, run the `critic`

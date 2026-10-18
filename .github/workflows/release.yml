@@ -30,6 +30,7 @@ on:
       - "project.godot"
       - "tools/version.sh"
       - "tools/changelog_section.sh"
+      - "tools/changelog.sh"
 
 permissions:
   contents: read
@@ -191,6 +192,8 @@ jobs:
       TAG: ${{ needs.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0 # release notes fall back to changelog.d/, ordered by history
 
       - uses: actions/download-artifact@v8
         with:
