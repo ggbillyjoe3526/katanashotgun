@@ -1252,7 +1252,7 @@ the holographic cut-in (§9.8).
   online (owner, 2026-10-18).
 - **Sharing seeds** between players, offline, is a direction to expand
   (owner, 2026-10-18): racing a friend's score on the same seed, and more.
-  Ideas 1 to 5 in §19.1 are the first proposals.
+  §19.1 lists the ideas to try.
 
 ---
 
@@ -2492,6 +2492,30 @@ yet, and each needs a spec update with its tuning when it is built.
    store their bpm): glory-kill flashes, KAMAE BROKEN, combo stamps, the
    tally slam, neon and spawn-beam pulses. Only effects wait for the beat,
    never a hit or an input. The player never has to play in rhythm.
+
+Ideas 6 to 10 build on the shared seed and work fully offline: players
+swap a short code or a small file by hand. Most need a seed entry box on
+the title screen first (today a friend's seed needs a shortcut edit).
+6. **Challenge Codes.** A code carrying a seed plus rules the sender picked
+   from what exists: mutators locked on for every wave, a starting build, a
+   wave to reach and a score to beat. A "dare a friend" builder after a
+   run. Challenge scores sit on their own board, never mixed with normal
+   high scores.
+7. **Ghost Ronin.** A small file of a run (the player's position and big
+   moments, a few times a second) that a friend loads on the same seed:
+   the run plays back beside them as a see-through neon ronin. A recording
+   only; it never touches the run.
+8. **Legendary Seeds.** A title-screen shrine of named, hand-picked seeds,
+   each with bronze, silver and gold scores; a medal saved per seed. New
+   seeds join with updates or as boss rewards. Re-check the list each
+   update, since seeds change when the game changes.
+9. **The City Is Watching.** Shin-Kagura reacts to the run: news drones
+   gather as the combo climbs, billboards show kills and score live, and
+   city screens show the top initials for this seed (yours, or the friend
+   whose code is loaded). Presentation only, scaled by the graphics preset.
+10. **Run Cards.** One key on the results screen saves a postcard image to
+   the Pictures folder: seed code, score, wave, builds, bosses felled and
+   the run's best moment, in the game's style. No internet.
 
 ---
 

@@ -51,6 +51,18 @@ feel right:
 - **Bet on the wave:** choose whether to take each wave's mutator for its
   score bonus.
 - **On the beat:** big moments flash and slam in time with the music.
+- **Challenge codes:** share a dare, not just a seed: a seed with rules you
+  picked, like a mutator on every wave and a score to beat.
+- **Ghost runs:** send a friend your best run as a small file, and it plays
+  beside them as a neon ghost while they play the same seed.
+- **Legendary seeds:** hand-picked seeds on the title screen with bronze,
+  silver and gold scores to beat.
+- **The city is watching:** drones and billboards on the rooftop follow
+  your combo and score, and show the best initials for the seed.
+- **Run cards:** one key saves a picture of your run with its seed code,
+  ready to post anywhere.
+- **A box to type in a seed** on the title screen, so sharing seeds doesn't
+  need a shortcut edit.
 
 KATANA / SHOTGUN is and stays fully **offline**: no accounts, no servers and
 no online leaderboards. You race friends by sharing seeds instead.
