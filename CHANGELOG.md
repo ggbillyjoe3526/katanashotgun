@@ -7,18 +7,6 @@ must look like `## 0.1 Dev 2 (2026-10-18)`: the version name from
 
 ## Unreleased
 
-### Settings
-- A settings screen, opened with Tab or the SETTINGS button on the title and
-  pause screens. It has volume sliders for master, music, sound effects,
-  ambience and menus; window mode, VSync, frame cap, quality, render scale
-  and field of view; mouse sensitivity and key rebinding (two keys per
-  action, mouse buttons too); and comfort sliders for screen shake and
-  flashes.
-- Everything works with the mouse or the keyboard, applies at once and is
-  remembered next time. F11 and the `[` `]` sensitivity keys are remembered
-  too.
-- Turning flashes below 100% also stops the impact frames from strobing.
-
 ### Glory kills on F
 - Glory kills are now your call: when an enemy is staggered and close, a
   gold "F  GLORY KILL" prompt appears under the crosshair (on bosses it says
@@ -26,8 +14,8 @@ must look like `## 0.1 Dev 2 (2026-10-18)`: the version name from
   just like Doom.
 - Slashing a staggered enemy just cuts it (hard), so you choose between a
   quick kill and the full finisher with its health and cells.
-- F can be pressed a moment early and still counts. You can move it to
-  another key in Settings.
+- F can be pressed a moment early and still counts. The key will be
+  rebindable once the settings menu exists.
 
 ### A city in every colour
 - The rooftop no longer drowns in purple. Each of the five colour schemes now
