@@ -45,9 +45,11 @@ func _process(_delta: float) -> void:
 			Game.popup.emit("GLORY KILL +400", Color(1.0, 0.3, 0.5))
 			Game.popup.emit("DEFLECT +100", Color(0.4, 0.95, 1.0))
 			_hud.no_ammo()
+			_hud.finisher_demo = true
 			_hud.show_hint("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")],
 		[28.0, func(): Game.hud_message.emit("KUROKAGE IS ENRAGED", Color(1, 0.2, 0.3), false)],
 		[30.0, func():
+			_hud.finisher_demo = false
 			Game.kills = 212
 			Game.executions = 61
 			Game.headshots = 40

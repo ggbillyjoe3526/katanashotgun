@@ -18,7 +18,7 @@ and Linux).
 | Mouse | Look |
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
 | RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
-| Slash a staggered enemy | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow) |
+| F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow). A gold "F GLORY KILL" prompt shows when one is in reach |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
 | Space | Jump / double jump |
@@ -98,13 +98,16 @@ gdlintrc                    gdlint settings
   `godot --headless --path . -s res://tools/make_notices.gd` and commit
   `THIRD_PARTY_NOTICES.txt`. The installer and every zip ship it next to the
   game.
-- **Releases** (`.github/workflows/release.yml`): push a tag `vX.Y.Z`, or open
-  *Actions → Release → Run workflow* and type the version. It runs the smoke
-  test, exports Windows, Linux and macOS, builds the Windows installer, checks
-  it installs and uninstalls, and publishes a GitHub Release with
-  `KatanaShotgun-vX.Y.Z-Windows-Setup.exe`, `-Windows-Portable.zip`,
-  `-Linux.zip` and `-macOS.zip`. The release notes come from that version's
-  section of `CHANGELOG.md`. A pull request that touches the pipeline does a
+- **Version:** set once, as `config/version` in `project.godot`, with names
+  like `0.1 Dev 1`, `0.1 Beta 2` and `0.1`. `VERSIONING.md` explains the
+  scheme and how a name becomes a tag (`v0.1-dev.1`).
+- **Releases** (`.github/workflows/release.yml`): open *Actions → Release →
+  Run workflow* on `main` to release the version in `project.godot` (or push
+  its matching tag). It runs the smoke test, exports Windows, Linux and
+  macOS, builds the Windows installer, checks it installs and uninstalls, and
+  publishes a GitHub Release with `KatanaShotgun-v0.1-dev.1-Windows-Setup.exe`,
+  `-Windows-Portable.zip`, `-Linux.zip` and `-macOS.zip`. The release notes
+  come from that version's section of `CHANGELOG.md`. A pull request that touches the pipeline does a
   dry run: everything is built and attached to the run, nothing is published.
 - **Local export** (needs the 4.7.2 export templates):
   `godot --headless --path . --export-release "Windows Desktop" build/windows/KatanaShotgun.exe`
@@ -117,6 +120,9 @@ Pass after `--` on the command line:
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
   `--boss=ninja|mech|oni` forces a boss
+- `--palettetour` four fixed views of the arena for checking colour, then
+  quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
+  or a normal run
 
 ```
 godot --path . -- --autoplay --god --wave=3 --seed=1234-5678

@@ -61,7 +61,8 @@ static func windows_for(pal: Dictionary, seed_v: int) -> ImageTexture:
 	var r := _rng(seed_v)
 	var s := 64
 	var img := _img(s, s, Color(0.05, 0.04, 0.08))
-	var lit := [pal.neon_a, pal.neon_b, pal.neon_c, Color(1.0, 0.85, 0.6), pal.sky_horizon]
+	var lit: Array = pal.accents.duplicate()
+	lit.append(Color(1.0, 0.85, 0.6))
 	for y in s:
 		for x in s:
 			if y % 16 == 15 or x % 32 == 31:
