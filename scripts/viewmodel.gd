@@ -98,6 +98,10 @@ func _ready() -> void:
 	scale = Vector3.ONE * 0.5
 	_build_katana()
 	_build_shotgun()
+	# the weapons float in front of the camera: a shadow of them (INSANE's
+	# moon) would land on the floor far from the player
+	for g in find_children("*", "GeometryInstance3D", true, false):
+		(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	apply_looks()
 	# equipping from the armory (title or pause) recolours the live weapons
 	Profile.changed.connect(apply_looks)
