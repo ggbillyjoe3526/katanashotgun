@@ -61,6 +61,22 @@ void vertex() {
 #endif
 }
 
+#if CURRENT_RENDERER != RENDERER_COMPATIBILITY
+// Compatibility shades in sRGB space; Forward+ in linear. Emission is worked
+// out in sRGB (as Compatibility sees the colours) and turned linear at the
+// end, so a faint glow stays faint and lit windows keep their mask.
+vec3 psx_srgb(vec3 c) {
+	c = max(c, vec3(0.0));
+	return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}
+
+vec3 psx_linear(vec3 c) {
+	vec3 lo = min(c, vec3(1.0));
+	lo = mix(lo / 12.92, pow((lo + 0.055) / 1.055, vec3(2.4)), step(vec3(0.04045), lo));
+	return lo + max(c - vec3(1.0), vec3(0.0));
+}
+#endif
+
 void fragment() {
 	vec2 uv = v_uvw.xy / v_uvw.z;
 	vec4 c = albedo_color;
@@ -73,11 +89,23 @@ void fragment() {
 		c *= COLOR;
 	}
 	ALBEDO = mix(c.rgb, flash_color, flash);
-	vec3 em = emission_color * emission_strength;
+#if CURRENT_RENDERER != RENDERER_COMPATIBILITY
+	vec3 em_col = psx_srgb(emission_color);
+	vec3 em_tex = psx_srgb(t.rgb);
+	vec3 em_tint = psx_srgb(emission_tint);
+#else
+	vec3 em_col = emission_color;
+	vec3 em_tex = t.rgb;
+	vec3 em_tint = emission_tint;
+#endif
+	vec3 em = em_col * emission_strength;
 	if (emission_from_texture > 0.0) {
-		float lum = max(t.r, max(t.g, t.b));
-		em += t.rgb * emission_tint * smoothstep(0.45, 0.9, lum) * emission_from_texture;
+		float lum = max(em_tex.r, max(em_tex.g, em_tex.b));
+		em += em_tex * em_tint * smoothstep(0.45, 0.9, lum) * emission_from_texture;
 	}
+#if CURRENT_RENDERER != RENDERER_COMPATIBILITY
+	em = psx_linear(em);
+#endif
 	EMISSION = em + flash_color * flash * 1.5;
 #ifdef PSX_HD
 	// the Environment's depth fog (the same curve, 10 to 100 m; surfaces
@@ -86,7 +114,8 @@ void fragment() {
 	float puddle = wet * smoothstep(0.8, 0.98, v_up);
 	ROUGHNESS = mix(1.0, 0.12, puddle);
 	METALLIC = puddle * 0.6;
-	SPECULAR = mix(0.5, 1.0, puddle);
+	// only the puddles shine; dry faces stay matte like the plain shader
+	SPECULAR = puddle;
 #else
 	FOG = vec4(fog_color, v_fog * v_fog * (3.0 - 2.0 * v_fog));
 #endif
