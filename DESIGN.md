@@ -92,7 +92,8 @@ the prototype already works.
 - **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe,
   look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
   katana through its collarbone (it splits in two), rip it out and step
-  down. Same rewards as any glory kill. Brutes and bosses must be staggered.
+  down. Same rewards as any glory kill. Brutes must be staggered first; bosses
+  can't be plunged.
 
 ### Climbing
 - A jump that falls just short of a ledge you're pushing into grabs it and

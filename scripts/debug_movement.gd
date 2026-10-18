@@ -114,6 +114,7 @@ func _next() -> void:
 	var p := Game.player
 	p.global_position = ORIGIN + Vector3(0, c.get("start_y", 0.0) + 0.02, 0)
 	p.velocity = Vector3.ZERO
+	p.reset_physics_interpolation()
 	p.yaw = 0.0
 	p.pitch = c.get("pitch", 0.0)
 	p.jumps_left = 1

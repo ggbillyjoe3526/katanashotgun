@@ -523,7 +523,7 @@ Notes:
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
-| Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes and bosses must be staggered to plunge |
+| Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes must be staggered to plunge; bosses can never be plunged (no glory kills on bosses, owner 2026-10-18) |
 | Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
@@ -700,8 +700,9 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
   within `1.5 + 0.75 × drop` m (at most 7 m) of you horizontally (past their
   body), within 35° of the crosshair (kept to 45°), with nothing in between.
   A plain jump or double jump on the same level never qualifies.
-- **Who:** any grunt or gunner; brutes and bosses are armoured and must be
-  staggered first.
+- **Who:** horde enemies only: any grunt or gunner; brutes are armoured and
+  must be staggered first. **Never bosses** (the owner, 2026-10-18: bosses
+  get no glory kills; their fights end on a posture break instead).
 - **Wins** over a glory kill on the same press.
 - **The finisher:** a dive onto the foe at 24 m/s (0.12–0.3 s, real time),
   blade raised in a reverse grip; the stab (pose, slice + slam + gore,
@@ -1776,6 +1777,13 @@ weak hardware.
   - **Simulation:**
     - A fixed physics tick with simple shapes. Time-slice AI for distant
       enemies.
+    - The tick stays at 60; **physics interpolation is on**
+      (`physics/common/physics_interpolation`, jitter fix 0) so bodies glide
+      between ticks on 144–240 Hz screens. The player's head (camera and
+      viewmodel) is top level with interpolation off and is placed every
+      frame on the body's interpolated position with the live mouse look.
+      Anything that teleports calls `reset_physics_interpolation()`
+      (respawn, the end of a finisher, pooled reuse).
     - Move hot loops (gore, mass AI) to typed GDScript, C# or GDExtension if
       profiling says so.
   - **Quality presets** (Low/Medium/High) cut effect counts and render scale,

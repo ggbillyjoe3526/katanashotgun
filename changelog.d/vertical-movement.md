@@ -5,6 +5,10 @@
 - Plunge: drop from high ground onto an enemy below, look at it and a gold
   "F  PLUNGE" prompt appears. Press F to dive down and drive the katana
   through it. It's a glory kill (health, cells and score), with its own kill
-  tag, SAKAHOKO DROP. Brutes and bosses need staggering first.
+  tag, SAKAHOKO DROP. Brutes need staggering first, and bosses can't be
+  plunged.
 - The double jump goes much higher: about 4 m at the top instead of about
   3 m.
+- Smoother on fast screens: your movement and the camera now glide between
+  game updates instead of stepping 60 times a second, so a 144 or 240 Hz
+  monitor shows every frame of a run, jump, dash or climb.

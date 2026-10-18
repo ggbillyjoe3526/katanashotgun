@@ -25,6 +25,7 @@ const DASH_TIME := 0.2
 const BASE_FOV := 88.0 # the default; the live value is Settings.fov
 const CAPSULE_RADIUS := 0.4
 const CAPSULE_HEIGHT := 1.8
+const EYE_HEIGHT := 1.55
 # ledge climb: how long the pull-up takes (the reach rules are in LedgeClimb)
 const CLIMB_BASE_TIME := 0.2
 const CLIMB_TIME_PER_M := 0.09
@@ -91,6 +92,7 @@ var _shake_t := 0.0
 var fov_kick := 0.0
 var exec_zoom := 0.0
 var tilt := 0.0
+var head_y := EYE_HEIGHT # the eye above the feet, with bob, dips and finisher lifts
 var bob_t := 0.0
 var land_dip := 0.0
 var _was_on_floor := true
@@ -148,8 +150,13 @@ func _ready() -> void:
 	cs.shape = cap
 	cs.position.y = CAPSULE_HEIGHT * 0.5
 	add_child(cs)
+	# Physics runs at 60 ticks but screens refresh at up to 240+ Hz, so the
+	# body is physics-interpolated and the head (camera and weapons) is placed
+	# every frame on the body's interpolated spot, with the mouse look applied
+	# straight away. It is top level so it never steps with the body.
 	head = Node3D.new()
-	head.position.y = 1.55
+	head.top_level = true
+	head.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	add_child(head)
 	cam = Camera3D.new()
 	cam.fov = Settings.fov
@@ -168,6 +175,8 @@ func _ready() -> void:
 	vm.set_cells(cells, max_cells)
 	yaw = rotation.y
 	_floor_y = global_position.y
+	reset_physics_interpolation()
+	_place_head()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -186,9 +195,7 @@ func _process(delta: float) -> void:
 		_attract_t += delta
 		yaw = sin(_attract_t * 0.15) * 0.5
 		pitch = 0.08 + sin(_attract_t * 0.23) * 0.05
-	rotation.y = yaw
 	recoil = move_toward(recoil, 0.0, delta * 0.5)
-	head.rotation.x = pitch + recoil
 	# shake
 	trauma = maxf(0.0, trauma - delta * 1.6)
 	_shake_t += delta * 30.0
@@ -210,7 +217,8 @@ func _process(delta: float) -> void:
 	if is_on_floor() and hspeed > 1.0 and dash_t <= 0.0:
 		bob_t += delta * hspeed * 0.9
 	var bob_amt := clampf(hspeed / WALK_SPEED, 0.0, 1.0) if is_on_floor() else 0.0
-	head.position.y = (1.55 if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y - 0.12 * climb_env
+	head_y = (EYE_HEIGHT if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y - 0.12 * climb_env
+	_place_head()
 	vm.set_bob(bob_amt, bob_t)
 	vm.set_climb(climb if climb_t >= 0.0 else -1.0)
 	vm.visible = Game.state != "title"
@@ -219,7 +227,15 @@ func _process(delta: float) -> void:
 		cam.rotation.z = lerpf(cam.rotation.z, 0.6, 1.0 - exp(-3.0 * delta))
 
 
+## The head sits on the body's interpolated spot (its real spot while a
+## finisher drives the body frame by frame), turned by the live mouse look.
+func _place_head() -> void:
+	var base := global_position if gk_target != null else get_global_transform_interpolated().origin
+	head.global_transform = Transform3D(Basis.from_euler(Vector3(pitch + recoil, yaw, 0.0)), base + Vector3(0, head_y, 0))
+
+
 func _physics_process(delta: float) -> void:
+	rotation.y = yaw # the body faces where you look (dash, climb and aim use it)
 	if Game.state == "title":
 		return
 	katana_cd -= delta
@@ -363,6 +379,7 @@ func _physics_process(delta: float) -> void:
 		global_position = Game.arena.player_spawn
 		velocity = Vector3.ZERO
 		_floor_y = global_position.y
+		reset_physics_interpolation()
 
 
 # ---------------------------------------------------------------- movement
@@ -583,8 +600,8 @@ func _set_finisher_target(e: Enemy, plunge := false) -> void:
 
 ## A foe to plunge onto from above: you left a floor well above it, you are
 ## still high over it, it is within reach of the drop and near the crosshair,
-## with nothing in between. Brutes and bosses are armoured: only when
-## staggered.
+## with nothing in between. Brutes are armoured: only when staggered.
+## Bosses never get a finisher from a plunge (their fights end on posture).
 func _find_plunge_target() -> Enemy:
 	if is_on_floor():
 		return null
@@ -596,7 +613,7 @@ func _find_plunge_target() -> Enemy:
 	for e in Game.enemy_list:
 		if not is_instance_valid(e) or e.dead or e.state == Enemy.S.SPAWN:
 			continue
-		if (e.is_boss or e.kind == "brute") and not e.is_staggered():
+		if e.is_boss or (e.kind == "brute" and not e.is_staggered()):
 			continue
 		var base: float = e.global_position.y
 		var drop := feet - base
@@ -722,7 +739,7 @@ func _update_glory(rd: float) -> void:
 	elif gk_kind == "front_a":
 		look_h = 0.62 + 0.25 * smoothstep(0.34, 0.46, t)
 	if is_instance_valid(e):
-		var aim := e.global_position + Vector3(0, e.height * look_h, 0) - (global_position + Vector3(0, head.position.y, 0))
+		var aim := e.global_position + Vector3(0, e.height * look_h, 0) - (global_position + Vector3(0, head_y, 0))
 		var want_yaw := atan2(-aim.x, -aim.z)
 		var want_pitch := clampf(atan2(aim.y, Vector2(aim.x, aim.z).length()), -1.2, 1.2)
 		var k := clampf(t / 0.1, 0.0, 1.0)
@@ -899,6 +916,7 @@ func _end_glory() -> void:
 	gk_target = null
 	gk_events = []
 	gk_cam_y = 0.0
+	reset_physics_interpolation() # the finisher moved the body outside the physics tick
 	invuln = 0.35
 	vm.glory_end()
 	# a little hop back out of the gore
