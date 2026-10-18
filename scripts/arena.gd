@@ -19,6 +19,15 @@ var env: Environment
 var moon: DirectionalLight3D
 var sky_mat: ShaderMaterial
 var rain_level := 1 # 0 none, 1 light, 2 heavy
+var floor_base := 0.0 # what floor_height_at returns where no platform or ramp is
+var kill_y := -10.0 # the player falls back to the spawn below this; enemies 2 m higher
+var enemy_reset := Vector3(0, 6, -20) # where an enemy that fell off the map comes back
+var ground_spawns: Array[Vector3] = [] # spawn points enemies walk out of instead of dropping onto
+var use_navigation := false # bake a navmesh so enemies path between levels
+var nav_links: Array = [] # [low, high] leap points between levels, added by the map
+var nav_region: NavigationRegion3D
+const NAV_WALK := 1 # navigation layer: floors and ramps
+const NAV_LEAP := 2 # navigation layer: leap links (enemies only; the autoplay bot walks)
 
 var _platforms: Array = [] # {c: Vector2, hx, hz, rot, h}
 var _ramps: Array = []     # {a: Vector3, b: Vector3, w}
@@ -35,6 +44,8 @@ func build() -> void:
 	Psx.fog_color = pal.fog
 	_setup_environment()
 	_build_layout()
+	if use_navigation:
+		_build_navigation()
 	_build_rain()
 	Graphics.attach(self) # the quality preset's lighting, now and on change
 
@@ -214,9 +225,13 @@ func _accent(i: int) -> Color:
 	return acc[posmod(i, acc.size())]
 
 
-func floor_height_at(x: float, z: float) -> float:
-	var h := 0.0
+## Height of the floor at (x, z): the highest platform or ramp top at or
+## below `below`, so stacked floors give the one under the caller.
+func floor_height_at(x: float, z: float, below := INF) -> float:
+	var h := floor_base
 	for p in _platforms:
+		if p.h > below:
+			continue
 		var d: Vector2 = Vector2(x, z) - p.c
 		if p.rot != 0.0:
 			d = d.rotated(p.rot)
@@ -232,9 +247,62 @@ func floor_height_at(x: float, z: float) -> float:
 		if t < 0.0 or t > 1.0:
 			continue
 		var lateral := absf(ap.cross(ab)) / sqrt(len2)
-		if lateral <= r.w * 0.5:
-			h = maxf(h, lerpf(a.y, b.y, t))
+		var rh := lerpf(a.y, b.y, t)
+		if lateral <= r.w * 0.5 and rh <= below:
+			h = maxf(h, rh)
 	return h
+
+
+## How far above a spawn point an enemy appears (the director rolls 7-9 m).
+## Ground spawns (tunnels, lifts, hatches) have a roof over them: walk out.
+func spawn_clearance(p: Vector3) -> float:
+	for g in ground_spawns:
+		if g.is_equal_approx(p):
+			return 0.3
+	return 9.0
+
+
+# ---------------------------------------------------------------- navigation
+## The nearest walkable point to `p` (on the navmesh), or `p` itself on maps
+## without one. Keeps teleports and reinforcements out of walls and the pit.
+func safe_point(p: Vector3) -> Vector3:
+	if nav_region == null:
+		return p
+	var map := get_world_3d().navigation_map
+	if NavigationServer3D.map_get_iteration_id(map) == 0:
+		return p
+	var q := NavigationServer3D.map_get_closest_point(map, p)
+	return Vector3(q.x, q.y - 0.4, q.z) # the navmesh sits about half a metre above the floor
+
+
+## Bake a navmesh from the map's static colliders and add the leap links.
+## Enemies path over it (Enemy._steer); maps opt in with use_navigation.
+func _build_navigation() -> void:
+	var nm := NavigationMesh.new()
+	nm.geometry_parsed_geometry_type = NavigationMesh.PARSED_GEOMETRY_STATIC_COLLIDERS
+	nm.geometry_collision_mask = 1
+	nm.agent_radius = 0.5
+	nm.agent_height = 1.75
+	nm.agent_max_climb = 0.5
+	nm.agent_max_slope = 40.0
+	nm.cell_size = 0.25
+	nm.cell_height = 0.25
+	nm.filter_baking_aabb = AABB(Vector3(-half - 2.0, -16.0, -half - 2.0), Vector3(half * 2.0 + 4.0, 40.0, half * 2.0 + 4.0))
+	var src := NavigationMeshSourceGeometryData3D.new()
+	NavigationServer3D.parse_source_geometry_data(nm, src, self)
+	NavigationServer3D.bake_from_source_geometry_data(nm, src)
+	nav_region = NavigationRegion3D.new()
+	nav_region.navigation_mesh = nm
+	nav_region.navigation_layers = NAV_WALK | NAV_LEAP
+	add_child(nav_region)
+	for l in nav_links:
+		var link := NavigationLink3D.new()
+		link.bidirectional = true
+		link.start_position = l[0]
+		link.end_position = l[1]
+		link.enter_cost = 4.0 # ramps win unless the leap saves real distance
+		link.navigation_layers = NAV_LEAP
+		add_child(link)
 
 
 # ---------------------------------------------------------------- weather

@@ -1,8 +1,10 @@
 # Enemies
 
-The gangs of Shin-Kagura drop onto the roof from above: a beam of light
-marks the spot, they fall in from 7 to 9 m up, land in a shower of sparks
-and come for you. Every attack is **telegraphed** with a windup, glowing eyes
+The gangs of Shin-Kagura come at you from everywhere: a beam of light marks
+the spot, then they walk out of a metro tunnel, freight lift or roof hatch,
+or fall in from 7 to 9 m up and land in a shower of sparks. They follow you
+between levels, taking the ramps and leaping up ledges after a short crouch
+([where they come from](The-Map#where-enemies-come-from)). Every attack is **telegraphed** with a windup, glowing eyes
 and a sound, so you always get a chance to react.
 
 ## The horde

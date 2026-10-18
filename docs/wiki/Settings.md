@@ -45,6 +45,7 @@ not realism.
 | Glow and air | The plain glow | Wider neon glow, a soft haze around every lamp | Real fog that the lamps light up |
 | Floors | Dry | Dry | Wet: they reflect the neon |
 | Blood and chunks | Fewer | More | Even more per kill |
+| Flying cars in the city | Fewer | More | The most |
 | Edges | Jagged | Smoother | Smoothest |
 
 ![A glory kill moment on WEAK, MEDIOCRE and INSANE](images/graphics-presets-fight.jpg)

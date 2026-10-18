@@ -129,6 +129,14 @@ static func _keep_out_of_gi(node: Node) -> void:
 		(node as GeometryInstance3D).gi_mode = GeometryInstance3D.GI_MODE_DISABLED
 
 
+## For the parts of a map that move (traffic, trains): `root` and everything
+## under it stays out of global illumination. Harmless on OpenGL.
+static func moving(root: Node) -> void:
+	_keep_out_of_gi(root)
+	for n in root.find_children("*", "GeometryInstance3D", true, false):
+		_keep_out_of_gi(n)
+
+
 ## The map's own glow, kept so WEAK can always put it back exactly.
 static func _remember_base(arena: Arena) -> void:
 	var env := arena.env
