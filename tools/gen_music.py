@@ -299,6 +299,87 @@ def apply_reverb(bus, ir, mix):
 
 
 # ---------------------------------------------------------------- composition
+# ---------------------------------------------------------------- dirt and glitches
+# Owner's call (2026-10-18): glitchy and distorted. Basses and leads are
+# driven hard, drums get parallel grit, and phrase ends are cut up with
+# stutters, tape stops, reverses, gates and bitcrush bursts.
+def drive(bus, amount, tone=5000.0, mix=1.0):
+    """Waveshaper distortion, low-passed so it growls rather than fizzes."""
+    k = np.tanh(amount)
+    for ch in ("L", "R"):
+        x = getattr(bus, ch)
+        wet = lp(np.tanh(x * amount) / k, tone)
+        setattr(bus, ch, x * (1 - mix) + wet * mix)
+
+
+def crush(x, bits=6, hold=4):
+    """Bit depth and sample-rate reduction."""
+    q = 2 ** (bits - 1)
+    y = np.round(x * q) / q
+    idx = (np.arange(len(y)) // hold) * hold
+    return y[np.minimum(idx, len(y) - 1)]
+
+
+def _ramp(n, k=64):
+    w = np.ones(n)
+    k = min(k, n // 2)
+    if k > 0:
+        w[:k] = np.linspace(0, 1, k)
+        w[-k:] = np.linspace(1, 0, k)
+    return w
+
+
+def glitch(L, R, s, e, kind, s16, rng):
+    """Rewrites L/R[s:e] with one glitch (the same edit on both channels)."""
+    n = e - s
+    if n <= 64:
+        return
+    ln = max(64, int(s16 * SR * rng.choice([0.5, 1.0])))
+    gate_ln = max(64, int(s16 * SR / 2))
+    mask = lp(np.repeat([1.0 if rng.f() < 0.55 else 0.0 for _ in range(n // gate_ln + 1)], gate_ln)[:n], 300)
+    for x in (L, R):
+        seg = x[s:e].copy()
+        if kind == "stutter":
+            piece = x[s:s + ln] * _ramp(ln, 32)
+            out = np.tile(piece, n // ln + 1)[:n]
+        elif kind == "tapestop":
+            rate = (1.0 - np.arange(n) / n) ** 1.6
+            out = np.interp(np.cumsum(rate), np.arange(n), seg) * _ramp(n, 32)
+        elif kind == "reverse":
+            out = seg[::-1] * _ramp(n, 64)
+        elif kind == "gate":
+            out = seg * mask
+        else:  # crush
+            out = crush(seg, 5, 6) * 0.9
+        x[s:e] = out
+
+
+GLITCHES = ["stutter", "tapestop", "reverse", "gate", "crush"]
+
+
+def glitch_pass(L, R, rng, sections, bar, beat, kind):
+    """Glitches the end of most phrases, plus quick stutters in drops."""
+    s16 = beat / 4
+    chance = 0.35 if kind == "title" else 0.8
+    t0 = 0.0
+    for sec, nb in sections:
+        for b in range(nb):
+            tb = t0 + b * bar
+            if sec in ("intro", "outro"):
+                continue
+            if (b + 1) % 4 == 0 and rng.f() < chance:
+                # the last beat (sometimes two) of the phrase
+                beats = 2 if (sec == "build" or rng.f() < 0.25) else 1
+                start = tb + bar - beats * beat
+                glitch(L, R, int(start * SR), int((tb + bar) * SR), rng.choice(GLITCHES), s16, rng)
+            elif sec in ("drop", "lead2") and rng.f() < 0.3:
+                # a short stutter or crush on an off-beat
+                start = tb + rng.choice([1, 2, 3]) * beat + 2 * s16
+                kind_g = rng.choice(["stutter", "crush", "gate"])
+                glitch(L, R, int(start * SR), int((start + 2 * s16) * SR), kind_g, s16, rng)
+        t0 += nb * bar
+
+
 def chord_notes(root, scale, degree, seventh=False):
     pcs = [scale[(degree + k) % 7] + 12 * ((degree + k) // 7) for k in ([0, 2, 4, 6] if seventh else [0, 2, 4])]
     return [root + p for p in pcs]
@@ -565,6 +646,12 @@ def compose(name, seed, kind="combat", over=None):
         t0 += nb * bar
 
     # ---- mixdown
+    drive(bass, 4.5 if kind != "title" else 2.5, 4200)
+    drive(lead, 3.0 if kind != "title" else 1.8, 5200)
+    drive(drums, 3.0, 6500, 0.45)
+    for ch in ("L", "R"):  # a little bitcrushed grit on the arps
+        x = getattr(arp, ch)
+        setattr(arp, ch, x * 0.75 + crush(x, 7, 3) * 0.25)
     delay(lead, beat * 0.75, 0.38, 4)
     delay(arp, beat * 0.5, 0.33, 3)
     ir_big = reverb_ir(2.6, seed + 1)
@@ -580,6 +667,7 @@ def compose(name, seed, kind="combat", over=None):
     R = drums.R * 0.95 + bass.R * 0.85 + pad.R * 0.7 + lead.R * 0.75 + arp.R * 0.6 + fxb.R * 0.5
     L = hp(L, 28)
     R = hp(R, 28)
+    glitch_pass(L, R, rng, sections, bar, beat, kind)
     end = int(SR * length)
     if kind in ("boss", "title"):
         # loopable: fold the tail back onto the start

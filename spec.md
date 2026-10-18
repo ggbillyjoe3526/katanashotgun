@@ -518,7 +518,7 @@ Notes:
 | Releases repo (if separate) | none: releases publish on the game repo |
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
-| Music style | Fast, futuristic, energetic synthwave/retrowave (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
+| Music style | Fast, futuristic, energetic synthwave/retrowave, glitchy and distorted (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
 | Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 1` (owner, 2026-10-18; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
@@ -1544,7 +1544,10 @@ about 10 LU over the music, and heavy rain louder than the music.
 - Style: **fast-paced, futuristic, energetic synthwave/retrowave** that
   matches the game's speed (owner, 2026-10-18): outrun tempos (about 140 to
   155 bpm in combat, faster for bosses), driving kicks, 16th-note basses and
-  arps, bright leads, aggressive edges welcome. Distinct boss themes; a
+  arps, bright leads, and **glitchy and distorted** (owner, 2026-10-18):
+  driven, growling basses and leads, gritty drums, bitcrushed arps, and
+  phrase ends cut up with stutters, tape stops, reverses, gates and
+  bitcrush bursts. Distinct boss themes; a
   memorable title theme. It must not sound repetitive.
 - **System requirements:**
   - Stems or intensity layers so the music can react (boss phases, enrage,
@@ -1568,7 +1571,9 @@ about 10 LU over the music, and heavy rain louder than the music.
     minor; title 118 dorian.
   - Sections: short intro, groove, lead, lead2, break, build, drop, lead,
     drop, short outro. Kicks four-on-the-floor or driving, hats in 16ths,
-    basses in 16ths (octave, pulse or gallop).
+    basses in 16ths (octave, pulse or gallop). Bass, lead and drums are
+    distorted; most 4-bar phrase ends (and some off-beats in drops) get a
+    seeded glitch.
   - Every track is mastered to -14 LUFS (`tools/gen_music.py`), the level the
     mix in §10.1 was measured against.
 
