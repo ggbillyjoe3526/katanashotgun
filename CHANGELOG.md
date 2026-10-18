@@ -11,6 +11,13 @@ those notes into a new section here.
 
 ## 0.1 Dev 1 (2026-10-18)
 
+### Graphics presets: WEAK, MEDIOCRE and INSANE
+- The Quality setting is now **Graphics**, with three presets that change how the game looks, not just how many effects it shows.
+- **WEAK** is the game's look so far, made for older PCs.
+- **MEDIOCRE** (the new default) adds wider neon glow, a soft haze around every lamp, smoother edges and more blood per kill.
+- **INSANE** goes all out: light that bounces off the neon onto the floors, wet floors that reflect the city, real fog lit by the lamps, soft shadows and shading in every corner, and even more blood per kill. It needs a strong graphics card and a game restart (Settings offers a RESTART GAME button).
+- If you were on HIGH, you're now on MEDIOCRE, which looks the same and better.
+
 ### Glory kills on F
 - Glory kills are now your call: when an enemy is staggered and close, a
   gold "F  GLORY KILL" prompt appears under the crosshair and the enemy's
@@ -212,8 +219,8 @@ those notes into a new section here.
   for every hit and kill, so big fights don't stutter.
 - Every combat shader is prepared while the game loads, so the first
   shotgun blast, kill or explosion no longer causes a hitch.
-- Quality presets (LOW / MEDIUM / HIGH) trim how much blood, gibs, smoke and
-  sparks pile up on screen. The look stays the same; HIGH keeps the full show.
+- Each graphics preset caps how much blood, gibs, smoke and sparks pile up
+  on screen, so weaker PCs keep a smooth frame rate.
 - Press F3 to show a performance overlay: frame rate, frame time and draw
   calls.
 
