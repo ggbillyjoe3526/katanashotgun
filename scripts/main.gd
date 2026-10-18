@@ -53,6 +53,8 @@ func _ready() -> void:
 	add_child(hud)
 	hud.post = post
 	Game.hud = hud
+	if OS.get_cmdline_user_args().has("--uiaudit"):
+		add_child(load("res://scripts/debug_ui_audit.gd").new())
 	add_child(DebugPerf.new())
 	add_child(ShaderWarmup.new())
 	if OS.get_cmdline_user_args().has("--juicetest"):
@@ -318,7 +320,7 @@ func _process(delta: float) -> void:
 		if not Game.debug_no_pause and _capture_grace <= 0.0 and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 			pause_game()
 			lock_failures += 1
-		elif Game.pending_levelups > 0 and not Game.player.dead:
+		elif Game.pending_levelups > 0 and not Game.player.dead and not hud.juice.centre_busy():
 			_open_levelup()
 	if Game.state == "playing" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and _capture_grace < -3.0:
 		lock_failures = 0

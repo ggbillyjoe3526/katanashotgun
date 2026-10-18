@@ -82,11 +82,11 @@ func _pad() -> Vector2:
 
 
 func _tag_px() -> int:
-	return 12
+	return Ui.PIX
 
 
 func _tag_h() -> float:
-	return 15.0 if tag != "" else 0.0
+	return Ui.font_bold.get_height(_tag_px()) if tag != "" else 0.0
 
 
 func _is_letter(ch: String) -> bool:
