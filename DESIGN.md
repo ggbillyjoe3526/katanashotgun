@@ -347,8 +347,8 @@ is never lost.
   - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" between them.
 
 ## Audio
-- Six procedurally composed, fast (140 to 152 bpm) combat tracks built from
-  distorted guitars, growling basses and glitch percussion
+- Six procedurally composed, fast (140 to 152 bpm) combat tracks in a dark
+  electronic bass-music style (Rezz): wobble basses, EDM drums, glitch edits
   (own key, tempo, progression, groove, lead and melodies, arranged in
   sections), shuffled per run and crossfaded. One theme per boss, plus a title theme. The music cuts to
   silence when a boss dies and when you die.
