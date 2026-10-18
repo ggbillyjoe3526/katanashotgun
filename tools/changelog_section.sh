@@ -2,9 +2,9 @@
 # Prints the CHANGELOG.md section for one version (used as release notes).
 # Usage: tools/changelog_section.sh "0.1 Dev 2"
 # Sections start with a heading like "## 0.1 Dev 2 (2026-10-18)" (the version
-# name from VERSIONING.md). Before a release, rename "## Unreleased" to that
-# heading. If no section matches, the Unreleased section is used and CI shows
-# a warning.
+# name from VERSIONING.md). Before a release, `tools/changelog.sh release`
+# writes that section from the fragments in changelog.d/. If no section
+# matches, the fragments are used as they are and CI shows a warning.
 set -euo pipefail
 NAME="$1"
 cd "$(dirname "$0")/.."
@@ -19,8 +19,8 @@ section_for() {
 }
 section=$(section_for "$NAME")
 if [ -z "${section//[[:space:]]/}" ]; then
-  section=$(section_for "Unreleased")
-  echo "::warning::CHANGELOG.md has no '## $NAME' section; using '## Unreleased' for the release notes" >&2
+  section=$(tools/changelog.sh unreleased)
+  echo "::warning::CHANGELOG.md has no '## $NAME' section; using the notes in changelog.d/ (run tools/changelog.sh release before releasing)" >&2
 fi
 if [ -n "${section//[[:space:]]/}" ]; then
   printf '%s\n' "$section"
