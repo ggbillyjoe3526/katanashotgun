@@ -3,6 +3,7 @@ extends GutTest
 ## mouse would: move, change values, switch tabs, rebind a key, back out.
 
 const TEST_PATH := "user://test_settings_menu.json"
+const PROFILE_DIR := "user://test-settings-menu"
 
 var menu: SettingsMenu
 var _saved := {}
@@ -13,6 +14,7 @@ func before_each() -> void:
 	_saved = Settings.to_dict()
 	_real_path = Settings.path
 	Settings.path = TEST_PATH
+	Profile.use_dir(PROFILE_DIR) # saves never reach the player's profile
 	Settings.reset_all()
 	Game.state = "title"
 	menu = SettingsMenu.new()
@@ -23,10 +25,19 @@ func after_each() -> void:
 	for p in [TEST_PATH, TEST_PATH + ".bak", TEST_PATH + ".tmp"]:
 		if FileAccess.file_exists(p):
 			DirAccess.remove_absolute(p)
+	_remove_dir(PROFILE_DIR)
+	Profile.use_dir("user://test")
 	Settings.path = _real_path
 	Settings.reset_all()
 	Settings.from_dict(_saved)
 	Settings.apply_all()
+
+
+func _remove_dir(d: String) -> void:
+	if DirAccess.dir_exists_absolute(d):
+		for f in DirAccess.get_files_at(d):
+			DirAccess.remove_absolute(d.path_join(f))
+		DirAccess.remove_absolute(d)
 
 
 func _press(code: Key, shift := false) -> void:

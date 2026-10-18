@@ -21,6 +21,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_remove_files()
+	DirAccess.remove_absolute(PROFILE_DIR)
 	Profile.use_dir("user://test")
 	Settings.path = _real_path
 	Settings.reset_all()
