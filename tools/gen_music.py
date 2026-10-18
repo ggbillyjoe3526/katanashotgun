@@ -1,15 +1,16 @@
-"""Procedural synthwave soundtrack for KATANA / SHOTGUN.
+"""Procedural placeholder soundtrack for KATANA / SHOTGUN: synthwave tempos,
+distorted guitars, reese and growl basses, glitch percussion and edits.
 
 Run:  python3 tools/gen_music.py      (needs numpy, scipy, ffmpeg)
 
 Every track is composed from a seed: key, tempo, chord progression, drum and
-bass styles, synth timbres and generated melodies all differ, and each track is
+bass styles, bass and lead instruments and generated melodies all differ, and each track is
 arranged in sections (intro, groove, lead, breakdown, build, drop, outro).
 The game shuffles the combat tracks per run and crossfades between them, so
 the music doesn't loop the same phrase over and over.
 
 Output (assets/music/):
-  combat_*.ogg  ~110 s each, played as a shuffled playlist
+  combat_*.ogg  ~95-100 s each, played as a shuffled playlist
   boss_*.ogg    looping boss themes
   title.ogg     looping title theme
 """
@@ -113,17 +114,6 @@ def inst_supersaw(f, dur, rng, bright=2400.0, voices=5, detune=0.011):
     return lp(L, bright) * e / voices, lp(R, bright) * e / voices
 
 
-def inst_pluck(f, dur, kind="saw", cutoff=5000.0):
-    n = int(SR * (dur + 0.25))
-    osc = saw(f, n) if kind == "saw" else square(f, n, 0.35)
-    bright = lp(osc, cutoff)
-    dark = lp(osc, 700.0)
-    t = np.arange(n) / SR
-    fenv = np.exp(-t * 18.0)
-    e = env(n, a=0.002, d=0.12, s=0.45, r=0.12, hold=dur)
-    return (bright * fenv + dark * (1 - fenv)) * e
-
-
 def inst_lead(f, dur, kind, glide_from=None):
     n = int(SR * (dur + 0.35))
     t = np.arange(n) / SR
@@ -150,18 +140,89 @@ def inst_lead(f, dur, kind, glide_from=None):
     return osc * e
 
 
-def inst_bass(f, dur, kind):
+# ---- distorted and glitch instruments (owner, 2026-10-18: "less synth, more
+# distorted/glitch instruments"): a plucked-string model for guitars, a reese
+# and an FM growl for the bass, metallic glitch blips for the stabs.
+def ks_string(f, dur, rng, loss=0.996, tail=0.08):
+    """Karplus-Strong plucked string, computed a period at a time."""
+    p = max(2, int(round(SR / f)))
+    n = int(SR * (dur + tail))
+    y = np.zeros(n + p)
+    y[:p] = rng.noise(p)
+    for k in range(1, (n + p) // p + 1):
+        a, b = k * p, min((k + 1) * p, n + p)
+        if a >= b:
+            break
+        prev = y[a - p:b - p]
+        prev_shift = y[a - p - 1:b - p - 1] if a - p - 1 >= 0 else np.concatenate([[0.0], prev[:-1]])
+        y[a:b] = loss * 0.5 * (prev + prev_shift[:len(prev)])
+    return y[p:p + n]
+
+
+def _amp_cab(x, gain, lo=90.0, hi=4800.0):
+    """Amp distortion into a speaker-cabinet band-pass with a mid scoop."""
+    x = np.tanh(hp(x, 70) * gain)
+    x = bp(x, lo, hi, 2)
+    return x - bp(x, 600, 900) * 0.35
+
+
+def inst_chug(f, dur, rng, palm=True):
+    """Distorted power chord (root, fifth, octave); palm-muted chugs are short."""
+    loss = 0.982 if palm else 0.9985
+    x = sum(ks_string(f * r, dur, rng, loss) for r in (1.0, 1.4983, 2.0))
+    e = env(len(x), a=0.001, d=0.05, s=0.75 if palm else 0.95, r=0.03, hold=dur)
+    return _amp_cab(x * e, 9.0) * 0.5
+
+
+def inst_gtr_lead(f, dur, rng):
+    """Screaming distorted lead guitar: a long-sustain string, driven hard."""
+    x = ks_string(f, dur, rng, 0.9993) + ks_string(f * 2.002, dur, rng, 0.999) * 0.4
+    e = env(len(x), a=0.002, d=0.2, s=0.9, r=0.06, hold=dur)
+    return _amp_cab(x * e, 14.0, 180.0, 5200.0) * 0.55
+
+
+def inst_screech(f, dur, rng):
+    """Bitcrushed FM screech for the more synthetic tracks."""
     n = int(SR * (dur + 0.05))
     t = np.arange(n) / SR
-    if kind == "square":
-        osc = square(f, n, 0.5) * 0.7 + saw(f * 0.5, n) * 0.3
+    idx = 4.0 + 2.0 * np.sin(2 * np.pi * 7.0 * t)
+    x = np.sin(2 * np.pi * f * t + idx * np.sin(2 * np.pi * f * 1.01 * t))
+    x = crush(np.tanh(x * 3.0), 5, 3)
+    return lp(x, 5000) * env(n, a=0.003, d=0.1, s=0.85, r=0.04, hold=dur) * 0.5
+
+
+def inst_reese(f, dur):
+    """Detuned, phasing, distorted reese bass."""
+    n = int(SR * (dur + 0.03))
+    t = np.arange(n) / SR
+    x = saw(f, n) + saw(f * 1.012, n, 0.3) + saw(f * 0.994, n, 0.6) * 0.6
+    x = lp(x, 900 + 600 * np.sin(2 * np.pi * 0.7 * t[0]))
+    x = np.tanh(x * 3.5) + np.sin(2 * np.pi * f * 0.5 * t) * 0.6
+    return lp(x, 3200) * env(n, a=0.004, d=0.05, s=0.95, r=0.02, hold=dur) * 0.7
+
+
+def inst_growl(f, dur, wobble_hz):
+    """FM growl bass whose bite wobbles in time with the beat."""
+    n = int(SR * (dur + 0.03))
+    t = np.arange(n) / SR
+    idx = 1.0 + 5.0 * (0.5 + 0.5 * np.sin(2 * np.pi * wobble_hz * t - np.pi / 2))
+    x = np.sin(2 * np.pi * f * t + idx * np.sin(2 * np.pi * f * 2.0 * t))
+    x = np.tanh(x * 4.0) + np.sin(2 * np.pi * f * t) * 0.5
+    return lp(crush(x, 7, 2), 3800) * env(n, a=0.003, d=0.05, s=0.95, r=0.02, hold=dur) * 0.7
+
+
+def glitch_blip(f, rng):
+    """A tiny crushed metallic blip or noise burst, for glitch stabs and percussion."""
+    kind = rng.choice(["fm", "metal", "noise"])
+    n = int(SR * rng.f(0.03, 0.09))
+    t = np.arange(n) / SR
+    if kind == "fm":
+        x = np.sin(2 * np.pi * f * t * (1 + 3 * np.exp(-t * 60)) + 6 * np.sin(2 * np.pi * f * 3.7 * t))
+    elif kind == "metal":
+        x = sum(square(f * r, n) for r in (1.0, 1.47, 2.13, 2.89)) * 0.25
     else:
-        osc = saw(f, n) * 0.7 + saw(f * 1.004, n) * 0.3
-    fenv = np.exp(-t * 14.0)
-    x = lp(osc, 520) * (1 - fenv) + lp(osc, 2400) * fenv
-    sub = np.sin(2 * np.pi * f * 0.5 * t) * 0.5 if kind != "square" else np.sin(2 * np.pi * f * t) * 0.35
-    e = env(n, a=0.003, d=0.08, s=0.85, r=0.03, hold=dur)
-    return (x + sub) * e
+        x = bp(rng.noise(n), 1200, 6000)
+    return crush(x, rng.i(3, 6), rng.i(2, 8)) * np.exp(-t * rng.f(25, 60))
 
 
 def inst_bell(f, dur):
@@ -367,12 +428,12 @@ def glitch_pass(L, R, rng, sections, bar, beat, kind):
             tb = t0 + b * bar
             if sec in ("intro", "outro"):
                 continue
-            if (b + 1) % 4 == 0 and rng.f() < chance:
+            if (b + 1) % 2 == 0 and rng.f() < chance:
                 # the last beat (sometimes two) of the phrase
                 beats = 2 if (sec == "build" or rng.f() < 0.25) else 1
                 start = tb + bar - beats * beat
                 glitch(L, R, int(start * SR), int((tb + bar) * SR), rng.choice(GLITCHES), s16, rng)
-            elif sec in ("drop", "lead2") and rng.f() < 0.3:
+            elif sec in ("drop", "lead2", "lead", "groove") and rng.f() < 0.45:
                 # a short stutter or crush on an off-beat
                 start = tb + rng.choice([1, 2, 3]) * beat + 2 * s16
                 kind_g = rng.choice(["stutter", "crush", "gate"])
@@ -478,11 +539,7 @@ def compose(name, seed, kind="combat", over=None):
     root = rng.choice([45, 46, 47, 48, 49, 50, 52])  # A2..E3 (bass register root)
     prog = rng.choice(progs)
     drum_style = rng.choice(["four", "four", "drive"]) if kind != "title" else "four"
-    bass_kind = rng.choice(["saw", "square"])
     bass_style = rng.choice(["octave16", "pulse16", "gallop"]) if kind != "title" else "pulse8"
-    lead_kind = rng.choice(["saw", "square", "fm", "brass"])
-    arp_kind = rng.choice(["saw", "square"])
-    arp_pattern = rng.choice(["up", "updown", "random", "pairs"])
     use_bell = rng.f() < 0.4
     sev = rng.f() < 0.5
     # hand-picked identities per track (see main)
@@ -491,11 +548,7 @@ def compose(name, seed, kind="combat", over=None):
     root = over.get("root", root)
     prog = over.get("prog", prog)
     drum_style = over.get("drums", drum_style)
-    bass_kind = over.get("bass_kind", bass_kind)
     bass_style = over.get("bass", bass_style)
-    lead_kind = over.get("lead", lead_kind)
-    arp_kind = over.get("arp_kind", arp_kind)
-    arp_pattern = over.get("arp", arp_pattern)
     use_bell = over.get("bell", use_bell)
     scale = SCALES[scale_name]
 
@@ -505,7 +558,14 @@ def compose(name, seed, kind="combat", over=None):
     total_bars = sum(b for _, b in sections)
     length = total_bars * bar
     n = int(SR * (length + 4.0))
-    drums, bass, pad, lead, arp, fxb = (Bus(n) for _ in range(6))
+    drums, bass, pad, lead, arp, fxb, gtr = (Bus(n) for _ in range(7))
+    # instrument picks: guitars on most tracks, a reese or FM growl under them
+    bass_synth = over.get("bass_synth", rng.choice(["reese", "growl"]))
+    lead_inst = over.get("lead_inst", rng.choice(["gtr", "gtr", "screech"]))
+    wobble = bpm / 60.0 * 2  # eighth-note wobble
+
+    def bass_note(f, dur):
+        return inst_reese(f, dur) if bass_synth == "reese" else inst_growl(f, dur, wobble)
     kick_env = np.ones(n)
 
     chord_cache = [chord_notes(root + 12, scale, d, sev) for d in prog]
@@ -567,16 +627,20 @@ def compose(name, seed, kind="combat", over=None):
                             drums.add(d_tom(rng, [196, 165, 147, 123][k // 2]), tb + 2 * beat + k * s16, -0.5 + k * 0.14, 0.7)
                 if b == 0 and sec in ("drop", "lead", "groove"):
                     drums.add(d_crash(rng), tb, 0.0, 0.8)
+                if sec != "build":
+                    for k in range(16):
+                        if k % 4 and rng.f() < 0.16:
+                            drums.add(glitch_blip(rng.f(300, 2400), rng), tb + k * s16, rng.f(-0.8, 0.8), 0.45)
             elif sec == "dream" and b % 2 == 0:
                 drums.add(d_snare(rng, True), tb + 2 * beat, 0.0, 0.35)
                 drums.add(d_kick(rng, 0.6), tb, 0.0, 0.5)
             # ---- bass
             if sec not in ("intro",):
                 if sec in ("break", "dream") or bass_style == "long":
-                    bass.add(inst_bass(midi(croot), bar * 0.95, bass_kind), tb, 0.0, 0.6)
+                    bass.add(bass_note(midi(croot), bar * 0.95), tb, 0.0, 0.6)
                 elif sec == "build":
                     for k in range(16):
-                        bass.add(inst_bass(midi(croot), s16 * 0.8, bass_kind), tb + k * s16, 0.0, 0.5 + 0.3 * k / 16)
+                        bass.add(bass_note(midi(croot), s16 * 0.8), tb + k * s16, 0.0, 0.5 + 0.3 * k / 16)
                 else:
                     for k in range(16):
                         tk = tb + k * s16
@@ -597,32 +661,29 @@ def compose(name, seed, kind="combat", over=None):
                         elif bass_style == "pulse16" and k in (7, 15) and rng.f() < 0.4:
                             m += 12
                         dur = s16 * (1.6 if bass_style == "pulse8" else (0.7 if bass_style == "pulse16" else 0.85))
-                        bass.add(inst_bass(midi(m), dur, bass_kind), tk, 0.0, 0.75)
-            # ---- pad
-            v = voice(ch, 55, 74)
+                        bass.add(bass_note(midi(m), dur), tk, 0.0, 0.75)
+                        # rhythm guitars chug along with the bass, an octave up
+                        if kind != "title" or sec == "lead":
+                            palm = not (k == 0 or (k == 8 and rng.f() < 0.5))
+                            gdur = s16 * (0.8 if palm else 3.5)
+                            gtr.add(inst_chug(midi(croot + 12), gdur, rng, palm), tk, -0.6, 0.55)
+                            gtr.add(inst_chug(midi(croot + 12), gdur, rng, palm), tk + 0.012, 0.6, 0.55)
+            # ---- pad: only a little atmosphere in the calm sections now
+            v = voice(ch, 55, 74) if sec in ("intro", "break", "build", "dream") else []
             bright = 1400 if sec in ("intro", "break") else (3200 if full else 2200)
             if sec == "build":
                 bright = 1200 + 3000 * (b + 1) / nb
             for m in v:
                 l, r = inst_supersaw(midi(m), bar, rng, bright)
-                pad.add_st(l, r, tb, 0.33 if sec != "dream" else 0.45)
-            # ---- arp
-            if sec in ("intro", "groove", "lead2", "drop", "build", "dream", "lead"):
+                pad.add_st(l, r, tb, 0.2)
+            # ---- glitch stabs: crushed blips on chord tones, scattered on 16ths
+            if sec in ("groove", "lead2", "drop", "build", "lead", "dream"):
                 tones = voice(ch, 62, 76) + [x + 12 for x in voice(ch, 62, 76)]
-                seq = []
-                if arp_pattern == "up":
-                    seq = tones
-                elif arp_pattern == "updown":
-                    seq = tones + tones[-2:0:-1]
-                elif arp_pattern == "pairs":
-                    seq = [tones[i // 2] if i % 2 == 0 else tones[-1 - i // 2] for i in range(len(tones) * 2)]
-                else:
-                    seq = [rng.choice(tones) for _ in range(16)]
-                cutoff = 2400 if sec == "intro" else (7000 if sec == "drop" else 4800)
+                density = 0.45 if sec == "drop" else 0.28
                 for k in range(16):
-                    m = seq[k % len(seq)]
-                    arp.add(inst_pluck(midi(m), s16 * 0.9, arp_kind, cutoff), tb + k * s16, 0.25 if k % 2 else -0.25, 0.32)
-            if use_bell and sec in ("break", "dream", "intro") and b % 2 == 0:
+                    if rng.f() < density:
+                        arp.add(glitch_blip(midi(rng.choice(tones)), rng), tb + k * s16, rng.f(-0.7, 0.7), 0.5)
+            if use_bell and sec in ("break", "dream") and b % 2 == 0:
                 for k, m in enumerate(voice(ch, 72, 88)):
                     arp.add(inst_bell(midi(m), beat), tb + k * beat * 0.5, -0.3 + 0.3 * k, 0.25)
         # ---- lead melodies
@@ -639,32 +700,33 @@ def compose(name, seed, kind="combat", over=None):
                     m += 12
                 tn = t0 + step * s16
                 g = 0.42 if sec != "break" else 0.3
-                lk = lead_kind if sec != "dream" else "fm"
-                lead.add(inst_lead(midi(m), ln * s16 * 0.92, lk, midi(prev) if (prev and lk in ("saw", "brass") and rng.f() < 0.3) else None), tn, 0.0, g)
+                if sec == "dream":
+                    lead.add(inst_lead(midi(m), ln * s16 * 0.92, "fm"), tn, 0.0, g)
+                elif lead_inst == "gtr":
+                    lead.add(inst_gtr_lead(midi(m), ln * s16 * 0.92, rng), tn, 0.0, g)
+                else:
+                    lead.add(inst_screech(midi(m), ln * s16 * 0.92, rng), tn, 0.0, g)
                 prev = m
         bar_i += nb
         t0 += nb * bar
 
     # ---- mixdown
-    drive(bass, 4.5 if kind != "title" else 2.5, 4200)
-    drive(lead, 3.0 if kind != "title" else 1.8, 5200)
-    drive(drums, 3.0, 6500, 0.45)
-    for ch in ("L", "R"):  # a little bitcrushed grit on the arps
-        x = getattr(arp, ch)
-        setattr(arp, ch, x * 0.75 + crush(x, 7, 3) * 0.25)
-    delay(lead, beat * 0.75, 0.38, 4)
-    delay(arp, beat * 0.5, 0.33, 3)
+    drive(bass, 2.5, 3800)
+    drive(drums, 4.5, 7000, 0.6)
+    delay(lead, beat * 0.75, 0.25, 3)
+    delay(arp, beat * 0.5, 0.3, 2)
     ir_big = reverb_ir(2.6, seed + 1)
     ir_small = reverb_ir(1.1, seed + 2, 8000)
     apply_reverb(pad, ir_big, 0.5)
-    apply_reverb(lead, ir_big, 0.45)
-    apply_reverb(arp, ir_big, 0.35)
-    apply_reverb(drums, ir_small, 0.18)
-    for bus in (bass, pad, arp):
+    apply_reverb(lead, ir_small, 0.3)
+    apply_reverb(arp, ir_small, 0.25)
+    apply_reverb(drums, ir_small, 0.15)
+    apply_reverb(gtr, ir_small, 0.12)
+    for bus in (bass, pad, arp, gtr):
         bus.L *= kick_env
         bus.R *= kick_env
-    L = drums.L * 0.95 + bass.L * 0.85 + pad.L * 0.7 + lead.L * 0.75 + arp.L * 0.6 + fxb.L * 0.5
-    R = drums.R * 0.95 + bass.R * 0.85 + pad.R * 0.7 + lead.R * 0.75 + arp.R * 0.6 + fxb.R * 0.5
+    L = drums.L * 1.0 + bass.L * 0.8 + gtr.L * 0.8 + pad.L * 0.6 + lead.L * 0.75 + arp.L * 0.55 + fxb.L * 0.5
+    R = drums.R * 1.0 + bass.R * 0.8 + gtr.R * 0.8 + pad.R * 0.6 + lead.R * 0.75 + arp.R * 0.55 + fxb.R * 0.5
     L = hp(L, 28)
     R = hp(R, 28)
     glitch_pass(L, R, rng, sections, bar, beat, kind)
@@ -683,7 +745,7 @@ def compose(name, seed, kind="combat", over=None):
     peak = max(np.max(np.abs(L)), np.max(np.abs(R)), 1e-6)
     L = np.tanh(L / peak * 1.25) * 0.92
     R = np.tanh(R / peak * 1.25) * 0.92
-    return np.stack([L, R], axis=1), dict(name=name, bpm=bpm, scale=scale_name, root=root, prog=prog, drums=drum_style, bass=bass_style, lead=lead_kind, seconds=round(len(L) / SR, 1))
+    return np.stack([L, R], axis=1), dict(name=name, bpm=bpm, scale=scale_name, root=root, prog=prog, drums=drum_style, bass=bass_style, bass_synth=bass_synth, lead=lead_inst, seconds=round(len(L) / SR, 1))
 
 
 # Every track is mastered to the same loudness so the mix (spec §10.1, measured
@@ -712,16 +774,16 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     # Each track gets its own key, tempo, progression, groove and lead voice.
     jobs = [
-        ("combat_0", 1001, "combat", dict(bpm=148, scale="minor", root=45, prog=[0, 5, 2, 6], drums="four", bass="octave16", bass_kind="saw", lead="saw", arp="up", arp_kind="saw", bell=False)),
-        ("combat_1", 1037, "combat", dict(bpm=140, scale="minor", root=54 - 12, prog=[0, 6, 5, 6], drums="drive", bass="gallop", bass_kind="square", lead="fm", arp="updown", arp_kind="square", bell=True)),
-        ("combat_2", 1074, "combat", dict(bpm=150, scale="minor", root=48, prog=[0, 3, 5, 4], drums="four", bass="pulse16", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw", bell=False)),
-        ("combat_3", 1111, "combat", dict(bpm=144, scale="dorian", root=52, prog=[5, 6, 0, 0], drums="four", bass="octave16", bass_kind="square", lead="square", arp="random", arp_kind="square", bell=True)),
-        ("combat_4", 1148, "combat", dict(bpm=152, scale="minor", root=50, prog=[0, 5, 3, 4], drums="drive", bass="gallop", bass_kind="saw", lead="saw", arp="updown", arp_kind="saw", bell=False)),
-        ("combat_5", 1185, "combat", dict(bpm=146, scale="dorian", root=55 - 12, prog=[0, 2, 6, 5], drums="four", bass="pulse16", bass_kind="saw", lead="fm", arp="up", arp_kind="square", bell=True)),
-        ("boss_0", 5000, "boss", dict(bpm=160, scale="phrygian", root=52, prog=[0, 1, 0, 4], drums="four", bass="octave16", bass_kind="saw", lead="brass", arp="random", arp_kind="square")),
-        ("boss_1", 5053, "boss", dict(bpm=156, scale="harmonic", root=48, prog=[0, 0, 5, 6], drums="four", bass="octave16", bass_kind="square", lead="saw", arp="updown", arp_kind="saw")),
-        ("boss_2", 5106, "boss", dict(bpm=165, scale="harmonic", root=45, prog=[0, 5, 1, 4], drums="drive", bass="pulse16", bass_kind="saw", lead="brass", arp="pairs", arp_kind="saw")),
-        ("title", 777, "title", dict()),
+        ("combat_0", 1001, "combat", dict(bpm=148, scale="minor", root=45, prog=[0, 5, 2, 6], drums="four", bass="octave16", bell=False, bass_synth="reese", lead_inst="gtr")),
+        ("combat_1", 1037, "combat", dict(bpm=140, scale="minor", root=54 - 12, prog=[0, 6, 5, 6], drums="drive", bass="gallop", bell=True, bass_synth="growl", lead_inst="gtr")),
+        ("combat_2", 1074, "combat", dict(bpm=150, scale="minor", root=48, prog=[0, 3, 5, 4], drums="four", bass="pulse16", bell=False, bass_synth="reese", lead_inst="screech")),
+        ("combat_3", 1111, "combat", dict(bpm=144, scale="dorian", root=52, prog=[5, 6, 0, 0], drums="four", bass="octave16", bell=True, bass_synth="growl", lead_inst="gtr")),
+        ("combat_4", 1148, "combat", dict(bpm=152, scale="minor", root=50, prog=[0, 5, 3, 4], drums="drive", bass="gallop", bell=False, bass_synth="growl", lead_inst="screech")),
+        ("combat_5", 1185, "combat", dict(bpm=146, scale="dorian", root=55 - 12, prog=[0, 2, 6, 5], drums="four", bass="pulse16", bell=True, bass_synth="reese", lead_inst="gtr")),
+        ("boss_0", 5000, "boss", dict(bpm=160, scale="phrygian", root=52, prog=[0, 1, 0, 4], drums="four", bass="octave16", bass_synth="growl", lead_inst="screech")),
+        ("boss_1", 5053, "boss", dict(bpm=156, scale="harmonic", root=48, prog=[0, 0, 5, 6], drums="four", bass="octave16", bass_synth="reese", lead_inst="gtr")),
+        ("boss_2", 5106, "boss", dict(bpm=165, scale="harmonic", root=45, prog=[0, 5, 1, 4], drums="drive", bass="pulse16", bass_synth="growl", lead_inst="gtr")),
+        ("title", 777, "title", dict(bass_synth="reese", lead_inst="gtr")),
     ]
     only = sys.argv[1:]
     for name, seed, kind, over in jobs:
