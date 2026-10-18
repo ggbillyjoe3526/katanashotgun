@@ -1062,8 +1062,8 @@ the holographic cut-in (§9.8).
   - 35% clear, 45% light rain, 20% heavy rain.
   - The RAIJIN'S STORM mutator adds heavy rain, lightning flashes and
     thunder.
-  - Rain uses a particle field plus an ambient loop. **The loop is too loud:
-    fix it, see §10.3.**
+  - Rain uses a particle field plus two quiet ambient loops (light, and a
+    heavy layer added in storms) far back in the mix; see §10.3.
 - **The map API** (keep it): maps extend an `Arena` base class.
   - Helpers: `_solid`, `_platform` (registers floor height), `_ramp`,
     `_neon`, `_neon_box_edges`, `_light`, `_halo`, `floor_height_at`, plus
@@ -1515,8 +1515,10 @@ bus's volume.
 | Ambience | -16 dB | high-pass 70 Hz, low-pass 6 kHz, compressor sidechained from Music (threshold -16 dB, 3:1) so ambience ducks under the music | rain beds, thunder |
 | UI | -11 dB | none | menus, typing, tally and combo juice (`Sfx.UI_CUES`) |
 
-Big hits (execution, gore_big, explosion, slam, boss_intro) pull the music
-down 2 to 3 dB for about half a second (`Sfx.IMPACT_CUES`).
+Big hits (glory-kill execution, explosion, loud slams, boss entrance) pull
+the music down 2 to 3 dB for about half a second (`Sfx.IMPACT_CUES`). Only a
+cue played at -3 dB or louder ducks, and the duck can't retrigger for 1.5 s,
+so a horde never keeps the music pinned down.
 
 Measured on a 60 s autoplay run (seed 548A-8455, waves 1 to 2, Movie Maker,
 `--record-mix`), integrated loudness: Music -19 LUFS, SFX -21 to -22, UI -25,
@@ -1830,6 +1832,8 @@ seed | click: new seed).
     run (debug only; the seed still draws its palette number).
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
+  - `--record-mix=DIR`: records each audio bus to `DIR/<bus>.wav` on quit, to
+    measure the mix (use with `--write-movie` so audio follows game time).
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1873,7 +1877,7 @@ seed | click: new seed).
    text is clean while held, numbers never scramble, there are no
    overlapping duplicates, and tags are decoration only.
 2. **Audio mix (§10.3).** The rain loop is far too loud; set up buses; music
-   first.
+   first. (Done: five buses, music on top, quiet layered rain; see §10.1.)
 3. **Palettes (§9.2).** Too purple; make every scene multi-colour.
    (Reworked into a six-accent multi-colour base; see §9.2.)
 4. **Pooling and performance (§14).**

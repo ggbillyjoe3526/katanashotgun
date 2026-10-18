@@ -4,14 +4,16 @@ extends Node
 ## by stem (for example with ffmpeg's ebur128 filter). Use it with Movie Maker
 ## (`--write-movie`) so the audio follows game time, or on a real audio device.
 
+const FLAG := "--record-mix="
+
 var _dir := ""
 var _recorders := {}
 
 
 func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
-		if a.begins_with("--record-mix="):
-			_dir = a.substr(13)
+		if a.begins_with(FLAG):
+			_dir = a.substr(FLAG.length())
 	if _dir == "":
 		push_warning("--record-mix needs a folder: --record-mix=/path/to/dir")
 		return

@@ -13,10 +13,21 @@ func test_bus_layout_has_the_five_buses() -> void:
 		assert_eq(AudioServer.get_bus_send(i), &"Master", "%s should feed Master" % b)
 
 
+## The authored levels in the layout, not the live ones (the settings
+## sliders move those).
+func _authored_db() -> Dictionary:
+	var layout: AudioBusLayout = load("res://default_bus_layout.tres")
+	var out := {}
+	for i in range(1, BUSES.size()):
+		out[StringName(layout.get("bus/%d/name" % i))] = float(layout.get("bus/%d/volume_db" % i))
+	return out
+
+
 func test_music_is_the_loudest_bus() -> void:
-	var music := AudioServer.get_bus_volume_db(AudioServer.get_bus_index(&"Music"))
+	var db := _authored_db()
 	for b in [&"SFX", &"Ambience", &"UI"]:
-		assert_gt(music, AudioServer.get_bus_volume_db(AudioServer.get_bus_index(b)), "Music should sit above %s" % b)
+		assert_gt(db[&"Music"], db[b], "Music should sit above %s" % b)
+	assert_gt(db[&"SFX"], db[&"Ambience"] - 0.01, "combat should not sit under the ambience")
 
 
 func test_master_has_a_limiter() -> void:
@@ -55,17 +66,26 @@ func test_every_routed_cue_exists() -> void:
 
 
 func test_rain_levels_stay_quiet() -> void:
-	# per-player levels on top of the Ambience bus; heavy rain adds a layer
+	# the rain player plus its bus stays at least 12 dB under the music bus
+	# (the beds are about 18 LU quieter than the music files before that)
+	var db := _authored_db()
 	for lvl in 3:
-		assert_true(Sfx.RAIN_DB[lvl] <= 0.0 and Sfx.RAIN_HEAVY_DB[lvl] <= 0.0)
+		assert_lt(db[&"Ambience"] + Sfx.RAIN_DB[lvl], db[&"Music"] - 12.0)
+		assert_lt(db[&"Ambience"] + Sfx.RAIN_HEAVY_DB[lvl], db[&"Music"] - 12.0)
 	assert_lt(Sfx.RAIN_HEAVY_DB[1], -79.0, "light rain has no heavy layer")
 	assert_gt(Sfx.RAIN_HEAVY_DB[2], -79.0, "heavy rain adds the heavy layer")
 
 
 func test_big_hits_duck_the_music_briefly() -> void:
 	Sfx._impact = 0.0
-	Sfx._on_played("execution")
-	assert_lt(Sfx._impact, 0.0)
-	Sfx._on_played("shotgun")
-	assert_eq(Sfx._impact, Sfx.IMPACT_CUES["execution"], "ordinary hits leave the duck alone")
+	Sfx._impact_ready_at = 0.0
+	Sfx._on_played("slam", -8.0)
+	assert_eq(Sfx._impact, 0.0, "a quiet, far slam leaves the music alone")
+	Sfx._on_played("execution", 2.0)
+	assert_eq(Sfx._impact, Sfx.IMPACT_CUES["execution"])
 	Sfx._impact = 0.0
+	Sfx._on_played("explosion", 0.0)
+	assert_eq(Sfx._impact, 0.0, "the duck can't retrigger straight away")
+	Sfx._on_played("shotgun", 0.0)
+	assert_eq(Sfx._impact, 0.0, "ordinary hits never duck")
+	Sfx._impact_ready_at = 0.0

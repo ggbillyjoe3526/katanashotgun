@@ -27,14 +27,21 @@ const UI_CUES := [
 	"ui_click", "ui_hover", "type", "tick", "stamp", "chime", "cash", "count", "go", "mult", "deal", "fanfare",
 ]
 const AMBIENCE_CUES := ["thunder"]
-## Big hits that briefly pull the music down so they land (spec §10.1).
-const IMPACT_CUES := {"execution": -3.0, "gore_big": -3.0, "explosion": -2.5, "slam": -2.0, "boss_intro": -3.0}
+## Big hits that briefly pull the music down so they land (spec §10.1). Only
+## loud plays count, and the duck can't retrigger straight away, so a horde
+## never keeps the music pinned down.
+const IMPACT_CUES := {"execution": -3.0, "explosion": -2.5, "slam": -2.0, "boss_intro": -3.0}
+const IMPACT_MIN_VOL_DB := -3.0 # quieter plays of an impact cue don't duck
+const IMPACT_COOLDOWN := 1.5 # real seconds before the duck can retrigger
 const IMPACT_RECOVER_DB := 6.0 # dB per real second the music climbs back
 ## Rain (spec §10.3): two looping layers, far back and ducked under the music
 ## by the Ambience bus. Each slowly swells and fades so it comes and goes.
 const RAIN_DB := [-80.0, -2.0, -3.0] # light layer at none / light / heavy
 const RAIN_HEAVY_DB := [-80.0, -80.0, -3.0] # heavy layer
 const RAIN_SWELL_DB := 6.0 # how far a layer drifts below its level
+const RAIN_SWELL_EVERY := Vector2(5.0, 12.0) # seconds between new swell depths
+const RAIN_SWELL_SPEED := 1.2 # dB per second while drifting
+const RAIN_FADE_SPEED := 20.0 # dB per second when rain starts or stops
 const COMBAT_TRACKS := ["combat_0", "combat_1", "combat_2", "combat_3", "combat_4", "combat_5"]
 const BOSS_TRACKS := {"ninja": "boss_0", "mech": "boss_1", "oni": "boss_2"}
 const MUSIC_DB := -6.0
@@ -54,6 +61,7 @@ var _swell := [0.0, 0.0] # current dB below the level, per rain layer
 var _swell_target := [0.0, 0.0]
 var _swell_t := [0.0, 0.0]
 var _impact := 0.0 # dB the music is pulled down after a big hit
+var _impact_ready_at := 0.0 # _clock time the duck may retrigger
 var _clock := 0.0 # real seconds since start (throttling; never the wall clock)
 ## Presentation-only randomness (pitch, rain swells): its own stream so it can
 ## never shift a seeded run.
@@ -129,9 +137,10 @@ func _throttled(name: String, ms: int) -> bool:
 	return false
 
 
-func _on_played(name: String) -> void:
-	if IMPACT_CUES.has(name):
+func _on_played(name: String, vol_db: float) -> void:
+	if IMPACT_CUES.has(name) and vol_db >= IMPACT_MIN_VOL_DB and _clock >= _impact_ready_at:
 		_impact = minf(_impact, IMPACT_CUES[name])
+		_impact_ready_at = _clock + IMPACT_COOLDOWN
 
 
 func play(name: String, vol_db := 0.0, pitch := 1.0, pitch_var := 0.06) -> void:
@@ -144,7 +153,7 @@ func play(name: String, vol_db := 0.0, pitch := 1.0, pitch_var := 0.06) -> void:
 	p.volume_db = vol_db
 	p.pitch_scale = pitch * _rng.randf_range(1.0 - pitch_var, 1.0 + pitch_var)
 	p.play()
-	_on_played(name)
+	_on_played(name, vol_db)
 
 
 func play_at(name: String, pos: Vector3, vol_db := 0.0, pitch := 1.0, pitch_var := 0.08) -> void:
@@ -158,7 +167,7 @@ func play_at(name: String, pos: Vector3, vol_db := 0.0, pitch := 1.0, pitch_var 
 	p.volume_db = vol_db
 	p.pitch_scale = pitch * _rng.randf_range(1.0 - pitch_var, 1.0 + pitch_var)
 	p.play()
-	_on_played(name)
+	_on_played(name, vol_db)
 
 
 # ---------------------------------------------------------------- weather
@@ -175,11 +184,11 @@ func _update_bed(p: AudioStreamPlayer, layer: int, level_db: float, dt: float) -
 	# drift towards a new swell depth every few seconds so the rain ebbs
 	_swell_t[layer] -= dt
 	if _swell_t[layer] <= 0.0:
-		_swell_t[layer] = _rng.randf_range(5.0, 12.0)
+		_swell_t[layer] = _rng.randf_range(RAIN_SWELL_EVERY.x, RAIN_SWELL_EVERY.y)
 		_swell_target[layer] = -_rng.randf() * RAIN_SWELL_DB
-	_swell[layer] = move_toward(_swell[layer], _swell_target[layer], 1.2 * dt)
+	_swell[layer] = move_toward(_swell[layer], _swell_target[layer], RAIN_SWELL_SPEED * dt)
 	var want: float = level_db + _swell[layer] if level_db > -79.0 else -80.0
-	p.volume_db = move_toward(p.volume_db, want, 20.0 * dt)
+	p.volume_db = move_toward(p.volume_db, want, RAIN_FADE_SPEED * dt)
 	if want <= -79.0 and p.volume_db <= -79.0 and p.playing:
 		p.stop()
 

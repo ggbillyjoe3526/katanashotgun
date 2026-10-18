@@ -5,7 +5,7 @@
 - The rain is no longer a wall of white noise. It is soft patter, drops and
   drips that come and go, tucked well under the music, and heavy rain adds
   weight instead of hiss.
-- Glory kills, big explosions and boss entrances briefly pull the music back
+- Glory kills, big explosions, boss slams and boss entrances briefly pull the music back
   so they land.
 - Music, effects, ambience and menu sounds each have their own channel, ready
   for the volume sliders in the settings menu.
