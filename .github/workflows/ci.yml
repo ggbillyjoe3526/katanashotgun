@@ -2,8 +2,8 @@ name: Checks
 
 # Every pull request and every push to main: import the project, let the
 # autoplay bot play, run the unit tests, check the licence notices are current,
-# lint the scripts and check the changelog notes in changelog.d/. Fails on any
-# script error or failed test.
+# lint the scripts, and check the changelog notes in changelog.d/ and the
+# player wiki in docs/wiki/. Fails on any script error or failed test.
 on:
   pull_request:
   push:
@@ -90,3 +90,11 @@ jobs:
       - name: Changelog notes (changelog.d/README.md)
         if: success() || failure()
         run: tools/changelog.sh check
+
+      - name: Player wiki (docs/wiki/README.md)
+        if: success() || failure()
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          python3 tools/wiki.py check ${BASE:+--base "origin/$BASE"}
+          python3 tools/wiki.py build build/wiki

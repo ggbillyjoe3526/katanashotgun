@@ -3,7 +3,9 @@
 Arcade first-person cyberpunk horde shooter: a katana in your left hand, an
 arc shotgun (a "shotgun taser") in your right. Endless seeded runs, a boss
 every third wave, glory kills, and a local high-score table. Design notes are
-in `DESIGN.md`; the full build spec (the source of truth) is `spec.md`. The game
+in `DESIGN.md`; the full build spec (the source of truth) is `spec.md`. The
+player guide is the [wiki](https://github.com/ggbillyjoe3526/katanashotgun/wiki)
+(source in `docs/wiki/`). The game
 started from the v0.3 prototype and is a desktop game (Windows first, then Mac
 and Linux).
 
@@ -90,6 +92,8 @@ installer/                  Windows installer script (Inno Setup) and icon
 tools/                      smoke and unit test runners, notices, release-notes helper,
                             icon and audio generators
 test/unit/                  unit tests (Gut); never exported
+docs/wiki/                  the player wiki, one page per file (published on merge)
+docs/boss-roster.md         how every boss fights (read before changing a boss)
 addons/gut/                 Gut test framework (MIT); never exported
 THIRD_PARTY_NOTICES.txt     licences for the engine and fonts, shipped with every download
 gdlintrc                    gdlint settings
@@ -116,6 +120,9 @@ gdlintrc                    gdlint settings
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
   - `tools/changelog.sh check`: the changelog notes in `changelog.d/` (one new
     file per change instead of editing `CHANGELOG.md`; see its `README.md`).
+  - `python3 tools/wiki.py check`: the player wiki in `docs/wiki/` (links,
+    sidebar, every card, mutator, boss and reward mentioned; see its
+    `README.md`). Merging to `main` publishes it to the GitHub wiki.
   Run them locally the same way (set `GODOT=` to your Godot binary if `godot`
   isn't on PATH).
 - **Licence notices:** after adding a font or other third-party asset, or

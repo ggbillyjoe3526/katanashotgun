@@ -1,0 +1,1 @@
+KATANA / SHOTGUN · [Download](https://github.com/ggbillyjoe3526/katanashotgun/releases) · [Patch Notes](Patch-Notes) · [Roadmap](Roadmap) · This wiki is kept in step with the game: every update that changes what you see in play updates these pages too.

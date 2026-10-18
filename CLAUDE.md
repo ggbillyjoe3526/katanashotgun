@@ -34,6 +34,13 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
 - **Bosses:** `docs/boss-roster.md` records how every boss fights. Read it
   before adding or changing a boss (its new-boss checklist), and update it in
   the same PR as any boss change.
+- **Player wiki:** `docs/wiki/` (one page per file) is published to the
+  GitHub wiki on every merge (`.github/workflows/wiki.yml`). Any PR a player
+  would notice (a card, mutator, boss, enemy, control, setting, score rule,
+  reward, map) updates its wiki page in the same PR, live only once merged:
+  features in open PRs are "Coming soon". Patch Notes are generated from the
+  changelog; update `Roadmap.md` when plans change. CI runs
+  `python3 tools/wiki.py check` (`docs/wiki/README.md`).
 - **Reading big files:** a hook stops whole-file reads over 40 KB; grep, then
   read with offset and limit.
 - **Tests and lint:** `tools/unit_tests.sh` (Gut, tests in `test/unit/`) and

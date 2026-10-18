@@ -5,5 +5,5 @@
   just like Doom.
 - Slashing a staggered enemy just cuts it (hard), so you choose between a
   quick kill and the full finisher with its health and cells.
-- F can be pressed a moment early and still counts. The key will be
-  rebindable once the settings menu exists.
+- F can be pressed a moment early and still counts, and it can be rebound
+  in Settings.
