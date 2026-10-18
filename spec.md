@@ -1749,6 +1749,15 @@ seed | click: new seed).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--quality=low|medium|high`: the effect-count preset (§14).
+  - `--perf`: shows the perf overlay, logs draw calls, live nodes and node
+    churn every 2 s, and prints a summary at exit.
+- **Perf overlay:** F3 in any build (fps, frame time, draw calls, nodes,
+  new nodes per second, quality preset).
+- **Perf probe:** `tools/perf_bench.sh headless|render [wave] [frames]
+  [quality]` runs the autoplay bot on a fixed seed with `--perf`. Draw calls
+  and node counts are the same on any machine; frame times only mean
+  something on real hardware.
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1767,8 +1776,7 @@ seed | click: new seed).
     (`build/linux/KatanaShotgun.x86_64`) and `"macOS"`
     (`build/macos/KatanaShotgun.zip`).
   - There is no Web preset; the game is desktop only.
-- Add: a perf overlay; automated perf captures on a fixed seed;
-  save-system tests (corrupt file, version migration, crash mid-write).
+- Add: save-system tests (corrupt file, version migration, crash mid-write).
 - CI and releases: see PART S (S4). The release workflow runs the smoke test
   before exporting.
 

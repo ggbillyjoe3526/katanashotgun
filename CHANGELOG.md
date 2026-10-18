@@ -6,6 +6,17 @@ must look like `## v0.3.1 (2026-10-18)`.
 
 ## Unreleased
 
+### Smoother fights
+- Enemies, bolts, blood, gibs, damage numbers, lightning arcs, smoke, health
+  orbs and kill tags are now reused instead of being built and thrown away
+  for every hit and kill, so big fights don't stutter.
+- Every combat shader is prepared while the game loads, so the first
+  shotgun blast, kill or explosion no longer causes a hitch.
+- Quality presets (LOW / MEDIUM / HIGH) trim how much blood, gibs, smoke and
+  sparks pile up on screen. The look stays the same; HIGH keeps the full show.
+- Press F3 to show a performance overlay: frame rate, frame time and draw
+  calls.
+
 ### Text you can actually read
 - Every number and word on screen is bigger and sits on a dark plate or
   outline, so it reads over any part of the city.

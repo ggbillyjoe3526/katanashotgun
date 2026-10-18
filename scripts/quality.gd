@@ -14,17 +14,14 @@ const CAPS := {
 	"high": {
 		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
 		"numbers": 40, "arcs": 64, "mists": 40, "smoke": 30, "flashes": 24,
-		"blood_screen": 10,
 	},
 	"medium": {
 		"drops": 1200, "decals": 360, "gibs": 80, "chunks_k": 0.75, "drops_k": 0.75,
 		"numbers": 28, "arcs": 44, "mists": 28, "smoke": 20, "flashes": 16,
-		"blood_screen": 8,
 	},
 	"low": {
 		"drops": 700, "decals": 220, "gibs": 50, "chunks_k": 0.5, "drops_k": 0.5,
 		"numbers": 18, "arcs": 28, "mists": 16, "smoke": 12, "flashes": 10,
-		"blood_screen": 6,
 	},
 }
 

@@ -3,6 +3,8 @@ extends Node3D
 ## Slow plasma bolts fired by gunners and the boss. Slashing one with the
 ## katana deflects it back as a lethal, staggering shot.
 ## Also used for the player's Crimson Wave (kind = "wave", pierces enemies).
+## Bolts come from the WaveDirector's pool (`fire_bolt`): a spent bolt hides
+## and goes back instead of being freed.
 
 var vel := Vector3.ZERO
 var damage := 12.0
@@ -16,6 +18,10 @@ var _halo_mat: ShaderMaterial
 var _core_mat: ShaderMaterial
 var _hit := {}
 var _trail_t := 0.0
+## The pool that takes this bolt back when it is spent (null: freed instead).
+var pool: WaveDirector = null
+## Built ahead of time for a pool: hidden at once.
+var prewarm := false
 
 
 func setup(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "bolt") -> void:
@@ -27,6 +33,53 @@ func setup(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "
 	if kind == "wave":
 		radius = 1.4
 		life = 0.55
+
+
+## Back to a fresh bolt of the same kind (call `setup` and `activate` after).
+func reuse() -> void:
+	vel = Vector3.ZERO
+	damage = 12.0
+	hostile = true
+	life = 4.0
+	radius = 0.35
+	_hit.clear()
+	_trail_t = 0.0
+	transform = Transform3D.IDENTITY
+	match kind:
+		"shuriken":
+			var col: Color = Game.palette.get("neon_a", Color(1, 0.2, 0.5))
+			_core_mat.set_shader_parameter("color", Color(col.r, col.g, col.b, 1.0))
+			_halo_mat.set_shader_parameter("color", Color(col.r, col.g, col.b, 0.7))
+		"bolt":
+			_core_mat.set_shader_parameter("albedo_color", Color(1.0, 0.55, 0.2))
+			_halo_mat.set_shader_parameter("color", Color(1.0, 0.4, 0.1, 0.9))
+	if _core:
+		_core.scale = Vector3.ONE
+		_core.rotation = Vector3.ZERO
+	if _halo:
+		_halo.scale = Vector3.ONE
+
+
+## Starts flying (runs on every shot, pooled or new).
+func activate() -> void:
+	visible = true
+	process_mode = Node.PROCESS_MODE_INHERIT
+	if hostile:
+		add_to_group("enemy_projectiles")
+	if kind == "wave":
+		look_at_from_position(position, position + vel, Vector3.UP)
+
+
+## Spent: back to the pool, or freed if it has none.
+func _finish() -> void:
+	if pool == null:
+		queue_free()
+		return
+	if is_in_group("enemy_projectiles"):
+		remove_from_group("enemy_projectiles")
+	visible = false
+	process_mode = Node.PROCESS_MODE_DISABLED
+	pool.recycle_bolt(self)
 
 
 func _ready() -> void:
@@ -58,8 +111,11 @@ func _ready() -> void:
 		_halo_mat = Psx.fx(Color(1.0, 0.4, 0.1, 0.9), TexGen.get_tex("glow"), true, true, false, 1.4)
 		_halo = Psx.quad(Vector2(1.3, 1.3), _halo_mat)
 		add_child(_halo)
-	if hostile:
-		add_to_group("enemy_projectiles")
+	if prewarm:
+		visible = false
+		process_mode = Node.PROCESS_MODE_DISABLED
+		return
+	activate()
 
 
 func _build_wave() -> void:
@@ -69,7 +125,6 @@ func _build_wave() -> void:
 	mi.material_override.set_shader_parameter("use_vertex_color", true)
 	add_child(mi)
 	_core = mi
-	look_at_from_position(position, position + vel, Vector3.UP)
 
 
 func deflect(dir: Vector3) -> void:
@@ -108,7 +163,7 @@ func deflect(dir: Vector3) -> void:
 func _physics_process(delta: float) -> void:
 	life -= delta
 	if life <= 0.0:
-		queue_free()
+		_finish()
 		return
 	var from := global_position
 	var to := from + vel * delta
@@ -118,7 +173,7 @@ func _physics_process(delta: float) -> void:
 	if not res.is_empty() and kind != "wave":
 		Game.gore.sparks(res.position, res.normal, 10, Color(1.8, 0.8, 0.3) if hostile else Color(0.6, 1.8, 2.0))
 		Sfx.play_at("bolt_hit", res.position, -6.0)
-		queue_free()
+		_finish()
 		return
 	global_position = to
 	if kind == "wave":
@@ -140,7 +195,7 @@ func _physics_process(delta: float) -> void:
 			if _seg_dist(from, to, c) < radius + 0.5:
 				p.take_damage(damage, from)
 				Game.gore.sparks(to, -vel.normalized(), 8)
-				queue_free()
+				_finish()
 	else:
 		for e in Game.enemy_list:
 			if not is_instance_valid(e) or e.dead or _hit.has(e):
@@ -153,7 +208,7 @@ func _physics_process(delta: float) -> void:
 				else:
 					e.take_hit(damage, "deflect", vel.normalized(), false, 140.0, 12.0)
 					Game.gore.sparks(to, -vel.normalized(), 14, Color(0.6, 1.8, 2.0))
-					queue_free()
+					_finish()
 					return
 
 

@@ -3,10 +3,19 @@ extends Node3D
 ## Endless arcade waves. Every third wave is a boss fight; the boss order,
 ## wave line-ups and mutators all come from the run seed. Difficulty keeps
 ## climbing, so a run ends when you do.
-## Enemies, bolts and blade waves live under this node.
+## Enemies, bolts and blade waves live under this node, and it keeps their
+## pools (spec §14): grunts, gunners, brutes and bolts are built at load and
+## recycled, so a spawn or a shot never builds a node mid-fight.
 
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
+## Enemies built at load, per kind. The pool grows if a fight needs more.
+const ENEMY_PREWARM := {"grunt": 14, "gunner": 6, "brute": 3}
+## Bolts built at load, per kind ("wave" is the player's Crimson Wave).
+const BOLT_PREWARM := {"bolt": 24, "shuriken": 12, "wave": 4}
+## A dead enemy waits this long (game time) before it is handed out again,
+## so anything still holding it (a finisher, a deflected bolt) lets go first.
+const REUSE_DELAY := 2.5
 
 var wave := 0
 var queue: Array = []
@@ -23,10 +32,71 @@ var _cleanup_t := 0.0
 var _rng: RandomNumberGenerator
 var boss_bounty := 0
 var boss_bounty_name := ""
+var _enemy_pool := {} # kind -> [[Enemy, ready_at]], oldest first
+var _bolt_pool := {} # kind -> [Bolt]
+var _clock := 0.0
 
 
 func _ready() -> void:
 	_rng = Game.rng_waves
+	Enemy.list_dirty = true
+	for kind in ENEMY_PREWARM:
+		_enemy_pool[kind] = []
+		for i in ENEMY_PREWARM[kind]:
+			var e := Enemy.new()
+			e.prewarm = true
+			e.pool = self
+			e.setup(kind, 1.0)
+			add_child(e)
+			_enemy_pool[kind].append([e, 0.0])
+	for kind in BOLT_PREWARM:
+		_bolt_pool[kind] = []
+		for i in BOLT_PREWARM[kind]:
+			var b := Bolt.new()
+			b.kind = kind
+			b.pool = self
+			b.prewarm = true
+			add_child(b)
+			_bolt_pool[kind].append(b)
+
+
+## One parked enemy and bolt of each kind, for the shader warm-up.
+func warmup_nodes() -> Array[Node3D]:
+	var out: Array[Node3D] = []
+	for kind in _enemy_pool:
+		if not _enemy_pool[kind].is_empty():
+			out.append(_enemy_pool[kind][0][0])
+	for kind in _bolt_pool:
+		if not _bolt_pool[kind].is_empty():
+			out.append(_bolt_pool[kind][0])
+	return out
+
+
+## Takes a dead pooled enemy back (called from Enemy.die).
+func recycle(e: Enemy) -> void:
+	_enemy_pool[e.kind].append([e, _clock + REUSE_DELAY])
+
+
+## Takes a spent bolt back (called by the bolt).
+func recycle_bolt(b: Bolt) -> void:
+	_bolt_pool[b.kind].append(b)
+
+
+## Fires a bolt from the pool: hostile bolts and shuriken from enemies, or
+## the player's Crimson Wave. Returns it so the caller can adjust it.
+func fire_bolt(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "bolt") -> Bolt:
+	var free: Array = _bolt_pool[k]
+	if free.is_empty():
+		var nb := Bolt.new()
+		nb.pool = self
+		nb.setup(is_hostile, pos, velocity, dmg, k)
+		add_child(nb)
+		return nb
+	var b: Bolt = free.pop_back()
+	b.reuse()
+	b.setup(is_hostile, pos, velocity, dmg, k)
+	b.activate()
+	return b
 
 
 func start(first_wave := 1) -> void:
@@ -136,13 +206,24 @@ func _pick_spawn() -> Vector3:
 
 
 func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
+	var at := pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
+	var free: Array = _enemy_pool.get(kind, [])
+	if not free.is_empty() and free[0][1] <= _clock:
+		var pe: Enemy = free.pop_front()[0]
+		pe.reuse()
+		pe.setup(kind, scale)
+		pe.position = at
+		pe.activate()
+		return pe
 	var e: Enemy
 	if kind in ["ninja", "mech"]:
 		e = Boss.new()
 	else:
 		e = Enemy.new()
+	if _enemy_pool.has(kind):
+		e.pool = self
 	e.setup(kind, scale)
-	e.position = pos + Vector3(0, 7.0 + _rng.randf() * 2.0, 0)
+	e.position = at
 	add_child(e)
 	return e
 
@@ -184,7 +265,10 @@ func on_boss_killed(b: Enemy) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	Game.enemy_list = get_tree().get_nodes_in_group("enemies")
+	_clock += delta
+	if Enemy.list_dirty:
+		Enemy.list_dirty = false
+		Game.enemy_list = get_tree().get_nodes_in_group("enemies")
 	if Game.state != "playing":
 		return
 	if not _cleanup.is_empty():

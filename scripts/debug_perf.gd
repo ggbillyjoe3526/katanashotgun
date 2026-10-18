@@ -32,6 +32,8 @@ var _fps_t := 0.0
 var _fps_frames := 0
 var _fps := 0.0
 var _ms_max := 0.0
+var _first: _Clock
+var _last: _Clock
 
 
 func _ready() -> void:
@@ -49,6 +51,17 @@ func _ready() -> void:
 	add_child(_label)
 	_set_shown(_log)
 	get_tree().node_added.connect(_on_node_added)
+	# script time: a clock that runs first and one that runs last, every
+	# process and physics step (process priority is global)
+	_first = _Clock.new()
+	_first.process_priority = -100000
+	_first.process_physics_priority = -100000
+	_last = _Clock.new()
+	_last.process_priority = 100000
+	_last.process_physics_priority = 100000
+	_last.start = _first
+	add_child(_first)
+	add_child(_last)
 
 
 func _on_node_added(_n: Node) -> void:
@@ -74,7 +87,8 @@ func _process(_delta: float) -> void:
 	var prims := int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME))
 	var nodes := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 	var objs := int(Performance.get_monitor(Performance.OBJECT_COUNT))
-	var script_ms := (Performance.get_monitor(Performance.TIME_PROCESS) + Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0
+	# last frame's script time (every _process and _physics_process)
+	var script_ms := _last.take_ms()
 	var combat := Game.state == "playing" and not Game.enemy_list.is_empty()
 	_frames += 1
 	if combat:
@@ -133,3 +147,32 @@ func _exit_tree() -> void:
 		_added_combat / maxf(_combat_time, 0.001), _spike_frames, _draw_sum / _combat_frames, _draw_max, _prim_max])
 	print("[perf-summary] peaks: nodes=%d objects=%d  total_new_nodes=%d" % [_nodes_max, _objs_max, _added_total])
 	print("[perf-summary] script ms per frame (this machine only, compare runs on one machine): avg=%.2f p99=%.2f max=%.2f" % [avg, p99, ms[ms.size() - 1]])
+
+
+## Marks the start (on the first clock) and end (on the last) of each
+## process and physics step, adding up the time in between.
+class _Clock:
+	extends Node
+	var start: _Clock
+	var t0 := 0
+	var acc := 0
+
+	func _ready() -> void:
+		process_mode = Node.PROCESS_MODE_ALWAYS
+
+	func _process(_d: float) -> void:
+		_mark()
+
+	func _physics_process(_d: float) -> void:
+		_mark()
+
+	func _mark() -> void:
+		if start == null:
+			t0 = Time.get_ticks_usec()
+		else:
+			acc += Time.get_ticks_usec() - start.t0
+
+	func take_ms() -> float:
+		var ms := acc / 1000.0
+		acc = 0
+		return ms
