@@ -142,9 +142,8 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
   frames don't strobe.
 
 Arrows or WASD move and change values, Enter rebinds, Delete clears a key,
-Q / E change tab, R resets the tab, Esc goes back. Settings are saved to
-`settings.json` in the game's user folder (`%APPDATA%\KatanaShotgun` on
-Windows), with a backup next to it.
+Q / E change tab, R resets the tab, Esc goes back. Settings are saved in
+your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags
 Pass after `--` on the command line:
