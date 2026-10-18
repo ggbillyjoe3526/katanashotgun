@@ -207,6 +207,12 @@ func _pick(arr: Array) -> Variant:
 	return arr[rng.randi() % arr.size()]
 
 
+## Accent colour i of the run palette (wraps), for spreading hues over a map.
+func _accent(i: int) -> Color:
+	var acc: Array = pal.accents
+	return acc[posmod(i, acc.size())]
+
+
 func floor_height_at(x: float, z: float) -> float:
 	var h := 0.0
 	for p in _platforms:
