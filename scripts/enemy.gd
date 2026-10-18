@@ -8,7 +8,11 @@ extends CharacterBody3D
 const MARKER_RED := Color(1.0, 0.05, 0.1)
 const FINISHER_GOLD := Color(1.0, 0.8, 0.15)
 
-enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP }
+enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VOLLEY_WINDUP, DASH_WINDUP, DASH, BLINK, GATLING, MISSILE_WINDUP, STOMP_WINDUP, SIDESTEP, RED_WINDUP, RED_ACT, AREA_WINDUP }
+
+## A boss's armour drops for this long after its big moves (spec §5.6), and
+## KAMAE fills this much faster meanwhile: the punish window.
+const EXPOSED_KAMAE := 1.5
 
 var kind := "grunt"
 var hp := 45.0
@@ -31,6 +35,8 @@ var subtitle := ""
 var defeat_text := "TARGET TERMINATED" # the big card when a boss dies
 var kamae_max := 0.0 # bosses: size of the KAMAE bar before cycle scaling
 var kamae: BossKamae = null # bosses only: the posture bar that replaces poise
+var exposed_t := 0.0 # bosses: armour down after a big move (the punish window)
+var dice_seed := -1 # set before spawning to roll this enemy's dice from the run's seed
 
 var state: S = S.SPAWN
 var state_t := 0.0
@@ -117,7 +123,10 @@ func _finish_setup(scale_mult: float) -> void:
 
 
 func _ready() -> void:
-	_rng.randomize()
+	if dice_seed >= 0:
+		_rng.seed = dice_seed
+	else:
+		_rng.randomize()
 	collision_layer = 4
 	collision_mask = 1
 	floor_snap_length = 0.4
@@ -330,6 +339,7 @@ func _physics_process(delta: float) -> void:
 	if dead:
 		return
 	state_t += delta
+	exposed_t -= delta
 	attack_cd -= delta
 	special_cd -= delta
 	_update_flash(delta)
@@ -440,7 +450,7 @@ func _physics_process(delta: float) -> void:
 	knock = knock.move_toward(Vector3.ZERO, 26.0 * delta)
 	if not is_on_floor():
 		velocity.y -= 30.0 * delta
-	elif state != S.SLAM:
+	elif state != S.SLAM and state != S.SIDESTEP:
 		velocity.y = minf(velocity.y, 0.0)
 	move_and_slide()
 	# simple unstick: if we're pushing into a wall and not getting anywhere, slide along it for a bit
@@ -639,7 +649,7 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 		return false
 	var mult := 1.0
 	var armored := false
-	if source in ["katana", "wave", "dashcut"] and armor < 1.0 and state != S.STAGGER:
+	if source in ["katana", "wave", "dashcut"] and armor < 1.0 and state != S.STAGGER and exposed_t <= 0.0:
 		mult = minf(1.0, armor + 0.12 * Game.rank("edge"))
 		armored = true
 	var final := dmg * mult
@@ -746,6 +756,8 @@ func stagger_length() -> float:
 func press_kamae(amount: float) -> void:
 	if kamae == null or dead or state == S.STAGGER or state == S.SPAWN:
 		return
+	if exposed_t > 0.0:
+		amount *= EXPOSED_KAMAE
 	if kamae.add(amount):
 		_break_kamae()
 
@@ -1010,15 +1022,15 @@ func _animate(delta: float, spd: float) -> void:
 			t_torso = 0.55
 			t_arm_l = Vector3(0.15, 0, 0.15)
 			t_arm_r = Vector3(0.15, 0, -0.15)
-		S.CHARGE_WINDUP:
+		S.CHARGE_WINDUP, S.RED_WINDUP:
 			t_torso = -0.35
 			t_arm_l = Vector3(-0.4, 0, 1.2)
 			t_arm_r = Vector3(-0.4, 0, -1.2)
-		S.CHARGE:
+		S.CHARGE, S.RED_ACT, S.SIDESTEP:
 			t_torso = 0.6
 			t_arm_l = Vector3(0.9, 0, 0.2)
 			t_arm_r = Vector3(0.9, 0, -0.2)
-		S.SLAM:
+		S.SLAM, S.AREA_WINDUP:
 			t_arm_l = Vector3(-2.9, 0, 0.2)
 			t_arm_r = Vector3(-2.9, 0, -0.2)
 			t_torso = -0.2
