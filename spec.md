@@ -576,7 +576,8 @@ Notes:
 | `dash` | Shift, Q | |
 | `finisher` | **F** | Glory kill the staggered enemy near the crosshair (§3.4) |
 | pause | Esc | |
-| sensitivity −/+ | `[` / `]` | Temporary; move into Settings |
+| sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
+| settings | Tab (title, pause) | Settings screen (§15.4) |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -1796,6 +1797,8 @@ seed | click: new seed).
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).
+  - `--settings=audio|video|controls|comfort`: opens the settings screen on
+    the title at that tab.
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or
@@ -1880,8 +1883,10 @@ seed | click: new seed).
 - [ ] Move high scores into the profile.
 
 ### 18.3 Quality of life
-- [ ] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
-      default).
+- [x] Settings screen (§15.4), key rebinding (LMB katana / RMB shotgun by
+      default). Built in `scripts/settings.gd` and
+      `scripts/ui/settings_menu.gd`; persistence moves into the profile when
+      §11.3 lands. Comfort: below 100% flashes, impact frames don't strobe.
 - [ ] Clear "PLAYER LV" vs "RUN LV" labelling.
 
 ### 18.4 Content (later)

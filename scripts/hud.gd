@@ -96,6 +96,9 @@ var initials := ""
 
 var post: PostFx
 var juice: Juice
+var settings_menu: SettingsMenu
+var title_settings: TechButton
+var pause_settings: TechButton
 
 # persona plates behind the HUD clusters
 var plate_tl: Shard
@@ -178,6 +181,16 @@ func _ready() -> void:
 	juice = Juice.new()
 	juice.hud = self
 	root.add_child(juice)
+	# outside the root, so HUD shake never moves the settings screen
+	settings_menu = SettingsMenu.new()
+	settings_menu.theme = root.theme
+	add_child(settings_menu)
+	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	title_settings.pressed.connect(_open_settings)
+	title_root.add_child(title_settings)
+	pause_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
+	pause_settings.pressed.connect(_open_settings)
+	pause_root.add_child(pause_settings)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -569,6 +582,13 @@ func hide_title() -> void:
 
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
+	if not on:
+		settings_menu.close()
+
+
+func _open_settings() -> void:
+	if settings_menu.can_open():
+		settings_menu.open()
 
 
 func show_death() -> void:
@@ -895,7 +915,7 @@ func damage_flash(amount: float, _from: Vector3) -> void:
 
 
 func execution_flash() -> void:
-	exec_rect.color = Color(1, 1, 1, 0.4)
+	exec_rect.color = Color(1, 1, 1, 0.4 * Settings.flash)
 	juice.add_shake(4.0)
 	if post:
 		post.flash(0.25)
@@ -957,6 +977,7 @@ func _process(_delta: float) -> void:
 		lh.visible = Game.main and Game.main.lock_failures >= 2
 		lh.size = Vector2.ZERO
 		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
+		pause_settings.position = Vector2(roundf((vs.x - pause_settings.size.x) * 0.5), vs.y * 0.5 + 84)
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
@@ -1047,6 +1068,7 @@ func _layout_title() -> void:
 	title_version.position = Vector2(vs.x - title_version.size.x - 6, vs.y - title_version.size.y - 4)
 	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
 	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, vs.y - 30)
+	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 6)
 
 
 func _layout_levelup() -> void:

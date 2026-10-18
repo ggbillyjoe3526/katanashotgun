@@ -80,6 +80,7 @@ func _ready() -> void:
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
 	load_scores()
+	Settings.boot()
 
 
 ## Starts a fresh run state. A run is fully described by its seed: the map
