@@ -513,6 +513,7 @@ Notes:
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
+| Vertical movement | Ledge climb only for ledges the hands can reach; a plunge from high ground on F that counts as a glory kill, always the katana; a higher double jump (owner, 2026-10-18). Default picked: brutes and bosses must be staggered to plunge |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -568,7 +569,7 @@ Notes:
 | `move_*` | WASD + arrows | |
 | `jump` | Space | Double jump |
 | `dash` | Shift, Q | |
-| `finisher` | **F** | Glory kill the staggered enemy near the crosshair (§3.4) |
+| `finisher` | **F** | Glory kill the staggered enemy near the crosshair, or plunge onto a foe below from high ground (§3.4) |
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Temporary; move into Settings |
 | fullscreen | F11 / Alt+Enter | |
@@ -591,7 +592,8 @@ charges the gun; the gun sets up the blade.**
 | Max HP | 100 (Kongo Heart augment +25 per rank) |
 | Walk speed | 8.8 m/s, ground accel 70, air accel 28 (×0.3 above walk speed, to keep jump-pad and dash momentum) |
 | Gravity | 26 m/s² |
-| Jump / double jump | 9.4 / 8.6 m/s (1 extra jump, reset on landing and on jump pads) |
+| Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable |
+| Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
 | Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (−0.3 s per Idaten Drive rank), FOV kick +14 |
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
 | Capsule | radius 0.4, height 1.8, eye height 1.55 |
@@ -679,6 +681,25 @@ charges the gun; the gun sets up the blade.**
   and "GLORY KILL" ("DEATHBLOW" on bosses) sits in a fixed spot under the
   crosshair (§9.7), and that enemy's stagger marker turns gold and grows.
 
+**Plunge (owner's request, 2026-10-18):** a glory kill from above, always
+with the katana. The same `finisher` key and prompt ("PLUNGE").
+- **When:** airborne, the floor you last stood on is at least **2.0 m above
+  the foe's feet**, you are still at least **1.2 m above them**, they are
+  within `1.5 + 0.75 × drop` m (at most 7 m) of you horizontally (past their
+  body), within 35° of the crosshair (kept to 45°), with nothing in between.
+  A plain jump or double jump on the same level never qualifies.
+- **Who:** any grunt or gunner; brutes and bosses are armoured and must be
+  staggered first.
+- **Wins** over a glory kill on the same press.
+- **The finisher:** a dive onto the foe at 24 m/s (0.12–0.3 s, real time),
+  blade raised in a reverse grip; the stab (pose, slice + slam + gore,
+  upward blood geyser, floor sparks, hitstop 0.07, trauma 0.6, impact frame
+  0.06, land dip); the kill 0.1 s later (gore `split`, kill tag
+  **SAKAHOKO DROP**); the rip-out at +0.28; you step down off it to the floor
+  at +0.16 to +0.4; length dive + 0.5 s.
+- First time a plunge is lined up, the hint "HIGH ABOVE A FOE?  PRESS F TO
+  PLUNGE" shows once.
+
 **On start:**
 - Executions +1, **+3 cells**, **heal 20** (×2 under the Akatsuki mutator).
 - The player is **invulnerable**, input and mouse look are locked, and
@@ -698,6 +719,7 @@ charges the gun; the gun sets up the blade.**
 |---|---|---|---|
 | Boss | X-cut then point-blank blast | 0.12 slash, 0.26 slash, 0.46 aim, 0.56 blast + kill; length 0.95 | Deathblow, or full kill |
 | Brute | Climb up, chop the skull, blast down into the neck | 0.02 raise overhead, 0.20 chop, 0.42 aim down, 0.52 blast + kill; length 0.95; the camera rises 0.9 m | headpop |
+| Plunge (see above) | Dive, stab down through the collarbone, rip out | dive 0.12–0.3, stab at the dive's end, kill +0.1, rip +0.28; length dive + 0.5 | split |
 | Player airborne and >0.9 m above the enemy | Falling overhead cut | 0.02 raise, 0.16 chop, 0.20 kill; length 0.72 | split |
 | Behind (enemy facing · to-player < −0.35) | Stab through the back, rip upward | 0.12 thrust, 0.38 rip up, 0.50 kill; length 0.82 | split |
 | Front (50/50) A | Impale, then the shotgun under the chin | 0.12 thrust, 0.36 aim under the chin, 0.48 blast + kill; length 0.82 | headpop |
@@ -1145,6 +1167,12 @@ the holographic cut-in (§9.8).
   - overhead (−0.1, 0.12, −0.32 / 0.45, −0.4, −0.3)
   - chop (0.02, −0.4, −0.6 / −2.25, −0.3, −0.3)
   - aside (−0.55, −0.5, −0.45 / −0.6, 0.6, −0.5)
+  - plunge_raise (−0.12, 0.2, −0.36 / −2.0, 0.1, 0): blade-down grip, high
+  - plunge (−0.04, −0.36, −0.68 / −2.35, 0.05, 0): driven down and in
+- **Ledge climb:** both weapons reach up for the edge (katana +0.1, +0.22,
+  −0.06, pitch −0.5; shotgun mirrored) for the first 30–60%, then press down
+  on it (+0.08, −0.34, +0.1, pitch +0.8) until 85–100%. The camera dips
+  (pitch −0.14, head −0.12 m) and rolls 0.045 on a sine over the climb.
 - **Glory-kill poses** (shotgun):
   - ready (0.42, −0.4, −0.45 / 0, 0.25, 0.1)
   - chin (0.1, −0.2, −0.55 / 0.75, 0.05, 0)
@@ -1645,6 +1673,9 @@ historical root with a cyberpunk twist**.
 - **DOJIGIRI** (the katana): Dojigiri Yasutsuna, the blade said to have
   killed Shuten-doji. A story link to the boss.
 - **RAIJIN-12** (the shotgun): Raijin, the thunder god.
+- **SAKAHOKO DROP** (the plunge's kill tag): Ama-no-sakahoko, the heavenly
+  reverse spear that Ninigi drove into the peak of Mount Takachiho when he
+  came down from heaven.
 - **Enemies:** Ashigaru (grunts), Teppo (gunners; the matchlock corps),
   Kanabo (brutes; after the oni's iron club).
 - **Mutators and augments:** see §6.3 and §3.8.
@@ -1769,6 +1800,10 @@ seed | click: new seed).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
+  - `--movetest` (with `--headless --fixed-fps 60`): a scripted course on
+    real physics that checks jump heights, ledge climbs, walls too tall to
+    climb and plunges, then exits 0 or 1. CI runs it as
+    `tools/movement_test.sh`.
 - **Headless smoke test:**
   `godot --headless --path . --quit-after 3000 -- --autoplay --god`, which
   must log **zero script errors**. Run `--import` after adding assets or

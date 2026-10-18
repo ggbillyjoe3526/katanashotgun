@@ -41,6 +41,10 @@ jobs:
         if: success() || failure()
         run: tools/unit_tests.sh
 
+      - name: Movement test (climb, plunge, jump heights)
+        if: success() || failure()
+        run: tools/movement_test.sh
+
       - name: Licence notices are up to date
         if: success() || failure()
         run: |
@@ -59,6 +63,7 @@ jobs:
             import.log
             smoke.log
             unit.log
+            movement.log
           if-no-files-found: ignore
           retention-days: 14
 

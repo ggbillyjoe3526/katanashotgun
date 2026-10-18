@@ -9,17 +9,27 @@ extends CharacterBody3D
 ## staggered enemy locks the camera on, lunges you in and plays a short
 ## contextual finisher while you are invulnerable. The world runs in slow
 ## motion; the finisher runs in real time.
-##   Shift dash (i-frames), Space jump / double jump.
+## Plunge: falling from a ledge well above a foe, F drives the katana down
+## into it. It is a glory kill (same rewards) with its own finisher.
+##   Shift dash (i-frames), Space jump / double jump, and a ledge climb when
+##   a jump falls just short of a ledge the hands can reach (LedgeClimb).
 
 const WALK_SPEED := 8.8
 const GROUND_ACCEL := 70.0
 const AIR_ACCEL := 28.0
 const GRAVITY := 26.0
 const JUMP_VEL := 9.4
-const DOUBLE_JUMP_VEL := 8.6
+const DOUBLE_JUMP_VEL := 10.6
 const DASH_SPEED := 21.0
 const DASH_TIME := 0.2
 const BASE_FOV := 88.0
+const CAPSULE_RADIUS := 0.4
+const CAPSULE_HEIGHT := 1.8
+# ledge climb: how long the pull-up takes (the reach rules are in LedgeClimb)
+const CLIMB_BASE_TIME := 0.2
+const CLIMB_TIME_PER_M := 0.09
+const CLIMB_RISE_SHARE := 0.6 # the first 60% lifts the body, the rest goes over
+const CLIMB_CARRY := 0.5 # of walk speed, kept going forward off the climb
 const KATANA_CD := 0.32
 const KATANA_FINISHER_CD := 0.45
 const SHOTGUN_CD := 0.72
@@ -31,6 +41,18 @@ const FINISHER_KEEP_REACH := 5.5
 const FINISHER_CONE := PI / 3.0 # 60 degrees
 const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
 const FINISHER_BUFFER := 0.18
+# plunge: the floor you left must be this far above the foe's feet, you must
+# still be this far above them, and they must be within a reach that grows
+# with the drop and near the crosshair
+const PLUNGE_MIN_LEVEL := 2.0
+const PLUNGE_MIN_DROP := 1.2
+const PLUNGE_REACH := 1.5
+const PLUNGE_REACH_PER_M := 0.75
+const PLUNGE_MAX_REACH := 7.0
+const PLUNGE_CONE := PI * 7.0 / 36.0 # 35 degrees
+const PLUNGE_KEEP_CONE := PI / 4.0 # 45 degrees
+const PLUNGE_DIVE_SPEED := 24.0 # m/s of the dive onto the foe (real time)
+const PLUNGE_TAG := "SAKAHOKO DROP"
 
 var head: Node3D
 var cam: Camera3D
@@ -51,6 +73,8 @@ var dash_t := 0.0
 var dash_dir := Vector3.ZERO
 var _dash_hit := {}
 var jumps_left := 1
+var _floor_y := 0.0 # height of the floor last stood on (plunges need a real drop)
+var _dash_queued := false # a dash pressed mid-climb fires as the climb ends
 var katana_cd := 0.0
 var shotgun_cd := 0.0
 var katana_buffer := 0.0
@@ -74,9 +98,20 @@ var _input_dir := Vector2.ZERO
 var _attract_t := 0.0
 var _auto_t := 0.0
 var _auto_strafe := 1.0
+var _auto_stuck_t := 0.0 # the bot jumps (and so climbs) when it's walking into something
+var _auto_jump := false
+
+# ledge climb
+var climb_t := -1.0 # seconds into the climb; below 0 when not climbing
+var climb_len := 0.3
+var _climb_from := Vector3.ZERO
+var _climb_rise := 0.0
+var _climb_fwd := Vector3.ZERO
+var _climb_katana := false
 
 # glory kill
-var gk_ready: Enemy = null # the staggered enemy F would finish right now
+var gk_ready: Enemy = null # the enemy F would finish right now
+var gk_ready_plunge := false # ...and F would plunge onto it
 var finisher_buffer := 0.0
 var gk_target: Enemy = null
 var gk_kind := ""
@@ -89,6 +124,8 @@ var gk_events: Array = []
 var _gk_yaw0 := 0.0
 var _gk_pitch0 := 0.0
 var _gk_dir := Vector3.FORWARD
+var _gk_perch := Vector3.ZERO # plunge: where the blade goes in, on the foe
+var _gk_dive := 0.2 # plunge: seconds of the dive
 
 
 func _ready() -> void:
@@ -99,10 +136,10 @@ func _ready() -> void:
 	add_to_group("player")
 	var cs := CollisionShape3D.new()
 	var cap := CapsuleShape3D.new()
-	cap.radius = 0.4
-	cap.height = 1.8
+	cap.radius = CAPSULE_RADIUS
+	cap.height = CAPSULE_HEIGHT
 	cs.shape = cap
-	cs.position.y = 0.9
+	cs.position.y = CAPSULE_HEIGHT * 0.5
 	add_child(cs)
 	head = Node3D.new()
 	head.position.y = 1.55
@@ -123,6 +160,7 @@ func _ready() -> void:
 	cam.add_child(muzzle_light)
 	vm.set_cells(cells, max_cells)
 	yaw = rotation.y
+	_floor_y = global_position.y
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -148,10 +186,13 @@ func _process(delta: float) -> void:
 	trauma = maxf(0.0, trauma - delta * 1.6)
 	_shake_t += delta * 30.0
 	var sh := trauma * trauma
-	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh
+	# a climb dips the view toward the ledge and rolls it a touch
+	var climb := clampf(climb_t / climb_len, 0.0, 1.0) if climb_t >= 0.0 else 0.0
+	var climb_env := sin(climb * PI)
+	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh - 0.14 * climb_env
 	cam.rotation.y = sin(_shake_t * 1.7 + 2.0) * 0.04 * sh
 	tilt = lerpf(tilt, -_input_dir.x * 0.035, 1.0 - exp(-8.0 * delta))
-	cam.rotation.z = tilt + sin(_shake_t * 1.1 + 4.0) * 0.06 * sh
+	cam.rotation.z = tilt + sin(_shake_t * 1.1 + 4.0) * 0.06 * sh + 0.045 * climb_env
 	cam.h_offset = sin(_shake_t * 2.1) * 0.08 * sh
 	cam.v_offset = sin(_shake_t * 2.6 + 1.0) * 0.08 * sh
 	fov_kick = move_toward(fov_kick, 0.0, delta * 60.0)
@@ -162,8 +203,9 @@ func _process(delta: float) -> void:
 	if is_on_floor() and hspeed > 1.0 and dash_t <= 0.0:
 		bob_t += delta * hspeed * 0.9
 	var bob_amt := clampf(hspeed / WALK_SPEED, 0.0, 1.0) if is_on_floor() else 0.0
-	head.position.y = (1.55 if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y
+	head.position.y = (1.55 if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y - 0.12 * climb_env
 	vm.set_bob(bob_amt, bob_t)
+	vm.set_climb(climb if climb_t >= 0.0 else -1.0)
 	vm.visible = Game.state != "title"
 	muzzle_light.light_energy = move_toward(muzzle_light.light_energy, 0.0, delta * 80.0)
 	if dead:
@@ -191,15 +233,24 @@ func _physics_process(delta: float) -> void:
 		# the finisher drives the body; nothing else happens meanwhile
 		velocity = Vector3.ZERO
 		return
+	if climb_t >= 0.0:
+		_update_climb(delta)
+		return
 
 	# glory kill on F: the press is buffered like the katana's, so pressing
-	# just before an enemy staggers or comes into reach still counts
-	_set_finisher_target(_find_finisher_target())
+	# just before an enemy staggers or comes into reach still counts. A
+	# plunge from high ground wins over a glory kill on the same press.
+	var plunge := _find_plunge_target()
+	if plunge != null:
+		_set_finisher_target(plunge, true)
+		Game.show_hint_once("plunge", "HIGH ABOVE A FOE?  PRESS %s TO PLUNGE" % Ui.key_name("finisher"))
+	else:
+		_set_finisher_target(_find_finisher_target())
 	if Input.is_action_just_pressed("finisher") or (Game.debug_autoplay and gk_ready != null):
 		finisher_buffer = FINISHER_BUFFER
 	if finisher_buffer > 0.0 and gk_ready != null:
 		finisher_buffer = 0.0
-		_start_glory(gk_ready)
+		_start_glory(gk_ready, gk_ready_plunge)
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -210,8 +261,14 @@ func _physics_process(delta: float) -> void:
 	if wish.length() > 1.0:
 		wish = wish.normalized()
 
+	# a jump that falls just short of a ledge you're pushing into: climb it
+	if not is_on_floor() and _try_climb(wish):
+		return
+
 	# dash
-	if Input.is_action_just_pressed("dash") and dash_charges >= 1.0 and dash_t <= 0.0:
+	var dash_pressed := Input.is_action_just_pressed("dash") or _dash_queued
+	_dash_queued = false
+	if dash_pressed and dash_charges >= 1.0 and dash_t <= 0.0:
 		_start_dash(wish)
 	var dash_recharge := 1.4 - 0.3 * Game.rank("dash")
 	dash_charges = minf(float(max_dash), dash_charges + delta / dash_recharge)
@@ -235,7 +292,8 @@ func _physics_process(delta: float) -> void:
 		velocity.x = hv.x
 		velocity.z = hv.z
 
-	if Input.is_action_just_pressed("jump"):
+	if Input.is_action_just_pressed("jump") or _auto_jump:
+		_auto_jump = false
 		if is_on_floor():
 			velocity.y = JUMP_VEL
 			Sfx.play("jump", -8.0)
@@ -255,6 +313,7 @@ func _physics_process(delta: float) -> void:
 			land_dip = clampf(-_prev_vy * 0.012, 0.0, 0.22)
 			Sfx.play("land", -10.0)
 		jumps_left = 1
+		_floor_y = global_position.y
 	_was_on_floor = is_on_floor()
 
 	for pad in Game.arena.jump_pads:
@@ -294,6 +353,7 @@ func _physics_process(delta: float) -> void:
 	if global_position.y < -10.0:
 		global_position = Game.arena.player_spawn
 		velocity = Vector3.ZERO
+		_floor_y = global_position.y
 
 
 # ---------------------------------------------------------------- movement
@@ -310,6 +370,60 @@ func _start_dash(wish: Vector3) -> void:
 	_dash_hit.clear()
 	Game.hud.speed_lines(0.55)
 	Sfx.play("dash", -4.0)
+
+
+## Grabs the ledge in front if LedgeClimb finds one the hands can reach.
+func _try_climb(wish: Vector3) -> bool:
+	var found := LedgeClimb.find(self, wish, -global_basis.z, CAPSULE_RADIUS, velocity.y, GRAVITY)
+	if found.is_empty():
+		return false
+	_set_finisher_target(null)
+	dash_t = 0.0 # the climb takes over from a dash into the ledge
+	climb_t = 0.0
+	climb_len = CLIMB_BASE_TIME + CLIMB_TIME_PER_M * float(found.rise)
+	_climb_from = global_position
+	_climb_rise = float(found.rise) + LedgeClimb.LIFT
+	_climb_fwd = found.forward
+	_climb_katana = false
+	velocity = Vector3.ZERO
+	# the chrome hands bite into the edge
+	Sfx.play("land", -6.0, 1.3)
+	add_trauma(0.12)
+	var grip := Vector3(global_position.x, float(found.ledge_y), global_position.z) + _climb_fwd.normalized() * (CAPSULE_RADIUS + 0.1)
+	Game.gore.sparks(grip, Vector3.UP, 6, Color(0.5, 1.6, 2.0))
+	if Game.debug_autoplay:
+		print("[climb] rise=%.2f frame=%d" % [found.rise, Engine.get_frames_drawn()])
+	return true
+
+
+## Lifts the body straight up the wall, then over the edge. Presses made
+## meanwhile (katana, dash) are kept and fire the moment it ends.
+func _update_climb(delta: float) -> void:
+	if Input.is_action_just_pressed("katana"):
+		_climb_katana = true
+	if Input.is_action_just_pressed("dash"):
+		_dash_queued = true
+	climb_t += delta
+	var k := clampf(climb_t / climb_len, 0.0, 1.0)
+	var up_k := clampf(k / CLIMB_RISE_SHARE, 0.0, 1.0)
+	var over_k := clampf((k - CLIMB_RISE_SHARE) / (1.0 - CLIMB_RISE_SHARE), 0.0, 1.0)
+	up_k = 1.0 - pow(1.0 - up_k, 3.0)
+	over_k = over_k * over_k * (3.0 - 2.0 * over_k)
+	global_position = _climb_from + Vector3(0, _climb_rise * up_k, 0) + _climb_fwd * over_k
+	velocity = Vector3.ZERO
+	if k >= 1.0:
+		_end_climb()
+
+
+func _end_climb() -> void:
+	climb_t = -1.0
+	velocity = _climb_fwd.normalized() * WALK_SPEED * CLIMB_CARRY
+	jumps_left = 1
+	_floor_y = global_position.y - LedgeClimb.LIFT
+	land_dip = 0.08
+	Sfx.play("land", -12.0, 0.9)
+	if _climb_katana:
+		katana_buffer = 0.18
 
 
 func _dash_cut() -> void:
@@ -446,7 +560,8 @@ func _find_finisher_target() -> Enemy:
 	return best
 
 
-func _set_finisher_target(e: Enemy) -> void:
+func _set_finisher_target(e: Enemy, plunge := false) -> void:
+	gk_ready_plunge = plunge and e != null
 	if e == gk_ready:
 		return
 	if is_instance_valid(gk_ready):
@@ -456,8 +571,43 @@ func _set_finisher_target(e: Enemy) -> void:
 		e.set_finisher_lit(true)
 
 
+## A foe to plunge onto from above: you left a floor well above it, you are
+## still high over it, it is within reach of the drop and near the crosshair,
+## with nothing in between. Brutes and bosses are armoured: only when
+## staggered.
+func _find_plunge_target() -> Enemy:
+	if is_on_floor():
+		return null
+	var feet := global_position.y
+	var origin := cam.global_position
+	var fwd := -cam.global_basis.z
+	var best: Enemy = null
+	var best_ang := INF
+	for e in Game.enemy_list:
+		if not is_instance_valid(e) or e.dead or e.state == Enemy.S.SPAWN:
+			continue
+		if (e.is_boss or e.kind == "brute") and not e.is_staggered():
+			continue
+		var base: float = e.global_position.y
+		var drop := feet - base
+		if drop < PLUNGE_MIN_DROP or _floor_y - base < PLUNGE_MIN_LEVEL:
+			continue
+		var flat: float = Vector2(e.global_position.x - global_position.x, e.global_position.z - global_position.z).length() - e.radius
+		if flat > minf(PLUNGE_MAX_REACH, PLUNGE_REACH + drop * PLUNGE_REACH_PER_M):
+			continue
+		var ang := fwd.angle_to(e.global_position + Vector3(0, e.height * 0.6, 0) - origin)
+		if ang > (PLUNGE_KEEP_CONE if e == gk_ready else PLUNGE_CONE) or ang >= best_ang:
+			continue
+		var q := PhysicsRayQueryParameters3D.create(origin, e.global_position + Vector3(0, e.height * 0.8, 0), 1)
+		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+			continue
+		best = e
+		best_ang = ang
+	return best
+
+
 ## Picks a finisher from the situation and starts it.
-func _start_glory(e: Enemy) -> void:
+func _start_glory(e: Enemy, plunge := false) -> void:
 	_set_finisher_target(null)
 	dash_t = 0.0 # a dash cut short by the finisher doesn't resume after it
 	Game.executions += 1
@@ -469,7 +619,9 @@ func _start_glory(e: Enemy) -> void:
 		to_me = global_basis.z
 	to_me = to_me.normalized()
 	var facing := Vector3(sin(e.face_yaw), 0, cos(e.face_yaw))
-	if e.is_boss:
+	if plunge:
+		gk_kind = "plunge"
+	elif e.is_boss:
 		gk_kind = "boss"
 	elif e.kind == "brute":
 		gk_kind = "brute"
@@ -485,6 +637,11 @@ func _start_glory(e: Enemy) -> void:
 	var stand := e.radius + (1.25 if gk_kind in ["brute", "boss"] else 0.85)
 	gk_to = e.global_position + to_me * stand
 	gk_to.y = e.global_position.y
+	if plunge:
+		# the blade goes in from on top of the foe, then you step down off it
+		_gk_perch = e.global_position + to_me * (e.radius + 0.5)
+		_gk_perch.y = e.global_position.y + e.height * 0.5
+		_gk_dive = clampf(global_position.distance_to(_gk_perch) / PLUNGE_DIVE_SPEED, 0.12, 0.3)
 	_gk_yaw0 = yaw
 	_gk_pitch0 = pitch
 	_gk_dir = -to_me
@@ -522,6 +679,10 @@ func _build_glory_events() -> void:
 		"boss": # X-cut, then point-blank blast
 			gk_len = 0.95
 			gk_events = [[0.12, "slash_x1"], [0.26, "slash_x2"], [0.46, "pose_point"], [0.56, "blast_kill_execution"]]
+		"plunge": # dive blade-down, drive it through the collarbone, rip it out
+			var d := _gk_dive
+			gk_len = d + 0.5
+			gk_events = [[0.0, "pose_plunge_raise"], [d, "plunge_stab"], [d + 0.1, "kill_split"], [d + 0.28, "rip_up"]]
 	vm.glory_begin()
 
 
@@ -535,9 +696,13 @@ func _update_glory(rd: float) -> void:
 	var pos := gk_from.lerp(gk_to, lunge)
 	if gk_kind == "air":
 		pos.y = lerpf(gk_from.y, gk_to.y, lunge * lunge)
+	elif gk_kind == "plunge":
+		pos = _plunge_pos(t)
 	global_position = pos
 	var look_h := 0.62
-	if gk_kind == "brute":
+	if gk_kind == "plunge":
+		look_h = 0.75 - 0.25 * smoothstep(_gk_dive + 0.16, _gk_dive + 0.4, t)
+	elif gk_kind == "brute":
 		gk_cam_y = 0.9 * sin(clampf(t / 0.2, 0.0, 1.0) * PI * 0.5) * (1.0 - smoothstep(0.6, 0.9, t))
 		look_h = 0.82
 	elif gk_kind == "back":
@@ -557,6 +722,15 @@ func _update_glory(rd: float) -> void:
 		_glory_beat(beat)
 	if t >= gk_len:
 		_end_glory()
+
+
+## The plunge path: a dive that picks up speed onto the foe, a beat on top
+## of it while the blade goes in, then a step down to the floor.
+func _plunge_pos(t: float) -> Vector3:
+	var d := clampf(t / _gk_dive, 0.0, 1.0)
+	var p := gk_from.lerp(_gk_perch, 1.0 - (1.0 - d) * (1.0 - d))
+	p.y = lerpf(gk_from.y, _gk_perch.y, d * d)
+	return p.lerp(gk_to, smoothstep(_gk_dive + 0.16, _gk_dive + 0.4, t))
 
 
 func _glory_beat(beat: String) -> void:
@@ -610,6 +784,24 @@ func _glory_beat(beat: String) -> void:
 			vm.glory_pose("overhead")
 		"pose_down":
 			vm.glory_pose("down")
+		"pose_plunge_raise":
+			vm.glory_pose("plunge_raise")
+			Sfx.play("swing2", -3.0, 0.7)
+			Game.hud.speed_lines(0.8, 0.1)
+		"plunge_stab":
+			vm.glory_pose("plunge")
+			Sfx.play("slice", 0.0, 0.75)
+			Sfx.play("slam", -1.0, 0.9)
+			Sfx.play("gore_big", -1.0)
+			var top := (e.global_position + Vector3(0, e.height * 0.85, 0)) if is_instance_valid(e) else global_position
+			Game.gore.burst(top, Vector3.UP, 140, 10.0, 0.5, 4.0, 0.09)
+			Game.gore.sparks(gk_to, Vector3.UP, 14, Color(0.5, 1.6, 2.0))
+			Game.hitstop(0.07)
+			add_trauma(0.6)
+			land_dip = 0.22
+			Game.hud.impact_frame(0.06)
+			if alive:
+				e.glory_hit(_gk_dir, 1.2)
 		"chop":
 			vm.glory_pose("chop")
 			Game.fx.slash_trail(cam, 2)
@@ -640,7 +832,7 @@ func _glory_kill(gore_mode: String) -> void:
 	var e := gk_target
 	if not is_instance_valid(e) or e.dead:
 		return
-	var died := e.execute(_gk_dir, gore_mode)
+	var died := e.execute(_gk_dir, gore_mode, PLUNGE_TAG if gk_kind == "plunge" else "GLORY KILL")
 	Sfx.play("execution", 2.0)
 	Game.hitstop(0.09)
 	exec_zoom = 16.0
@@ -828,6 +1020,12 @@ func _autoplay(delta: float) -> Vector2:
 	# a staggered enemy gets a glory kill (pressed for the bot above), not a slash
 	_auto_weapons.x = 1.0 if (close and not best.is_staggered()) else 0.0
 	_auto_weapons.y = 1.0 if (best_d < 10.0 and cells > 0 and not best.is_staggered()) else 0.0
+	# walking into a crate or ledge: jump, so the climb gets played too
+	var hspeed := Vector2(velocity.x, velocity.z).length()
+	_auto_stuck_t = _auto_stuck_t + delta if (is_on_floor() and hspeed < 2.0 and best_d > 3.0 + best.radius) else 0.0
+	if _auto_stuck_t > 0.35:
+		_auto_stuck_t = 0.0
+		_auto_jump = true
 	if best.is_staggered():
 		return Vector2(0, -1)
 	if best_d > 6.0:
