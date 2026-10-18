@@ -519,6 +519,7 @@ Notes:
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
+| Boss reward drop rule | Every kill of a boss unlocks its next reward until its list is done; never random (owner, 2026-10-18) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -1606,8 +1607,9 @@ is never lost.
   seeded pools. Skins and cosmetics are picked in a simple menu.
 - **OPEN:** the drop rules (a guaranteed first-kill reward per boss? chance
   per kill? reward tables per boss and cycle?) and the full reward list.
-  - **Default in use** (`scripts/rewards.gd`): each boss has an ordered list
-    and every kill unlocks its next item until the list is done. Never
+  - **Drop rule decided** (owner, 2026-10-18; `scripts/rewards.gd`): each
+    boss has an ordered list and every kill unlocks its next item until the
+    list is done. Never
     random, so rewards never touch the seeded RNG. The first six are
     weapon looks: a katana edge and a shotgun coil per boss, picked on the
     title or pause screen (1 and 2). Palettes, maps, mutators and boss variants can
@@ -1929,7 +1931,8 @@ seed | click: new seed).
 
 ## 19. Open decisions (ask the developer; don't invent)
 - The Player Level **XP formula** and pacing.
-- **Boss reward** drop rules and the full reward list.
+- The full **boss reward** list (the drop rule is decided: every kill
+  unlocks that boss's next reward, §11.2).
 - The **final shotgun look** (the katana reference is decided: Thermal
   Katana style).
 - The **full difficulty curve** past the early waves (tune by playtesting;
