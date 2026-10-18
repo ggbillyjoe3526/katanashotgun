@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_yjlyy"]
+[ext_resource type="AudioStream" path="res://assets/audio/tick.wav" id="2_teay6"]
+
+[resource]
+script = ExtResource("1_yjlyy")
+streams = Array[AudioStream]([ExtResource("2_teay6")])
+bus = "UI"
+max_voices = 3

@@ -8,6 +8,7 @@ var hud: Hud
 var post: PostFx
 var boss: Enemy = null
 var _capture_grace := 0.0
+var _build_stamp := "" # a build completed by this level-up, stamped after it
 var lock_failures := 0
 var resume: Dictionary = {} # the suspended run the title offers to continue
 var results: Dictionary = {} # what this run paid into the profile (XP, levels)
@@ -34,6 +35,7 @@ func _ready() -> void:
 	Game.gore = gore
 	var fx := Fx.new()
 	fx.process_mode = Node.PROCESS_MODE_PAUSABLE
+	fx.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # moved every frame, not per tick
 	add_child(fx)
 	Game.fx = fx
 	director = WaveDirector.new()
@@ -55,6 +57,12 @@ func _ready() -> void:
 	add_child(ShaderWarmup.new())
 	if OS.get_cmdline_user_args().has("--juicetest"):
 		add_child(load("res://scripts/debug_juice.gd").new())
+		return
+	if OS.get_cmdline_user_args().has("--movetest"):
+		add_child(load("res://scripts/debug_movement.gd").new())
+		return
+	if OS.get_cmdline_user_args().has("--cardtour"):
+		add_child(load("res://scripts/debug_cards.gd").new())
 		return
 	if OS.get_cmdline_user_args().has("--palettetour"):
 		add_child(load("res://scripts/debug_palette.gd").new())
@@ -89,6 +97,8 @@ func start_run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--wave="):
 			first = int(a.substr(7))
+		elif a.begins_with("--augments="):
+			_debug_augments(a.substr(11))
 	if not resume.is_empty():
 		first = RunSnapshot.apply(resume, director, player)
 		hud.on_run_resumed()
@@ -117,6 +127,27 @@ func _on_between_waves(next_wave: int) -> void:
 	stats["wave"] = next_wave
 	snap["stats"] = stats
 	Profile.suspend_run(snap)
+
+
+## Debug: start with augments already picked. "all" takes every card at max
+## rank; otherwise a comma list of ids, each at rank 1 ("wave:2" for more).
+func _debug_augments(spec: String) -> void:
+	var want := {}
+	if spec == "all":
+		for u in Upgrades.LIST:
+			want[u.id] = u.max
+	else:
+		for part in spec.split(",", false):
+			var bits := part.split(":")
+			var def := Upgrades.get_def(bits[0])
+			if def.is_empty():
+				push_warning("--augments: unknown card '%s'" % bits[0])
+				continue
+			want[def.id] = clampi(int(bits[1]) if bits.size() > 1 else 1, 1, def.max)
+	for id in want:
+		for r in want[id]:
+			Game.upgrades[id] = Game.rank(id) + 1
+			player.on_upgrade(id)
 
 
 func _capture() -> void:
@@ -158,7 +189,16 @@ func _on_upgrade(id: String) -> void:
 	player.on_upgrade(id)
 	Game.pending_levelups -= 1
 	var def := Upgrades.get_def(id)
-	Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
+	# a pick that moves a build forward says so instead of the plain name
+	var news := Upgrades.build_news(id, Game.upgrades)
+	if news.ends_with("COMPLETE"):
+		# stamped once the cards are gone, never over them; two completed in
+		# one chain of level-ups share the stamp
+		_build_stamp = news if _build_stamp == "" else "%s + %s" % [_build_stamp.trim_suffix(" COMPLETE"), news]
+	elif news != "":
+		Game.popup.emit(news, Upgrades.LINK_COLOR)
+	else:
+		Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
 	if Game.pending_levelups > 0:
 		var choices := Upgrades.roll(Game.upgrades, 3)
 		if not choices.is_empty():
@@ -171,6 +211,9 @@ func _on_upgrade(id: String) -> void:
 	Game.state = "playing"
 	Sfx.duck_music(-7.0)
 	_capture_grace = 0.6
+	if _build_stamp != "":
+		hud.stamp(_build_stamp, Upgrades.LINK_COLOR, 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 1.2, "shake": 6.0, "pitch": 1.2, "burst": 30, "shadow": Color(0.3, 0.2, 0.0)})
+		_build_stamp = ""
 
 
 func on_player_died() -> void:
@@ -256,6 +299,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif Game.state == "title" and event.physical_keycode == KEY_N and not resume.is_empty():
 			Sfx.play("ui_click", -4.0)
 			abandon_suspended_run()
+		elif Game.state == "title" and event.physical_keycode == KEY_Q:
+			# title only: in a run Q is a dash key, and a lost mouse lock pauses
+			# mid-dash, so the pause screen quits by its button alone
+			hud.title_quit.press()
 		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)

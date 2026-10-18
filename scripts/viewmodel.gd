@@ -48,7 +48,15 @@ const K_POSES := {
 	"overhead": [Vector3(-0.1, 0.12, -0.32), Vector3(0.45, -0.4, -0.3)],
 	"chop": [Vector3(0.02, -0.4, -0.6), Vector3(-2.25, -0.3, -0.3)],
 	"aside": [Vector3(-0.55, -0.5, -0.45), Vector3(-0.6, 0.6, -0.5)],
+	# plunge: raised high in a blade-down grip, then driven down and in
+	"plunge_raise": [Vector3(-0.12, 0.2, -0.36), Vector3(-2.0, 0.1, 0.0)],
+	"plunge": [Vector3(-0.04, -0.36, -0.68), Vector3(-2.35, 0.05, 0.0)],
 }
+# ledge climb: both hands reach up for the edge, then press down on it
+const CLIMB_REACH_K := [Vector3(0.1, 0.22, -0.06), Vector3(-0.5, 0.0, 0.0)]
+const CLIMB_PRESS_K := [Vector3(0.08, -0.34, 0.1), Vector3(0.8, 0.0, 0.0)]
+const CLIMB_REACH_S := [Vector3(-0.08, 0.24, -0.06), Vector3(-0.5, 0.0, 0.0)]
+const CLIMB_PRESS_S := [Vector3(-0.06, -0.34, 0.1), Vector3(0.85, 0.0, 0.0)]
 const S_POSES := {
 	"ready": [Vector3(0.42, -0.4, -0.45), Vector3(0.0, 0.25, 0.1)],
 	"chin": [Vector3(0.1, -0.2, -0.55), Vector3(0.75, 0.05, 0.0)],
@@ -81,6 +89,9 @@ var _bob_amt := 0.0
 var _kpos := Vector3.ZERO
 var _krot := Vector3.ZERO
 var _glow := 0.0
+var _climb_p := -1.0 # 0..1 through a ledge climb, below 0 when not climbing
+var _reach := 0.0
+var _press := 0.0
 
 
 func _ready() -> void:
@@ -361,6 +372,11 @@ func glory_end() -> void:
 	_glory = false
 
 
+## How far through a ledge climb the player is (0..1), or below 0 for none.
+func set_climb(progress: float) -> void:
+	_climb_p = progress
+
+
 func muzzle_position() -> Vector3:
 	return muzzle.global_position
 
@@ -378,6 +394,14 @@ func _process(delta: float) -> void:
 	_sway = _sway.limit_length(0.12)
 	var sway3 := Vector3(-_sway.x, _sway.y, 0)
 	var bob3 := Vector3(cos(_bob) * 0.02, -absf(sin(_bob)) * 0.025, 0) * _bob_amt
+	# ledge climb: reach for the edge, then press down on it to pull over
+	var want_reach := 0.0
+	var want_press := 0.0
+	if _climb_p >= 0.0:
+		want_reach = 1.0 - smoothstep(0.3, 0.6, _climb_p)
+		want_press = smoothstep(0.3, 0.6, _climb_p) * (1.0 - smoothstep(0.85, 1.0, _climb_p))
+	_reach = lerpf(_reach, want_reach, 1.0 - exp(-35.0 * delta))
+	_press = lerpf(_press, want_press, 1.0 - exp(-35.0 * delta))
 
 	# ---- katana
 	var tpos := katana_idle_pos
@@ -406,8 +430,8 @@ func _process(delta: float) -> void:
 	else:
 		_kpos = _kpos.lerp(katana_idle_pos, 1.0 - exp(-12.0 * delta))
 		_krot = _krot.lerp(katana_idle_rot, 1.0 - exp(-12.0 * delta))
-	katana.position = _kpos + sway3 + bob3
-	katana.rotation = _krot + Vector3(_sway.y, _sway.x, 0) * 0.6
+	katana.position = _kpos + sway3 + bob3 + CLIMB_REACH_K[0] * _reach + CLIMB_PRESS_K[0] * _press
+	katana.rotation = _krot + Vector3(_sway.y, _sway.x, 0) * 0.6 + CLIMB_REACH_K[1] * _reach + CLIMB_PRESS_K[1] * _press
 	_glow = maxf(0.0, _glow - delta * 4.0)
 	blade_edge_mat.set_shader_parameter("energy", 2.4 + _glow * 4.0)
 
@@ -447,8 +471,8 @@ func _process(delta: float) -> void:
 			_fire_t = -1.0
 			drum.rotation.z = _drum_to
 			_charge = 1.0
-	shotgun.position = spos + sway3 * 0.8 + bob3 * 1.1
-	shotgun.rotation = srot + Vector3(_sway.y, _sway.x, 0) * 0.5
+	shotgun.position = spos + sway3 * 0.8 + bob3 * 1.1 + CLIMB_REACH_S[0] * _reach + CLIMB_PRESS_S[0] * _press
+	shotgun.rotation = srot + Vector3(_sway.y, _sway.x, 0) * 0.5 + CLIMB_REACH_S[1] * _reach + CLIMB_PRESS_S[1] * _press
 	# coils: flare on the blast, sit dim while recharging, hum when ready;
 	# with no cells left they sputter
 	var live := _cells > 0

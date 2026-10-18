@@ -13,6 +13,13 @@ signal between_waves(next_wave: int)
 
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
+# Raijin's Storm: a telegraphed strike near the player every few seconds
+const STRIKE_FIRST := 3.0
+const STRIKE_GAP := Vector2(3.5, 6.0)
+const STRIKE_WARN := 1.2
+const STRIKE_RADIUS := 2.4
+const STRIKE_DAMAGE := 16.0
+const STRIKE_SPREAD := 2.5 # metres from the player a strike may land
 ## Enemies built at load, per kind. The pool grows if a fight needs more.
 const ENEMY_PREWARM := {"grunt": 14, "gunner": 6, "brute": 3}
 ## Bolts built at load, per kind ("wave" is the player's Crimson Wave).
@@ -35,6 +42,8 @@ var _cleanup: Array = []
 var _cleanup_t := 0.0
 var _rng: RandomNumberGenerator
 var boss_bounty := 0
+var last_mutator := "" # never the same mutator twice in a row
+var _strike_t := 0.0
 var boss_bounty_name := ""
 var pending_reward: Dictionary = {} # unlocked by this wave's boss, shown after its tally
 var _enemy_pool := {} # kind -> [[Enemy, ready_at]], oldest first
@@ -149,6 +158,8 @@ func _next_wave() -> void:
 	Game.wave = wave
 	Game.wave_damage = 0.0
 	Game.begin_wave_stats()
+	Game.seed_hazards(wave)
+	_strike_t = STRIKE_FIRST
 	boss_bounty = 0
 	boss_bounty_name = ""
 	phase = "intro"
@@ -160,7 +171,13 @@ func _next_wave() -> void:
 		Game.hud.wave_intro(wave, "BOSS INCOMING", Color(Game.palette.neon_a), true)
 		Sfx.play("alarm", -3.0)
 	else:
-		Game.mutator = Mutators.roll(_rng, wave)
+		Game.mutator = Mutators.roll(_rng, wave, last_mutator)
+		for a in OS.get_cmdline_user_args():
+			if a.begins_with("--mutator="):
+				# debug: force one on every regular wave (the roll still draws)
+				Game.mutator = Mutators.get_def(a.substr(10))
+		if not Game.mutator.is_empty():
+			last_mutator = Game.mutator.id
 		queue = _composition(wave)
 		var sub := ""
 		if not Game.mutator.is_empty():
@@ -196,7 +213,7 @@ func _composition(w: int) -> Array:
 
 
 func _max_alive() -> int:
-	return mini(8 + wave * 2, 22)
+	return int(mini(8 + wave * 2, 22) * float(Game.mut("max_alive", 1.0)))
 
 
 func _pick_spawn() -> Vector3:
@@ -211,10 +228,12 @@ func _pick_spawn() -> Vector3:
 	return cands[_rng.randi() % cands.size()]
 
 
-func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
+func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()) -> Enemy:
 	var at := pos + Vector3(0, minf(7.0 + _rng.randf() * 2.0, Game.arena.spawn_clearance(pos)), 0)
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
+		# only horde kinds are pooled, so `before_ready` (bosses) never runs here
+		assert(not before_ready.is_valid(), "pooled spawns take no before_ready")
 		var pe: Enemy = free.pop_front()[0]
 		pe.reuse()
 		pe.setup(kind, scale)
@@ -222,7 +241,7 @@ func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
 		pe.activate()
 		return pe
 	var e: Enemy
-	if kind in ["ninja", "mech"]:
+	if kind in BOSS_KINDS:
 		e = Boss.new()
 	else:
 		e = Enemy.new()
@@ -230,6 +249,8 @@ func _spawn(kind: String, scale: float, pos: Vector3) -> Enemy:
 		e.pool = self
 	e.setup(kind, scale)
 	e.position = at
+	if before_ready.is_valid():
+		before_ready.call(e)
 	add_child(e)
 	return e
 
@@ -249,11 +270,16 @@ func spawn_adds(n: int, near: Vector3) -> void:
 
 func _spawn_boss() -> void:
 	var cycle_scale := 1.0 + 0.45 * (_cycle_count - 1) + 0.03 * (wave - 3)
-	boss = _spawn(boss_kind, cycle_scale, Game.arena.boss_spawn)
+	boss = _spawn(boss_kind, cycle_scale, Game.arena.boss_spawn, func(b: Boss) -> void:
+		b.cycle = _cycle_count
+		# the boss's own dice come from the seed without drawing from the
+		# wave stream, so the same seed gives the same fight
+		b.dice_seed = hash(Game.run_seed * 13 + wave) & 0x7fffffff)
 	Game.main.boss = boss
 	Game.hud.show_boss_intro(boss.display_name, boss.subtitle)
 	Sfx.play("boss_intro", 0.0)
 	Sfx.play_boss_music(boss_kind)
+	Game.show_hint_once("kamae", "KEEP ATTACKING TO FILL ITS KAMAE BAR - A FULL BAR BREAKS IT")
 	_adds_t = 8.0
 
 
@@ -285,6 +311,8 @@ func _physics_process(delta: float) -> void:
 			var e = _cleanup.pop_front()
 			if is_instance_valid(e) and not e.dead:
 				e.die("explode", Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)))
+	if phase in ["spawning", "boss"] and Game.mut("strikes", false):
+		_storm_strikes(delta)
 	match phase:
 		"intro":
 			phase_t -= delta
@@ -303,7 +331,7 @@ func _physics_process(delta: float) -> void:
 					var item: Array = queue.pop_front()
 					var off := Vector3(_rng.randf_range(-2.0, 2.0), 0, _rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
 					_spawn(item[0], item[1], sp + off)
-				spawn_t = maxf(0.8, 1.8 - wave * 0.06)
+				spawn_t = maxf(0.8, 1.8 - wave * 0.06) * float(Game.mut("spawn_rate", 1.0))
 			if queue.is_empty() and alive == 0:
 				_wave_cleared()
 		"boss":
@@ -341,10 +369,24 @@ func _end_break() -> void:
 	_next_wave()
 
 
+## Raijin's Storm: lightning picks a spot near the player (from the hazard
+## stream), rings it red for STRIKE_WARN seconds, then hits everything there.
+func _storm_strikes(delta: float) -> void:
+	_strike_t -= delta
+	if _strike_t > 0.0:
+		return
+	var r := Game.rng_hazards
+	_strike_t = r.randf_range(STRIKE_GAP.x, STRIKE_GAP.y)
+	var a := r.randf() * TAU
+	var p := Game.player.global_position + Vector3(cos(a), 0, sin(a)) * r.randf_range(0.0, STRIKE_SPREAD)
+	Game.fx.missile_strike(p, STRIKE_WARN, STRIKE_RADIUS, STRIKE_DAMAGE, "lightning")
+
+
 ## End-of-wave tally, chips x mult: what you did this wave adds chips, the
 ## wave number, a flawless clear and the mutator multiply them.
 func _wave_cleared() -> void:
 	phase = "clear"
+	Game.fx.clear_strikes()
 	phase_t = 12.0 # fallback; the HUD's tally normally ends the clear phase
 	var st := Game.wave_stats()
 	var rows: Array = [["WAVE CLEAR", "", 250 * wave]]

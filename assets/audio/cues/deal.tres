@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_74uap"]
+[ext_resource type="AudioStream" path="res://assets/audio/deal.wav" id="2_4wkji"]
+
+[resource]
+script = ExtResource("1_74uap")
+streams = Array[AudioStream]([ExtResource("2_4wkji")])
+bus = "UI"

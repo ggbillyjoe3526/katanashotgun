@@ -20,6 +20,7 @@ var _orbs: Array = []
 var _orb_free: Array = []
 var _waves: Array = []
 var _strikes: Array = []
+const GRUDGE_CAP := 6 # Onryo's Grudge: live rings at once; deaths past it leave none
 var _tracer_mat: ShaderMaterial
 var _arc_mat: ShaderMaterial
 var _zap_flash_mat: ShaderMaterial
@@ -489,8 +490,22 @@ func smoke(pos: Vector3, size := 1.5) -> void:
 		tp.s = size * _rng.randf_range(0.9, 1.5)
 
 
+## Defuses every pending strike (a cleared wave must not hurt anyone during
+## the tally or the next intro).
+func clear_strikes() -> void:
+	for st in _strikes:
+		if st.missile != null and is_instance_valid(st.missile):
+			st.missile.queue_free()
+		st.n.queue_free()
+	_strikes.clear()
+
+
 ## A missile lands on `target` after `delay` seconds; the red ring shows where.
-func missile_strike(target: Vector3, delay: float, radius: float, dmg: float) -> void:
+## `style` "lightning" (Raijin's Storm) drops a bolt from the sky instead;
+## "grudge" (Onryo's Grudge) just bursts, with nothing falling.
+func missile_strike(target: Vector3, delay: float, radius: float, dmg: float, style := "missile") -> void:
+	if style == "grudge" and _strikes.filter(func(st): return st.style == "grudge").size() >= GRUDGE_CAP:
+		return
 	var fh := Game.arena.floor_height_at(target.x, target.z, target.y + 1.0)
 	var pos := Vector3(target.x, fh, target.z)
 	var mi := MeshInstance3D.new()
@@ -501,7 +516,7 @@ func missile_strike(target: Vector3, delay: float, radius: float, dmg: float) ->
 	mi.material_override = mat
 	mi.position = pos + Vector3(0, 0.07, 0)
 	add_child(mi)
-	_strikes.append({"n": mi, "m": mat, "t": 0.0, "delay": delay, "pos": pos, "r": radius, "dmg": dmg, "missile": null, "beeped": 0})
+	_strikes.append({"n": mi, "m": mat, "t": 0.0, "delay": delay, "pos": pos, "r": radius, "dmg": dmg, "missile": null, "beeped": 0, "style": style})
 
 
 func explosion(pos: Vector3, dmg: float, hurt := true, radius := 2.6) -> void:
@@ -675,7 +690,7 @@ func _update_strikes(delta: float) -> void:
 		var left: float = st.delay - st.t
 		var pulse := 1.0 + 1.5 * absf(sin(st.t * (8.0 + (1.0 - clampf(left / st.delay, 0.0, 1.0)) * 20.0)))
 		st.m.set_shader_parameter("intensity", pulse)
-		if left < 0.4 and st.missile == null:
+		if left < 0.4 and st.missile == null and st.style == "missile":
 			var m := Psx.box(Vector3(0.25, 1.4, 0.25), Psx.unlit(Color(1.0, 0.9, 0.6), 3.0), st.pos + Vector3(0, 16, 0))
 			add_child(m)
 			st.missile = m
@@ -686,6 +701,13 @@ func _update_strikes(delta: float) -> void:
 			if st.missile != null and is_instance_valid(st.missile):
 				st.missile.queue_free()
 			st.n.queue_free()
+			if st.style == "lightning":
+				var top: Vector3 = st.pos + Vector3(_rng.randf_range(-3, 3), 22.0, _rng.randf_range(-3, 3))
+				arc(top, st.pos, 0.25, 0.12, 1.6, 3)
+				arc(top, st.pos, 0.2, 0.06, 2.2, 2)
+				Sfx.play("thunder", -2.0, 1.2, 0.1)
+				if Game.hud and Game.hud.post:
+					Game.hud.post.flash(0.25)
 			explosion(st.pos, st.dmg, true, st.r)
 			_strikes.remove_at(i)
 			continue
