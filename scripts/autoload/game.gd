@@ -38,6 +38,7 @@ var wave_damage := 0.0
 var score := 0
 var combo := 0
 var combo_timer := 0.0
+var combo_hold := 0.0 # seconds the combo timer stays frozen (Taiko Frenzy)
 var best_combo := 0
 var kills := 0
 var executions := 0
@@ -72,7 +73,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
@@ -101,6 +102,7 @@ func reset_run() -> void:
 	score = 0
 	combo = 0
 	combo_timer = 0.0
+	combo_hold = 0.0
 	best_combo = 0
 	kills = 0
 	executions = 0
@@ -265,7 +267,9 @@ func _process(delta: float) -> void:
 	_applied_ts = ts
 	if state == "playing":
 		run_time += real_dt
-		if combo > 0:
+		if combo_hold > 0.0:
+			combo_hold -= real_dt
+		elif combo > 0:
 			combo_timer -= real_dt
 			if combo_timer <= 0.0:
 				combo = 0

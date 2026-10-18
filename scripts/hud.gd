@@ -462,6 +462,11 @@ func _build_pause() -> void:
 	lock.name = "LockHint"
 	lock.visible = false
 	pause_root.add_child(lock)
+	# your builds so far, top left, out of the way of the menu
+	var bl := Ui.label("", Ui.font_bold, 10, Upgrades.LINK_COLOR, 2)
+	bl.name = "Builds"
+	bl.position = Vector2(10, 8)
+	pause_root.add_child(bl)
 
 
 func _build_death() -> void:
@@ -560,7 +565,26 @@ func _build_levelup() -> void:
 		desc.position = Vector2(6, 70)
 		desc.size = Vector2(126, 100)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+		desc.add_theme_constant_override("line_spacing", -4)
 		card.add_child(desc)
+		# the builds this card belongs to, pinned to the bottom edge
+		var bl := Ui.label("", Ui.font_bold, 10, Color(0.6, 0.6, 0.7), 2)
+		bl.name = "Builds"
+		bl.position = Vector2(6, CARD_SIZE.y - 30)
+		bl.size = Vector2(126, 26)
+		bl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		bl.add_theme_constant_override("line_spacing", -4)
+		card.add_child(bl)
+		# a tab above the card when it links to a card you already own
+		var rec := Ui.label("RECOMMENDED", Ui.font_bold, 10, Color(0.08, 0.04, 0.0))
+		rec.name = "Rec"
+		var plate := StyleBoxFlat.new()
+		plate.bg_color = Upgrades.LINK_COLOR
+		plate.content_margin_left = 4
+		plate.content_margin_right = 4
+		rec.add_theme_stylebox_override("normal", plate)
+		rec.visible = false
+		card.add_child(rec)
 		levelup_root.add_child(card)
 		cards.append(card)
 	cursor = Ui.label("+", Ui.font_big, 8, Color.WHITE, 2)
@@ -582,6 +606,9 @@ func hide_title() -> void:
 
 func show_pause(on: bool) -> void:
 	pause_root.visible = on
+	var lines := Upgrades.build_lines(Game.upgrades)
+	var bl: Label = pause_root.get_node("Builds")
+	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
 	if not on:
 		settings_menu.close()
 
@@ -766,6 +793,9 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 	# deal the cards one by one
 	for i in choices.size():
 		juice.later(0.06 + i * 0.11, func(): Sfx.play("deal", -4.0, 0.95 + i * 0.1, 0.0))
+		# a card that links to your build lands with a brighter sting
+		if Upgrades.is_recommended(choices[i].id, Game.upgrades):
+			juice.later(0.2 + i * 0.11, func(): Sfx.play("chime", -5.0, 1.25, 0.0))
 	juice.later(0.06, func(): juice.add_shake(3.0))
 	for i in cards.size():
 		var card: Control = cards[i]
@@ -781,15 +811,31 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 		var pips := ""
 		for k in u.max:
 			pips += "#" if k <= r else "-"
-		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else "UNIQUE"
+		# single-pick cards skip the rank line to leave room for the text
+		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else ""
 		card.get_node("Desc").text = u.desc
+		var rec := Upgrades.is_recommended(u.id, Game.upgrades)
+		var lit: Label = card.get_node("Rec")
+		lit.visible = rec
+		lit.size = Vector2.ZERO
+		lit.position = Vector2(roundf((CARD_SIZE.x - lit.get_minimum_size().x) * 0.5), -lit.get_minimum_size().y)
+		# each build line counts what you would own after this pick
+		var after := Game.upgrades.duplicate()
+		after[u.id] = Game.rank(u.id) + 1
+		var lines := []
+		for b in Upgrades.builds_of(u.id):
+			lines.append("%s %d/3" % [b.name, Upgrades.build_count(b, after)])
+		var bl: Label = card.get_node("Builds")
+		bl.text = "\n".join(lines)
+		bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else Color(0.62, 0.62, 0.74))
+		card.set_meta("rec", rec)
 		# the rank and description sit under the name, which may take two lines
 		var npx := Ui.px(Ui.font_big, 10)
 		var nh := Ui.font_big.get_multiline_string_size(u.name, HORIZONTAL_ALIGNMENT_LEFT, 128, npx, -1, TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND).y
 		var nl := maxi(1, roundi(nh / Ui.font_big.get_height(npx)))
 		var ry := 22.0 + nh + (nl - 1) * 3.0 + 1.0
 		card.get_node("Rank").position.y = ry
-		card.get_node("Desc").position.y = ry + 18.0
+		card.get_node("Desc").position.y = ry + (18.0 if u.max > 1 else 2.0)
 		card.set_meta("col", col)
 
 
@@ -1082,10 +1128,10 @@ func _layout_levelup() -> void:
 	var tk := clampf(_deal_t / 0.1, 0.0, 1.0)
 	t.scale = Vector2.ONE * (lerpf(2.6, 1.0, tk * tk) if tk < 1.0 else 1.0 - 0.12 * sin((_deal_t - 0.1) * 30.0) * exp(-(_deal_t - 0.1) * 9.0))
 	t.rotation = 0.0
-	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 112)
+	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 117)
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 88)
+	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 98)
 	var n := _choices.size()
 	var total := n * CARD_SIZE.x + (n - 1) * 10
 	for i in cards.size():
@@ -1121,6 +1167,8 @@ func _layout_levelup() -> void:
 		card.position = base + Vector2(0, roundf(off_y))
 		var col: Color = card.get_meta("col", Color.WHITE)
 		var bcol := col if hov else col.darkened(0.45)
+		if card.get_meta("rec", false):
+			bcol = Upgrades.LINK_COLOR if hov else Upgrades.LINK_COLOR.darkened(0.2)
 		var w := card.size.x
 		var h := card.size.y
 		var b0: ColorRect = card.get_node("B0")

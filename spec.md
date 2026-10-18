@@ -519,6 +519,7 @@ Notes:
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
 | Glory kill trigger | Press F (`finisher` action), like Doom 2016, instead of slashing a staggered enemy (owner, 2026-10-18) |
+| Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -599,7 +600,7 @@ charges the gun; the gun sets up the blade.**
 | Walk speed | 8.8 m/s, ground accel 70, air accel 28 (×0.3 above walk speed, to keep jump-pad and dash momentum) |
 | Gravity | 26 m/s² |
 | Jump / double jump | 9.4 / 8.6 m/s (1 extra jump, reset on landing and on jump pads) |
-| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (−0.3 s per Idaten Drive rank), FOV kick +14 |
+| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
 | Capsule | radius 0.4, height 1.8, eye height 1.55 |
 | Hit invulnerability | 0.12 s |
@@ -609,12 +610,11 @@ charges the gun; the gun sets up the blade.**
 - **3-hit combo:** left→right, right→left backhand, overhead chop.
   - Cooldown 0.32 s, or 0.45 s after the third hit. The combo resets if you
     don't swing for 0.65 s.
-- **Hit area:** reach 3.4 m (+0.8 per Long Reach rank), half-arc 68° (+14° per
-  rank), vertical tolerance about the enemy's half height + 1.7 m.
-- **Damage:** 50 per hit, ×(1 + 0.35 per Masamune Edge rank), ×the mutator.
+- **Hit area:** reach 3.4 m, half-arc 68°, vertical tolerance about the enemy's half height + 1.7 m.
+- **Damage:** 50 per hit, ×the mutator (Masamune Edge: the third cut ×2).
   Poise damage 18, knockback 4.
 - **Armour:** against armoured enemies (that aren't staggered) the katana does
-  `armor + 0.12 × Masamune rank` of its damage, with sparks and a clang.
+  `armor` of its damage, with sparks and a clang (a Masamune heavy cut ignores armour).
 - **Cleaves:** hits every enemy in the arc.
 - **Charging the shotgun:** each katana kill gives +1 cell (+1 more per Blood
   Battery rank). Each deflect gives +1 cell.
@@ -630,7 +630,7 @@ charges the gun; the gun sets up the blade.**
 
 ### 3.3 Shotgun (RIGHT hand, RMB): "RAIJIN-12" arc shotgun ("shotgun taser")
 - **Gameplay is exactly a shotgun.** Presentation is electric.
-- **Pellets:** 10 hitscan pellets per blast (+3 per Raijin's Fork rank).
+- **Pellets:** 10 hitscan pellets per blast (×2 on an Inazuma Overload blast).
   - Spread: a random disc of radius 0.085 rad. Range 48 m.
   - Damage 13 per pellet × falloff × mutator. Falloff is
     `clamp(1 − (dist − 7)/22, 0.3, 1)`.
@@ -638,10 +638,10 @@ charges the gun; the gun sets up the blade.**
     enemy's `head_y`. The blast counts as a headshot (popping the head on a
     kill) if any pellet hit the head and ≥3 pellets hit that enemy.
 - **Effect per enemy:** all pellet damage is summed into one hit.
-  - Poise damage = that damage × (1 + 0.6 per High Voltage rank).
-  - Knockback 6 + 8 per High Voltage rank.
+  - Poise damage = that damage × (1 + 0.6 per Ikazuchi Surge rank).
+  - Knockback 6 + 8 per Ikazuchi Surge rank.
   - Kagutsuchi Flame ignites the target (§3.6).
-- **Ammo is CELLS.** 4 max to start (+2 per Fujin Bank rank). Each blast uses
+- **Ammo is CELLS.** 4 max to start (+2 with Inazuma Overload). Each blast uses
   1 cell. Below 2 cells, they recharge by 1 every 2.5 s (the Yomi Blackout
   mutator turns this off).
 - **Empty:** a 0.3 s cooldown, the "empty" fizzle sound and a "NO CHARGE – USE
@@ -756,29 +756,69 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 - XP comes from kills (grunt 10, gunner 18, brute 60, Kurokage 320, Tetsugumo
   420, Shuten 500). XP to the next level = `60 + (level − 1) × 40`.
 - **Each level-up** pauses the game (tree paused) and offers **3 augments**,
-  drawn as a seeded Fisher–Yates pick from the pool not yet at max rank.
-  Choose with click or 1/2/3. Several pending level-ups chain.
-- **Augments** (they change *how* a weapon behaves, never +2% stats):
+  drawn as a seeded Fisher–Yates pick from the cards not yet at max rank (and
+  whose `requires` card, if any, is owned). Choose with click or 1/2/3.
+  Several pending level-ups chain.
+- **Augments change a rule of the loop**, never a plain +% number (owner,
+  2026-10-18: picks should build a way of playing, like Balatro's Jokers).
+- **Builds:** every card but Kongo Heart sits in one or two named builds of
+  three cards. Builds are labels only: no hidden set bonus.
+  - An offered card that shares a build with a different card you own shows a
+    gold **RECOMMENDED** tab above it, a gold border, and a brighter sting as
+    it deals. A rank-up of an owned card is not a link.
+  - **Linked offers:** once you own a build card, if no linking card is among
+    the three drawn, the first linking card in the shuffled order takes the
+    last slot (no extra RNG draw). Same seed and same picks give the same
+    offers.
+  - Each card's bottom lines name its builds with the count you would own
+    after picking ("RONIN 2/3"). Picking the second card of a build pops
+    "<BUILD> LINKED"; the third stamps "<BUILD> COMPLETE" once the cards
+    close. The pause screen lists your builds.
 
 | id | Name | Tag | Max | Effect |
 |---|---|---|---|---|
-| edge | MASAMUNE EDGE | KATANA | 3 | Katana damage +35%/rank; better against armour (+0.12/rank) |
-| reach | LONG REACH | KATANA | 2 | Katana range +0.8 m and arc +14°/rank |
-| wave | SUSANOO'S WAVE | KATANA | 3 | Every (4 − rank) slashes launch a piercing blood blade (26 m/s, 40 + 15 × rank damage) |
-| vamp | VAMPIRIC STEEL | KATANA | 3 | Heal 1 HP × rank per enemy the katana hits |
-| battery | BLOOD BATTERY | SYNERGY | 2 | Katana kills charge +1 extra cell per rank |
-| pellets | RAIJIN'S FORK | SHOTGUN | 3 | +3 arcs (pellets) per blast |
-| tube | FUJIN BANK | SHOTGUN | 3 | +2 max cells, charged immediately |
+| fork | RAIJIN'S FORK | SHOTGUN | 1 | From each of the first 4 enemies a blast hits, an arc leaps to the 2 nearest enemies within 7 m it missed: 40% of that enemy's blast damage (min 15), same stagger rules |
+| ikazuchi | IKAZUCHI SURGE | SHOTGUN | 2 | Blasts stagger 60% harder per rank and knock back +8 per rank |
+| inazuma | INAZUMA OVERLOAD | SHOTGUN | 1 | +2 max cells. The blast that spends the last cell fires 20 pellets and staggers every non-boss it hits (bosses take ×3 poise) |
 | dragon | KAGUTSUCHI FLAME | SHOTGUN | 2 | Arcs set enemies alight (burn, §3.6) |
-| concuss | HIGH VOLTAGE | SHOTGUN | 2 | Blasts stagger 60% harder and knock back further |
-| dash | IDATEN DRIVE | MOBILITY | 2 | +1 dash charge, faster recharge |
-| dashcut | KAGE STEP | MOBILITY | 2 | Dashing through enemies slices them (40 × rank × edge bonus) |
-| chain | HYAKUNIN-GIRI | SYNERGY | 1 | Glory kills stagger every enemy within 9 m |
-| hotbarrel | FEEDBACK LOOP | SYNERGY | 1 | Shotgun kills refund one dash charge |
+| onibi | ONIBI CHAIN | SHOTGUN | 1 | Requires Kagutsuchi Flame or Homura Edge. A burning enemy that dies ignites every enemy within 5 m |
+| hachiman | HACHIMAN FOCUS | SHOTGUN | 1 | Spread 0.04 rad (from 0.085); falloff starts at 18 m (from 7 m) |
+| yoichi | YOICHI'S MARK | SHOTGUN | 1 | A headshot blast (§3.3) refunds its cell |
+| gasha | GASHADOKURO BURST | SHOTGUN | 1 | A shotgun headshot kill explodes: 30 damage within 5 m and staggers non-bosses |
+| edge | MASAMUNE EDGE | KATANA | 1 | The third combo cut does ×2 damage, ignores armour and deals 100 poise |
+| wave | SUSANOO'S WAVE | KATANA | 2 | Every (4 − rank) slashes launch a piercing blood blade (26 m/s, 40 + 15 × rank damage); with Masamune Edge every heavy cut launches one too |
+| yata | YATA MIRROR | KATANA | 1 | A deflected bolt sends two more copies out at ±0.3 rad (no extra cells, count or popup) |
+| homura | HOMURA EDGE | KATANA | 1 | Katana hits ignite (burn rank 1); burning enemies take katana damage ×1.5 |
+| chimatsuri | CHIMATSURI STEEL | KATANA | 2 | Heal 1 HP × rank per enemy the katana hits; healing past full HP banks, every 6 HP banked = +1 cell |
+| battery | BLOOD BATTERY | KATANA | 2 | Katana kills charge +1 extra cell per rank |
+| kurama | KURAMA LEAP | GLORY | 1 | Glory kill reach 9 m (kept to 10 m). The lunge takes 0.13 s × distance / 4.5 m (max 0.26 s) and every beat shifts back by the extra |
+| chain | HYAKUNIN-GIRI | GLORY | 1 | Glory kills stagger every enemy within 9 m |
+| kamaitachi | KAMAITACHI RING | GLORY | 1 | A glory kill fires 8 blood blades flat out from the body (60 damage each) |
+| taiko | TAIKO FRENZY | GLORY | 1 | A glory kill adds +5 combo and freezes the combo timer for 3 s |
+| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge; every dash charges 1 cell |
+| fujin | FUJIN'S RETURN | DASH | 1 | Shotgun kills (including Raijin's Fork leaps) refund one dash charge |
+| dashcut | KAGE STEP | DASH | 2 | Dashing through enemies slices them (40 × rank) |
+| utsusemi | UTSUSEMI SHELL | DASH | 1 | A hit that would hurt you spends a dash charge instead (0.4 s invulnerable); once every 3 s |
 | chrome | KONGO HEART | BODY | 3 | +25 max HP and a full heal |
+| sanzu | SANZU REPRIEVE | BODY | 1 | Once per wave, a killing blow leaves you on 1 HP with 1.5 s invulnerability |
 
-Tag colours: KATANA cyan, SHOTGUN electric blue, SYNERGY hot pink, MOBILITY
-acid green, BODY pale gold.
+| Build | Cards | How it plays |
+|---|---|---|
+| STORM RUNNER | Idaten Drive, Fujin's Return, Inazuma Overload | Blast, kill, dash, recharge, blast: never stop moving |
+| THUNDER CHAIN | Raijin's Fork, Ikazuchi Surge, Inazuma Overload | One blast staggers a whole pack |
+| INFERNO | Kagutsuchi Flame, Homura Edge, Onibi Chain | Fire spreads through the crowd |
+| HEADHUNTER | Hachiman Focus, Yoichi's Mark, Gashadokuro Burst | Mid-range headshots that pay for themselves |
+| RONIN | Masamune Edge, Susanoo's Wave, Yata Mirror | Count to three; the blade does almost everything |
+| BLOOD ENGINE | Chimatsuri Steel, Blood Battery, Sanzu Reprieve | The katana feeds health and cells; live on the edge |
+| EXECUTIONER | Kurama Leap, Hyakunin-giri, Kamaitachi Ring | Glory kill to glory kill across the rooftop |
+| SHOWSTOPPER | Taiko Frenzy, Hyakunin-giri, Ikazuchi Surge | Stagger everything, glory kill for score |
+| GHOST | Kage Step, Utsusemi Shell, Idaten Drive | Dash through everything, untouchable |
+
+Tag colours: KATANA cyan, SHOTGUN electric blue, GLORY hot pink, DASH acid
+green, BODY pale gold; links and RECOMMENDED in gold.
+
+Debug: `--augments=id,id:2|all` starts a run with cards picked; `--cardtour`
+deals every card for a layout check.
 
 ---
 
@@ -1303,10 +1343,11 @@ the holographic cut-in (§9.8).
   hint if the mouse fails to lock. Music ducks to −20 dB.
 - **Level-up:**
   - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (138×180
-    tech panels, tall enough for a two-line name and a five-line description
-    at a readable size; a tag ribbon in the tag colour with the [1]/[2]/[3]
-    key beside it; then name, rank pips and description, each placed under
-    the one above so nothing overlaps).
+    tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
+    beside it; then a name of up to two lines, rank pips (cards with more
+    than one rank only) and a description of up to four lines, each placed
+    under the one above; the build lines sit on the bottom edge). A linking
+    card wears a gold RECOMMENDED tab above its top edge (§3.8).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then sway.
     Hovering lifts and scales the card ×1.06 and tilts it toward the cursor.
@@ -1671,7 +1712,17 @@ historical root with a cyberpunk twist**.
 - **RAIJIN-12** (the shotgun): Raijin, the thunder god.
 - **Enemies:** Ashigaru (grunts), Teppo (gunners; the matchlock corps),
   Kanabo (brutes; after the oni's iron club).
-- **Mutators and augments:** see §6.3 and §3.8.
+- **Mutators and augments:** see §6.3 and §3.8. Augment roots added
+  2026-10-18: Ikazuchi (the eight thunder kami of Yomi), Inazuma
+  ("lightning"), Onibi (yokai fire wisps), Hachiman (god of archery and
+  war), Nasu no Yoichi (the archer who hit the fan at Yashima), Gashadokuro
+  (the giant skeleton yokai), Yata no Kagami (the sacred mirror), Homura
+  ("flame"), chimatsuri ("blood festival"), Kurama (the mountain where the
+  tengu trained Yoshitsune), kamaitachi (the sickle-weasel wind yokai),
+  taiko (the war drum), Fujin (the wind god; dash cards are wind, shotgun
+  cards thunder), utsusemi ("cicada shell", the shinobi body swap), the
+  Sanzu river (crossed by the dead). Retired with their effects: Long
+  Reach, Vampiric Steel, Fujin Bank, High Voltage, Feedback Loop.
 
 ---
 

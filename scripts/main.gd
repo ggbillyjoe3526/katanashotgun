@@ -8,6 +8,7 @@ var hud: Hud
 var post: PostFx
 var boss: Enemy = null
 var _capture_grace := 0.0
+var _build_stamp := "" # a build completed by this level-up, stamped after it
 var lock_failures := 0
 
 
@@ -45,6 +46,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--juicetest"):
 		add_child(load("res://scripts/debug_juice.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--cardtour"):
+		add_child(load("res://scripts/debug_cards.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--palettetour"):
 		add_child(load("res://scripts/debug_palette.gd").new())
 		return
@@ -78,7 +82,30 @@ func start_run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--wave="):
 			first = int(a.substr(7))
+		elif a.begins_with("--augments="):
+			_debug_augments(a.substr(11))
 	director.start(first)
+
+
+## Debug: start with augments already picked. "all" takes every card at max
+## rank; otherwise a comma list of ids, each at rank 1 ("wave:2" for more).
+func _debug_augments(spec: String) -> void:
+	var want := {}
+	if spec == "all":
+		for u in Upgrades.LIST:
+			want[u.id] = u.max
+	else:
+		for part in spec.split(",", false):
+			var bits := part.split(":")
+			var def := Upgrades.get_def(bits[0])
+			if def.is_empty():
+				push_warning("--augments: unknown card '%s'" % bits[0])
+				continue
+			want[def.id] = clampi(int(bits[1]) if bits.size() > 1 else 1, 1, def.max)
+	for id in want:
+		for r in want[id]:
+			Game.upgrades[id] = Game.rank(id) + 1
+			player.on_upgrade(id)
 
 
 func _capture() -> void:
@@ -120,7 +147,14 @@ func _on_upgrade(id: String) -> void:
 	player.on_upgrade(id)
 	Game.pending_levelups -= 1
 	var def := Upgrades.get_def(id)
-	Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
+	# a pick that moves a build forward says so instead of the plain name
+	var news := Upgrades.build_news(id, Game.upgrades)
+	if news.ends_with("COMPLETE"):
+		_build_stamp = news # stamped once the cards are gone, never over them
+	elif news != "":
+		Game.popup.emit(news, Upgrades.LINK_COLOR)
+	else:
+		Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
 	if Game.pending_levelups > 0:
 		var choices := Upgrades.roll(Game.upgrades, 3)
 		if not choices.is_empty():
@@ -133,6 +167,9 @@ func _on_upgrade(id: String) -> void:
 	Game.state = "playing"
 	Sfx.duck_music(-7.0)
 	_capture_grace = 0.6
+	if _build_stamp != "":
+		hud.stamp(_build_stamp, Upgrades.LINK_COLOR, 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 1.2, "shake": 6.0, "pitch": 1.2, "burst": 30, "shadow": Color(0.3, 0.2, 0.0)})
+		_build_stamp = ""
 
 
 func on_player_died() -> void:

@@ -635,7 +635,7 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 	var mult := 1.0
 	var armored := false
 	if source in ["katana", "wave", "dashcut"] and armor < 1.0 and state != S.STAGGER:
-		mult = minf(1.0, armor + 0.12 * Game.rank("edge"))
+		mult = armor
 		armored = true
 	var final := dmg * mult
 	hp -= final
@@ -868,7 +868,7 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		col = Color(1.0, 0.7, 0.2)
 	Game.register_kill(pts, xp, tag, col)
 	var mode := source
-	if source in ["wave", "dashcut"]:
+	if source in ["wave", "dashcut", "heavy"]:
 		mode = "katana"
 	elif source == "burn":
 		mode = "explode"
@@ -904,12 +904,24 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		orbs += 4
 	if orbs > 0:
 		Game.fx.health_orbs(pos, orbs)
+	if burn_t > 0.0 and Game.rank("onibi") > 0:
+		_onibi_burst()
 	var hk := float(Game.mut("heal_kill", 0.0))
 	if hk > 0.0:
 		Game.player.heal(hk)
 	if is_boss:
 		Game.main.on_boss_killed(self)
 	queue_free()
+
+
+## Onibi Chain: a burning enemy's death spreads the fire to everyone close.
+func _onibi_burst() -> void:
+	var c := global_position + Vector3(0, height * 0.5, 0)
+	Game.gore.embers(global_position, 8)
+	Game.gore.sparks(c, Vector3.UP, 18, Color(2.0, 0.9, 0.3))
+	for o in Game.enemy_list:
+		if is_instance_valid(o) and o != self and not o.dead and o.global_position.distance_to(global_position) < 5.0:
+			o.ignite(maxi(1, Game.rank("dragon")))
 
 
 # ---------------------------------------------------------------- animation

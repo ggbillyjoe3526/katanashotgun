@@ -220,8 +220,8 @@ Adopted names (in the game since v0.3; in-game text drops the macrons, e.g. DOJI
   Wave**, Phantom Cut → **Kage Step**, Chain Glory → **Hyakunin-giri** (a
   hundred-man cut), Overclocked Legs → **Idaten Drive**, Chrome Heart →
   **Kongō Heart** (vajra, unbreakable), Forked Lightning → **Raijin's Fork**,
-  Capacitor Bank → **Fūjin Bank**, Plasma Burn → **Kagutsuchi Flame** (the
-  fire kami). Keep the rest unless a better myth fits.
+  Plasma Burn → **Kagutsuchi Flame** (the fire kami). The full card list,
+  its builds and the newer names are in spec §3.8 and §13.
 - **Variants and future bosses** should follow the same rule. Example:
   "Orochi Protocol, the Eight-Headed Network"; "Jorōgumo, Silk-Server
   Matriarch"; "Gashadokuro, the Scrapyard Colossus"; "Nue, Chimera of the

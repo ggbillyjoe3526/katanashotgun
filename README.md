@@ -47,7 +47,7 @@ scripts/boss.gd             Kurokage (ninja) and Tetsugumo (spider mech)
 scripts/bolt.gd             bolts and shuriken (deflectable), Crimson Wave
 scripts/wave_director.gd    endless waves, boss waves, mutators, reinforcements
 scripts/mutators.gd         seeded wave modifiers
-scripts/upgrades.gd         the 14 level-up augments (seeded offers)
+scripts/upgrades.gd         the 24 level-up augments and their builds (seeded offers)
 scripts/palette.gd          the five synthwave palettes
 scripts/arena.gd            base class for maps (helpers, sky, weather, lightning)
 scripts/maps/rooftop.gd     Shin-Kagura Rooftop (seeded cover, signs, skyline)
@@ -134,6 +134,9 @@ Windows), with a backup next to it.
 Pass after `--` on the command line:
 - `--autoplay` a bot plays and logs stats · `--god` no damage
 - `--wave=6` start at a wave · `--seed=1234-5678` play a specific seed
+- `--augments=idaten,fujin,inazuma` start with those level-up cards
+  (`wave:2` for rank 2, `all` for every card at max rank); ids are in
+  `scripts/upgrades.gd`
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
@@ -141,6 +144,7 @@ Pass after `--` on the command line:
 - `--palettetour` four fixed views of the arena for checking colour, then
   quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
+- `--cardtour` deals every level-up card, three at a time, then quits
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
 

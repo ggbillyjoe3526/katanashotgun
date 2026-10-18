@@ -36,6 +36,8 @@ func _process(_delta: float) -> void:
 		[13.25, func(): _hud.souls_card("SHADOW DELETED", Color(1.0, 0.86, 0.55), "KUROKAGE  -  BLADE OF THE NULL SIGNAL", "felled", 4.6)],
 		[18.4, func():
 			Sfx.resume_combat()
+			# own two build cards so the offer shows a RECOMMENDED card
+			Game.upgrades = {"idaten": 1, "edge": 1}
 			Game.pending_levelups = 1],
 		[20.6, func(): _hud._pick(1)],
 		[21.4, func():

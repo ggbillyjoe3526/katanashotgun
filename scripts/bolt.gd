@@ -72,7 +72,9 @@ func _build_wave() -> void:
 	look_at_from_position(position, position + vel, Vector3.UP)
 
 
-func deflect(dir: Vector3) -> void:
+## `split` is a Yata Mirror copy: it flies at its parent's speed and makes
+## no fuss of its own (no count, popup, sound or hitstop).
+func deflect(dir: Vector3, split := false) -> void:
 	if not hostile:
 		return
 	hostile = false
@@ -90,7 +92,7 @@ func deflect(dir: Vector3) -> void:
 			best = e
 	if best:
 		dir = ((best.global_position + Vector3(0, best.height * 0.6, 0)) - global_position).normalized()
-	vel = dir * maxf(vel.length() * 2.4, 36.0)
+	vel = dir * (vel.length() if split else maxf(vel.length() * 2.4, 36.0))
 	damage = 95.0
 	life = 2.0
 	if kind == "shuriken":
@@ -98,6 +100,8 @@ func deflect(dir: Vector3) -> void:
 	else:
 		_core_mat.set_shader_parameter("albedo_color", Color(0.4, 1.0, 1.0))
 	_halo_mat.set_shader_parameter("color", Color(0.3, 0.9, 1.0, 0.9))
+	if split:
+		return
 	Game.deflects += 1
 	Sfx.play("deflect", 0.0)
 	Game.hitstop(0.07)
