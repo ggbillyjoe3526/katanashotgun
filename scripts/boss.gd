@@ -674,7 +674,7 @@ func _red_act_state(_dir: Vector3) -> Array:
 	if state_t < GRAB_TIME:
 		if int(state_t * 30.0) % 2 == 0:
 			Game.gore.sparks(global_position + Vector3(0, 0.2, 0), -_lunge + Vector3.UP * 0.4, 2)
-		_red_contact(radius + 1.4, 38.0, _lunge * 14.0 + Vector3.UP * 9.0)
+		_red_contact(radius + 1.4, 34.0, _lunge * 14.0 + Vector3.UP * 9.0)
 		return [_lunge * GRAB_SPEED, _lunge]
 	# a whiffed grab leaves him wide open
 	recover_time = 1.2 if _hit_done else 1.8
@@ -754,7 +754,7 @@ func _begin_area(dir: Vector3) -> void:
 	var hazards: Array[BossHazard] = []
 	match kind:
 		"ninja": # SMOKE RING: smoke at his feet, then a full-circle cut
-			_area_len = 0.55 * t
+			_area_len = 0.7 * t
 			var h := BossHazard.zone(global_position, 5.0, _area_len, 18.0 * damage_mult, Color(Game.palette.neon_a))
 			h.sound = "swing2"
 			hazards.append(h)

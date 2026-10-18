@@ -10,7 +10,7 @@ keep the two in step.
 
 Three bosses exist today: KUROKAGE, TETSUGUMO and SHUTEN. This page records how each one fights, so a new boss can be checked against them for uniqueness and balance before it is built.
 
-- **Status tags:** **LIVE** = on `main` today. **PLANNED** = the tougher moveset from the "Boss posture meter" thread, being built now as a second PR.
+- **Status tags:** **LIVE** = on `main` today. **PR #19** = the tougher movesets (spec §5.6), built and waiting to merge.
 - **Numbers** come from the code (`scripts/enemy.gd`, `scripts/boss.gd`, `scripts/boss_kamae.gd`) and spec §5. Damage is against the player's 100 HP, at cycle 1 (first appearance). Where the code and spec disagree, it is flagged.
 - **Keep it current:** any change to a boss updates its section and the comparison table in the same piece of work, with a line in the change log at the bottom.
 
@@ -32,11 +32,12 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | KAMAE posture | pressure fills a bar; full = KAMAE BROKEN, the boss reels for its stagger time + 1.5 s, F lands the ONIKIRI for 20% max HP (kills at ≤ 20%) | LIVE |
 | KAMAE fill | katana poise ×1.6, shotgun ×0.6, returned bolt = its damage ×0.5, a glory kill on an add within 15 m = 12% of the bar | LIVE |
 | KAMAE drain | after 2.5 s without pressure, 7% of the bar per second | LIVE |
-| Sidestep | steps or blinks aside from players hanging back at range, at most every 4 s, never mid-attack | PLANNED |
-| RED SIGNAL | one heavy move per boss: red diamond, alarm, red floor mark, 0.8 s+ warning; dash or jump only; a last-0.2 s dash = PERFECT and +15% KAMAE | PLANNED |
-| Delayed swings | some combo hits hold the windup a beat longer, shown by pose and eye glow | PLANNED |
-| Punish windows | 0.8–1.2 s recovery after every big move, armour slightly down | PLANNED |
-| First-boss gentleness | at wave 3 only sidestep and delayed swings until 50% HP; then the area move and RED SIGNAL unlock with 25% longer telegraphs; full moveset from wave 12 | PLANNED |
+| Sidestep | aimed at from beyond 7 m (+ radius) for 0.35 s, it steps out of the line; cooldown 4 s (6 s for the run's first boss); never up close, never mid-attack | PR #19 |
+| RED SIGNAL | one heavy move per boss: spinning red diamond, alarm, a beep 0.2 s before it lands, 0.9–1.0 s warning; can't be deflected or traded with. Dashing as its hit connects = PERFECT: slow motion and +15% KAMAE. Cooldown 14 s | PR #19 |
+| Delayed swings | 30% of melee windups hold 1.7× as long; eyes stay dim, then flare with a hiss 0.22 s before the hit | PR #19 |
+| Punish windows | every recovery of 0.8 s or more: armour off, eyes dim, KAMAE fills ×1.5 | PR #19 |
+| Pacing | first cycle (waves 3, 6, 9): area move and RED SIGNAL only once enraged; the run's first boss telegraphs them 25% longer. From wave 12: everything from the start. Area moves cooldown 8 s | PR #19 |
+| Seeded dice | a boss rolls from hash(run seed × 13 + wave): same seed, same fight | PR #19 |
 
 ## KUROKAGE, Blade of the Null Signal
 
@@ -63,7 +64,7 @@ The fast duelist: a neon-piped cyber-ninja who tests your eyes and footwork, not
 - **Movement:** sprints in from beyond 7 m; inside that he circles you, switching direction every 1–2 s and drifting closer.
 - **Enrage (50% HP):** a third dash and third combo hit, 7 shuriken, shorter windups and cooldowns.
 - **KAMAE:** the smallest bar. His shuriken fans are the big swing: a deflected fan fills it fast. Katana pressure during combo recoveries does the rest.
-- **PLANNED:** afterimage sidestep; **smoke ring** (smoke at his feet, a full-circle slash 0.5 s later; step out or jump); RED SIGNAL **NULL CROSS** (blinks out, three neon lines cross the arena, he dashes along each in turn).
+- **Moveset (PR #19):** afterimage sidestep (0.22 s at 18 m/s). **Smoke ring** when you are within 5 m: smoke at his feet, a 5 m full-circle cut 0.7 s later for 18; step out or jump; 0.9 s punish window. RED SIGNAL **NULL CROSS**: he vanishes, three red 18 m lines cross where you stand (60° apart), he reappears at the first and dashes along each in turn (34 m/s, 26 each, 0.25 s between); 1.2 s punish window.
 - **Rewards:** KAGEROU EDGE (katana), then KITSUNEBI COIL (shotgun).
 - **What makes him different:** the only boss that relocates instantly and attacks from behind. Many small hits, all about reading lines and sounds. The lightest punishment for a mistake.
 
@@ -91,7 +92,7 @@ The zone controller: a six-legged spider mech that keeps its distance and fills 
 - **Movement:** holds 8–15 m. Walks in from beyond 15 m, backs off at 70% speed inside 8 m, otherwise strafes at 60% speed, switching every 2–3.5 s. Her reinforcements come every 10 s instead of 7.
 - **Enrage (50% HP):** 9 missiles instead of 7, shorter special cooldowns, slightly faster. The gatling and stomp are unchanged.
 - **KAMAE:** mid-sized bar. The intended fill is turning her own fire against her: returned gatling bolts and glory kills on her brood. Katana pressure means staying under her stomp.
-- **PLANNED:** **back-leap** (jumps away, lands with a small shockwave); **EMP field** (three floor zones crackle for 3 s, then shock anyone inside); RED SIGNAL **BROOD BARRAGE** (a closing ring of missile markers; the gap is the way out).
+- **Moveset (PR #19):** **back-leap** (jumps away, lands with a 7 m shockwave for 12). **EMP field** at any range: three 2.6 m zones (on you and either side) crackle 1.2 s, then stay live 1.8 s, 12 every 0.6 s; jumping clears them. Delayed stomps. RED SIGNAL **BROOD BARRAGE**: a 7.5 m ring of 10 missiles, a 4.5 m ring of 6 and one in the middle (1.2 / 1.6 / 2.0 s, 20 each); both rings share one gap, the way out; 1.2 s punish window.
 - **Rewards:** KANAYAGO EDGE (katana), then AKAGANE COIL (shotgun).
 - **What makes her different:** the only boss that runs away from you and fights through other enemies. Damage comes from the arena (rings, waves, bullet streams), not from contact.
 
@@ -119,7 +120,7 @@ The heavyweight: a chrome oni that walks you down and hits like a truck. Most HP
 - **Movement:** always walks straight at you. No strafing, no retreat.
 - **Enrage (50% HP):** speed jumps to 5.6, the fan volley replaces every third leap, shorter special cooldowns. His eyes turn red.
 - **KAMAE:** the largest bar. Meant to be filled up close in the recovery windows after his slam and charge, where his reach can't punish you.
-- **PLANNED:** **shoulder barge** sideways as his dodge; **fissures** (fire lines crack out from his fist in a star; jump or stand between); RED SIGNAL **DAEMON GRAB** (a slow lunge that grabs and crushes for heavy damage; dash through it).
+- **Moveset (PR #19):** **shoulder barge** sideways (0.3 s at 14 m/s). **Fissures** within 14 m: five 14 m fire lines crack out in a star from his fist after 0.8 s, 24 each; jump them or stand between. RED SIGNAL **DAEMON GRAB**: aims through 70% of a 1.0 s windup, then a 0.45 s lunge at 17 m/s that grabs and hurls for 34; dash through it. A whiffed grab leaves him open 1.8 s.
 - **Rewards:** ONIBI EDGE (katana), then RAIKO COIL (shotgun).
 - **What makes him different:** the only boss whose single hit takes a third of your health. Few attacks, long windups, huge consequences: a test of patience and punishing.
 - **Spec mismatch:** spec §5.2 says a 2–3 hit combo; the code always swings twice.
@@ -145,9 +146,9 @@ Each boss owns a different distance and a different answer: KUROKAGE is about re
 | Reinforcement timer | 7 s | 10 s | 7 s |
 | Enrage adds | 3rd dash, 3rd hit, wider fan | more missiles | speed 5.6, fan volley |
 | Best KAMAE source | Deflected shuriken fans | Returned gatling, brood glory kills | Katana in punish windows |
-| PLANNED dodge | Afterimage sidestep | Back-leap | Shoulder barge |
-| PLANNED area move | Smoke ring | EMP field | Fissures |
-| PLANNED RED SIGNAL | NULL CROSS | BROOD BARRAGE | DAEMON GRAB |
+| Dodge (PR #19) | Afterimage sidestep | Back-leap | Shoulder barge |
+| Area move (PR #19) | Smoke ring | EMP field | Fissures |
+| RED SIGNAL (PR #19) | NULL CROSS | BROOD BARRAGE | DAEMON GRAB |
 | Rewards | KAGEROU EDGE, KITSUNEBI COIL | KANAYAGO EDGE, AKAGANE COIL | ONIBI EDGE, RAIKO COIL |
 
 ## Checklist for a new boss
@@ -194,7 +195,6 @@ A new boss is ready to build when every line below holds. Copy the list into the
 ## Open questions
 
 - SHUTEN's combo: should it be 2 hits (the code) or 2–3 (the spec)?
-- Boss attacks don't yet roll on the run's seeded dice, so the same seed can give a slightly different fight. The moveset PR moves them onto it.
 - Boss variants (spec §5.4, such as "Kurokage, Ghost Build") and new bosses from the name pool wait until you ask for them.
 
 ## Change log
@@ -203,3 +203,4 @@ A new boss is ready to build when every line below holds. Copy the list into the
 | --- | --- |
 | 2026-10-18 | Created from `main`, the KAMAE posture PR (#17) and the tougher moveset plan. |
 | 2026-10-18 | KAMAE posture and the ONIKIRI are LIVE (PR #17): boss glory kills and the 15% DEATHBLOW are gone. |
+| 2026-10-18 | Movesets built (PR #19): sidesteps, delayed swings, punish windows, an area move and a RED SIGNAL per boss, seeded boss dice. |
