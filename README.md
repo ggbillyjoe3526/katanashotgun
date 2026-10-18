@@ -18,8 +18,9 @@ and Linux).
 | Mouse | Look |
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
 | RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
-| F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow). A gold "F GLORY KILL" prompt shows when one is in reach |
+| F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells. A gold "F GLORY KILL" prompt shows when one is in reach |
 | F (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows when one is lined up |
+| F (near a boss with its KAMAE broken) | **ONIKIRI**: bosses have no glory kill. Keep attacking to fill the KAMAE bar under their HP; a full bar breaks them, and F takes 20% of their HP (or kills at 20% or less) |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
 | Space | Jump / double jump. Jump at a ledge just out of reach and hold forward to **climb** it |

@@ -1,11 +1,46 @@
 class_name Boss
 extends Enemy
-## The two newer bosses. The ONI lives in enemy.gd.
+## Every boss. The ninja and the mech live here; the ONI's body and basic
+## moves live in enemy.gd, and its newer moves here.
 ##   ninja  KUROKAGE, BLADE OF THE NULL SIGNAL: telegraphed dash-slash chains, shuriken
 ##          fans you can deflect, and blinking behind you.
 ##   mech   TETSUGUMO, CHROME BROODMOTHER: sweeping gatling, missile strikes marked
 ##          on the floor, stomp shockwaves, and calls reinforcements.
-## Both are armoured: shotgun them to stagger, then execute for a deathblow.
+## Both are armoured. Like every boss they never stagger from poise: pressure
+## fills their KAMAE bar, and a full bar breaks them for the ONIKIRI blow.
+## Souls-style movesets on top (spec §5.6): every boss sidesteps lazy
+## ranged play, holds some swings a beat longer, has one area move and one
+## RED SIGNAL attack, and leaves a punish window after each big move.
+
+# sidestep: aimed at from range for this long, it steps out of the line
+const SIDESTEP_AIM := 0.35
+const SIDESTEP_RANGE := 7.0
+const SIDESTEP_CONE := 0.1 # radians around the body
+const SIDESTEP_CD := 4.0
+const GENTLE_SIDESTEP_CD := 6.0
+# delayed swings: some windups hold longer; the eyes flare just before the hit
+const DELAY_CHANCE := 0.3
+const DELAY_MULT := 1.7
+const DELAY_FLARE := 0.22
+# the run's first boss telegraphs its big moves this much longer
+const GENTLE_TELE := 1.25
+const RED_CD := 14.0
+const AREA_CD := 8.0
+const RED_LEN := {"ninja": 0.9, "mech": 1.0, "oni": 1.0}
+# farthest each boss starts its RED SIGNAL from (the grab lunges about 9 m)
+const RED_RANGE := {"ninja": 22.0, "mech": 22.0, "oni": 9.5}
+# nearest the player must be for each boss to start its area move
+const AREA_REACH := {"ninja": 5.0, "mech": 30.0, "oni": 14.0}
+const RED_STATES: Array[S] = [S.RED_WINDUP, S.RED_ACT, S.BLINK]
+const PERFECT_KAMAE := 0.15 # dashing through a RED SIGNAL attack
+const RED_COLOR := Color(1.0, 0.1, 0.15)
+# NULL CROSS
+const CROSS_LEN := 18.0
+const CROSS_SPEED := 34.0
+const CROSS_GAP := 0.25
+# DAEMON GRAB
+const GRAB_TIME := 0.45
+const GRAB_SPEED := 17.0
 
 var dash_dir := Vector3.ZERO
 var dash_count := 0
@@ -18,6 +53,24 @@ var _chassis: Node3D
 var _barrel_glow: ShaderMaterial
 var _pods_glow: ShaderMaterial
 var _followup := false
+var cycle := 1 # which boss cycle this is (1 = waves 3, 6, 9)
+var _aim_t := 0.0
+var _sidestep_cd := 0.0
+var _side_dir := Vector3.ZERO
+var _delay_k := 1.0
+var _flared := false
+var _red_cd := 6.0
+var _area_cd := 4.0
+var _area_len := 0.0
+var _beeped := false
+var _step := 0
+var _lines: Array = [] # NULL CROSS: [start, dir] per line
+var _line_marks: Array = [] # NULL CROSS telegraphs (may hold freed ones), cleared if it is cut short
+var _hazards: Array = [] # area hazards still on the floor (may hold freed ones)
+var _lunge := Vector3.ZERO
+var _perfect := false
+var _hit_done := false
+var _red_mark: MeshInstance3D
 
 
 func setup(k: String, scale_mult := 1.0) -> void:
@@ -25,12 +78,12 @@ func setup(k: String, scale_mult := 1.0) -> void:
 	is_boss = true
 	match k:
 		"ninja":
-			hp = 2600.0; speed = 5.2; radius = 0.5; height = 2.1; head_y = 1.72; poise = 290.0
-			stagger_time = 2.6; armor = 0.55; xp = 320.0; points = 5000; mass = 3.0
+			hp = 2600.0; speed = 5.2; radius = 0.5; height = 2.1; head_y = 1.72
+			stagger_time = 2.6; armor = 0.55; xp = 320.0; points = 5000; mass = 3.0; kamae_max = 900.0
 			display_name = "KUROKAGE"; subtitle = "BLADE OF THE NULL SIGNAL"; defeat_text = "SHADOW DELETED"
 		"mech":
-			hp = 4400.0; speed = 2.6; radius = 1.7; height = 3.6; head_y = 2.5; poise = 560.0
-			stagger_time = 3.2; armor = 0.35; xp = 420.0; points = 7000; mass = 14.0
+			hp = 4400.0; speed = 2.6; radius = 1.7; height = 3.6; head_y = 2.5
+			stagger_time = 3.2; armor = 0.35; xp = 420.0; points = 7000; mass = 14.0; kamae_max = 1400.0
 			display_name = "TETSUGUMO"; subtitle = "CHROME BROODMOTHER"; defeat_text = "MACHINE DECOMMISSIONED"
 		_:
 			super.setup(k, scale_mult)
@@ -42,8 +95,14 @@ func setup(k: String, scale_mult := 1.0) -> void:
 func _build_body() -> void:
 	if kind == "mech":
 		_build_mech()
-		return
-	super._build_body()
+	else:
+		super._build_body()
+	# the RED SIGNAL warning: a red diamond over the head
+	var sz := 0.42 * clampf(height / 2.1, 1.0, 1.6)
+	_red_mark = Psx.box(Vector3.ONE * sz, Psx.unlit(RED_COLOR, 4.0), Vector3(0, height + 1.1, 0))
+	_red_mark.rotation = Vector3(PI * 0.25, 0, PI * 0.25)
+	_red_mark.visible = false
+	add_child(_red_mark)
 	if kind == "ninja":
 		var s := height / 1.8
 		var neon: Color = Game.palette.neon_a
@@ -148,12 +207,18 @@ func _animate(delta: float, spd: float) -> void:
 	var lift := 0.0
 	match state:
 		S.STOMP_WINDUP:
-			lift = clampf(state_t / 0.8, 0.0, 1.0) * 0.8
+			lift = clampf(state_t / (0.8 * _delay_k), 0.0, 1.0) * 0.8
+		S.AREA_WINDUP:
+			lift = clampf(state_t / maxf(_area_len, 0.01), 0.0, 1.0) * 0.8
 		S.STAGGER:
 			lift = -0.9
+		S.SIDESTEP:
+			lift = 0.5
 		S.MISSILE_WINDUP:
 			_pods_glow.set_shader_parameter("energy", 1.0 + clampf(state_t / 0.7, 0.0, 1.0) * 5.0)
-	if state != S.MISSILE_WINDUP:
+		S.RED_WINDUP:
+			_pods_glow.set_shader_parameter("energy", 1.0 + clampf(state_t / _red_len(), 0.0, 1.0) * 7.0)
+	if state != S.MISSILE_WINDUP and state != S.RED_WINDUP:
 		_pods_glow.set_shader_parameter("energy", 1.0)
 	_chassis.position.y = lerpf(_chassis.position.y, 2.3 + lift + sin(walk_phase * 2.0) * 0.05, k)
 	_chassis.rotation.x = lerpf(_chassis.rotation.x, (0.25 if state == S.STAGGER else 0.0), k)
@@ -166,14 +231,112 @@ func _animate(delta: float, spd: float) -> void:
 
 # ---------------------------------------------------------------- AI
 func _windup_time() -> float:
+	var base := 0.0
 	if kind == "ninja":
-		return 0.3 if _followup else 0.45
-	if kind == "mech":
-		return 0.6
-	return super._windup_time()
+		base = 0.3 if _followup else 0.45
+	elif kind == "mech":
+		base = 0.6
+	else:
+		base = super._windup_time()
+	return base * _delay_k
+
+
+func _physics_process(delta: float) -> void:
+	if not dead:
+		_tidy_red()
+		if not frozen:
+			_boss_tick(delta)
+	super._physics_process(delta)
+
+
+## Whatever cut a RED SIGNAL or blink short (a KAMAE break, the player's
+## death), the boss never stays hidden and its red marks never linger.
+func _tidy_red() -> void:
+	_red_mark.visible = state == S.RED_WINDUP
+	if state in RED_STATES:
+		return
+	if not visual.visible or collision_layer == 0:
+		visual.visible = true
+		collision_layer = 4
+	_clear_line_marks()
+
+
+func _clear_line_marks() -> void:
+	for m in _line_marks:
+		if is_instance_valid(m):
+			m.queue_free()
+	_line_marks.clear()
+
+
+func _set_state(s: S) -> void:
+	super._set_state(s)
+	if s == S.WINDUP or s == S.STOMP_WINDUP:
+		# a held swing: the pose rises slower and the eyes stay dim until
+		# just before it lands, so mashing dash early gets punished
+		_delay_k = DELAY_MULT if _rng.randf() < DELAY_CHANCE else 1.0
+		_flared = false
+		if _delay_k > 1.0:
+			_eye_mat.set_shader_parameter("energy", 1.0)
+	elif s == S.RECOVER and recover_time >= 0.8:
+		# the punish window after a big move
+		exposed_t = recover_time + (0.2 if _gentle() else 0.0)
+		_eye_mat.set_shader_parameter("energy", 0.8)
+	elif s == S.CHASE:
+		_eye_mat.set_shader_parameter("energy", 6.0 if enraged else 3.0)
+
+
+## The run's first boss is the gentlest: longer telegraphs on its big moves.
+func _gentle() -> bool:
+	return cycle <= 1 and Game.bosses_killed == 0
+
+
+func _tele() -> float:
+	return GENTLE_TELE if _gentle() else 1.0
+
+
+## The first cycle keeps its area move and RED SIGNAL for after the enrage.
+func _big_moves_on() -> bool:
+	return cycle >= 2 or enraged
+
+
+func _red_len() -> float:
+	return float(RED_LEN.get(kind, 1.0)) * _tele()
+
+
+func _boss_tick(delta: float) -> void:
+	_sidestep_cd -= delta
+	_red_cd -= delta
+	_area_cd -= delta
+	_track_aim(delta)
+	if _red_mark.visible:
+		_red_mark.rotation.y += delta * 4.0
+		_red_mark.scale = Vector3.ONE * (1.0 + 0.2 * sin(state_t * 18.0))
+	# a held swing flares its eyes and hisses just before it lands
+	if _delay_k > 1.0 and not _flared and (state == S.WINDUP or state == S.STOMP_WINDUP):
+		var wt := _windup_time() if state == S.WINDUP else 0.8 * _delay_k
+		if state_t >= wt - DELAY_FLARE:
+			_flared = true
+			_eye_mat.set_shader_parameter("energy", 7.0)
+			Sfx.play_at("windup", global_position, 0.0, 1.8)
+
+
+## Counts how long the player has held its sights on the boss from range.
+func _track_aim(delta: float) -> void:
+	var p := Game.player
+	if p == null or p.dead or p.cam == null:
+		_aim_t = 0.0
+		return
+	var to := global_position + Vector3(0, height * 0.6, 0) - p.cam.global_position
+	var d := to.length()
+	if d < SIDESTEP_RANGE + radius or (-p.cam.global_basis.z).angle_to(to) > SIDESTEP_CONE + atan(radius / d):
+		_aim_t = 0.0
+		return
+	_aim_t += delta
 
 
 func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
+	if _try_sidestep(dir) or _try_big_move(dist, dir):
+		return Vector3.ZERO
 	match kind:
 		"ninja":
 			return _chase_ninja(dist, dir, delta)
@@ -371,7 +534,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 				_set_state(S.RECOVER)
 			return [Vector3.ZERO, dir]
 		S.STOMP_WINDUP:
-			if state_t > 0.8:
+			if state_t > 0.8 * _delay_k:
 				Game.fx.shockwave(global_position, 12.0, 13.0, 22.0 * damage_mult)
 				Sfx.play_at("slam", global_position, 4.0, 0.8)
 				Game.player.add_trauma(0.6)
@@ -379,7 +542,303 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 				recover_time = 1.0
 				_set_state(S.RECOVER)
 			return [Vector3.ZERO, dir]
+		S.SIDESTEP:
+			return _sidestep_state(dir)
+		S.RED_WINDUP:
+			return _red_windup_state(dir)
+		S.RED_ACT:
+			return _red_act_state(dir)
+		S.AREA_WINDUP:
+			if state_t >= _area_len:
+				_area_release()
+			return [Vector3.ZERO, dir if kind != "ninja" else Vector3(sin(face_yaw), 0, cos(face_yaw))]
 	return [Vector3.ZERO, dir]
+
+
+# ---------------------------------------------------------------- sidestep
+## Hanging back and aiming from range makes the boss step out of the line;
+## pressure up close never does.
+func _try_sidestep(dir: Vector3) -> bool:
+	if _aim_t < SIDESTEP_AIM or _sidestep_cd > 0.0:
+		return false
+	_aim_t = 0.0
+	_sidestep_cd = GENTLE_SIDESTEP_CD if _gentle() else SIDESTEP_CD
+	var side := 1.0 if _rng.randf() < 0.5 else -1.0
+	_side_dir = Vector3(-dir.z, 0, dir.x) * side
+	var chest := global_position + Vector3(0, height * 0.5, 0)
+	match kind:
+		"ninja": # an afterimage of smoke where he stood
+			Game.fx.smoke(chest, 1.4)
+			Sfx.play_at("blink", global_position, -2.0, 1.5)
+		"mech": # jumps back and lands with a small shockwave
+			_side_dir = (-dir + _side_dir * 0.4).normalized()
+			velocity.y = 9.0
+			Sfx.play_at("windup", global_position, 2.0, 0.6)
+		_: # a shoulder barge to the side
+			Sfx.play("roar", -4.0, 0.9)
+	_set_state(S.SIDESTEP)
+	_log_move("sidestep")
+	return true
+
+
+func _sidestep_state(dir: Vector3) -> Array:
+	match kind:
+		"ninja":
+			if state_t > 0.22:
+				_set_state(S.CHASE)
+			return [_side_dir * 18.0, dir]
+		"mech":
+			if state_t > 0.2 and is_on_floor():
+				Game.fx.shockwave(global_position, 7.0, 14.0, 12.0 * damage_mult)
+				Sfx.play_at("slam", global_position, 0.0, 1.0)
+				recover_time = 0.5
+				_set_state(S.RECOVER)
+			return [_side_dir * 10.0, dir]
+	if int(state_t * 30.0) % 2 == 0:
+		Game.gore.sparks(global_position + Vector3(0, 0.2, 0), -_side_dir + Vector3.UP * 0.4, 2)
+	if state_t > 0.3:
+		_set_state(S.CHASE)
+	return [_side_dir * 14.0, dir]
+
+
+# ---------------------------------------------------------------- big moves
+func _try_big_move(dist: float, dir: Vector3) -> bool:
+	if not _big_moves_on():
+		return false
+	if _red_cd <= 0.0 and dist > 3.0 and dist < float(RED_RANGE.get(kind, 22.0)):
+		_red_cd = RED_CD * _rng.randf_range(0.9, 1.2)
+		_begin_red(dir)
+		return true
+	if _area_cd <= 0.0 and dist < float(AREA_REACH.get(kind, 0.0)):
+		_area_cd = AREA_CD * _rng.randf_range(0.9, 1.2)
+		_begin_area(dir)
+		return true
+	return false
+
+
+## The RED SIGNAL: a red diamond, an alarm, then a move that can't be
+## deflected or traded with. Get clear, or dash through it for a PERFECT.
+func _begin_red(dir: Vector3) -> void:
+	_step = 0
+	_perfect = false
+	_hit_done = false
+	_beeped = false
+	_lunge = dir
+	_set_state(S.RED_WINDUP)
+	Sfx.play("alarm", -6.0, 1.5)
+	Game.show_hint_once("red_signal", "RED SIGNAL: GET CLEAR, OR DASH THROUGH IT AT THE LAST MOMENT")
+	_log_move("red")
+	if kind == "ninja":
+		_plan_cross()
+
+
+## NULL CROSS: he vanishes, and three neon lines cross where the player
+## stands; he will dash along each in turn.
+func _plan_cross() -> void:
+	var c := Game.player.global_position
+	var a := _rng.randf() * PI
+	var lim := Game.arena.half - 1.5
+	_lines.clear()
+	_clear_line_marks()
+	for i in 3:
+		var d := Vector3(cos(a + i * PI / 3.0), 0, sin(a + i * PI / 3.0))
+		var start := c - d * CROSS_LEN * 0.5
+		start.x = clampf(start.x, -lim, lim)
+		start.z = clampf(start.z, -lim, lim)
+		_lines.append([start, d])
+		_line_marks.append(Game.fx.telegraph_line(start, d, CROSS_LEN, _red_len() + 3.0 * (CROSS_LEN / CROSS_SPEED + CROSS_GAP), RED_COLOR))
+	visual.visible = false
+	collision_layer = 0
+	Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)
+	Sfx.play_at("blink", global_position, 0.0)
+
+
+func _red_windup_state(dir: Vector3) -> Array:
+	var wl := _red_len()
+	var face := dir
+	match kind:
+		"ninja":
+			face = _lines[0][1]
+			if not visual.visible and state_t >= wl * 0.6:
+				_blink_to(_lines[0][0])
+		"oni":
+			# aims until late in the windup, then commits
+			if state_t < wl * 0.7:
+				_lunge = dir
+			face = _lunge
+	if not _beeped and state_t >= wl - 0.2:
+		_beeped = true
+		Sfx.play_at("beep", global_position, 4.0, 1.4)
+	if state_t >= wl:
+		match kind:
+			"mech":
+				_brood_barrage()
+				recover_time = 1.2
+				_set_state(S.RECOVER)
+			_:
+				_set_state(S.RED_ACT)
+				Sfx.play_at("dash", global_position, 4.0, 0.7)
+	return [Vector3.ZERO, face]
+
+
+func _red_act_state(_dir: Vector3) -> Array:
+	if kind == "ninja":
+		var d: Vector3 = _lines[_step][1]
+		var dash_len := CROSS_LEN / CROSS_SPEED
+		if state_t < dash_len:
+			if int(state_t * 40.0) % 2 == 0:
+				Game.gore.sparks(global_position + Vector3(0, 1.0, 0), -d, 2, RED_COLOR * 1.6)
+			_red_contact(radius + 1.3, 26.0, d * 9.0 + Vector3.UP * 3.0)
+			return [d * CROSS_SPEED, d]
+		if _step >= _lines.size() - 1:
+			recover_time = 1.2
+			_set_state(S.RECOVER)
+			return [Vector3.ZERO, d]
+		if state_t >= dash_len + CROSS_GAP * _tele():
+			_step += 1
+			_hit_done = false
+			_blink_to(_lines[_step][0])
+			_set_state(S.RED_ACT)
+			Sfx.play_at("dash", global_position, 4.0, 0.8)
+		return [Vector3.ZERO, _lines[mini(_step + 1, _lines.size() - 1)][1]]
+	# DAEMON GRAB: a lunge that grabs and hurls whoever it catches
+	if state_t < GRAB_TIME:
+		if int(state_t * 30.0) % 2 == 0:
+			Game.gore.sparks(global_position + Vector3(0, 0.2, 0), -_lunge + Vector3.UP * 0.4, 2)
+		_red_contact(radius + 1.4, 34.0, _lunge * 14.0 + Vector3.UP * 9.0)
+		return [_lunge * GRAB_SPEED, _lunge]
+	# a whiffed grab leaves him wide open
+	recover_time = 1.2 if _hit_done else 1.8
+	_set_state(S.RECOVER)
+	return [Vector3.ZERO, _lunge]
+
+
+func _blink_to(at: Vector3) -> void:
+	var p := Game.player
+	global_position = Vector3(at.x, p.global_position.y + 0.2, at.z)
+	reset_physics_interpolation()
+	visual.visible = true
+	collision_layer = 4
+	Game.fx.smoke(global_position + Vector3(0, 1.0, 0), 2.0)
+	Sfx.play_at("blink", global_position, 2.0, 1.3)
+
+
+## A RED SIGNAL attack connecting. Dashing through it is a PERFECT dodge.
+func _red_contact(reach: float, dmg: float, push: Vector3) -> void:
+	if _hit_done:
+		return
+	var p := Game.player
+	var rel := p.global_position - global_position
+	if Vector2(rel.x, rel.z).length() > reach or absf(rel.y) > 2.2:
+		return
+	_hit_done = true
+	if p.dash_t > 0.0:
+		_perfect_dodge()
+		return
+	p.take_damage(dmg * damage_mult, global_position)
+	p.knockback(push)
+	if kind == "oni":
+		Game.hitstop(0.1)
+		p.add_trauma(0.8)
+		Sfx.play_at("slam", global_position, 4.0, 0.7)
+		Sfx.play("roar", 0.0, 0.7)
+
+
+func _perfect_dodge() -> void:
+	if _perfect:
+		return
+	_perfect = true
+	Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 0.7, "shake": 4.0, "pitch": 1.3})
+	Sfx.play("deflect", 0.0, 1.4, 0.0)
+	Game.slowmo(0.35, 0.4)
+	press_kamae(kamae.max_value * PERFECT_KAMAE)
+
+
+## BROOD BARRAGE: two rings of missiles close in around the player, then one
+## lands in the middle. Each ring has the same gap: that is the way out.
+func _brood_barrage() -> void:
+	var c := Game.player.global_position
+	# the way out opens roughly towards the arena's middle, never into a wall
+	var gap := _rng.randf() * TAU
+	if Vector2(c.x, c.z).length() > 3.0:
+		gap = atan2(-c.z, -c.x) + _rng.randf_range(-0.6, 0.6)
+	var t := _tele()
+	_missile_ring(c, 7.5, 12, gap, 1.2 * t)
+	_missile_ring(c, 4.5, 8, gap, 1.6 * t)
+	Game.fx.missile_strike(c, 2.0 * t, 2.6, 20.0 * damage_mult)
+	Game.gore.sparks(global_position + Vector3(0, 3.6, 0), Vector3.UP, 30, RED_COLOR * 1.6)
+	Sfx.play_at("missile", global_position, 6.0, 0.8)
+
+
+func _missile_ring(c: Vector3, r: float, n: int, gap: float, delay: float) -> void:
+	var lim := Game.arena.half - 1.0
+	# slots 0 and 1 sit either side of `gap` and are left out
+	for k in range(2, n):
+		var a := gap + TAU * (k - 0.5) / n
+		var at := c + Vector3(cos(a), 0, sin(a)) * r
+		at.x = clampf(at.x, -lim, lim)
+		at.z = clampf(at.z, -lim, lim)
+		Game.fx.missile_strike(at, delay + k * 0.01, 2.6, 20.0 * damage_mult)
+
+
+## Area moves: a telegraphed floor hazard (BossHazard), the boss holding its
+## pose until it goes off, then a punish window.
+func _begin_area(dir: Vector3) -> void:
+	var t := _tele()
+	var hazards: Array[BossHazard] = []
+	match kind:
+		"ninja": # SMOKE RING: smoke at his feet, then a full-circle cut
+			_area_len = 0.7 * t
+			var h := BossHazard.zone(global_position, 5.0, _area_len, 18.0 * damage_mult, Color(Game.palette.neon_a))
+			h.sound = "swing2"
+			hazards.append(h)
+			Game.fx.smoke(global_position + Vector3(0, 0.4, 0), 2.6)
+			Sfx.play_at("windup", global_position, 2.0, 1.2)
+		"mech": # EMP FIELD: three live zones around the player
+			_area_len = 0.6
+			var c := Game.player.global_position
+			var a := _rng.randf() * TAU
+			for i in 3:
+				var at := c
+				if i > 0:
+					at += Vector3(cos(a + i * PI), 0, sin(a + i * PI)) * _rng.randf_range(3.5, 5.0)
+				hazards.append(BossHazard.zone(at, 2.6, 1.2 * t, 12.0 * damage_mult, Color(0.3, 0.9, 1.0), 1.8))
+			Sfx.play_at("beep", global_position, 2.0, 0.7)
+		_: # FISSURES: fire lines crack out in a star from his fist
+			_area_len = 0.8 * t
+			for i in 5:
+				var d := dir.rotated(Vector3.UP, i * TAU / 5.0)
+				hazards.append(BossHazard.line(global_position + d * radius, d, 14.0, 1.6, _area_len, 24.0 * damage_mult, Color(1.0, 0.4, 0.1)))
+			Sfx.play("roar", 0.0, 0.8)
+	var kept: Array = []
+	for o in _hazards:
+		if is_instance_valid(o):
+			kept.append(o)
+	_hazards = kept
+	for h in hazards:
+		get_parent().add_child(h)
+		_hazards.append(h)
+	_set_state(S.AREA_WINDUP)
+	_log_move("area")
+
+
+func _log_move(move: String) -> void:
+	if Game.debug_autoplay:
+		print("[boss] %s %s hp=%.0f/%.0f cycle=%d enraged=%s frame=%d" % [kind, move, hp, max_hp, cycle, enraged, Engine.get_frames_drawn()])
+
+
+func _area_release() -> void:
+	match kind:
+		"ninja":
+			Game.gore.sparks(global_position + Vector3(0, 1.0, 0), Vector3.UP, 30, Color(Game.palette.neon_a) * 1.6)
+			recover_time = 0.9
+		"mech":
+			recover_time = 0.8
+		_:
+			Sfx.play_at("slam", global_position, 4.0, 0.8)
+			Game.player.add_trauma(0.5)
+			recover_time = 1.0
+	_set_state(S.RECOVER)
 
 
 func _attack(dist: float, dir: Vector3) -> void:
@@ -422,6 +881,14 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		return
 	if _line and is_instance_valid(_line):
 		_line.queue_free()
+	# a felled boss takes its floor hazards and red marks with it
+	for h in _hazards:
+		if is_instance_valid(h):
+			h.queue_free()
+	_hazards.clear()
+	_clear_line_marks()
+	_red_mark.visible = false
+	visual.visible = true
 	if kind == "mech":
 		var c := global_position + Vector3(0, 2.4, 0)
 		for k in 4:

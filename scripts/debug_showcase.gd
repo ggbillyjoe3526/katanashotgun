@@ -15,7 +15,7 @@ func _ready() -> void:
 		defs = {"ninja": Vector3(-5.0, 0, 15.0), "mech": Vector3(0.5, 0, 11.0), "oni": Vector3(6.0, 0, 13.0)}
 		step = 99
 	for k in defs:
-		var e: Enemy = Boss.new() if k in ["ninja", "mech"] else Enemy.new()
+		var e: Enemy = Boss.new() if k in WaveDirector.BOSS_KINDS else Enemy.new()
 		e.setup(k)
 		e.position = defs[k]
 		e.frozen = true

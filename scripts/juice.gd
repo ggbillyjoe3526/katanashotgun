@@ -1055,10 +1055,10 @@ func glory_start(kind: String) -> void:
 	_bars_top.visible = true
 	_bars_bot.visible = true
 	if kind == "boss":
-		# the deathblow outranks the boss name card: the card makes way
+		# the break blow outranks the boss name card: the card makes way
 		hud.boss_title.visible = false
 		hud.boss_sub.visible = false
-		cut_in("DEATHBLOW!")
+		cut_in("ONIKIRI!")
 
 
 func speed_lines(strength: float, hold := 0.0) -> void:

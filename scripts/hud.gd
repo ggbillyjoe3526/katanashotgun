@@ -48,6 +48,10 @@ var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec
 var boss_root: Control
 var boss_fill: ColorRect
 var boss_name: Label
+var kamae_label: Label
+var kamae_bg: ColorRect
+var kamae_fill: ColorRect
+var _boss_plate_h := 27.0
 var noammo_label: Label
 var noammo_bg: Shard
 var noammo_t := 99.0
@@ -144,6 +148,10 @@ const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
 const CARD_DESC_PT := 12
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const CENTER_LEN := 2.4 # centre message, seconds
+const KAMAE_GOLD := Color(1.0, 0.72, 0.15)
+const KAMAE_HOT := Color(1.0, 0.93, 0.55) # nearly full: the bar runs white-hot
+const KAMAE_HOT_AT := 0.8
+const KAMAE_BAR_W := 190.0
 const POPUP_LEN := 1.4 # kill tags, seconds
 const POPUP_STEP := 15.0 # kill tag line spacing, pixels
 const MAX_POPUPS := 4
@@ -384,6 +392,14 @@ func _build_play() -> void:
 	bb.add_child(boss_fill)
 	boss_name = Ui.label("", Ui.font_bold, 10, Color(1.0, 0.78, 0.65), 2)
 	boss_root.add_child(boss_name)
+	# KAMAE (posture, spec §5.5): fills from the middle out as the player
+	# presses the boss; full means the stance breaks
+	kamae_label = Ui.label("KAMAE", Ui.font_bold, 10, KAMAE_GOLD, 2)
+	boss_root.add_child(kamae_label)
+	kamae_bg = Ui.rect(Color(0.05, 0.02, 0.05, 0.9), Vector2.ZERO, Vector2(KAMAE_BAR_W + 2, 6))
+	boss_root.add_child(kamae_bg)
+	kamae_fill = Ui.rect(KAMAE_GOLD, Vector2(1, 1), Vector2(KAMAE_BAR_W, 4))
+	kamae_bg.add_child(kamae_fill)
 
 	exec_rect = Ui.rect(Color(1, 1, 1, 0), Vector2.ZERO, Vector2(480, 270))
 	exec_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -1112,6 +1128,40 @@ func show_message(text: String, color: Color, big := true) -> void:
 	center_t = 0.0
 
 
+## The KAMAE row under the boss's HP bar. While the stance is broken the bar
+## shows the time left to land the ONIKIRI, glowing gold to white; the word
+## itself never moves or changes (spec §9.9).
+func _layout_kamae(boss: Enemy) -> void:
+	var row_y := 23.0
+	var lh := kamae_label.size.y
+	var row_w := kamae_label.size.x + 4.0 + KAMAE_BAR_W + 2.0
+	var x0 := roundf((242.0 - row_w) * 0.5)
+	kamae_label.position = Vector2(x0, row_y)
+	kamae_bg.position = Vector2(x0 + kamae_label.size.x + 4.0, row_y + roundf((lh - kamae_bg.size.y) * 0.5))
+	_boss_plate_h = row_y + lh + 1.0
+	var k := 0.0
+	var col := KAMAE_GOLD
+	if boss.is_staggered():
+		k = clampf(1.0 - boss.state_t / boss.stagger_length(), 0.0, 1.0)
+		col = KAMAE_GOLD.lerp(Color.WHITE, 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.012))
+	elif boss.kamae:
+		k = boss.kamae.ratio()
+		if k >= KAMAE_HOT_AT:
+			col = KAMAE_HOT
+	var w := roundf(KAMAE_BAR_W * k)
+	kamae_fill.size.x = w
+	kamae_fill.position.x = 1.0 + roundf((KAMAE_BAR_W - w) * 0.5)
+	kamae_fill.color = col
+
+
+## A boss's stance just broke: the centre stamp, a held impact frame and
+## speed lines. The prompt under the crosshair says what F does next.
+func kamae_broken() -> void:
+	juice.stamp("KAMAE BROKEN", KAMAE_GOLD, 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 1.0, "rot": -0.04, "shake": 8.0, "vol": -1.0, "pitch": 0.8, "burst": 30, "shadow": Color(0.25, 0.12, 0.0)})
+	juice.speed_lines(1.0, 0.3)
+	impact_frame(0.1)
+
+
 func show_hint(text: String) -> void:
 	if juice.intro_showing():
 		# the countdown and FIGHT use the lower middle of the screen
@@ -1462,7 +1512,7 @@ func _update_play(delta: float) -> void:
 	if p == null:
 		return
 	var m := 8.0
-	_fit([mut_label, hi_label, boss_sub, boss_name, cell_label, noammo_label])
+	_fit([mut_label, hi_label, boss_sub, boss_name, kamae_label, cell_label, noammo_label])
 	# ---- bottom-left: HP number and dash pips over the HP bar
 	var hpk := clampf(p.hp / p.max_hp, 0.0, 1.0)
 	hp_bg.position = Vector2(m, vs.y - m - 9)
@@ -1647,7 +1697,7 @@ func _update_play(delta: float) -> void:
 		if p.gk_ready_plunge:
 			move = "PLUNGE"
 		else:
-			move = "DEATHBLOW" if p.gk_ready.is_boss else "GLORY KILL"
+			move = FinisherPromptScript.BOSS_MOVE if p.gk_ready.is_boss else "GLORY KILL"
 	elif finisher_demo:
 		move = "GLORY KILL"
 	finisher_prompt.refresh(move, crosshair.position, delta)
@@ -1662,15 +1712,16 @@ func _update_play(delta: float) -> void:
 		var bp: Shard = boss_root.get_node("Plate")
 		var bpw := maxf(250.0, boss_name.size.x + 16.0)
 		bp.position = Vector2(roundf((242 - bpw) * 0.5), -1)
-		bp.size = Vector2(bpw, 27)
 		boss_fill.size.x = 240.0 * clampf(boss.hp / boss.max_hp, 0.0, 1.0)
+		_layout_kamae(boss)
+		bp.size = Vector2(bpw, _boss_plate_h)
 	# ---- centre message ("<NAME> IS ENRAGED"): a fixed spot under the boss bar
 	center_t += delta
 	if center_label.visible:
 		var pop := 1.0 + maxf(0.0, 0.1 - center_t) * 3.0
 		center_label.scale = Vector2.ONE * pop
 		center_label.pivot_offset = center_label.size * 0.5
-		var cy := (boss_root.position.y + 28.0) if boss_on else (hi_label.position.y + hi_label.size.y + 4.0)
+		var cy := (boss_root.position.y + _boss_plate_h + 1.0) if boss_on else (hi_label.position.y + hi_label.size.y + 4.0)
 		center_label.position = Vector2(roundf((vs.x - center_label.size.x) * 0.5), cy)
 		center_label.modulate.a = clampf((CENTER_LEN - center_t) / 0.3, 0.0, 1.0)
 		if center_t > CENTER_LEN:
