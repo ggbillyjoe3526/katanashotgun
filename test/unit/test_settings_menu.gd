@@ -58,10 +58,17 @@ func test_tab_opens_from_title_only() -> void:
 
 func test_arrows_change_a_slider() -> void:
 	menu.open()
-	_press(KEY_DOWN) # MUSIC
+	menu.sel = _row("MASTER")
 	_press(KEY_LEFT)
 	_press(KEY_LEFT)
-	assert_almost_eq(float(Settings.volume["Music"]), 0.9, 0.001)
+	assert_almost_eq(float(Settings.volume["Master"]), 0.9, 0.001)
+
+
+func test_sliders_for_missing_buses_are_hidden() -> void:
+	menu.open()
+	for b in Settings.BUSES:
+		var shown := _row(SettingsMenu.AUDIO_NAMES[b]) >= 0
+		assert_eq(shown, Settings.has_bus(b), b)
 
 
 func test_tabs_cycle_both_ways() -> void:
@@ -77,10 +84,35 @@ func test_tabs_cycle_both_ways() -> void:
 func test_option_wraps_through_values() -> void:
 	menu.tab = SettingsMenu.TABS.find("VIDEO")
 	menu.open()
-	menu.sel = _row("QUALITY")
-	_press(KEY_RIGHT) # high -> low
-	assert_eq(Settings.quality, "low")
-	assert_eq(Settings.render_scale, Settings.QUALITY_RENDER_SCALE["low"])
+	menu.sel = _row("FRAME CAP")
+	_press(KEY_LEFT) # uncapped -> the highest cap
+	assert_eq(Settings.fps_cap, Settings.FPS_CAPS[-1])
+	_press(KEY_RIGHT)
+	assert_eq(Settings.fps_cap, 0)
+
+
+func test_quality_row_only_with_a_quality_system() -> void:
+	menu.tab = SettingsMenu.TABS.find("VIDEO")
+	menu.open()
+	assert_eq(_row("QUALITY") >= 0, Settings.quality_system() != null)
+
+
+func test_every_word_fits_its_box() -> void:
+	# labels, values and help lines stay inside their columns at pixel size
+	Ui.init()
+	for t in SettingsMenu.TABS.size():
+		menu.tab = t
+		menu.open()
+		assert_lt(menu._w(SettingsMenu.TABS[t], Ui.font_bold, SettingsMenu.LABEL_PX), menu._tab_rect(t).size.x - 4)
+		for r in menu.rows:
+			assert_lt(menu._w(r.label, Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.VALUE_X - SettingsMenu.LABEL_X - 6, r.label)
+			assert_lt(menu._w(r.help, Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28, r.help)
+			if r.type == "option":
+				for n in r.names:
+					assert_lt(menu._w(n, Ui.font_mono, SettingsMenu.VALUE_PX), menu._value_rect(0).size.x - 24, n)
+	for lbl in ["ESC  BACK", "R  DEFAULTS"]:
+		assert_lt(menu._w(lbl, Ui.font_bold, SettingsMenu.LABEL_PX), menu._foot_rect(0).size.x - 4, lbl)
+	assert_lt(menu._w("PRESS A KEY OR MOUSE BUTTON.  ESC CANCELS", Ui.font_bold, SettingsMenu.LABEL_PX), SettingsMenu.PANEL.x - 28)
 
 
 func test_rebind_from_the_keyboard() -> void:

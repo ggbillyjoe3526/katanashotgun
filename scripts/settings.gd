@@ -57,6 +57,8 @@ static var bindings := {}
 
 static var _bus_base_db := {}
 static var _default_events := {} # action -> its events from project.godot
+static var _quality_script: Script = null
+static var _quality_looked_up := false
 
 
 ## Loads the saved settings (or defaults) and applies all of them.
@@ -157,12 +159,24 @@ static func apply_window() -> void:
 ## Hands the preset to the quality system (scripts/quality.gd, class Quality)
 ## when it exists; until then the preset is only stored.
 static func apply_quality() -> void:
-	for c in ProjectSettings.get_global_class_list():
-		if c.get("class", &"") == &"Quality":
-			var q: Script = load(c.get("path", ""))
-			if q:
-				q.call("apply", quality)
-			return
+	var q := quality_system()
+	if q:
+		q.call("apply", quality)
+
+
+## The Quality class's script, or null until it lands. Looked up once.
+static func quality_system() -> Script:
+	if not _quality_looked_up:
+		_quality_looked_up = true
+		for c in ProjectSettings.get_global_class_list():
+			if c.get("class", &"") == &"Quality":
+				_quality_script = load(c.get("path", ""))
+	return _quality_script
+
+
+## Whether the slider for this bus does anything yet (the bus exists).
+static func has_bus(bus: String) -> bool:
+	return AudioServer.get_bus_index(bus) >= 0
 
 
 static func apply_controls() -> void:
@@ -394,13 +408,22 @@ static func from_dict(d: Dictionary) -> void:
 		flash = clampf(float(d.flash), 0.0, 1.0)
 	var bd: Variant = d.get("bindings")
 	if bd is Dictionary:
-		for action in bd:
-			if not action is String or not bd[action] is Array:
+		# only listed actions, no reserved keys, and no key used twice
+		var used := []
+		for r in REBINDABLE:
+			var action: String = r[0]
+			if not bd.get(action) is Array:
 				continue
 			var evs := []
 			for e in bd[action]:
-				if event_from_dict(e):
-					evs.append(event_to_dict(event_from_dict(e)))
+				var ev := event_from_dict(e)
+				if ev == null or evs.size() >= SLOTS:
+					continue
+				var dd := event_to_dict(ev)
+				if used.has(dd) or (ev is InputEventKey and RESERVED_KEYS.has(_keycode(ev))):
+					continue
+				used.append(dd)
+				evs.append(dd)
 			bindings[action] = evs
 
 

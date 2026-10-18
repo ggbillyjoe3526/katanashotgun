@@ -160,3 +160,15 @@ func test_sensitivity_drives_mouse_look() -> void:
 	assert_almost_eq(Game.mouse_sensitivity, Settings.SENS_BASE * 2.0, 0.000001)
 	Settings.nudge_sensitivity(0.1)
 	assert_almost_eq(Settings.sensitivity, 2.1, 0.0001)
+
+
+func test_saved_bindings_are_checked() -> void:
+	# a hand-edited file can't bind Esc, bind unknown actions or use a key twice
+	Settings.from_dict({"v": 1, "bindings": {
+		"jump": [{"k": KEY_ESCAPE}, {"k": KEY_C}],
+		"dash": [{"k": KEY_C}, {"k": KEY_X}, {"k": KEY_Z}],
+		"ui_accept": [{"k": KEY_Y}],
+	}})
+	assert_eq_deep(Settings.bindings["jump"], [{"k": KEY_C}])
+	assert_eq_deep(Settings.bindings["dash"], [{"k": KEY_X}, {"k": KEY_Z}])
+	assert_false(Settings.bindings.has("ui_accept"))

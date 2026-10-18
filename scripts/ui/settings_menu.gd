@@ -20,7 +20,7 @@ const VALUE_W := 228.0
 const SLIDER_W := 132.0
 const SLOT_W := 104.0
 const TABS: Array[String] = ["AUDIO", "VIDEO", "CONTROLS", "COMFORT"]
-const LABEL_PX := 12 # Chakra Petch: the smallest size it reads cleanly at
+const LABEL_PX := 13 # Chakra Petch
 const VALUE_PX := 14 # Share Tech Mono
 const TITLE_PX := 16 # Orbitron
 const NOTE_LEN := 3.0
@@ -73,6 +73,12 @@ func open() -> void:
 	Sfx.play("ui_click", -4.0)
 
 
+func _notification(what: int) -> void:
+	# a change still waiting for its save is written before the window closes
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_flush_save()
+
+
 func close() -> void:
 	if not visible:
 		return
@@ -106,6 +112,8 @@ func _build_rows(t: String) -> Array:
 		"AUDIO":
 			for b in Settings.BUSES:
 				var bus: String = b
+				if not Settings.has_bus(bus):
+					continue # a slider that does nothing yet stays hidden
 				out.append(_slider(AUDIO_NAMES.get(bus, bus.to_upper()), 0.0, 1.0, 0.05,
 					func(): return float(Settings.volume.get(bus, 1.0)),
 					func(v: float): _set_volume(bus, v),
@@ -123,9 +131,10 @@ func _build_rows(t: String) -> Array:
 			out.append(_option("FRAME CAP", Settings.FPS_CAPS, cap_names,
 				func(): return Settings.fps_cap, _set_fps_cap,
 				"HIGHEST FRAME RATE THE GAME WILL RUN AT"))
-			out.append(_option("QUALITY", Settings.QUALITY_IDS, ["LOW", "MEDIUM", "HIGH"],
-				func(): return Settings.quality, _set_quality,
-				"FEWER EFFECTS ON LOW. THE LOOK STAYS THE SAME"))
+			if Settings.quality_system():
+				out.append(_option("QUALITY", Settings.QUALITY_IDS, ["LOW", "MEDIUM", "HIGH"],
+					func(): return Settings.quality, _set_quality,
+					"FEWER EFFECTS ON LOW. THE LOOK STAYS THE SAME"))
 			out.append(_slider("RENDER SCALE", Settings.RENDER_SCALE_MIN, 1.0, 0.05,
 				func(): return Settings.render_scale, _set_render_scale,
 				_pct, "SHARPNESS OF THE 3D VIEW. LOWER RUNS FASTER"))
@@ -462,7 +471,7 @@ func _tab_rect(i: int) -> Rect2:
 
 func _foot_rect(i: int) -> Rect2:
 	# 0 = BACK, 1 = DEFAULTS, bottom right
-	var w := 76.0
+	var w := 84.0
 	return Rect2(Vector2(PANEL.x - 20 - (2 - i) * (w + 6) + 6, PANEL.y - 21), Vector2(w, 14))
 
 
