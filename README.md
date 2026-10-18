@@ -18,7 +18,7 @@ and Linux).
 | Mouse | Look |
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
 | RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
-| Slash a staggered enemy | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow) |
+| F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells (bosses: a 15% deathblow). A gold "F GLORY KILL" prompt shows when one is in reach |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
 | Space | Jump / double jump |
