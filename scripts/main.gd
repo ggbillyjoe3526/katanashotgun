@@ -9,11 +9,19 @@ var post: PostFx
 var boss: Enemy = null
 var _capture_grace := 0.0
 var lock_failures := 0
+var resume: Dictionary = {} # the suspended run the title offers to continue
+var results: Dictionary = {} # what this run paid into the profile (XP, levels)
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Game.main = self
+	# a suspended run brings back its own seed, so the title shows its map
+	var wants_resume := (not Game.autostart and not Game.debug_no_pause) or OS.get_cmdline_user_args().has("--continue")
+	if wants_resume and Profile.has_suspended_run():
+		resume = Profile.load_suspended_run()
+		if not resume.is_empty():
+			Game.next_seed = int(resume.get("seed", -1))
 	Game.reset_run()
 	var arena := MapRegistry.create_for_seed(Game.rng_map)
 	arena.process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -31,6 +39,7 @@ func _ready() -> void:
 	director = WaveDirector.new()
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(director)
+	director.between_waves.connect(_on_between_waves)
 	player = Player.new()
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	player.position = arena.player_spawn
@@ -70,7 +79,28 @@ func start_run() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--wave="):
 			first = int(a.substr(7))
+	if not resume.is_empty():
+		first = RunSnapshot.apply(resume, director, player)
+		hud.on_run_resumed()
+		resume = {}
 	director.start(first)
+
+
+## The title's other choice when a run is suspended: the saved run ends
+## here. Its XP still counts (progress is never lost), then a new seed starts.
+func abandon_suspended_run() -> void:
+	var stats: Dictionary = resume.get("stats", {})
+	if not stats.is_empty():
+		Profile.finish_run(stats)
+	Profile.clear_suspended_run()
+	resume = {}
+	restart(false)
+
+
+func _on_between_waves(next_wave: int) -> void:
+	var snap := RunSnapshot.capture(next_wave, director, player)
+	snap["stats"] = Game.run_stats()
+	Profile.suspend_run(snap)
 
 
 func _capture() -> void:
@@ -129,6 +159,11 @@ func _on_upgrade(id: String) -> void:
 
 func on_player_died() -> void:
 	Game.state = "dead"
+	# the run is over: drop its snapshot first, so quitting now can't undo the
+	# death, then pay it into the profile and keep its score
+	Profile.clear_suspended_run()
+	results = Profile.finish_run(Game.run_stats())
+	Game.record_score()
 	Sfx.music_cut()
 	await get_tree().create_timer(0.6, true, false, true).timeout
 	hud.souls_card("FLATLINED", Color(1.0, 0.16, 0.2), "", "flatline", 3.2)
@@ -143,6 +178,9 @@ func on_player_died() -> void:
 func on_boss_killed(b: Enemy) -> void:
 	boss = null
 	Game.bosses_killed += 1
+	Game.bosses_felled.append(b.kind)
+	# the reward is saved at once; its card shows after the boss tally
+	director.pending_reward = Profile.boss_felled(b.kind)
 	Game.slowmo(0.12, 2.6)
 	# loud, then quiet: the all-out FINISH splash, a hard cut to silence, then
 	# the slow souls-style line fades in
@@ -200,6 +238,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			pause_game()
 		elif Game.state == "title" and (event.physical_keycode == KEY_ENTER or event.physical_keycode == KEY_SPACE):
 			start_run()
+		elif Game.state == "title" and event.physical_keycode == KEY_N and not resume.is_empty():
+			Sfx.play("ui_click", -4.0)
+			abandon_suspended_run()
+		elif Game.state == "title" and event.physical_keycode in [KEY_1, KEY_2]:
+			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
+			Sfx.play("ui_click", -4.0)
 		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode == KEY_R:
 			restart(true)
 		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode in [KEY_ENTER, KEY_SPACE]:

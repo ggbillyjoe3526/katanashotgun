@@ -92,6 +92,15 @@ var initials := ""
 var post: PostFx
 var juice: Juice
 
+# profile (spec §11): the Player Level on the title and results, the armory,
+# and the boss-reward card
+var title_level: LevelBar
+var armory: ArmoryPanel
+var level_bar: LevelBar
+var reward_card: RewardCard
+var _xp_rolled := false
+var _reward_t := 99.0
+
 # persona plates behind the HUD clusters
 var plate_tl: Shard
 var plate_tr: Shard
@@ -173,6 +182,8 @@ func _ready() -> void:
 	juice = Juice.new()
 	juice.hud = self
 	root.add_child(juice)
+	reward_card = RewardCard.new()
+	root.add_child(reward_card)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -252,7 +263,7 @@ func _build_play() -> void:
 	xp_fill = Ui.rect(Color(0.75, 0.35, 1.0), Vector2(1, 1), Vector2(0, 2))
 	xp_bg.add_child(xp_fill)
 	play_root.add_child(xp_bg)
-	lvl_label = Ui.label("LV 1", Ui.font_bold, 10, Color(0.85, 0.6, 1.0), 2)
+	lvl_label = Ui.label("RUN LV 1", Ui.font_bold, 10, Color(0.85, 0.6, 1.0), 2)
 	play_root.add_child(lvl_label)
 
 	wave_label = Ui.label("WAVE 1", Ui.font_big, 10, Color.WHITE, 2)
@@ -397,6 +408,10 @@ func _build_title() -> void:
 	title_root.add_child(title_version)
 	title_blink = Ui.label("CLICK TO START", Ui.font_big, 10, Color.WHITE, 2)
 	title_root.add_child(title_blink)
+	title_level = LevelBar.new().make_slim()
+	title_root.add_child(title_level)
+	armory = ArmoryPanel.new()
+	title_root.add_child(armory)
 	_refresh_title()
 
 
@@ -413,7 +428,8 @@ func _score_table(highlight := -1, count := 5) -> String:
 
 func _refresh_title() -> void:
 	title_hi.text = "HI-SCORES"
-	title_scores.text = _score_table(-1, 5)
+	title_scores.text = _score_table(-1, 3)
+	title_level.show_static(Profile.player_level, Profile.player_xp)
 	title_seed.text = "MAP  %s     PALETTE  %s     SEED  %s" % [Game.arena.map_name if Game.arena else "", Game.palette.name, Game.seed_string(Game.run_seed)]
 
 
@@ -477,6 +493,10 @@ func _build_death() -> void:
 		var slot := Ui.label("_", Ui.font_big, 24, Color(Game.palette.neon_b), 2)
 		initials_root.add_child(slot)
 		initials_slots.append(slot)
+	level_bar = LevelBar.new()
+	level_bar.leveled.connect(_on_player_level)
+	level_bar.finished.connect(_on_level_roll_done)
+	death_root.add_child(level_bar)
 
 
 func _build_levelup() -> void:
@@ -551,6 +571,12 @@ func _build_levelup() -> void:
 func show_title() -> void:
 	_title_t = 0.0
 	_title_hit = false
+	# a suspended run is the default: click carries on, N starts over
+	var snap: Dictionary = Game.main.resume if Game.main else {}
+	if snap.is_empty():
+		title_blink.text = "CLICK TO START"
+	else:
+		title_blink.text = "CLICK  CONTINUE RUN - WAVE %d       N  NEW RUN" % int(snap.get("next_wave", 1))
 	title_root.visible = true
 	play_root.visible = false
 
@@ -568,6 +594,9 @@ func show_death() -> void:
 	_death_t = 0.0
 	_death_lines = 0
 	_death_counted = false
+	_xp_rolled = false
+	var res: Dictionary = Game.main.results if Game.main else {}
+	level_bar.show_static(int(res.get("level_before", Profile.player_level)), int(res.get("xp_before", Profile.player_xp)))
 	score_hold = 0
 	juice.end_card()
 	# the results replace the live HUD rather than sitting on top of it
@@ -576,9 +605,9 @@ func show_death() -> void:
 	var mins := int(Game.run_time) / 60
 	var secs := int(Game.run_time) % 60
 	death_score.text = "SCORE  %07d" % Game.score
-	death_stats.text = "WAVE REACHED   %d\nBOSSES SLAIN   %d\nKILLS          %d\nGLORY KILLS    %d\nHEADSHOT KILLS %d\nDEFLECTS       %d\nBEST COMBO     x%d\nLEVEL          %d\nTIME           %d:%02d\nSEED           %s" % [
-		Game.wave, Game.bosses_killed, Game.kills, Game.executions, Game.headshots, Game.deflects, Game.best_combo, Game.level, mins, secs, Game.seed_string(Game.run_seed)]
-	entering = Game.qualifies(Game.score) and not Game.debug_autoplay
+	death_stats.text = "WAVE REACHED   %d\nBOSSES SLAIN   %d\nKILLS          %d\nGLORY KILLS    %d\nHEADSHOT KILLS %d\nDEFLECTS       %d\nBEST COMBO     x%d\nRUN LV         %d\nTIME           %d:%02d" % [
+		Game.wave, Game.bosses_killed, Game.kills, Game.executions, Game.headshots, Game.deflects, Game.best_combo, Game.level, mins, secs]
+	entering = Game.last_rank >= 0 and not Game.debug_autoplay
 	initials = ""
 	initials_root.visible = false # shown once the score has counted up
 	death_table.visible = false
@@ -611,13 +640,13 @@ func _finish_initials() -> void:
 
 
 func death_ready() -> bool:
-	return death_root.visible and _death_t > 2.4 and not entering
+	return death_root.visible and _death_t > 2.4 and not entering and _xp_rolled and level_bar.done()
 
 
 ## The death screen counts up: stats line by line, then the score rolls up and
 ## slams; a qualifying score then asks for initials.
 func _death_countup() -> void:
-	var lines := clampi(int((_death_t - 0.25) / 0.09), 0, 10)
+	var lines := clampi(int((_death_t - 0.25) / 0.09), 0, _death_full.size())
 	if lines > _death_lines:
 		_death_lines = lines
 		Sfx.play("type", -10.0, 0.9 + lines * 0.04, 0.0)
@@ -645,6 +674,11 @@ func _death_countup() -> void:
 			juice.later(0.25, func(): juice.firework(Vector2(vs.x * 0.75, vs.y * 0.28), Color(Game.palette.neon_b)))
 		else:
 			death_table.visible = true
+	# then, once any initials are in, the run's XP counts into the Player
+	# Level bar (spec §11.1)
+	if _death_t > 2.1 and not _xp_rolled and not entering:
+		_xp_rolled = true
+		level_bar.roll(Game.main.results if Game.main else {})
 	if _death_counted:
 		_score_bump = move_toward(_score_bump, 0.0, Game.real_dt * 4.0)
 		death_score.scale = Vector2.ONE * (1.0 + 0.4 * _score_bump * _score_bump)
@@ -658,6 +692,43 @@ func wave_intro(wave: int, sub_text: String, color: Color, boss: bool) -> void:
 
 func intro_ready() -> bool:
 	return juice.intro_ready()
+
+
+## Each Player Level gained on the results screen gets a LEVEL UP stamp in
+## the bar's plate, sparks and a sound as the bar fills; when the count ends, one holographic cut-in names
+## the new level (spec §11.1). One cut-in, not one per level, so a big run
+## never stacks them over the results.
+func _on_player_level(lv: int) -> void:
+	Sfx.play("levelup", -3.0, 1.0 + 0.05 * (lv % 6), 0.0)
+	juice.burst(level_bar.position + level_bar.size * 0.5, YELLOW, 30, 120.0)
+	juice.add_shake(3.0)
+
+
+func _on_level_roll_done(levels: int) -> void:
+	if levels <= 0:
+		return
+	juice.cut_in("PLAYER LV %d" % Profile.player_level)
+	Sfx.play("highscore", -3.0, 1.0, 0.0)
+	juice.firework(Vector2(vs.x * 0.2, vs.y * 0.7), Color(Game.palette.neon_a))
+	juice.later(0.2, func(): juice.firework(Vector2(vs.x * 0.8, vs.y * 0.7), Color(Game.palette.neon_b)))
+
+
+## A boss reward unlocked this wave: the cut-in, then the item card.
+func show_reward(def: Dictionary) -> void:
+	juice.cut_in("REWARD UNLOCKED")
+	_reward_t = 0.0
+	juice.later(0.8, func(): reward_card.play(def))
+
+
+func reward_ready() -> bool:
+	return _reward_t > 1.0 and reward_card.ready_to_continue()
+
+
+## A suspended run picked up again: the score is already earned, so it
+## shows at once rather than rolling up, and NEW HI-SCORE doesn't replay.
+func on_run_resumed() -> void:
+	_score_shown = Game.score
+	_hi_stamped = Game.score > Game.best_score()
 
 
 func show_tally(d: Dictionary) -> void:
@@ -931,6 +1002,7 @@ func _fit(labels: Array) -> void:
 func _process(_delta: float) -> void:
 	var delta := Game.real_dt
 	_t += delta
+	_reward_t += delta
 	root.position = juice.shake_offset().round() if juice else Vector2.ZERO
 	_fit([center_label, center_shadow, hint_label, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats, lvl_label])
 	vs = root.get_rect().size
@@ -960,7 +1032,8 @@ func _process(_delta: float) -> void:
 		death_score.position = Vector2((vs.x - death_score.size.x) * 0.5, vs.y * 0.05 + 30)
 		var col_w := death_stats.size.x + 40.0 + maxf(death_table.size.x, 190.0)
 		var x0 := (vs.x - col_w) * 0.5
-		var y0 := vs.y * 0.05 + 60
+		level_bar.position = Vector2(roundf((vs.x - level_bar.size.x) * 0.5), roundf(vs.y * 0.05 + 52))
+		var y0 := vs.y * 0.05 + 90
 		death_stats.position = Vector2(x0, y0)
 		death_table.position = Vector2(x0 + death_stats.size.x + 40.0, y0)
 		if entering:
@@ -1022,20 +1095,23 @@ func _layout_title() -> void:
 		logo_slash.color = Color.WHITE
 	var sub_l: Label = title_root.get_node("Sub")
 	sub_l.position = Vector2((vs.x - sub_l.size.x) * 0.5, logo_band.position.y + logo_band.size.y + 3)
-	# two columns: how to play | hi-scores
+	# the persistent Player Level under the subtitle (spec §11.1)
+	title_level.position = Vector2(roundf((vs.x - title_level.size.x) * 0.5), sub_l.position.y + sub_l.size.y + 3)
+	# two columns: how to play | hi-scores over the armory
 	var left_w := 0.0
 	for i in range(6, title_labels.size()):
 		left_w = maxf(left_w, title_labels[i].size.x)
-	var right_w := maxf(title_scores.size.x, title_hi.size.x)
+	var right_w := maxf(maxf(title_scores.size.x, title_hi.size.x), armory.size.x)
 	var total := left_w + 28.0 + right_w
 	var lx := (vs.x - total) * 0.5
-	var top := sub_l.position.y + sub_l.size.y + 6
+	var top := title_level.position.y + title_level.size.y + 5
 	for i in range(6, title_labels.size()):
 		var l: Label = title_labels[i]
 		var row: int = l.get_meta("row")
 		l.position = Vector2(lx, top + row * 15)
 	title_hi.position = Vector2(lx + left_w + 28.0, top - 2)
 	title_scores.position = Vector2(lx + left_w + 28.0, top + 16)
+	armory.position = Vector2(lx + left_w + 28.0, title_scores.position.y + title_scores.size.y + 4)
 	title_seed.position = Vector2((vs.x - title_seed.size.x) * 0.5, vs.y - 48)
 	title_version.position = Vector2(vs.x - title_version.size.x - 6, vs.y - title_version.size.y - 4)
 	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
@@ -1177,7 +1253,7 @@ func _update_play(delta: float) -> void:
 	xp_bg.size = Vector2(200, 4)
 	xp_bg.position = Vector2((vs.x - 200) * 0.5, vs.y - m - 4)
 	xp_fill.size.x = 198.0 * clampf(Game.xp / Game.xp_next, 0.0, 1.0)
-	lvl_label.text = "LV %d" % Game.level
+	lvl_label.text = "RUN LV %d" % Game.level
 	lvl_label.position = Vector2((vs.x - lvl_label.size.x) * 0.5, xp_bg.position.y - 1 - lvl_label.size.y)
 	# ---- top-left: wave, hostiles, mutator
 	wave_label.text = "WAVE %02d" % Game.wave
