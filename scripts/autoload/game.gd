@@ -76,6 +76,7 @@ func _ready() -> void:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
+	Quality.from_cmdline()
 	load_scores()
 
 

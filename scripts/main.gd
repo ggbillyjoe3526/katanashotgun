@@ -42,6 +42,7 @@ func _ready() -> void:
 	add_child(hud)
 	hud.post = post
 	Game.hud = hud
+	add_child(DebugPerf.new())
 	if OS.get_cmdline_user_args().has("--juicetest"):
 		add_child(load("res://scripts/debug_juice.gd").new())
 		return
