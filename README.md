@@ -137,7 +137,8 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
   default, windowed, or exclusive full screen), VSync (off by default), frame
   cap (unlimited by default, or 60 to 360), quality preset, render scale (50
   to 100% of the 3D view), field of view (70 to 110, default 88). At any
-  resolution the 3D view keeps its 960x540 pixel look, upscaled sharply.
+  resolution the 3D view keeps its 960x540 pixel look, upscaled without
+  smoothing (exact 4x blocks on 4K, 2x on 1080p).
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact

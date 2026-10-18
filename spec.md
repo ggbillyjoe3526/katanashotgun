@@ -573,8 +573,10 @@ Notes:
   up to 4K and beyond); F11 or Alt+Enter toggles windowed. Windowed mode is
   the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
   4K), so the retro pixels stay square and sharp. The 3D view stays 960×540
-  at any screen size and is upscaled with nearest filtering (exactly 4× on a
-  4K screen): higher resolution never smooths away the PS1/PS2 look. Pause
+  at any screen size and is upscaled with nearest filtering, never smoothed:
+  exactly 4× on 4K and 2× on 1080p; other sizes (1440p) get nearest scaling
+  with slightly uneven pixel widths. Higher resolution never smooths away the
+  PS1/PS2 look. Pause
   when the window loses focus or the mouse capture is lost.
 - **Frame rate:** unlimited by default with VSync off; the frame cap offers
   60, 75, 120, 144, 165, 240 and 360, and VSync can be turned on.

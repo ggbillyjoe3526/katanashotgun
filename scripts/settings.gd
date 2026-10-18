@@ -169,7 +169,8 @@ static func apply_window() -> void:
 ## Sizes the window to the biggest whole multiple of 960x540 that fits the
 ## screen (2880x1620 on a 4K screen, 960x540 on 1080p), centred.
 static func fit_window() -> void:
-	if DisplayServer.get_name() == "headless":
+	# a quick F11 back to full screen before this ran: leave that window alone
+	if DisplayServer.get_name() == "headless" or DisplayServer.window_get_mode() != DisplayServer.WINDOW_MODE_WINDOWED:
 		return
 	var screen := DisplayServer.window_get_current_screen()
 	var area := DisplayServer.screen_get_usable_rect(screen)
