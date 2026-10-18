@@ -118,7 +118,7 @@ Pass after `--` on the command line:
   tally, FINISH + boss card, level-up, boss name card, kill tags, hint, death);
   `--boss=ninja|mech|oni` forces a boss
 - `--palettetour` four fixed views of the arena for checking colour, then
-  quits; `--palette=SUNSET DRIVE` (or `0`-`4`) forces a palette, in the tour
+  quits; `--palette=2` (`0`-`4`, or a quoted name like `--palette="SUNSET DRIVE"`) forces a palette, in the tour
   or a normal run
 
 ```

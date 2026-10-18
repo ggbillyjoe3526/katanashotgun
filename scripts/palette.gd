@@ -70,9 +70,13 @@ const LIST := [
 static func pick(rng: RandomNumberGenerator, force := "") -> Dictionary:
 	var i := rng.randi() % LIST.size()
 	if force != "":
+		var found := false
 		for k in LIST.size():
 			if force == str(k) or force.to_upper() == LIST[k].name:
 				i = k
+				found = true
+		if not found:
+			push_warning("--palette=%s matches no palette; using the seeded one" % force)
 	return expand(LIST[i])
 
 
