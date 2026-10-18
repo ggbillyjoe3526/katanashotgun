@@ -4,8 +4,8 @@
   the title screen too. It unlocks nothing and never changes difficulty.
 - The in-run level is now labelled **RUN LV** so the two never mix.
 - **Bosses drop rewards.** Each boss unlocks new weapon looks: glowing katana
-  edges and shotgun coils in new colours. Pick them on the title screen with
-  **1** and **2**. They are cosmetic only.
+  edges and shotgun coils in new colours. Pick them on the title or pause screen
+  with **1** and **2**. They are cosmetic only.
 - **Quit mid-run and carry on later.** The game saves between waves; next time,
   the title offers **CONTINUE RUN** (or press **N** for a new run).
 - The game saves itself after every run, every unlock and on quit. Saves are

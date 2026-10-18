@@ -1610,7 +1610,7 @@ is never lost.
     and every kill unlocks its next item until the list is done. Never
     random, so rewards never touch the seeded RNG. The first six are
     weapon looks: a katana edge and a shotgun coil per boss, picked on the
-    title screen (1 and 2). Palettes, maps, mutators and boss variants can
+    title or pause screen (1 and 2). Palettes, maps, mutators and boss variants can
     join the lists once they exist.
 
 ### 11.3 Saving (critical)

@@ -34,8 +34,8 @@ a boss (Kurokage, Tetsugumo or Shuten). Scores are saved locally (top 10) with
 your initials, wave and seed.
 
 Every run pays XP into your **Player Level**, which keeps rising across runs.
-Bosses unlock new weapon looks; pick them on the title screen with **1**
-(katana edge) and **2** (shotgun coil). The game saves on its own; if you quit
+Bosses unlock new weapon looks; pick them on the title or pause screen with
+**1** (katana edge) and **2** (shotgun coil). The game saves on its own; if you quit
 mid-run, the title offers **CONTINUE RUN** from the start of the wave you were
 on (**N** starts a new run instead). Saves live in
 `%APPDATA%\KatanaShotgun\` on Windows (`profile.json`, `run.json`, each with a
