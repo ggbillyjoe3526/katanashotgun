@@ -1413,6 +1413,8 @@ the holographic cut-in (§9.8).
     - `rng_combat`: shotgun pellet spread, which glory kill plays, where
       health orbs scatter.
     - `rng_hazards`: storm strikes.
+  - Each per-wave stream is seeded from `hash([seed, wave, tag])`, one tag
+    per stream, so nearby seeds never share a stream a few waves apart.
   - Every enemy's own dice (attack timers, strafing, orb drops) come from
     the seed, the wave and its place in the wave's spawn order; a boss's
     from `hash(seed × 13 + wave)` (§5.6).

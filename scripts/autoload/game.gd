@@ -183,11 +183,13 @@ func combo_window() -> float:
 
 
 ## Called at each wave start: the wave streams depend only on seed and wave.
+## Each key hashes the seed, the wave and a stream tag together, so two
+## nearby seeds never share a stream a few waves apart.
 func seed_wave(w: int) -> void:
-	rng_waves.seed = hash(run_seed * 5 + w * 127 + 2)
-	rng_spawns.seed = hash(run_seed * 17 + w * 137 + 7)
-	rng_combat.seed = hash(run_seed * 19 + w * 139 + 9)
-	rng_hazards.seed = hash(run_seed * 11 + w * 131 + 5)
+	rng_waves.seed = hash([run_seed, w, "waves"])
+	rng_spawns.seed = hash([run_seed, w, "spawns"])
+	rng_combat.seed = hash([run_seed, w, "combat"])
+	rng_hazards.seed = hash([run_seed, w, "hazards"])
 
 
 func combo_mult() -> float:

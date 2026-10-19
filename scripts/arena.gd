@@ -7,7 +7,7 @@ extends Node3D
 ## New maps: subclass Arena in scripts/maps/ and register it in map_registry.gd.
 
 ## A spawn group lands within this many metres of its spawn point (the
-## director's +-2 m offsets, and a boss's reinforcement pair).
+## director's +-2 m offsets, and the second grunt a boss wave sends in).
 const GROUND_SPAWN_REACH := 3.0
 
 var map_name := "UNNAMED"

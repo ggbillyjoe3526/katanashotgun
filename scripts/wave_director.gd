@@ -259,7 +259,7 @@ func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()
 	# each enemy's own dice (timers, strafing, drops) come from the seed, the
 	# wave and its place in the wave's spawn order
 	_spawn_index += 1
-	var dice := hash(Game.run_seed * 23 + wave * 149 + _spawn_index * 7) & 0x7fffffff
+	var dice := hash([Game.run_seed, wave, _spawn_index, "dice"]) & 0x7fffffff
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
 		# only horde kinds are pooled, so `before_ready` (bosses) never runs here
