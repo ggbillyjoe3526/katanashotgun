@@ -17,6 +17,8 @@ const MULT_COL := Color(1.0, 0.18, 0.32)
 const GOLD := Color(1.0, 0.85, 0.25)
 const MAX_SPARKS := 1400
 const MAX_ROWS := 7
+const INTRO_LINE := 14.0 # line pitch of the intro's mutator lines
+const COUNT_RIGHT := 52.0 # the countdown's centre, from the right edge
 # tally layout (UI pixels): narrow enough to clear the HUD corner panels
 const TALLY_W := 260.0
 const TALLY_DETAIL_X := 118.0 # where the tally's detail column ("31 X 25") starts, at the least
@@ -274,13 +276,18 @@ func _set_text(l: Label, text: String) -> void:
 ## Slams `text` onto the screen. Options (all optional):
 ## anchor (fraction of the screen), off (pixels), from (start scale),
 ## slam (fly-in time), hold, fade, rot (radians), shake, sound, vol, pitch,
-## burst (spark count on impact), shadow (colour), font, slot.
+## burst (spark count on impact), shadow (colour), font, slot,
+## lane ("top": centred in the HUD's top lane, under the wave, the score and
+## the boss bar; anchor and off are then ignored).
 ## One message per screen region (spec §9.9): a stamp replaces any stamp in
 ## the same `slot` ("center" by default), and a centre stamp replaces the
 ## cut-in. The hold is never shorter than the time it takes to read the text.
 func stamp(text: String, color: Color, size := 24, o := {}) -> void:
 	var slot: String = o.get("slot", "center")
 	_clear_slot(slot)
+	if o.get("lane", "") == "top":
+		# one message per lane: the newest replaces the boss name card
+		hud.end_boss_card()
 	if slot == "center":
 		_cutin.stop()
 	var l: Control
@@ -295,7 +302,7 @@ func stamp(text: String, color: Color, size := 24, o := {}) -> void:
 	move_child(l, _spark_layer.get_index())
 	_stamps.append({
 		"l": l, "t": 0.0, "hit": false, "c": color, "slot": slot,
-		"anchor": o.get("anchor", Vector2(0.5, 0.4)), "off": o.get("off", Vector2.ZERO),
+		"anchor": o.get("anchor", Vector2(0.5, 0.4)), "off": o.get("off", Vector2.ZERO), "lane": str(o.get("lane", "")),
 		"from": float(o.get("from", 3.0)), "slam": float(o.get("slam", 0.09)),
 		"hold": maxf(float(o.get("hold", 0.8)), read_time(text)), "fade": float(o.get("fade", 0.25)),
 		"rot": float(o.get("rot", 0.0)), "shake": float(o.get("shake", 4.0)),
@@ -336,7 +343,7 @@ func _update_stamps(rd: float) -> void:
 			if s.sound != "":
 				Sfx.play(s.sound, s.vol, s.pitch, 0.0)
 			if s.burst > 0:
-				burst(vs * s.anchor + s.off, s.c, s.burst)
+				burst(_stamp_centre(s, l), s.c, s.burst)
 		var sc: float
 		var rot: float = s.rot
 		var a := 1.0
@@ -362,9 +369,15 @@ func _update_stamps(rd: float) -> void:
 		l.pivot_offset = l.size * 0.5
 		l.scale = Vector2.ONE * sc
 		l.rotation = rot
-		l.position = (vs * s.anchor + s.off - l.size * 0.5).round()
+		l.position = (_stamp_centre(s, l) - l.size * 0.5).round()
 		l.modulate.a = clampf(a, 0.0, 1.0)
 		i += 1
+
+
+func _stamp_centre(s: Dictionary, l: Control) -> Vector2:
+	if s.lane == "top":
+		return Vector2(vs.x * 0.5, hud.top_lane() + l.size.y * 0.5)
+	return vs * s.anchor + s.off
 
 
 # ---------------------------------------------------------------- sparks
@@ -445,7 +458,7 @@ func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	_intro_t = 0.0
 	_typed = 0
 	var acc := Color(pal.neon_a) if not boss else Color(1.0, 0.1, 0.18)
-	_intro_title.setup("WAVE %02d" % wave, 24, Color.WHITE, acc, wave, {"accent2": Color(pal.neon_b), "tag": "> SECTOR SHIN-KAGURA // HOSTILES INBOUND" if not boss else "> WARNING // HIGH-VALUE TARGET"})
+	_intro_title.setup("WAVE %02d" % wave, 20, Color.WHITE, acc, wave, {"accent2": Color(pal.neon_b), "tag": "> SECTOR SHIN-KAGURA // HOSTILES INBOUND" if not boss else "> WARNING // HIGH-VALUE TARGET"})
 	_band.shadow = acc
 	var parts := sub.split("\n") if sub != "" else PackedStringArray()
 	for i in _intro_lines.size():
@@ -461,21 +474,21 @@ func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	later(0.09, func():
 		add_shake(5.0)
 		Sfx.play("stamp", -3.0, 1.0, 0.0))
-	# the countdown and FIGHT sit below the band, never on top of it
-	var count_at := Vector2(0.5, 0.71)
+	# the countdown sits at the band's right end; FIGHT takes the band's place
 	var pitches := [1.0, 1.12, 1.26]
 	for i in 3:
 		later(1.2 + i * 0.55, func():
 			if not _intro_on or _intro_ready:
 				return
-			stamp(str(3 - i), Color.WHITE, 32, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": count_at, "from": 2.2, "hold": 0.3, "fade": 0.1, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i], "slot": "intro"}))
+			var count_at := Vector2(vs.x - COUNT_RIGHT, _band.position.y + roundf(_band.size.y * 0.5))
+			stamp(str(3 - i), Color.WHITE, 24, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": Vector2.ZERO, "off": count_at, "from": 2.2, "hold": 0.3, "fade": 0.1, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i], "slot": "intro"}))
 	later(2.85, func():
 		var cut := _intro_ready # the boss card already ended the intro
 		_intro_ready = true
 		if not boss and _intro_on and not cut:
-			stamp("FIGHT", Color.WHITE, 40, {"glitch": true, "brackets": true, "tag": "> ENGAGE", "accent": Color(pal.neon_a), "anchor": count_at, "from": 3.0, "hold": 0.45, "fade": 0.2, "shake": 8.0, "sound": "go", "vol": -2.0, "burst": 40, "slot": "intro"})
+			stamp("FIGHT", Color.WHITE, 28, {"glitch": true, "brackets": true, "tag": "> ENGAGE", "accent": Color(pal.neon_a), "lane": "top", "from": 3.0, "hold": 0.45, "fade": 0.2, "shake": 8.0, "sound": "go", "vol": -2.0, "burst": 40, "slot": "intro"})
 			_lines.kick(1.0, 0.2)
-			_shards.burst(vs * count_at, Color(pal.neon_a), 18, 300.0, true)
+			_shards.burst(Vector2(vs.x * 0.5, hud.top_lane() + 30.0), Color(pal.neon_a), 18, 300.0, true)
 			if hud.post:
 				hud.post.impact_frame(0.05))
 
@@ -494,23 +507,20 @@ func _update_intro(rd: float) -> void:
 		return
 	_intro_t += rd
 	var t := _intro_t
-	# the band sits below the top HUD clusters and above the crosshair area
-	var by := roundf(maxf(58.0, vs.y * 0.215))
+	# a full-width band in the top lane, under the wave and the score and
+	# above the vitals frame (spec §9.7)
+	var by := hud.top_lane()
 	var title_h := _intro_title.size.y
 	var lines_h := 0.0
 	for l in _intro_lines:
 		if l.visible:
 			l.size = Vector2.ZERO
-			lines_h += l.size.y
-	var full_h := roundf(4.0 + title_h + lines_h + (4.0 if lines_h > 0.0 else 2.0))
-	var bw := roundf(vs.x * 0.74)
-	for l in _intro_lines:
-		if l.visible:
-			bw = maxf(bw, l.size.x + 28.0)
-	bw = minf(bw, vs.x - 8.0)
+			lines_h += INTRO_LINE
+	var full_h := roundf(title_h + lines_h + (1.0 if lines_h > 0.0 else 0.0))
+	var bw := vs.x + 8.0
 	var open := ease_out(t / 0.14)
 	var bh := roundf(full_h * open)
-	_band.position = Vector2(roundf((vs.x - bw) * 0.5), by + roundf((full_h - bh) * 0.5))
+	_band.position = Vector2(-4, by + roundf((full_h - bh) * 0.5))
 	_band.size = Vector2(bw, maxf(bh, 1.0))
 	# title: a stamp that stays put
 	var sc: float
@@ -522,7 +532,7 @@ func _update_intro(rd: float) -> void:
 		sc = 1.0 - 0.08 * sin(u * 30.0) * exp(-u * 14.0)
 	_intro_title.pivot_offset = _intro_title.size * 0.5
 	_intro_title.scale = Vector2.ONE * sc
-	_intro_title.position = (Vector2(vs.x * 0.5 - _intro_title.size.x * 0.5, by + 4.0)).round()
+	_intro_title.position = (Vector2(vs.x * 0.5 - _intro_title.size.x * 0.5, by + 1.0)).round()
 	# the mutator types itself out (clean letters, no scramble), line by line
 	var n := int(maxf(0.0, t - 0.32) * 55.0)
 	var total := 0
@@ -533,7 +543,7 @@ func _update_intro(rd: float) -> void:
 		if n / 2 != _typed / 2:
 			Sfx.play("type", -15.0, 1.25, 0.08)
 		_typed = mini(n, total)
-	var y := by + 4.0 + title_h
+	var y := by + title_h - 3.0
 	var left := n
 	for l in _intro_lines:
 		if not l.visible:
@@ -541,8 +551,9 @@ func _update_intro(rd: float) -> void:
 		l.visible_characters = clampi(left, 0, l.text.length())
 		left -= l.text.length()
 		l.position = Vector2(roundf((vs.x - l.size.x) * 0.5), roundf(y))
-		y += l.size.y
-	var a := 1.0 if t < 2.85 else clampf(1.0 - (t - 2.85) / 0.25, 0.0, 1.0)
+		y += INTRO_LINE
+	# a quick fade: FIGHT slams into the band's place
+	var a := 1.0 if t < 2.85 else clampf(1.0 - (t - 2.85) / 0.1, 0.0, 1.0)
 	if t >= 2.85 and not _intro_out:
 		_intro_out = true
 		_intro_title.glitch_out(0.1)
@@ -748,8 +759,11 @@ func _fmt_mult(f: float) -> String:
 	return ("%.1f" % f) if f < 10.0 else ("%d" % int(f))
 
 
+## Centred, but never over the top row (the score and the wave stay in view
+## while the payout counts into the score).
 func _panel_origin() -> Vector2:
-	return Vector2(roundf((vs.x - _panel_size.x) * 0.5), roundf(maxf(18.0, (vs.y - _panel_size.y) * 0.5 - 12.0)))
+	var y := maxf(hud.top_lane(), roundf((vs.y - _panel_size.y) * 0.5 - 12.0))
+	return Vector2(roundf((vs.x - _panel_size.x) * 0.5), minf(y, vs.y - 4.0 - _panel_size.y))
 
 
 func _update_tally(rd: float) -> void:
@@ -1035,11 +1049,11 @@ func combo_stamp(n: int, idx: int) -> void:
 		_lines.kick(0.5 + idx * 0.1, 0.1)
 		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
 		cut_in("X%d COMBO" % n, idx % 2 == 1)
-		_shards.burst(vs * Vector2(0.5, 0.3), Color(Game.palette.neon_a), 12, 260.0, true)
+		_shards.burst(Vector2(vs.x * 0.5, hud.top_lane() + 30.0), Color(Game.palette.neon_a), 12, 260.0, true)
 		return
 	var hue := fmod(0.12 - idx * 0.11 + 1.0, 1.0)
 	var col := Color.from_hsv(hue, 0.75, 1.0)
-	stamp("X%d COMBO" % n, col, 24, {"glitch": true, "tag": "> CHAIN SYNC", "accent": Color(Game.palette.neon_a), "seed": idx, "anchor": Vector2(0.5, 0.5), "off": Vector2(0, -50), "from": 2.4, "hold": 0.55, "fade": 0.2, "shake": 3.0 + idx * 0.5, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "burst": 24 + idx * 6})
+	stamp("X%d COMBO" % n, col, 20, {"glitch": true, "tag": "> CHAIN SYNC", "accent": Color(Game.palette.neon_a), "seed": idx, "lane": "top", "from": 2.4, "hold": 0.55, "fade": 0.2, "shake": 3.0 + idx * 0.5, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "burst": 24 + idx * 6})
 	_lines.kick(0.5, 0.1)
 
 
@@ -1064,8 +1078,7 @@ func glory_start(kind: String) -> void:
 	_bars_bot.visible = true
 	if kind == "boss":
 		# the break blow outranks the boss name card: the card makes way
-		hud.boss_title.visible = false
-		hud.boss_sub.visible = false
+		hud.end_boss_card()
 		cut_in("ONIKIRI!")
 
 
@@ -1077,6 +1090,8 @@ func speed_lines(strength: float, hold := 0.0) -> void:
 func cut_in(text: String, flip := false) -> void:
 	var pal := Game.palette
 	_clear_slot("center")
+	# the top lane, clear of the wave, the score and the boss bar
+	_cutin.top = hud.top_lane() - 4.0
 	_cutin.play(text, Color(pal.neon_a), Color(pal.neon_b), flip)
 	_lines.kick(0.7, 0.25)
 	add_shake(3.0)

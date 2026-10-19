@@ -90,7 +90,8 @@ func _process(_delta: float) -> void:
 	var vs := get_parent_area_size() if get_parent() is Control else Vector2(480, 270)
 	var k := Juice.ease_out_back(clampf(_t / DEAL, 0.0, 1.0))
 	var out_k := clampf((_t - DEAL - HOLD) / OUT, 0.0, 1.0)
-	var base := Vector2(roundf((vs.x - size.x) * 0.5), roundf(vs.y * 0.5 - H * 0.5 + 18))
+	# the bottom lane, under the vitals frame (spec §9.7)
+	var base := Vector2(roundf((vs.x - size.x) * 0.5), roundf(vs.y - H - 4.0))
 	position = base + Vector2(0, roundf((1.0 - k) * 160.0 + out_k * out_k * 200.0))
 	pivot_offset = size * 0.5
 	rotation = (1.0 - k) * 0.25

@@ -696,7 +696,7 @@ charges the gun; the gun sets up the blade.**
     Tetsugumo's signature round, Shuten's fan volley; §5.2). The first
     perfect deflect on a volley earns the **big KAMAE hit: +20% of the
     bar** when the bolt lands (once per volley, ×1.5 in a punish window like
-    all KAMAE), plus the centre stamp **PERFECT** (cyan, as for the RED
+    all KAMAE), plus the stamp **PERFECT** (cyan, top lane, as for the RED
     SIGNAL dash) and a short slow motion (×0.35 for 0.3 s). The first
     signature volley of a run (once the deflect hint has shown) shows the
     hint "WHITE BOLTS: DEFLECT AT THE LAST MOMENT FOR A PERFECT".
@@ -1103,7 +1103,7 @@ glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
   sticks better as the fight goes on. `DRAIN_AT_NO_HP` in
   `scripts/boss_kamae.gd`.
 - **The break:** at full, a heavy clang, hitstop 0.12, shake 0.5, an impact
-  frame and the centre stamp **KAMAE BROKEN** (gold). The boss reels (its
+  frame and the stamp **KAMAE BROKEN** (gold, in the top lane, §9.7). The boss reels (its
   STAGGER state, armour off) for its stagger time **+1.5 s** (Kurokage 4.1 s,
   Tetsugumo 4.7 s, Shuten 4.5 s). The first time, the hint "KAMAE BROKEN!
   PRESS F FOR ONIKIRI". The bar then shows the time left to strike, glowing
@@ -1115,8 +1115,8 @@ glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
 - **After a break** (blow landed or window missed) the bar is empty and fills
   again. No limit on breaks; at the bot's relentless pace a first-cycle boss
   breaks once or twice per fight.
-- **The bar:** under the HP bar, a gold "KAMAE" label and a 190 px bar that
-  fills from the middle out; it runs white-hot from 80%. The word never
+- **The bar:** under the HP bar, a gold "KAMAE" label and a bar that
+  fills the rest of the boss plate's width from the middle out; it runs white-hot from 80%. The word never
   moves or changes. The first boss shows the hint "KEEP ATTACKING TO FILL
   ITS KAMAE BAR - A FULL BAR BREAKS IT".
 
@@ -1440,8 +1440,9 @@ the holographic cut-in (§9.8).
   - Kept in the profile save (§11.3). A prototype `user://scores.json` is
     imported once. The score is kept the moment the run ends (as `---`),
     so quitting before typing initials doesn't lose it.
-- The HUD shows "HI 0000000" centre top. Passing the best score triggers a
-  stamp/cut-in "NEW HI-SCORE" once per run.
+- The live HUD does not show the best score (the Focus layout, §9.7); the
+  title, pause and results screens do. Passing the best score triggers the
+  "NEW HI-SCORE" cut-in once per run.
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
   confirms; blanks become "-"), then the table appears with the new entry
   highlighted. **R** retries the same seed; a click or Enter starts a new
@@ -1801,43 +1802,76 @@ the holographic cut-in (§9.8).
     RGB split, plus jitter and tear bars during the in/out burst.
   - Optional corner brackets and a tag above.
   - **Must follow the readability rule (§9.9).**
-- **HUD layout** (480×270, 8 px margins, each cluster on a tech panel with
-  brackets):
-  - **Top-left:** `WAVE 04` (Orbitron), `HOSTILES n` (mono), mutator name
-    and multiplier. The seed is not on the live HUD (it was clutter); it is
-    on the pause screen, the title and the results.
-  - **Top-centre:** `HI 0000000` (mono, neon), which reads "NEW HI-SCORE"
-    (steady, no blinking) once passed.
-  - **Top-right:** score (mono, 7 digits) that rolls up, bumps (×1.2 at most)
-    and turns gold on big gains. Below it, the combo `x12 COMBO` in dark
-    letters on an accent plate that pops each kill (growing down and left,
-    never into the score) and heats from yellow to pink to rainbow at ≥50,
-    with the combo timer bar.
-  - **Bottom-left:** HP number + HP bar (red, with a white "ghost" trail that
-    drains slowly; pulses softly below 30%, the number never flashes) and dash pips.
-  - **Bottom-centre:** XP bar and `LV n` (run level).
-  - **Bottom-right:** **cell icons** (little power cells: body, terminal nub,
-    highlight; newly charged cells flash and pop) and the "CELLS" label.
-  - **Centre:** crosshair (dot + ticks) with **readiness arcs**: katana cyan
-    on the left, shotgun on the right, empty when out of cells. Hit ticks on
-    hit.
-  - **Popups:** kill tags on dark plates to the right of the crosshair,
-    newest on top (max 4), 1.4 s. The stack slides rather than jumps, and a
-    repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking.
-    Out of cells shows a steady "NO CHARGE" plate to the left of the
-    crosshair.
-  - **Glory kill prompt:** 16 px under the crosshair, ending 8 px right of
-    it so it clears the kill tags, while a staggered enemy is in reach
-    (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL" (or
-    "ONIKIRI" on a broken boss, red-edged, §5.5) on a dark plate. Pops in over
-    0.1 s, then holds still; only the key cap's glow pulses. Fades in 0.08 s
-    when the target is lost, and is gone during the finisher.
-  - **Boss bar:** top centre under the HI score, 240 px, "NAME – EPITHET",
-    on a dark plate, with the KAMAE row under it (§5.5).
-  - **Hints:** bottom centre on a dark plate, above the run level, 4.5 s,
-    each shown once.
-  - **Messages:** a fixed spot under the boss bar (e.g. "<NAME> IS
-    ENRAGED").
+- **HUD layout: "Focus"** (owner's pick of three concepts, 2026-10-19:
+  the old HUD was "a cluttered mess", text everywhere and overlapping; the
+  game may be visually busy but the text may not). 480×270, 8 px margins.
+  There are **no corner panels**: the corner text stands bare on a dark
+  outline. Every kind of message has **one fixed lane**, and a new message
+  replaces the one in its lane, so two messages never sit on each other. The
+  flavour text all stays (callouts, warnings, stamps with their data tags,
+  every juice screen). Mockups: `design/ui-redesign/B2-focus-*.png` in the
+  project files.
+  - **Top-left:** `WAVE 07`, and under it `14 LEFT` (hostiles left), grey.
+    Jersey 10, 14 px apart.
+  - **Top-right:** the score, Jersey 10 at twice its size (38 px), 7 digits.
+    It rolls up, bumps (×1.2 at most) and turns gold on big gains. The best
+    score is not on the live HUD; the NEW HI-SCORE cut-in still plays.
+  - **Bottom edge:** the run XP as a 2 px purple hairline across the whole
+    width. No "RUN LV" text (the level shows on the level-up screen).
+  - **Bottom-left:** the wave's mutator and its multiplier, while one is on
+    (hidden while the boss reward card is up).
+  - **Centre: the vitals frame.** A square round the crosshair (48 px,
+    drawn by four white corner brackets with 5 px arms, nothing in the
+    middle), so it reads as part of the crosshair and never covers the enemy
+    under it (owner, 2026-10-19: square, not round).
+    - **Left edge: health**, a 3 px bar between the corners on a dark
+      outline, filling bottom to top in red over dark red, with a white
+      trail that drains slowly. Below 30% it pulses softly.
+    - **Right edge: power cells**, one cyan block per cell, filled from the
+      bottom, dark when empty; a newly charged cell flashes white.
+    - **Bottom edge: dash charges**, lime pips (8×3, 4 px apart; 6×3 with
+      four or more), a recharging pip partly filled.
+    - The numbers sit just outside on small dark plates: the health number
+      left of the frame (white, red below 30%; it never flashes) and the cell
+      count right of it (cyan, red at 0).
+    - The crosshair itself is the dot and ticks, with hit ticks on hit. The
+      old katana and shotgun readiness arcs are gone (the approved Focus
+      mockups have none; the frame replaced them).
+    - FINISH, the wave payout and the boss-defeated card own the middle of
+      the screen: the frame and its numbers step aside while they are up.
+  - **Under the frame:** the combo (`x12`, from ×2) on a dark plate, with
+    its timer as a 1 px line under the number; it pops each kill and heats
+    from yellow to pink to rainbow at ≥50. Under it, the **glory kill
+    prompt**, centred, 58 px below the crosshair, while a staggered enemy is
+    in reach (§3.4): a gold key cap with the bound key ("F") and "GLORY KILL",
+    "PLUNGE", or "ONIKIRI" on a broken boss (red-edged, §5.5), on a dark
+    plate. It pops in over 0.1 s, then holds still; only the key cap's glow
+    pulses. It fades in 0.08 s when the target is lost and is gone during the
+    finisher.
+  - **Right of the frame: kill callouts** (HEADSHOT, RETURN TO SENDER,
+    GLORY KILL, DEFLECT, upgrade news...) on dark plates, from 32 px right of
+    the frame, newest on top, at most 3, 16 px apart, 1.4 s each. The stack
+    slides rather than jumps, and a repeat of the newest callout counts up
+    ("DEFLECT! x3") instead of stacking.
+  - **Left of the health number:** a steady red-edged "NO CHARGE" plate when
+    the shotgun is fired with no cells.
+  - **Top centre: the boss bar**, a 220 px plate between the wave and the
+    score: the boss's name (red), its HP bar with a white trail, and the
+    KAMAE row under it (§5.5). On a screen too narrow for it between the
+    corners, it drops under the top row.
+  - **The top lane:** just under the top row (and under the boss bar while
+    it is up). The big moments go here, one at a time: stamps (X10 COMBO with
+    "> CHAIN SYNC", KAMAE BROKEN, PERFECT, build links, FIGHT), boss messages
+    ("<NAME> IS ENRAGED"), the holographic cut-in, the wave intro band and the
+    boss name card. A newer one replaces the boss name card.
+  - **The bottom lane: warnings and hints**, bottom centre, ending 24 px
+    above the bottom edge, on a dark plate edged in the lane's colour. The
+    head line is coloured (red for a warning such as "MISSILES INBOUND",
+    "RED SIGNAL" or the shockwave; yellow for a hint) and the rest of the
+    sentence is white on the line under it; a hint is split at its first
+    dash, colon, "!" or "?". 4.5 s, each shown once. The boss reward card
+    also deals into the bottom of the screen; a hint waits until it (or
+    FINISH, the payout or the boss-defeated card) has gone.
 - **Title screen:**
   - The **KATANA / SHOTGUN** logo: KATANA flies in from the left and SHOTGUN
     from the right (0.3 s), on a tech panel. Then a **neon blade cuts the
@@ -1909,30 +1943,30 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     character). A new stamp replaces any stamp in the same screen region.
   - On impact: shake, sound and optional sparks.
 - **Wave intro:**
-  - 0.00 s: a tech panel (74% of the width, brackets, scanlines) snaps open
-    in 0.14 s.
-  - "WAVE 04" decodes in (Orbitron, with tag "> SECTOR SHIN-KAGURA //
+  - 0.00 s: a full-width tech band (brackets) in the top lane snaps open in
+    0.14 s.
+  - "WAVE 04" decodes in (Orbitron 20, with tag "> SECTOR SHIN-KAGURA //
     HOSTILES INBOUND", or "> WARNING // HIGH-VALUE TARGET" on boss waves).
   - From 0.32 s the mutator types itself out at 55 chars/s on two lines
     inside the panel ("NAME // SCORE xN", then the description; clean
-    letters, type ticks, no blinking cursor). The panel sits below the top
-    HUD clusters and grows to fit.
+    letters, type ticks, no blinking cursor), 14 px apart. The band sits
+    under the top row and grows to fit, ending above the vitals frame.
   - Countdown **3 / 2 / 1** at 1.20 / 1.75 / 2.30 s: bracketed glitch stamps
-    below the panel (each replaces the last), pitched count sound 1.0 /
-    1.12 / 1.26.
-  - **FIGHT** at 2.85 s, below the panel (40 px, brackets, tag "> ENGAGE",
-    impact frame, data streaks, shard burst, "go" sound). The intro is then
-    "ready" and spawning begins. The panel fades from 2.85 to 3.1 s.
+    at the band's right end (each replaces the last), pitched count sound 1.0
+    / 1.12 / 1.26.
+  - **FIGHT** at 2.85 s, in the top lane where the band was (35 px, brackets,
+    tag "> ENGAGE", impact frame, data streaks, shard burst, "go" sound). The
+    intro is then "ready" and spawning begins. The band fades out in 0.1 s
+    as FIGHT slams in.
   - Boss waves skip FIGHT; the boss intro card appears instead.
   - A riser sound under normal intros; an alarm under boss intros.
 - **Combo milestones:**
-  - ×10: a glitch stamp "X10 COMBO" (tag "> CHAIN SYNC") above the
-    crosshair.
+  - ×10: a glitch stamp "X10 COMBO" (tag "> CHAIN SYNC") in the top lane.
   - ×20 and up: the **holographic cut-in** instead of a stamp.
   - While the boss name card is up, milestones play their sound only (the
     HUD combo counter still shows the number), so the card is never covered.
 - **Holographic cut-in** (1.0 s, long enough to read its text):
-  - A full-width comm-feed strip (70 px, chamfered, cyan top edge and accent
+  - A full-width comm-feed strip in the top lane (70 px, chamfered, cyan top edge and accent
     bottom edge, hazard ticks) snaps in from the side in 0.08 s, holds still,
     and snaps out in 0.09 s.
   - A **codec-style portrait box** (78 px) with the **protagonist's visored
@@ -1946,9 +1980,9 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     and data streaks.
   - Alternates sides. A centre stamp replaces it, and it replaces a centre
     stamp, so the two never show at once.
-- **End-of-wave tally** (Balatro-style, on a tech panel 260 px wide, so it
-  clears the HUD corner panels; no scanlines behind the numbers; rows
-  15 px apart):
+- **End-of-wave tally** (Balatro-style, on a tech panel 260 px wide, centred
+  but never above the top lane, so the score it counts into stays in view; no
+  scanlines behind the numbers; rows 15 px apart):
   - 0.09 s: title "WAVE 04 // CLEAR" decodes in (tag "> COMBAT LOG //
     PAYOUT"), with a stamp sound and shake 4.
   - Rows deal in from 0.32 s, every 0.2 s: they slide in, values count up
@@ -2054,13 +2088,15 @@ something.
 - Glitch text (`GlitchText`): decode capped at 0.1 s; digits and punctuation
   never scramble; no glitch bursts while held, only `glitch_out()` on the way
   out; RGB split 1 px at rest; a dark outline under every glyph.
-- HUD clusters sit on darker glass (0.78) with no scanlines; layout is
-  computed from the real text sizes, so nothing overlaps.
+- The Focus layout (§9.7, 2026-10-19) gives every kind of message a fixed
+  lane, one message per lane; the corner text has a dark outline and the
+  small readouts sit on dark plates. Layout is computed from the real text
+  sizes, so nothing overlaps.
 - Nothing blinks: warnings, prompts and NEW HI-SCORE are steady or pulse
   softly; low HP pulses the bar, never the number.
 - Moving text holds still once it lands: no drift on cut-ins, no wobble on
   the LEVEL UP title, no jitter on the tally total.
-- `--juicetest` also shows the boss name card, kill tags, NO CHARGE, a hint
+- `--juicetest` also shows the boss name card, kill callouts, NO CHARGE, a hint
   and an ENRAGED message, for paused-frame checks.
 - Nothing spills out of its panel or sits on other text (tidy pass,
   2026-10-18). The big moments take turns instead of stacking:
@@ -2072,9 +2108,8 @@ something.
   - Kill tags and hints wait for the wave intro (an "<UPGRADE> ONLINE" tag
     appears at FIGHT) and are dropped while FINISH, the payout or the
     boss-defeated card is up; combo milestones play their sound only then.
-  - Hints wrap onto two centred lines when wider than the screen, and sit
-    above the bottom HUD plates. A long mutator name in the payout stays
-    inside the panel; the best score steps aside while the payout is up.
+  - Hints and warnings wrap when wider than the screen, in the bottom lane.
+    A long mutator name in the payout stays inside the panel.
   - Results stats are two columns (names, numbers), so the numbers line up.
   - `--uiaudit` checks all of this while the game runs (see the README).
 
@@ -2258,7 +2293,9 @@ is never lost.
 - **It unlocks NOTHING.** It exists purely to show progression. It never
   changes difficulty.
 - **Two different levels:** label "PLAYER LV" (persistent) and "RUN LV" (the
-  in-run augment level) clearly. Example: "PLAYER LV 23" vs "RUN LV 7".
+  in-run augment level) clearly. Example: "PLAYER LV 23" vs "RUN LV 7". The
+  live HUD shows the run's progress only as the XP hairline (§9.7); "RUN LV"
+  is written on the results screen.
 
 ### 11.2 Boss rewards (the ONLY unlocks)
 - **Felling a boss can earn a reward.** Rewards are the only thing that
@@ -2468,7 +2505,7 @@ weak hardware.
     | News drones (The City Is Watching) | 4 | 8 | 12 |
 
     Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
-    12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
+    12, explosion lights 4, kill callouts 3, screen blood 10. Health orbs are
     never capped (they heal); their pool grows. MEDIOCRE's caps sit above
     what a fight produces, so it shows the full prototype show; INSANE throws
     more blood and chunks per kill. Damage numbers stop at 40 so the screen

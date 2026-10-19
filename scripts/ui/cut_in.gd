@@ -17,6 +17,7 @@ var _t := 99.0
 var _text: GlitchText
 var _flip := false
 var _out := false
+var top := -1.0 # the strip's top edge (the HUD's top lane); below 0: 30% down the screen
 
 
 func _init() -> void:
@@ -81,7 +82,7 @@ func _draw() -> void:
 		return
 	var w := size.x
 	var h := 70.0
-	var y0 := roundf(size.y * 0.3 - h * 0.5)
+	var y0 := roundf(top) if top >= 0.0 else roundf(size.y * 0.3 - h * 0.5)
 	var x0 := roundf(_slide() * (-1.0 if _flip else 1.0))
 	var glitch := _t < 0.1 or _t >= LEN - OUT
 	# the window: a full-width strip with chamfered ends

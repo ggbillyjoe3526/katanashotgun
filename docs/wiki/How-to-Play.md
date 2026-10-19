@@ -17,6 +17,33 @@
 
 The blade charges the gun; the gun sets up the blade. Keep both hands busy.
 
+## Reading the screen
+
+![The fight screen](images/hud-focus.png)
+
+Your vitals sit in a **square frame round the crosshair**, so you never look
+away from the fight. The middle of the frame is open, so it never hides the
+enemy you are aiming at.
+
+- **Left edge, red: health.** The number beside it turns red below 30%.
+- **Right edge, cyan: shotgun cells**, one block per cell. The number turns
+  red when you have none.
+- **Bottom edge, green: dash charges.**
+- **Under the frame:** your combo (`x12`, with its timer as a line under
+  it) and, when you can finish an enemy, the **F GLORY KILL** prompt.
+- **Right of the frame:** kill tags (HEADSHOT, RETURN TO SENDER...), three
+  at most, newest on top.
+- **Top left:** the wave and how many enemies are left. **Top right:** your
+  score. **Top centre:** a boss's name, health and KAMAE bar.
+- **Big moments** (X10 COMBO, KAMAE BROKEN, a boss enraging) appear just
+  under the top row. **Warnings and hints** (MISSILES INBOUND in red, tips
+  in yellow) appear at the bottom centre.
+- **Bottom left:** the wave's mutator. **Bottom edge:** a thin purple line
+  that fills toward your next level-up.
+
+Every kind of message has its own place, and a new one replaces the old, so
+text never piles up.
+
 ## Your health
 
 - You have **100 HP** (the Kongo Heart card adds 25 per rank).

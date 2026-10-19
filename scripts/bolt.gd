@@ -290,7 +290,7 @@ func _perfect_deflect(dir: Vector3) -> void:
 		if Game.debug_autoplay:
 			print("[perfect] signature volley %d pays %.0f%% KAMAE on landing" % [volley, SIGNATURE_KAMAE * 100.0])
 		if Game.hud:
-			Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 0.7, "shake": 5.0, "sound": ""})
+			Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"lane": "top", "hold": 0.7, "shake": 5.0, "sound": ""})
 		Game.slowmo(0.35, 0.3)
 
 
