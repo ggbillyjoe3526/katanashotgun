@@ -21,17 +21,17 @@ const CAPS := {
 	"high": {
 		"drops": 2700, "decals": 780, "gibs": 160, "chunks_k": 1.3, "drops_k": 1.5,
 		"numbers": 40, "arcs": 128, "mists": 56, "smoke": 80, "flashes": 64, "traffic": 40,
-		"drones": 12, "screens": 4,
+		"drones": 12,
 	},
 	"medium": {
 		"drops": 1800, "decals": 520, "gibs": 110, "chunks_k": 1.0, "drops_k": 1.0,
 		"numbers": 40, "arcs": 96, "mists": 40, "smoke": 60, "flashes": 48, "traffic": 40,
-		"drones": 8, "screens": 4,
+		"drones": 8,
 	},
 	"low": {
 		"drops": 700, "decals": 220, "gibs": 50, "chunks_k": 0.5, "drops_k": 0.5,
 		"numbers": 18, "arcs": 36, "mists": 16, "smoke": 20, "flashes": 16, "traffic": 16,
-		"drones": 4, "screens": 2,
+		"drones": 4,
 	},
 }
 

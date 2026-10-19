@@ -5,9 +5,10 @@ extends Node3D
 ## climbs, hold their lights on the player and fly off once it breaks; city
 ## screens on masts show the live score, kills and combo, and the best initials
 ## this save holds for the seed.
-## Presentation only: it reads Game and Profile and never writes them. Its RNG
-## is seeded from the run seed and never draws from a gameplay stream (or the
-## backdrop's), so neither the run nor the city's look can shift. Cheap: the
+## Presentation only: it reads Game and Profile and never writes them. Its
+## randomness comes from the presentation stream (`Game.rng_fx`), never from a
+## gameplay stream or the backdrop's, so neither the run nor the city's look
+## can shift. Cheap: the
 ## drones, their lights and the screen plates are MultiMeshes, the masts and
 ## frames join the backdrop's batched strips, and text is rebuilt only when a
 ## value changes. The preset sets how many drones and screens there are.
@@ -39,7 +40,7 @@ const LENS_FLASH := 9.0 # extra lens energy at a milestone, times the flash slid
 ## Screens on masts between the 57 m traffic lane and the tower ring, at
 ## [bearing (radians, -PI/2 is north, where the player faces), radius, height].
 ## High enough to clear the north deck and shrine tower from the south roof.
-## The first two flank the sun's gap to the north and stay on every preset.
+## The first two flank the sun's gap to the north.
 const SCREENS := [[-PI * 0.5 - 0.72, 59.5, 40.0], [-PI * 0.5 + 0.72, 59.5, 40.0], [PI, 59.5, 40.0], [0.0, 59.5, 40.0]]
 const LIVE_TIME := 7.0 # seconds a screen shows the live feed
 const RECORD_TIME := 5.0 # then the seed's record
@@ -82,7 +83,7 @@ var _shown_combo := -1
 ## batches, so call this before the backdrop flushes them.
 func build(backdrop: CityBackdrop) -> void:
 	arena = backdrop.arena
-	rng.seed = hash(Game.run_seed * 13 + 9)
+	rng.seed = Game.rng_fx.randi()
 	seed_text = Game.seed_string(Game.run_seed)
 	record = seed_record(Profile.high_scores, seed_text)
 	var acc: Array = backdrop.accents
@@ -131,12 +132,10 @@ func visible_drones() -> int:
 	return n
 
 
+## The preset sets the drone count only: the four screens stay on every
+## preset (3 labels each), so WEAK never shows an empty frame.
 func _on_quality(_id: String) -> void:
 	_cap = mini(Quality.cap("drones"), _progress.size())
-	var shown := mini(Quality.cap("screens"), screens.size())
-	for i in screens.size():
-		screens[i].visible = i < shown
-	_plates.visible_instance_count = shown
 
 
 # ---------------------------------------------------------------- drones
@@ -370,6 +369,8 @@ func _page_texts(page: int) -> PackedStringArray:
 		PAGE_RECORD:
 			if record.is_empty():
 				return PackedStringArray(["SEED %s" % seed_text, "OPEN", "NO RECORD YET"])
+			if _beaten:
+				return PackedStringArray(["SEED %s" % seed_text, "THIS RUN", "AHEAD OF %s" % str(record.get("name", "---"))])
 			return PackedStringArray(["SEED %s" % seed_text, str(record.get("name", "---")), "BEST %s" % Juice._num(int(record.score))])
 		_:
 			return PackedStringArray(["SEED %s" % seed_text, "NEW BEST", "%s BEATEN" % str(record.get("name", "---"))])

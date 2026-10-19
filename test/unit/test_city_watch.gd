@@ -61,9 +61,9 @@ func test_seed_record_is_the_best_saved_score_on_this_seed() -> void:
 
 
 func test_building_never_draws_from_the_run_streams() -> void:
-	var before := [Game.rng_map.state, Game.rng_waves.state, Game.rng_upgrades.state, Game.rng_hazards.state, backdrop.rng.state]
+	var before := [Game.rng_map.state, Game.rng_upgrades.state, Game.rng_waves.state, Game.rng_spawns.state, Game.rng_combat.state, Game.rng_hazards.state, backdrop.rng.state]
 	_build()
-	var after := [Game.rng_map.state, Game.rng_waves.state, Game.rng_upgrades.state, Game.rng_hazards.state, backdrop.rng.state]
+	var after := [Game.rng_map.state, Game.rng_upgrades.state, Game.rng_waves.state, Game.rng_spawns.state, Game.rng_combat.state, Game.rng_hazards.state, backdrop.rng.state]
 	assert_eq(after, before)
 
 
@@ -81,16 +81,13 @@ func test_drones_gather_with_the_combo_then_leave() -> void:
 	assert_eq(watch.visible_drones(), 0, "all flown back into the city")
 
 
-func test_weak_preset_keeps_fewer_drones_and_screens() -> void:
+func test_weak_preset_keeps_fewer_drones() -> void:
 	_build()
 	Quality.apply("low")
 	Game.combo = 60
 	_run(FLY_TIME_PLUS)
 	assert_eq(watch.active_drones(), Quality.cap("drones"))
-	var shown := 0
-	for s in watch.screens:
-		shown += 1 if s.visible else 0
-	assert_eq(shown, 2)
+	assert_eq(watch.screens.size(), 4, "every preset keeps all four screens")
 	Quality.apply("high")
 	_run(FLY_TIME_PLUS)
 	assert_eq(watch.active_drones(), 12)
@@ -121,6 +118,7 @@ func test_passing_the_record_puts_new_best_on_every_screen() -> void:
 		assert_eq(s.lines[2].text, "WIL BEATEN")
 	_run(CityWatch.NEW_BEST_TIME + 0.5)
 	assert_ne(watch.screens[0].lines[1].text, "NEW BEST", "back to the normal pages")
+	assert_true(_all_lines().has("AHEAD OF WIL"), "the record page no longer shows the beaten score as the best")
 
 
 func test_live_feed_follows_score_kills_and_combo() -> void:

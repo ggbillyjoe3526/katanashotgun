@@ -196,6 +196,9 @@ Pass after `--` on the command line:
 - `--mutator=grudge` forces that wave mutator on every regular wave (ids in
   `scripts/mutators.gd`)
 - `--cardtour` deals every level-up card, three at a time, then quits
+- `--citytour` The City Is Watching from six fixed views (drones fly in,
+  the screens' pages, NEW BEST over a made-up seed record, drones leave),
+  then quits; add `--quality=low` to see WEAK's drone count
 - `--seedentry` opens the PLAY A SEED box on the title
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
