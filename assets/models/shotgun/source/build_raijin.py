@@ -10,8 +10,10 @@
 #
 # Side outlines are drawn in (y, z) and extruded across the gun (x).
 # Parts the game moves or drives stay separate objects:
-#   drum         - turns 60 degrees about the barrel axis after each blast
-#   prong_tip_N  - the idle crackle jumps between these (3)
+#   drum         - square, turns 90 degrees about the barrel axis after each
+#                  blast (one glowing cell per face)
+#   arc_point_N  - empties on the muzzle ring; the idle crackle jumps
+#                  between them (3)
 #   muzzle       - empty where the blast and flash start
 #   led_N        - the 10 charge lights, shown by cell count
 import math
@@ -23,7 +25,7 @@ from mathutils import Matrix
 COLLECTION = "RAIJIN12"
 ROOT = "RAIJIN12_root"
 BORE_Z = 0.05  # barrel axis height (the code-built muzzle sits here)
-MUZZLE_Y = 0.95
+MUZZLE_Y = 0.90
 
 # ------------------------------------------------------------ side outlines
 # receiver: black, blocky, with a raked front and a stepped rear
@@ -31,7 +33,7 @@ RECEIVER = [
     (-0.235, -0.020), (0.120, -0.020), (0.165, 0.010), (0.165, 0.100), (0.125, 0.128),
     (-0.140, 0.128), (-0.160, 0.112), (-0.235, 0.112),
 ]
-RECEIVER_W = 0.084
+RECEIVER_W = 0.104
 # sunken side panel; the charge lights sit on a plate inside it
 SIDE_PANEL = [(-0.205, 0.000), (0.100, 0.000), (0.135, 0.025), (0.135, 0.095), (-0.205, 0.095)]
 LED_PLATE = [(-0.125, 0.035), (-0.010, 0.035), (-0.010, 0.085), (-0.125, 0.085)]
@@ -39,16 +41,16 @@ LED_PLATE = [(-0.125, 0.035), (-0.010, 0.035), (-0.010, 0.085), (-0.125, 0.085)]
 TOP_COVER = [
     (-0.140, 0.120), (0.105, 0.120), (0.085, 0.146), (-0.120, 0.146),
 ]
-TOP_COVER_W = 0.064
-# red rear sight block
-SIGHT = [(-0.215, 0.105), (-0.150, 0.105), (-0.150, 0.150), (-0.168, 0.162), (-0.215, 0.162)]
-SIGHT_W = 0.030
+TOP_COVER_W = 0.076
+# red rear sight block: low and wide
+SIGHT = [(-0.215, 0.105), (-0.150, 0.105), (-0.150, 0.132), (-0.158, 0.140), (-0.215, 0.140)]
+SIGHT_W = 0.062
 
 # twin-tube shroud (light): upper tube runs further than the lower one and
 # both fronts are cut at a slant
 UPPER_TUBE = [(0.090, 0.080), (0.905, 0.080), (0.935, 0.098), (0.920, 0.124), (0.090, 0.124)]
 LOWER_TUBE = [(0.130, 0.024), (0.880, 0.024), (0.895, 0.040), (0.880, 0.078), (0.130, 0.078)]
-TUBE_W = 0.074
+TUBE_W = 0.096
 SEAM_Y = 0.60  # panel break across both tubes
 
 # under-barrel housing (dark) that holds the coil fins, with a chamfered nose
@@ -56,20 +58,20 @@ UNDER = [
     (0.230, -0.062), (0.700, -0.062), (0.770, -0.030), (0.790, 0.026),
     (0.230, 0.026),
 ]
-UNDER_W = 0.058
+UNDER_W = 0.068
 FINS_Y = (0.300, 0.365, 0.430, 0.495)
 FIN_T = 0.030
-# drum of power cells under the receiver front
+# square drum of power cells under the receiver front
 DRUM_Y = (0.105, 0.215)
 DRUM_Z = -0.030
-DRUM_R = 0.044
+DRUM_R = 0.050  # centre to corner
 
 # grip and the open frame that loops back to the rear of the receiver
 GRIP = [
     (-0.040, -0.020), (0.035, -0.020), (0.030, -0.050), (-0.015, -0.200), (-0.020, -0.215),
     (-0.090, -0.215), (-0.090, -0.190), (-0.048, -0.040),
 ]
-GRIP_W = 0.040
+GRIP_W = 0.044
 FRAME = [
     # bottom bar from the grip foot back, a 45-degree strut up, and a short
     # stock block behind the receiver; the inside leaves an open loop
@@ -77,7 +79,7 @@ FRAME = [
     (-0.300, 0.020), (-0.275, 0.050), (-0.235, 0.050), (-0.235, -0.020),
     (-0.262, -0.050), (-0.262, -0.105), (-0.190, -0.188),
 ]
-FRAME_W = 0.034
+FRAME_W = 0.038
 TRIGGER = [(0.050, -0.020), (0.070, -0.020), (0.072, -0.045), (0.060, -0.075), (0.050, -0.075), (0.058, -0.045)]
 TRIGGER_W = 0.010
 
@@ -212,6 +214,11 @@ def build(offset=(0.0, 0.0, 0.0)):
     for s in (-1, 1):
         xo = s * RECEIVER_W / 2
         cut(rec, col, root, f"cut_side_panel_{s}", prism(SIDE_PANEL, 0.004, x0=(xo - 0.002 if s > 0 else xo - 0.002)))
+    # cooling vents in the side panel, ahead of the charge lights
+    for s in (-1, 1):
+        for k in range(6):
+            y = 0.010 + k * 0.017
+            cut(rec, col, root, f"cut_vent_rec_{s}_{k}", prism([(y, 0.022), (y + 0.006, 0.022), (y + 0.006, 0.082), (y, 0.082)], 0.01, x0=s * RECEIVER_W / 2 - 0.006))
     bevel(rec, 0.004, 2)
     plate = _object(col, root, "led_plate", prism(LED_PLATE, 0.003, x0=-RECEIVER_W / 2 - 0.0005), body)
     bevel(plate, 0.001, 1)
@@ -225,7 +232,8 @@ def build(offset=(0.0, 0.0, 0.0)):
     for t in (up, lo):
         cut(t, col, root, f"cut_seam_{t.name}", box(0, SEAM_Y, BORE_Z + 0.04, TUBE_W + 0.02, 0.004, 0.2))
         bevel(t, 0.006, 3)
-    # the bore: the lower tube is open at the front, the prongs sit inside
+    # the bore: the lower tube is open at the front, with a glowing emitter
+    # ring set back inside it (no prongs: the owner wants a clean muzzle)
     cut(lo, col, root, "cut_bore", cylinder_y(0.026, 0.80, 0.95, 6, BORE_Z, spin=math.pi / 6))
 
     und = _object(col, root, "under_housing", prism(UNDER, UNDER_W), body)
@@ -239,17 +247,21 @@ def build(offset=(0.0, 0.0, 0.0)):
     for s in (-1, 1):
         cut(und, col, root, f"cut_core_groove_{s}", prism(groove, 0.008, x0=s * UNDER_W / 2 - 0.004))
     _object(col, root, "core", prism(groove, UNDER_W - 0.005), glow)
+    # cooling vents ahead of the fins: slanted slots on both sides
+    for s in (-1, 1):
+        for k in range(6):
+            y = 0.565 + k * 0.022
+            cut(und, col, root, f"cut_vent_under_{s}_{k}", prism([(y, -0.046), (y + 0.007, -0.046), (y + 0.015, -0.008), (y + 0.008, -0.008)], 0.008, x0=s * UNDER_W / 2 - 0.004))
 
-    # drum: hex body with six cells round it
-    drum = _object(col, root, "drum", cylinder_y(DRUM_R, DRUM_Y[0], DRUM_Y[1], 6, 0.0, spin=math.pi / 6), metal)
+    # drum: a square block with a glowing cell set into each face
+    drum = _object(col, root, "drum", cylinder_y(DRUM_R, DRUM_Y[0], DRUM_Y[1], 4, 0.0, spin=math.pi / 4), metal)
     drum.location = (0.0, 0.0, DRUM_Z)
     bevel(drum, 0.003, 1)
-    cells = []
-    for i in range(6):
-        a = i * math.tau / 6
-        c = box(math.cos(a) * DRUM_R * 0.92, (DRUM_Y[0] + DRUM_Y[1]) / 2, math.sin(a) * DRUM_R * 0.92, 0.016, DRUM_Y[1] - DRUM_Y[0] - 0.02, 0.016)
-        bmesh.ops.rotate(c, verts=c.verts, cent=(math.cos(a) * DRUM_R * 0.92, 0, math.sin(a) * DRUM_R * 0.92), matrix=Matrix.Rotation(-a, 3, "Y"))
-        cells.append(c)
+    face = DRUM_R * math.cos(math.pi / 4)
+    ylen = DRUM_Y[1] - DRUM_Y[0] - 0.024
+    yc = (DRUM_Y[0] + DRUM_Y[1]) / 2
+    cells = [box(face, yc, 0.0, 0.004, ylen, 0.040), box(-face, yc, 0.0, 0.004, ylen, 0.040),
+             box(0.0, yc, face, 0.040, ylen, 0.004), box(0.0, yc, -face, 0.040, ylen, 0.004)]
     dc = _object(col, root, "drum_cells", merge(cells), glow)
     dc.parent = drum
 
@@ -262,17 +274,15 @@ def build(offset=(0.0, 0.0, 0.0)):
     # red accent block on the frame (own take on the hazard band)
     _object(col, root, "frame_accent", prism([(-0.185, -0.204), (-0.100, -0.204), (-0.100, -0.196), (-0.185, -0.196)], FRAME_W + 0.002), accent)
 
-    # electrode prongs round the bore, angled slightly outwards
+    ring = _object(col, root, "emitter_ring", cylinder_y(0.0255, 0.852, 0.860, 6, BORE_Z, spin=math.pi / 6), glow)
+    cut(ring, col, root, "cut_ring_hole", cylinder_y(0.017, 0.84, 0.87, 6, BORE_Z, spin=math.pi / 6))
     for i in range(3):
         a = math.pi / 2 + i * math.tau / 3
-        ox, oz = math.cos(a) * 0.016, math.sin(a) * 0.016
-        p = cylinder_y(0.0055, 0.0, 0.075, 6, 0.0)
-        po = _object(col, root, f"prong_{i}", p, metal)
-        po.location = (ox, 0.875, BORE_Z + oz)
-        po.rotation_euler = (math.sin(a) * 0.15, 0.0, -math.cos(a) * 0.15)
-        tip = _object(col, root, f"prong_tip_{i}", box(0, 0, 0, 0.014, 0.014, 0.014), glow)
-        tip.parent = po
-        tip.location = (0.0, 0.078, 0.0)
+        ap = bpy.data.objects.new(f"arc_point_{i}", None)
+        ap.empty_display_size = 0.006
+        ap.parent = root
+        ap.location = (math.cos(a) * 0.021, 0.862, BORE_Z + math.sin(a) * 0.021)
+        col.objects.link(ap)
 
     mz = bpy.data.objects.new("muzzle", None)
     mz.empty_display_size = 0.03
