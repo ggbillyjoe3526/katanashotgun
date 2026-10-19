@@ -42,9 +42,9 @@ func test_full_is_the_original_look() -> void:
 	assert_eq(root.scaling_3d_scale, Settings.render_scale)
 	# the shader globals (headless can't read them back): FULL's values are
 	# project.godot's, and match the shaders before the setting existed
-	# (snap grid 0.6 x the 270-line view, 48 colour levels, no blocks)
-	assert_eq_deep(RetroLook.LEVELS.full, {"amount": 1.0, "snap_lines": 162.0, "levels": 48.0, "lines": 270})
-	var keys := {"psx_retro": "amount", "psx_snap_lines": "snap_lines", "psx_levels": "levels"}
+	# (snap grid 0.6 of the view's pixels, 48 colour levels, no blocks)
+	assert_eq_deep(RetroLook.LEVELS.full, {"amount": 1.0, "snap": 0.6, "levels": 48.0, "lines": 270})
+	var keys := {"psx_retro": "amount", "psx_snap": "snap", "psx_levels": "levels"}
 	for n in keys:
 		assert_eq(float(ProjectSettings.get_setting("shader_globals/" + n).value), float(RetroLook.LEVELS.full[keys[n]]), n)
 	assert_eq(float(ProjectSettings.get_setting("shader_globals/psx_pixel_lines").value), 0.0)
@@ -57,7 +57,7 @@ func test_light_is_milder_than_full() -> void:
 	assert_eq(get_tree().root.content_scale_mode, Window.CONTENT_SCALE_MODE_CANVAS_ITEMS)
 	assert_gt(lv.amount, 0.0) # still some warp and fringe
 	assert_lt(lv.amount, 0.5) # smooth textures (FULL alone picks the nearest texel)
-	assert_gt(lv.snap_lines, full.snap_lines) # a finer grid: less wobble
+	assert_gt(lv.snap * lv.lines, full.snap * full.lines) # a finer grid: less wobble
 	assert_gt(lv.levels, full.levels) # more colour levels: fainter banding
 	assert_gt(lv.lines, full.lines) # a sharper 3D view
 
@@ -75,7 +75,7 @@ func test_off_is_the_plain_look() -> void:
 	assert_eq(root.content_scale_mode, Window.CONTENT_SCALE_MODE_CANVAS_ITEMS)
 	assert_eq(root.content_scale_factor, 2.0)
 	assert_eq(root.scaling_3d_scale, Settings.render_scale)
-	assert_eq_deep(RetroLook.LEVELS.off, {"amount": 0.0, "snap_lines": 0.0, "levels": 0.0, "lines": 0})
+	assert_eq_deep(RetroLook.LEVELS.off, {"amount": 0.0, "snap": 0.0, "levels": 0.0, "lines": 0})
 
 
 func test_the_ui_keeps_its_size_at_every_level() -> void:

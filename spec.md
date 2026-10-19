@@ -1589,7 +1589,7 @@ the holographic cut-in (§9.8).
   | 3D drawn at | 480×270 (`viewport` stretch) | about 540 lines: window ÷ whole number (`canvas_items`, 3D scale 1/n, post-process blocks of n×n) | window size |
   | `psx_retro` (affine × 0.55 lit / 0.4 unlit, fringe, scanlines) | 1.0 | 0.35 | 0 |
   | Nearest texels | yes | no (smooth, PS2-like) | no |
-  | `psx_snap_lines` (vertex grid height) | 162 (= 270 × 0.6, as before) | 360 | 0 (no wobble) |
+  | `psx_snap` (vertex grid, share of the 3D view's own pixels) | 0.6 (as before: 162 lines) | 0.67 (360 lines at 540) | 0 (no wobble) |
   | `psx_levels` (colour levels, Bayer 4×4 dither) | 48 | 64 | 0 (none) |
   | `psx_pixel_lines` (post-process blocks) | 0 | 540 | 0 |
 
@@ -1600,9 +1600,13 @@ the holographic cut-in (§9.8).
   warping textures that made the full look noisy. FULL is unchanged, for
   players who want it. Old saves move to LIGHT; a player who had the dev
   menu's plain look on gets OFF (settings v4). Gameplay never reads it.
+  Limits: Godot's 3D scale stops at 25%, so on a 4K screen LIGHT already
+  draws at that floor (960×540) and RENDER SCALE below 100% changes nothing
+  there; elsewhere a render scale below 100% softens LIGHT's blocks a
+  little (the block centres no longer land on 3D pixel centres).
 - **PSX lit shader:**
-  - Vertex snapping (grid height = `psx_snap_lines` / snap lines, width
-    by the view's aspect).
+  - Vertex snapping (grid = 3D view size × `psx_snap` / snap; the 3D view
+    size shrinks with render scale).
   - Affine UV warp (uv × w varying).
   - **Per-vertex lighting.**
   - Fog, world-space planar UVs for boxes, and emission (from colour or

@@ -119,9 +119,9 @@ psx_retro={
 "type": "float",
 "value": 1.0
 }
-psx_snap_lines={
+psx_snap={
 "type": "float",
-"value": 162.0
+"value": 0.6
 }
 psx_levels={
 "type": "float",

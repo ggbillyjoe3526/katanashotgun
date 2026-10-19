@@ -17,8 +17,8 @@ class_name RetroLook
 ##   the above.
 ## The shaders read four globals declared in project.godot (their values
 ## there are FULL's): `psx_retro` (the amount: scales warp, fringe and
-## scanlines; above 0.5 textures pick the nearest texel), `psx_snap_lines`
-## (the vertex grid's height in lines, 0 = no wobble), `psx_levels` (colour
+## scanlines; above 0.5 textures pick the nearest texel), `psx_snap`
+## (the vertex grid as a share of the 3D view's own pixels, 0 = no wobble), `psx_levels` (colour
 ## levels per channel, 0 = no banding) and `psx_pixel_lines` (the post-process
 ## cuts the picture into blocks of about this many lines, 0 = none).
 
@@ -30,9 +30,9 @@ const DEFAULT := "light"
 ## What each level puts on screen. `lines`: the 3D view's height in pixels
 ## (0 = the window's own; FULL's 270 comes from the project's stretch).
 const LEVELS := {
-	"off": {"amount": 0.0, "snap_lines": 0.0, "levels": 0.0, "lines": 0},
-	"light": {"amount": 0.35, "snap_lines": 360.0, "levels": 64.0, "lines": 540},
-	"full": {"amount": 1.0, "snap_lines": 162.0, "levels": 48.0, "lines": 270},
+	"off": {"amount": 0.0, "snap": 0.0, "levels": 0.0, "lines": 0},
+	"light": {"amount": 0.35, "snap": 0.67, "levels": 64.0, "lines": 540},
+	"full": {"amount": 1.0, "snap": 0.6, "levels": 48.0, "lines": 270},
 }
 ## FULL's 3D height: the project's 960x540 base at its stretch scale of 2.
 const FULL_LINES := 270
@@ -45,7 +45,7 @@ static func apply(id: String) -> void:
 	current = id if LEVELS.has(id) else DEFAULT
 	var lv: Dictionary = LEVELS[current]
 	RenderingServer.global_shader_parameter_set(&"psx_retro", float(lv.amount))
-	RenderingServer.global_shader_parameter_set(&"psx_snap_lines", float(lv.snap_lines))
+	RenderingServer.global_shader_parameter_set(&"psx_snap", float(lv.snap))
 	RenderingServer.global_shader_parameter_set(&"psx_levels", float(lv.levels))
 	var blocks: bool = lv.lines != 0 and lv.lines != FULL_LINES
 	RenderingServer.global_shader_parameter_set(&"psx_pixel_lines", float(lv.lines) if blocks else 0.0)

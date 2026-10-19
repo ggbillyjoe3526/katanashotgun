@@ -20,10 +20,10 @@ uniform float fog_end = 110.0;
 // Discard fragments closer than this to the camera (0 = off).
 uniform float near_discard = 0.0;
 // The RETRO LOOK setting (RetroLook): how much affine warp (0 = none, 1 =
-// full); above 0.5 (FULL) textures pick the nearest texel. psx_snap_lines: the vertex
-// snap grid's height in lines (0 = no wobble).
+// full); above 0.5 (FULL) textures pick the nearest texel. psx_snap: the vertex
+// snap grid as a share of the 3D view's own pixels (0 = no wobble).
 global uniform float psx_retro;
-global uniform float psx_snap_lines;
+global uniform float psx_snap;
 
 varying vec3 v_uvw;
 varying float v_fog;
@@ -31,8 +31,8 @@ varying float v_fog;
 void vertex() {
 	vec2 uv = UV * uv_tiling + uv_scroll * TIME;
 	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-	if (snap * psx_snap_lines > 0.0 && clip.w > 0.001) {
-		vec2 grid = vec2(VIEWPORT_SIZE.x / VIEWPORT_SIZE.y, 1.0) * psx_snap_lines / snap;
+	if (snap * psx_snap > 0.0 && clip.w > 0.001) {
+		vec2 grid = VIEWPORT_SIZE * psx_snap / snap;
 		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
 	}
 	POSITION = clip;

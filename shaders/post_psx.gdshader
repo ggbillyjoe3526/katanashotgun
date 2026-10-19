@@ -66,7 +66,7 @@ void fragment() {
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
 	c = mix(vec3(l), c, (saturation + heat * 0.25) * (1.0 - desaturate));
 	c *= 1.0 - vignette * dot(d, d) * 1.6;
-	c *= 1.0 - scanlines * psx_retro * step(0.5, fract(FRAGCOORD.y * 0.5 / px));
+	c *= 1.0 - scanlines * psx_retro * step(0.5, fract(cell.y * 0.5)); // every other (block) row
 	float edge = smoothstep(0.15, 0.55, length(d));
 	c = mix(c, vec3(0.75, 0.0, 0.05), damage * edge);
 	c = mix(c, vec3(1.0), flash);

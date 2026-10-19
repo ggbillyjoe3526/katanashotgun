@@ -159,10 +159,12 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Video:** window mode (full screen at your screen's resolution by
   default, windowed, or exclusive full screen), VSync (off by default), frame
   cap (unlimited by default, or 60 to 360), graphics preset (WEAK, MEDIOCRE,
-  INSANE), render scale (50
-  to 100% of the 3D view), field of view (70 to 110, default 88). At any
-  resolution the 3D view keeps its 960x540 pixel look, upscaled without
-  smoothing (exact 4x blocks on 4K, 2x on 1080p).
+  INSANE), RETRO LOOK (OFF, LIGHT by default, FULL: how strong the PS1/PS2
+  look is), render scale (50 to 100% of the 3D view), field of view (70 to
+  110, default 88). Pixels are upscaled without smoothing at any
+  resolution: LIGHT draws the 3D at about 540 lines (4x4 blocks on 4K, 2x2
+  on 1080p), FULL draws everything at 480x270 (8x8 on 4K), OFF draws at the
+  screen's own resolution.
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
