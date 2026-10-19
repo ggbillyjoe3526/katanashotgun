@@ -184,7 +184,7 @@ func _next_wave() -> void:
 		# tools/seed_check.sh compares these lines between two runs of a seed
 		print("[plan] wave %d mut=%s boss=%s lineup=%s" % [wave, Game.mutator.get("id", "-"), boss_kind if is_boss_wave(wave) else "-", _lineup_code()])
 	if wave == 1:
-		Game.hint.emit("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")
+		Game.hint.emit("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY", false)
 
 
 ## Seeds are law (spec §7.5): reseeds the wave streams from the seed and `w`,

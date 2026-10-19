@@ -58,7 +58,8 @@ enemies too, such as **KABUTO PLATE** (armoured grunts and gunners) and
 
 ## Kill tags
 
-Each kill flashes a tag with its points. The special ones:
+Each kill flashes a tag with its points, just right of your crosshair (the
+newest on top, three at most). The special ones:
 
 | Tag | How |
 | --- | --- |

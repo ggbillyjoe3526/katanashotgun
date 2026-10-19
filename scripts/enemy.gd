@@ -820,7 +820,7 @@ func _slam_land() -> void:
 	Game.fx.shockwave(global_position, 24.0, 15.0, 26.0 * damage_mult)
 	Game.gore.sparks(global_position + Vector3(0, 0.2, 0), Vector3.UP, 30, Color(1.8, 0.6, 0.2))
 	Game.player.add_trauma(0.7)
-	Game.show_hint_once("slam", "JUMP OVER THE SHOCKWAVE")
+	Game.show_hint_once("slam", "JUMP OVER THE SHOCKWAVE", true)
 	recover_time = 1.0
 	leap_vel = Vector3.ZERO
 	_set_state(S.RECOVER)

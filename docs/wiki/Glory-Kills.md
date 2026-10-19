@@ -8,8 +8,8 @@ can do to an enemy.
 1. **Stagger** an enemy (blast it with the shotgun until its marker pulses).
 2. Get close: within about **4.5 m**, roughly in front of your crosshair, with
    no wall in the way.
-3. A gold key cap with **F GLORY KILL** appears under your crosshair and the
-   enemy's marker turns gold.
+3. A gold key cap with **F GLORY KILL** appears under your crosshair (below
+   your combo) and the enemy's marker turns gold.
 4. Press **F**.
 
 You have the whole stagger to do it: 1.8 s on a grunt, 2.2 s on a gunner, 2.8 s
