@@ -143,9 +143,9 @@ def _material(name, base, metal, rough, emit=False):
     b.inputs["Metallic"].default_value = metal
     b.inputs["Roughness"].default_value = rough
     if emit:
-        # colour-neutral: the game supplies the colour
+        # preview colour only: the game tints this material itself
         b.inputs["Emission Color"].default_value = (1.0, 0.36, 0.06, 1.0)
-        b.inputs["Emission Strength"].default_value = 5.0
+        b.inputs["Emission Strength"].default_value = 4.0
     return m
 
 
@@ -291,15 +291,21 @@ COLLAR_PANEL = [
 ]
 
 
-def window(z, length):
-    return [(-0.0145, z - length), (-0.0145, z - 0.010), (0.0145, z), (0.0145, z - length + 0.010)]
+# sunken face panels on the handle and pommel; the frame keeps a raised rim
+HANDLE_RECESS = [(-0.0175, -0.143), (-0.0175, 0.134), (0.0175, 0.134), (0.0175, -0.143)]
+POMMEL_RECESS = [(-0.0260, -0.162), (-0.0300, -0.184), (-0.0140, -0.191), (0.0060, -0.191), (0.0180, -0.179), (0.0180, -0.162)]
+
+
+def window(z, length, grow=0.0):
+    e = grow
+    return [(-0.0145 - e, z - length - e), (-0.0145 - e, z - 0.010 + e), (0.0145 + e, z + e), (0.0145 + e, z - length + 0.010 - e)]
 
 
 def build():
     col = _collection()
     steel = _material("steel", (0.03, 0.032, 0.036), 1.0, 0.36)
-    grip = _material("grip", (0.022, 0.022, 0.025), 0.35, 0.58)
-    glow = _material("edge", (1.0, 1.0, 1.0), 0.0, 0.4, emit=True)
+    grip = _material("grip", (0.012, 0.012, 0.014), 0.2, 0.5)
+    glow = _material("edge", (1.0, 0.36, 0.06), 0.0, 0.4, emit=True)
 
     # blade body
     z_end = next(z for z in stations(Z_BASE, ZT) if body_low(z) >= spine(z) - 0.0012)
@@ -332,6 +338,15 @@ def build():
     for i, (z, length) in enumerate(WINDOWS):
         cut(hilt, col, f"cut_window_{i}", prism(window(z, length), 0.04))
     cut(hilt, col, "cut_lanyard", cylinder_x(0.0042, 0.04, 16, 0.006, -0.184))
+    for s in (-1, 1):
+        xo = s * HILT_T / 2
+        depth = 0.0009
+        xa = xo - depth if s > 0 else xo - 0.002
+        rec = cut(hilt, col, f"cut_recess_{s}", prism(HANDLE_RECESS, depth + 0.002, x0=xa))
+        for i, (z, length) in enumerate(WINDOWS):  # leave a raised rim round each window
+            keep = cut(rec, col, f"keep_rim_{s}_{i}", prism(window(z, length, 0.0016), 0.01, x0=xa - 0.003))
+            del keep
+        cut(hilt, col, f"cut_pommel_recess_{s}", prism(POMMEL_RECESS, depth + 0.002, x0=xa))
     for s in (-1, 1):  # both side faces
         xo = s * HILT_T / 2
         depth = 0.0008
