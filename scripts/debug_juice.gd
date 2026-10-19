@@ -24,6 +24,11 @@ func _process(_delta: float) -> void:
 	_t += Game.real_dt
 	var steps := [
 		[0.2, func(): _hud.wave_intro(4, "HYAKKI YAKO  //  SCORE x1.2\n60% MORE GRUNTS, BUT WEAKER", Color.WHITE, false)],
+		[1.0, func():
+			# a made-up record for this seed, beaten by the tally below (NEW BEST)
+			var bd: Variant = Game.arena.get("backdrop")
+			if bd is CityBackdrop:
+				bd.watch.demo_record("WIL", 55000)],
 		[4.0, func(): _fake_kills(10)],
 		[5.2, func(): _fake_kills(10)],
 		[6.4, func():

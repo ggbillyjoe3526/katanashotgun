@@ -71,6 +71,8 @@ scripts/palette.gd          the five synthwave palettes
 scripts/arena.gd            base class for maps (helpers, sky, weather, lightning, navmesh)
 scripts/maps/well.gd        Shin-Kagura Rooftop, vertical: metro pit to beacon tower
 scripts/maps/city_backdrop.gd  the living city: towers, logos, traffic, monorail, sun
+scripts/maps/city_watch.gd  The City Is Watching: news drones and live city screens
+scripts/maps/city_screen.gd  one city screen (three lines of text, page swaps)
 scripts/maps/rooftop.gd     the flat rooftop (base class of well.gd, not in rotation)
 scripts/maps/map_registry.gd   list of maps; the seed picks one
 scripts/gore.gd             blood droplets, floor splats, gibs, geysers, scorch marks
@@ -183,7 +185,8 @@ Pass after `--` on the command line:
 - `--showcase` (add `--bosses` for the boss line-up) scripted model/gore scene
 - `--juicetest` plays every presentation moment back to back (intro, combos,
   tally, FINISH + boss card, boss reward card, level-up, boss name card, kill
-  tags, hint, death and the Player Level roll-up);
+  tags, hint, death and the Player Level roll-up; the city's news drones
+  gather for the combos and its screens show NEW BEST at the tally);
   `--boss=ninja|mech|oni` forces a boss
 - `--movetest` (with `--headless --fixed-fps 60`) runs the scripted movement
   course: jump heights, ledge climbs, walls too tall to climb, plunges
@@ -193,6 +196,9 @@ Pass after `--` on the command line:
 - `--mutator=grudge` forces that wave mutator on every regular wave (ids in
   `scripts/mutators.gd`)
 - `--cardtour` deals every level-up card, three at a time, then quits
+- `--citytour` The City Is Watching from six fixed views (drones fly in,
+  the screens' pages, NEW BEST over a made-up seed record, drones leave),
+  then quits; add `--quality=low` to see WEAK's drone count
 - `--seedentry` opens the PLAY A SEED box on the title
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab

@@ -84,6 +84,31 @@ sun starts somewhere different on each [seed](Seeds) and drifts slowly across
 the gap in the skyline to the north. The signs and adverts change with the
 seed too. None of it affects play.
 
+## The city is watching
+
+Shin-Kagura notices how well you're doing. This is new and still being tried
+out, so it may change.
+
+- **News drones.** TSUKUYOMI MEDIA sends a camera drone for every 4 of your
+  [combo](Scoring-and-High-Scores). They hover high above the roof around
+  you, above anything you can climb, with their lights pointed your way.
+  Up to 4 drones on WEAK graphics, 8 on MEDIOCRE and 12 on INSANE. Their cameras flash when your combo reaches
+  10, 25, 50, 75, 100, 150 and 200 (gentler with the flash slider in
+  [Settings](Settings)). Once the combo breaks they stay for 5 seconds, then
+  fly back into the city one by one.
+- **City screens.** Four giant screens high on masts around the roof take
+  turns showing two pages. **TSUKUYOMI LIVE** shows your score
+  and kills, or your combo while it's 4 or more. The **seed page** shows the
+  best initials and score saved on this computer for the run's
+  [seed](Seeds), or NO RECORD YET. Only scores in your top 10 are saved, so a
+  seed's record is the best run on it that made your top 10.
+- **New best.** When your score passes the seed's record, every screen shows
+  NEW BEST for a few seconds and the drones' cameras flash. For the rest of
+  the run the seed page says you're ahead.
+
+The drones and screens only watch: they never change a fight, and they stay
+high above anything you can climb, so nothing hits them.
+
 ## Colour palettes
 
 Each run's seed picks one of five palettes. Every palette mixes six strong
