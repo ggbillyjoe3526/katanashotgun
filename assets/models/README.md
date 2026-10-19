@@ -51,8 +51,41 @@ with per-pixel light. The `_retro` light is drawn by `retro_shade()` in
 `scripts/katana_model.gd` loads the .glb and sets the materials.
 
 ### Rules
-- Triangle budget: about 20k, ceiling 30k (now about 13k).
+- Triangle budget: about 20k, ceiling 30k (the katana is about 13k).
 - Our own shapes; no copied designs, logos or text.
 - The model is the game's katana (owner approved, 2026-10-19). The
   code-built blade in `viewmodel.gd` only shows if the model fails to load.
 - Log every model in `ASSETS.md`.
+
+## RAIJIN-12 shotgun (`shotgun/`)
+Same pipeline, texture set and rules as the katana; the scripts in
+`shotgun/source/` reuse `surface_dojigiri.py`'s helpers.
+- `source/build_raijin.py`: builds the model (collection "RAIJIN12"). The
+  owner's Blender file for it is `raijin12.blend`, kept apart from the
+  katana's.
+- `source/surface_raijin.py`: paint (red, gunmetal, off-white polymer,
+  rubber grip), grime, edge wear, scratches, muzzle soot and the white
+  markings, baked to images.
+- `source/export_raijin.py`: build, join, triangulate, UV, bake, split the
+  moving parts out again and export. Writes `raijin12.glb` and `textures/`.
+
+```
+cd assets/models/shotgun/source
+~/bpyenv/bin/python export_raijin.py ../raijin12.glb   # add --no-bake to keep the textures
+```
+
+### Layout
+- Metres, origin where the code-built gun's `spin_pivot` is, barrels along
+  +Y, up +Z in Blender. In Godot: barrels along -Z, muzzle at
+  (0, 0.05, -0.90), like the code-built gun.
+- Nodes under `RAIJIN12`: `body`, `drum` (origin on its axle, turns about
+  Z in Godot), `led_0`..`led_9` (the charge lights), and the empty nodes
+  `muzzle` and `arc_point_0`..`arc_point_2` (the idle crackle jumps between
+  them, inside the emitter).
+- Surfaces: `body` (metal and rubber) and `shell` (off-white polymer) are
+  textured; `coil`, `core`, `emitter`, `cell` and `led` glow and take the
+  viewmodel's materials, so the Rewards looks tint them and the gun pulses
+  them as it fires and recharges.
+- `scripts/shotgun_model.gd` loads it; `viewmodel.gd` swaps it in for the
+  code-built gun when the DEV menu's LOOK > SHOTGUN MODEL is NEW (the model
+  loads only then). About 23k triangles.

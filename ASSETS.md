@@ -30,4 +30,9 @@ licence file goes in that script's `SHIPPED` list too.
   our own Blender scripts in `assets/models/katana/source/` (no downloaded
   models, generators or texture packs). The game's katana since 2026-10-19
   (owner approved); the code-built blade is the fallback.
+- The RAIJIN-12 shotgun model (`assets/models/shotgun/`): built and textured
+  by our own Blender scripts in `assets/models/shotgun/source/` (no
+  downloaded models, generators or texture packs). Reference photos of
+  Marathon "ALPHA M5" replicas were used for mood only; no shapes, logos or
+  text were copied. In testing behind the DEV menu's SHOTGUN MODEL switch.
 - The game icon (`icon.svg`, `installer/icon.ico` via `tools/make_icon.py`). **Placeholder.**

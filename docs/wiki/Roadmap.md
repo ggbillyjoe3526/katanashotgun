@@ -26,7 +26,8 @@ already arrived is in the [Patch Notes](Patch-Notes).
   map's boss and the fight carries on somewhere new, with the seed choosing
   the order. Not decided yet.
 - **The final look for the arc shotgun**, like the new DOJIGIRI katana
-  model. The katana's stock edge colour may still change.
+  model. **Coming soon:** a detailed RAIJIN-12 model is being tested now.
+  The katana's stock edge colour may still change.
 - **Boss variants** (the same boss with a new title and new tricks) and
   **new bosses**.
 - **More boss rewards:** maps, palettes, mutators and boss variants joining

@@ -1,7 +1,7 @@
 class_name Viewmodel
 extends Node3D
 ## First-person hands: the DOJIGIRI katana in the left hand, the RAIJIN-12 arc shotgun in
-## the right. The shotgun is a "shotgun taser": electrode prongs, glowing
+## the right. The shotgun is a "shotgun taser": an electrode muzzle, glowing
 ## capacitor coils and a drum of power cells that turns after every blast.
 ## Everything is modelled at "full" scale and the root is scaled to 0.5 so the
 ## weapons sit closer to the lens than the player's collision radius, which
@@ -34,6 +34,19 @@ var strip_mats: Array[ShaderMaterial] = []
 var arc_glow := Color(0.25, 0.45, 1.0, 0.35)
 var prong_tips: Array[Node3D] = []
 var idle_arc: MeshInstance3D
+# the code-built gun, and the RAIJIN-12 model that replaces it from the dev
+# menu (drum, prong_tips, cell_leds and muzzle then point at the model's)
+var _code_gun: Node3D
+var _model_gun: Node3D
+var _gun_model_on := false
+var _code_drum: Node3D
+var _code_tips: Array[Node3D] = []
+var _code_leds: Array[MeshInstance3D] = []
+var _code_muzzle := Vector3.ZERO
+# one blast turns the drum one cell: six on the code-built drum, four on
+# the model's square one
+var _drum_step := TAU / 6.0
+var _max_cells := 10
 var _idle_im: ImmediateMesh
 var _idle_t := 0.5
 var _idle_life := 0.0
@@ -180,15 +193,19 @@ func _build_shotgun() -> void:
 	core_mat = Psx.unlit(Color(0.75, 0.92, 1.0), 3.0, null, fx_p)
 	tip_mat = Psx.unlit(Color(0.85, 0.95, 1.0), 3.5, null, fx_p)
 	drum_cell_mat = Psx.unlit(Color(0.3, 0.85, 1.0), 2.6, null, fx_p)
+	# the code-built gun; the Blender model takes its place when the dev
+	# menu asks for it (_show_shotgun_model)
+	_code_gun = Node3D.new()
+	spin_pivot.add_child(_code_gun)
 	# receiver, grip and top heat sink
-	spin_pivot.add_child(Psx.box(Vector3(0.09, 0.12, 0.34), gun, Vector3(0, 0.03, -0.12)))
-	spin_pivot.add_child(Psx.box(Vector3(0.06, 0.03, 0.3), dark, Vector3(0, 0.105, -0.14)))
+	_code_gun.add_child(Psx.box(Vector3(0.09, 0.12, 0.34), gun, Vector3(0, 0.03, -0.12)))
+	_code_gun.add_child(Psx.box(Vector3(0.06, 0.03, 0.3), dark, Vector3(0, 0.105, -0.14)))
 	for i in 5:
-		spin_pivot.add_child(Psx.box(Vector3(0.075, 0.012, 0.014), dark, Vector3(0, 0.125, -0.24 + i * 0.05)))
+		_code_gun.add_child(Psx.box(Vector3(0.075, 0.012, 0.014), dark, Vector3(0, 0.125, -0.24 + i * 0.05)))
 	strip_mats.append(Psx.unlit(Color(0.25, 0.8, 1.0), 2.2, null, fx_p))
-	spin_pivot.add_child(Psx.box(Vector3(0.092, 0.01, 0.3), strip_mats[-1], Vector3(0, 0.09, -0.12)))
-	spin_pivot.add_child(Psx.box(Vector3(0.055, 0.13, 0.07), gun, Vector3(0, -0.07, 0.07)))
-	spin_pivot.add_child(Psx.box(Vector3(0.06, 0.09, 0.12), dark, Vector3(0, 0.02, 0.11)))
+	_code_gun.add_child(Psx.box(Vector3(0.092, 0.01, 0.3), strip_mats[-1], Vector3(0, 0.09, -0.12)))
+	_code_gun.add_child(Psx.box(Vector3(0.055, 0.13, 0.07), gun, Vector3(0, -0.07, 0.07)))
+	_code_gun.add_child(Psx.box(Vector3(0.06, 0.09, 0.12), dark, Vector3(0, 0.02, 0.11)))
 	# the glowing core inside an open cage of rails
 	var core := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
@@ -200,11 +217,11 @@ func _build_shotgun() -> void:
 	core.material_override = core_mat
 	core.rotation.x = PI * 0.5
 	core.position = Vector3(0, 0.05, -0.55)
-	spin_pivot.add_child(core)
+	_code_gun.add_child(core)
 	for sx in [-1.0, 1.0]:
-		spin_pivot.add_child(Psx.box(Vector3(0.016, 0.075, 0.5), dark, Vector3(sx * 0.044, 0.05, -0.55)))
-	spin_pivot.add_child(Psx.box(Vector3(0.1, 0.02, 0.05), gun, Vector3(0, 0.09, -0.78)))
-	spin_pivot.add_child(Psx.box(Vector3(0.1, 0.02, 0.05), gun, Vector3(0, 0.01, -0.78)))
+		_code_gun.add_child(Psx.box(Vector3(0.016, 0.075, 0.5), dark, Vector3(sx * 0.044, 0.05, -0.55)))
+	_code_gun.add_child(Psx.box(Vector3(0.1, 0.02, 0.05), gun, Vector3(0, 0.09, -0.78)))
+	_code_gun.add_child(Psx.box(Vector3(0.1, 0.02, 0.05), gun, Vector3(0, 0.01, -0.78)))
 	# capacitor coils
 	for i in 4:
 		var ring := MeshInstance3D.new()
@@ -217,7 +234,7 @@ func _build_shotgun() -> void:
 		ring.material_override = coil_mat if i % 2 == 0 else copper
 		ring.rotation.x = PI * 0.5
 		ring.position = Vector3(0, 0.05, -0.38 - i * 0.1)
-		spin_pivot.add_child(ring)
+		_code_gun.add_child(ring)
 	# three electrode prongs at the muzzle
 	for i in 3:
 		var a := PI * 0.5 + i * TAU / 3.0
@@ -225,7 +242,7 @@ func _build_shotgun() -> void:
 		var prong := Node3D.new()
 		prong.position = Vector3(0, 0.05, -0.84) + off
 		prong.rotation = Vector3(sin(a) * 0.25, -cos(a) * 0.25, 0)
-		spin_pivot.add_child(prong)
+		_code_gun.add_child(prong)
 		prong.add_child(Psx.box(Vector3(0.014, 0.014, 0.12), chrome, Vector3(0, 0, -0.04)))
 		var tip := Psx.box(Vector3(0.022, 0.022, 0.022), tip_mat, Vector3(0, 0, -0.105))
 		prong.add_child(tip)
@@ -233,7 +250,7 @@ func _build_shotgun() -> void:
 	# drum of power cells under the receiver (turns one cell per blast)
 	drum = Node3D.new()
 	drum.position = Vector3(0, -0.03, -0.25)
-	spin_pivot.add_child(drum)
+	_code_gun.add_child(drum)
 	var hexm := CylinderMesh.new()
 	hexm.top_radius = 0.052
 	hexm.bottom_radius = 0.052
@@ -254,7 +271,7 @@ func _build_shotgun() -> void:
 	led_off = Psx.unlit(Color(0.04, 0.08, 0.14), 1.0, null, fx_p)
 	for i in 10:
 		var led := Psx.box(Vector3(0.012, 0.014, 0.02), led_on, Vector3(-0.047, 0.065 - (i / 5) * 0.025, -0.24 + (i % 5) * 0.03))
-		spin_pivot.add_child(led)
+		_code_gun.add_child(led)
 		cell_leds.append(led)
 	# hand + forearm
 	spin_pivot.add_child(Psx.box(Vector3(0.1, 0.1, 0.11), glove, Vector3(0, -0.07, 0.0)))
@@ -280,9 +297,61 @@ func _build_shotgun() -> void:
 	idle_arc.mesh = _idle_im
 	idle_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	spin_pivot.add_child(idle_arc)
+	_code_drum = drum
+	_code_tips = prong_tips.duplicate()
+	_code_leds = cell_leds.duplicate()
+	_code_muzzle = muzzle.position
+	_show_shotgun_model()
 	shotgun.position = shotgun_idle_pos
 	_spos_cur = shotgun_idle_pos
 	_srot_cur = shotgun_idle_rot
+
+
+## Shows the Blender model or the code-built gun, as the dev menu says. The
+## code-built one stays until the model is approved (spec §9.6), so the model
+## (and its large textures) loads only the first time it is asked for.
+func _show_shotgun_model() -> void:
+	_gun_model_on = DevSettings.shotgun_model
+	if _gun_model_on and _model_gun == null:
+		_model_gun = ShotgunModel.build({
+			"coil": coil_mat, "core": core_mat, "emitter": tip_mat, "cell": drum_cell_mat, "led": led_on,
+		})
+		spin_pivot.add_child(_model_gun)
+	var use_model := _gun_model_on and _model_gun.get_child_count() > 0
+	if _model_gun:
+		_model_gun.visible = use_model
+	_code_gun.visible = not use_model
+	if use_model:
+		drum = ShotgunModel.part(_model_gun, "drum")
+		prong_tips.clear()
+		for i in ShotgunModel.ARC_POINTS:
+			prong_tips.append(ShotgunModel.part(_model_gun, "arc_point_%d" % i))
+		cell_leds.clear()
+		for i in ShotgunModel.LED_COUNT:
+			cell_leds.append(ShotgunModel.part(_model_gun, "led_%d" % i) as MeshInstance3D)
+		muzzle.position = _in_gun(ShotgunModel.part(_model_gun, "muzzle"))
+		_drum_step = TAU / 4.0
+	else:
+		drum = _code_drum
+		prong_tips = _code_tips.duplicate()
+		cell_leds = _code_leds.duplicate()
+		muzzle.position = _code_muzzle
+		_drum_step = TAU / 6.0
+	# a swap mid-turn just lands the drum square
+	_drum_from = 0.0
+	_drum_to = 0.0
+	drum.rotation.z = 0.0
+	set_cells(_cells, _max_cells)
+
+
+## Where `node` (inside the model) sits in spin_pivot's space.
+func _in_gun(node: Node3D) -> Vector3:
+	var t := Transform3D.IDENTITY
+	var n: Node = node
+	while n != spin_pivot and n is Node3D:
+		t = (n as Node3D).transform * t
+		n = n.get_parent()
+	return t.origin
 
 
 func _exit_tree() -> void:
@@ -310,6 +379,7 @@ func apply_looks() -> void:
 
 func set_cells(n: int, max_n: int) -> void:
 	_cells = n
+	_max_cells = max_n
 	for i in cell_leds.size():
 		var led := cell_leds[i]
 		led.visible = i < max_n
@@ -361,7 +431,7 @@ func fire() -> void:
 	_pump_sound_done = false
 	_charge = 0.0
 	_drum_from = drum.rotation.z
-	_drum_to = _drum_from + TAU / 6.0
+	_drum_to = _drum_from + _drum_step
 	flash.visible = true
 	flash.rotation.z = Game.rng_fx.randf() * TAU
 	flash.scale = Vector3.ONE * Game.rng_fx.randf_range(0.8, 1.3)
@@ -454,6 +524,8 @@ func _process(delta: float) -> void:
 	blade_edge_mat.set_shader_parameter("energy", 2.4 + _glow * 4.0)
 
 	# ---- shotgun: kick, then the drum turns and the coils recharge
+	if _gun_model_on != DevSettings.shotgun_model:
+		_show_shotgun_model()
 	var base_pos := shotgun_idle_pos
 	var base_rot := shotgun_idle_rot
 	if _glory:

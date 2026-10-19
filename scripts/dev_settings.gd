@@ -19,6 +19,9 @@ static var start_wave := 1 # the wave the next run starts at
 static var boss := "" # every boss wave brings this boss ("" = the seed's)
 static var mutator := "" # every regular wave gets this mutator ("" = the seed's)
 static var hide_hud := false # the in-run HUD hides (for clean captures)
+## true: the shotgun is the Blender model (assets/models/shotgun) instead of
+## the code-built one. Off until the owner approves the model (spec §9.6).
+static var shotgun_model := false
 
 
 ## Puts every dev setting back to normal (the menu's DEFAULTS).
@@ -28,6 +31,7 @@ static func reset() -> void:
 	boss = ""
 	mutator = ""
 	hide_hud = false
+	shotgun_model = false
 	Game.debug_god = false
 	Game.set_autoplay(false)
 	Game.debug_palette = ""
@@ -42,7 +46,7 @@ static func cheating() -> bool:
 
 ## Whether any dev setting is on at all (the corner tag shows then).
 static func any_on() -> bool:
-	return cheating() or hide_hud or Game.debug_palette != ""
+	return cheating() or hide_hud or shotgun_model or Game.debug_palette != ""
 
 
 ## Short names of the dev settings that are on, for the corner tag.
@@ -64,5 +68,7 @@ static func active_tags() -> PackedStringArray:
 		out.append("PALETTE")
 	if hide_hud:
 		out.append("NO HUD")
+	if shotgun_model:
+		out.append("NEW SHOTGUN")
 	return out
 
