@@ -5,8 +5,8 @@ extends SettingsMenu
 ## nothing on screen points to it, and it says DEV everywhere it shows.
 ## It is the settings screen with its own tabs, so it works the same way:
 ## mouse only, Esc or BACK closes, DEFAULTS turns every dev setting off.
-## LOOK holds the capture helpers and the shotgun model switch (the plain
-## look is now the player's RETRO LOOK setting); RUN holds the settings that change how a run plays (any of
+## LOOK holds the capture helpers (the plain look is now the player's RETRO
+## LOOK setting); RUN holds the settings that change how a run plays (any of
 ## them on makes the run a dev run, which pays no top 10 entry, XP or
 ## unlocks); ACTIONS does things now.
 ## While anything is on, a small DEV tag sits top right, under the score.
@@ -91,9 +91,6 @@ func _build_rows(t: String) -> Array:
 				out.append(_option("PERF OVERLAY", on_off, on_off_names,
 					func(): return perf.is_shown(), func(v: Variant): perf.show_overlay(v),
 					"FPS, FRAME TIME, DRAW CALLS, NODES. F3 TOO"))
-			out.append(_option("SHOTGUN MODEL", [true, false], ["NEW", "OLD"],
-				func(): return DevSettings.shotgun_model, func(v: Variant): DevSettings.shotgun_model = v,
-				"NEW: THE BLENDER MODEL. OLD: THE CODE-BUILT ONE"))
 			out.append(_option("HIDE HUD", on_off, on_off_names,
 				func(): return DevSettings.hide_hud, func(v: Variant): DevSettings.hide_hud = v,
 				"NO HUD WHILE PLAYING, FOR CLEAN CAPTURES"))

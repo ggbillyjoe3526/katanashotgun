@@ -1759,8 +1759,8 @@ the holographic cut-in (§9.8).
   Cyberpunk 2077**, a heated blade whose edge glows **red-hot orange**. Make
   it our own design, not a copy. The prototype's cyan-edged katana is a
   **PLACEHOLDER**.
-- **Shotgun "RAIJIN-12":** a detailed Blender model is **in testing**
-  (owner's request, 2026-10-19; references were Bungie Marathon's "ALPHA M5"
+- **Shotgun "RAIJIN-12":** a detailed Blender model, **approved** as the
+  game's shotgun (owner's request and approval, 2026-10-19; references were Bungie Marathon's "ALPHA M5"
   replicas, mood only: own shapes, no logos, slogans or text). Angular
   receiver, two flat stacked barrels with a plain square emitter at the
   muzzle (no prongs), a square power-cell drum under the receiver that turns
@@ -1768,8 +1768,7 @@ the holographic cut-in (§9.8).
   gunmetal and off-white panels with small white markings. ~23k triangles
   (ceiling 30k), same pipeline and texture set as the katana. The idle
   crackle jumps between three points inside the emitter. The code-built gun
-  stays the default until the owner approves the model; the DEV menu's
-  LOOK > SHOTGUN MODEL switches between them.
+  remains only as the fallback if the model fails to load.
 - **3D models:** everything else is built in code from primitive meshes.
   - At the owner's request (2026-10-19) the DOJIGIRI has a **highly
     detailed** Blender model that also looks good with the retro look off: ~13k

@@ -59,7 +59,9 @@ after testing.
 ## RAIJIN-12 arc shotgun
 
 **Right hand, right mouse button.** It plays exactly like a shotgun but fires
-forking lightning: the "shotgun taser".
+forking lightning: the "shotgun taser". Two flat barrels, glowing coils
+underneath, and a square drum of power cells that turns a quarter turn after
+every blast; the lights on its left side show your cells.
 
 | | |
 | --- | --- |

@@ -87,5 +87,5 @@ cd assets/models/shotgun/source
   viewmodel's materials, so the Rewards looks tint them and the gun pulses
   them as it fires and recharges.
 - `scripts/shotgun_model.gd` loads it; `viewmodel.gd` swaps it in for the
-  code-built gun when the DEV menu's LOOK > SHOTGUN MODEL is NEW (the model
-  loads only then). About 23k triangles.
+  code-built gun, which only shows if the model fails to load (owner
+  approved, 2026-10-19). About 23k triangles.

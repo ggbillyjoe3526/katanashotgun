@@ -473,21 +473,20 @@ How (guidelines for the build):
   heated blade whose edge glows red-hot orange. Use it as the visual
   reference, but make our own design rather than a copy. The current katana
   (cyan glowing edge) is a placeholder.
-- **Shotgun:** the RAIJIN-12 has a detailed Blender model in testing (an
-  angular receiver, two flat barrels, a square cell drum, red and off-white
-  panels; mood taken from Marathon-style sci-fi, our own shapes, no logos).
-  Until the owner approves it, the code-built gun (prongs, coils, cell drum)
-  stays the default and the model shows only from the DEV menu.
+- **Shotgun:** the RAIJIN-12 is a detailed Blender model (an angular
+  receiver, two flat barrels, a square cell drum, red and off-white panels;
+  mood taken from Marathon-style sci-fi, our own shapes, no logos), approved
+  by the owner on 2026-10-19.
 
 ## Art assets
 - Everything is built in code from primitive meshes, except the DOJIGIRI
   katana's Blender model (owner's request, approved 2026-10-19) and the
-  RAIJIN-12 shotgun's (owner's request, in testing).
+  RAIJIN-12 shotgun's (owner's request, approved 2026-10-19).
 - Both models are highly detailed (katana ~13k triangles, shotgun ~23k;
   baked 2048 px maps) so they hold up with the retro look off, and carry a
   small baked texture for the retro look. Pipeline and rules: `assets/models/README.md`.
-- Keep the code-built versions as fallbacks (the katana's shows only if its
-  model fails to load; the shotgun's is still the default). Other models only when the owner asks for them.
+- Keep the code-built versions as fallbacks (each shows only if its model
+  fails to load). Other models only when the owner asks for them.
 
 ## Not planned (to avoid scope creep)
 - New weapons, new mechanics or complex builds. The core stays katana + arc

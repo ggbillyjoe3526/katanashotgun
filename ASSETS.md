@@ -34,5 +34,6 @@ licence file goes in that script's `SHIPPED` list too.
   by our own Blender scripts in `assets/models/shotgun/source/` (no
   downloaded models, generators or texture packs). Reference photos of
   Marathon "ALPHA M5" replicas were used for mood only; no shapes, logos or
-  text were copied. In testing behind the DEV menu's SHOTGUN MODEL switch.
+  text were copied. The game's shotgun since 2026-10-19 (owner approved);
+  the code-built gun is the fallback.
 - The game icon (`icon.svg`, `installer/icon.ico` via `tools/make_icon.py`). **Placeholder.**

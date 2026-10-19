@@ -325,7 +325,9 @@ def build(offset=(0.0, 0.0, 0.0)):
     bevel(top, 0.003, 3)
 
     sight = _object(col, root, "rear_sight", prism(SIGHT, SIGHT_W), body, PAINT_RED)
-    cut(sight, col, root, "cut_sight_notch", box(0.0, -0.18, 0.140, 0.014, 0.1, 0.016))
+    # the notch floor sits above the front slope's foot (z 0.132): level with
+    # it, the cut left overlapping faces there
+    cut(sight, col, root, "cut_sight_notch", box(0.0, -0.18, 0.143, 0.014, 0.1, 0.016))
     for k in range(3):
         cut(sight, col, root, f"cut_sight_rib_{k}", box(0.0, -0.216, 0.112 + k * 0.009, SIGHT_W + 0.01, 0.004, 0.0025))
     bevel(sight, 0.002, 2)

@@ -34,19 +34,13 @@ var strip_mats: Array[ShaderMaterial] = []
 var arc_glow := Color(0.25, 0.45, 1.0, 0.35)
 var prong_tips: Array[Node3D] = []
 var idle_arc: MeshInstance3D
-# the code-built gun, and the RAIJIN-12 model that replaces it from the dev
-# menu (drum, prong_tips, cell_leds and muzzle then point at the model's)
+# the RAIJIN-12 model (drum, prong_tips, cell_leds and muzzle point at its
+# parts), and the code-built gun kept as its fallback
 var _code_gun: Node3D
 var _model_gun: Node3D
-var _gun_model_on := false
-var _code_drum: Node3D
-var _code_tips: Array[Node3D] = []
-var _code_leds: Array[MeshInstance3D] = []
-var _code_muzzle := Vector3.ZERO
 # one blast turns the drum one cell: six on the code-built drum, four on
 # the model's square one
 var _drum_step := TAU / 6.0
-var _max_cells := 10
 var _idle_im: ImmediateMesh
 var _idle_t := 0.5
 var _idle_life := 0.0
@@ -56,8 +50,9 @@ var _drum_from := 0.0
 var _drum_to := 0.0
 var _rng := RandomNumberGenerator.new()
 
-# how far the Blender katana turns in the hand (radians, around its blade)
-const KATANA_MODEL_ROLL := -0.9
+# how far the Blender katana turns in the hand (radians, around its blade);
+# positive puts the glowing edge on the right, where the owner wants it
+const KATANA_MODEL_ROLL := 0.9
 # glory kill poses (weapon targets the hands snap to between beats)
 const K_POSES := {
 	"ready": [Vector3(-0.4, -0.3, -0.42), Vector3(-1.0, 0.5, -0.4)],
@@ -89,8 +84,8 @@ var _srot_cur := Vector3.ZERO
 
 var katana_idle_pos := Vector3(-0.5, -0.44, -0.6)
 var katana_idle_rot := Vector3(-0.55, 0.3, -0.3)
-var shotgun_idle_pos := Vector3(0.36, -0.3, -0.52)
-var shotgun_idle_rot := Vector3(0.04, 0.16, 0.05)
+var shotgun_idle_pos := Vector3(0.42, -0.3, -0.52)
+var shotgun_idle_rot := Vector3(0.04, 0.04, 0.05)
 
 var _slash_t := -1.0
 var _slash_from_pos := Vector3.ZERO
@@ -193,8 +188,8 @@ func _build_shotgun() -> void:
 	core_mat = Psx.unlit(Color(0.75, 0.92, 1.0), 3.0, null, fx_p)
 	tip_mat = Psx.unlit(Color(0.85, 0.95, 1.0), 3.5, null, fx_p)
 	drum_cell_mat = Psx.unlit(Color(0.3, 0.85, 1.0), 2.6, null, fx_p)
-	# the code-built gun; the Blender model takes its place when the dev
-	# menu asks for it (_show_shotgun_model)
+	# the code-built gun, hidden once the Blender model loads
+	# (_use_shotgun_model)
 	_code_gun = Node3D.new()
 	spin_pivot.add_child(_code_gun)
 	# receiver, grip and top heat sink
@@ -297,51 +292,32 @@ func _build_shotgun() -> void:
 	idle_arc.mesh = _idle_im
 	idle_arc.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	spin_pivot.add_child(idle_arc)
-	_code_drum = drum
-	_code_tips = prong_tips.duplicate()
-	_code_leds = cell_leds.duplicate()
-	_code_muzzle = muzzle.position
-	_show_shotgun_model()
+	_use_shotgun_model()
 	shotgun.position = shotgun_idle_pos
 	_spos_cur = shotgun_idle_pos
 	_srot_cur = shotgun_idle_rot
 
 
-## Shows the Blender model or the code-built gun, as the dev menu says. The
-## code-built one stays until the model is approved (spec §9.6), so the model
-## (and its large textures) loads only the first time it is asked for.
-func _show_shotgun_model() -> void:
-	_gun_model_on = DevSettings.shotgun_model
-	if _gun_model_on and _model_gun == null:
-		_model_gun = ShotgunModel.build({
-			"coil": coil_mat, "core": core_mat, "emitter": tip_mat, "cell": drum_cell_mat, "led": led_on,
-		})
-		spin_pivot.add_child(_model_gun)
-	var use_model := _gun_model_on and _model_gun.get_child_count() > 0 and _has_parts(_model_gun)
-	if _model_gun:
-		_model_gun.visible = use_model
-	_code_gun.visible = not use_model
-	if use_model:
-		drum = ShotgunModel.part(_model_gun, "drum")
-		prong_tips.clear()
-		for i in ShotgunModel.ARC_POINTS:
-			prong_tips.append(ShotgunModel.part(_model_gun, "arc_point_%d" % i))
-		cell_leds.clear()
-		for i in ShotgunModel.LED_COUNT:
-			cell_leds.append(ShotgunModel.part(_model_gun, "led_%d" % i) as MeshInstance3D)
-		muzzle.position = _in_gun(ShotgunModel.part(_model_gun, "muzzle"))
-		_drum_step = TAU / 4.0
-	else:
-		drum = _code_drum
-		prong_tips = _code_tips.duplicate()
-		cell_leds = _code_leds.duplicate()
-		muzzle.position = _code_muzzle
-		_drum_step = TAU / 6.0
-	# a swap mid-turn just lands the drum square
-	_drum_from = 0.0
-	_drum_to = 0.0
-	drum.rotation.z = 0.0
-	set_cells(_cells, _max_cells)
+## Swaps the code-built gun for the RAIJIN-12 model. The code-built gun only
+## stays if the model fails to load or lacks a part the gun drives.
+func _use_shotgun_model() -> void:
+	_model_gun = ShotgunModel.build({
+		"coil": coil_mat, "core": core_mat, "emitter": tip_mat, "cell": drum_cell_mat, "led": led_on,
+	})
+	spin_pivot.add_child(_model_gun)
+	if _model_gun.get_child_count() == 0 or not _has_parts(_model_gun):
+		_model_gun.visible = false
+		return
+	_code_gun.visible = false
+	drum = ShotgunModel.part(_model_gun, "drum")
+	prong_tips.clear()
+	for i in ShotgunModel.ARC_POINTS:
+		prong_tips.append(ShotgunModel.part(_model_gun, "arc_point_%d" % i))
+	cell_leds.clear()
+	for i in ShotgunModel.LED_COUNT:
+		cell_leds.append(ShotgunModel.part(_model_gun, "led_%d" % i) as MeshInstance3D)
+	muzzle.position = _in_gun(ShotgunModel.part(_model_gun, "muzzle"))
+	_drum_step = TAU / 4.0
 
 
 ## True if the model has every node the viewmodel drives (a bad export
@@ -394,7 +370,6 @@ func apply_looks() -> void:
 
 func set_cells(n: int, max_n: int) -> void:
 	_cells = n
-	_max_cells = max_n
 	for i in cell_leds.size():
 		var led := cell_leds[i]
 		led.visible = i < max_n
@@ -539,8 +514,6 @@ func _process(delta: float) -> void:
 	blade_edge_mat.set_shader_parameter("energy", 2.4 + _glow * 4.0)
 
 	# ---- shotgun: kick, then the drum turns and the coils recharge
-	if _gun_model_on != DevSettings.shotgun_model:
-		_show_shotgun_model()
 	var base_pos := shotgun_idle_pos
 	var base_rot := shotgun_idle_rot
 	if _glory:
