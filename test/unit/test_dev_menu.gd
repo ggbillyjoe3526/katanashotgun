@@ -1,6 +1,6 @@
 extends GutTest
 ## The hidden DEV menu (F10) and its settings: it opens where it should, is
-## worked with the mouse, keeps only the look across launches, and a run
+## worked with the mouse, keeps nothing across launches, and a run
 ## played with dev settings never reaches the top 10.
 
 const PROFILE_DIR := "user://test-dev-menu"
@@ -84,54 +84,39 @@ func test_f10_can_never_be_bound_to_an_action() -> void:
 	Settings.bindings = before
 
 
-func test_click_the_retro_look_off_and_on() -> void:
-	menu.open()
-	var vr: Rect2 = menu._value_rect(_row("RETRO LOOK"))
-	_click(vr.end - Vector2(4, 4))
-	assert_false(DevSettings.retro)
-	assert_eq(get_tree().root.content_scale_mode, Window.CONTENT_SCALE_MODE_CANVAS_ITEMS)
-	_click(vr.end - Vector2(4, 4))
-	assert_true(DevSettings.retro)
-	assert_eq(get_tree().root.content_scale_mode, Window.CONTENT_SCALE_MODE_VIEWPORT)
-
-
-func test_only_the_look_is_saved() -> void:
-	DevSettings.retro = false
+func test_no_dev_setting_is_saved() -> void:
 	Game.debug_god = true
 	DevSettings.speed = 2.0
+	DevSettings.hide_hud = true
 	var d := Settings.to_dict()
-	assert_eq_deep(d.dev, {"retro": false})
+	assert_false(d.has("dev"))
 	DevSettings.reset()
 	Settings.from_dict(d)
-	assert_false(DevSettings.retro)
 	assert_false(Game.debug_god)
 	assert_eq(DevSettings.speed, 1.0)
+	assert_false(DevSettings.hide_hud)
 
 
-func test_old_settings_without_a_dev_part_keep_the_retro_look() -> void:
-	DevSettings.retro = true
-	var d := Settings.to_dict()
-	d.erase("dev")
-	Settings.from_dict(d)
-	assert_true(DevSettings.retro)
+func test_the_look_moved_to_the_player_settings() -> void:
+	menu.open()
+	assert_eq(_row("RETRO LOOK"), -1)
 
 
 func test_all_off_resets_everything() -> void:
-	DevSettings.retro = false
+	DevSettings.hide_hud = true
 	DevSettings.start_wave = 9
 	DevSettings.boss = "oni"
 	Game.debug_god = true
 	Game.set_autoplay(true)
 	menu.open()
 	_click(menu._foot_rect(1).get_center())
-	assert_true(DevSettings.retro)
+	assert_false(DevSettings.hide_hud)
 	assert_false(DevSettings.cheating())
 	assert_false(Game.debug_autoplay)
 	assert_false(DevSettings.any_on())
 
 
-func test_the_look_is_not_a_cheat() -> void:
-	DevSettings.retro = false
+func test_hiding_the_hud_is_not_a_cheat() -> void:
 	DevSettings.hide_hud = true
 	assert_false(DevSettings.cheating())
 	for s in [func(): Game.debug_god = true, func(): DevSettings.speed = 0.5,
