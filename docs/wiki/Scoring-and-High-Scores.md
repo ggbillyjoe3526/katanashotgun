@@ -28,8 +28,10 @@ Each kill pays **base points × combo multiplier × mutator multiplier**.
 - Every kill adds **+1** to your combo and restarts a **4 second** timer. Let
   it run out and the combo drops.
 - The combo multiplier is **1 + 0.1 per combo**, up to **×5** at combo 40.
-- Milestones at 10, 20, 30, 50, 75, 100, 150, 200 and 300 get a stamp, and
-  from 20 up a big holographic cut-in.
+- Milestones at 10, 20, 30, 50, 75, 100, 150, 200 and 300 arrive on a blade
+  cut: a slash crosses the top of the screen and "X10 COMBO" slams onto a
+  leaning plate, which is sliced in half when it leaves. From 20 up the cut
+  also slices the picture itself for a moment.
 - The Taiko Frenzy card adds +5 combo per glory kill and freezes the timer;
   the MATSURI RUSH mutator halves the timer.
 

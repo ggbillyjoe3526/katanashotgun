@@ -15,6 +15,7 @@ extends Control
 const CHIPS_COL := Color(0.15, 0.7, 1.0)
 const MULT_COL := Color(1.0, 0.18, 0.32)
 const GOLD := Color(1.0, 0.85, 0.25)
+const GLORY_CARD_AT := 0.14 # the glory kill's card lands this long after its cuts
 const MAX_SPARKS := 1400
 const MAX_ROWS := 7
 const INTRO_LINE := 14.0 # line pitch of the intro's mutator lines
@@ -97,6 +98,21 @@ var _bars_len := 0.85
 var _fin: FinishBG
 var _fin_t := 99.0
 
+# KIRI (spec §9.8): the top-lane card and the full-screen slashes
+var _kiri: KiriCard
+var _top_prio := 0 # what the live top-lane card is: 0 combo, 1 glory kill or KAMAE, 2 ONIKIRI or the boss card
+var _kiri_tag := "" # the kill tag whose points join the glory card ("GLORY KILL")
+var _kiri_tag_t := 99.0
+var _kiri_sub_wait := "" # points that arrived before the card
+var _kiri_word := "" # the glory kill's card word ("GLORY KILL", "ONIKIRI!")
+var _slashes: Slashes
+# HIJACK (spec §9.8): the block (KAMAE BROKEN, the boss card), the signal
+# takeover over everything and the giant scrolling name under the HUD
+var _hijack: HijackBlock
+var _boss_card := false # the block is the boss name card
+var _takeover: HijackFx
+var _giant: HijackFx
+
 
 ## The FINISH backdrop, cyberpunk style: a "system breach" overlay. Red tint,
 ## a hex grid, scrolling warning chevrons top and bottom, columns of hex data
@@ -108,13 +124,14 @@ class FinishBG:
 	var accent := Color(1, 0.1, 0.3)
 	var accent2 := Color(0.3, 0.95, 1.0)
 	var band := Rect2() # the text plate, in this control's pixels
+	var negative := false # the red negative shows the world: a lighter tint
 	var _data: Array = []
 	var _data_t := 0.0
 	var _rng := RandomNumberGenerator.new() # presentation only
 
 	func _draw() -> void:
 		var a := clampf(1.0 - maxf(0.0, t - 0.8) / 0.12, 0.0, 1.0)
-		draw_rect(Rect2(Vector2.ZERO, size), Color(accent.r * 0.35, accent.g * 0.05, accent.b * 0.2, 0.78 * a))
+		draw_rect(Rect2(Vector2.ZERO, size), Color(accent.r * 0.35, accent.g * 0.05, accent.b * 0.2, (0.3 if negative else 0.78) * a))
 		# hex grid
 		var hc := Color(accent.r, accent.g, accent.b, 0.22 * a)
 		var y := 0.0
@@ -170,6 +187,34 @@ class FinishBG:
 			draw_string(bf, sp, sub, HORIZONTAL_ALIGNMENT_LEFT, -1, bs, Color(1, 1, 1, 0.95 * a))
 
 
+## KIRI: full-screen blade slashes. Each races across in 0.05 s and is
+## gone by 0.14 s.
+class Slashes:
+	extends Control
+	const LEN := 0.14
+	var list: Array = [] # [{a, b, t, c, w}]
+
+	func add(a: Vector2, b: Vector2, delay: float, c: Color, w: float) -> void:
+		list.append({"a": a, "b": b, "t": -delay, "c": c, "w": w})
+
+	func step(rd: float) -> void:
+		if list.is_empty():
+			return
+		var i := 0
+		while i < list.size():
+			list[i].t += rd
+			if list[i].t > LEN:
+				list.remove_at(i)
+				continue
+			i += 1
+		queue_redraw()
+
+	func _draw() -> void:
+		for s in list:
+			if s.t >= 0.0:
+				KiriCard.slash(self, s.a, s.b, s.t / 0.05, s.c, s.w, 1.0 if s.t < 0.09 else 0.5)
+
+
 class SparkLayer:
 	extends Control
 	var sparks: Array = []
@@ -198,10 +243,17 @@ func _ready() -> void:
 	_lines = _full(SpeedLines.new())
 	var pal := Game.palette
 	# cinematic bars for glory kills: black, a neon edge and a scan texture
-	_bars_top = Shard.make(Color(0.01, 0, 0.03, 0.96), 0.0, Color(0, 0, 0, 0), Color(pal.neon_b))
-	_bars_top.scan = 0.04
-	_bars_bot = Shard.make(Color(0.01, 0, 0.03, 0.96), 0.0, Color(0, 0, 0, 0), Color(pal.neon_a))
-	_bars_bot.scan = 0.04
+	# KIRI's diagonal letterbox: thick on the left at the top, thick on the
+	# right at the bottom, a neon edge on the cut with a second colour under it
+	_bars_top = Shard.make(Color(0.01, 0, 0.03, 0.97), 0.0, Color(pal.neon_b), Color(pal.neon_a))
+	_bars_top.points = PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 14.0 / 42.0), Vector2(0, 1)])
+	_bars_bot = Shard.make(Color(0.01, 0, 0.03, 0.97), 0.0, Color(pal.neon_a), Color(pal.neon_b))
+	_bars_bot.points = PackedVector2Array([Vector2(0, 26.0 / 42.0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
+	for b: Shard in [_bars_top, _bars_bot]:
+		b.outline_w = 2.0
+		b.shadow_alpha = 1.0
+	_bars_top.shadow_off = Vector2(0, 3)
+	_bars_bot.shadow_off = Vector2(0, -3)
 	_bars_top.visible = false
 	_bars_bot.visible = false
 	# the bars go under the HUD clusters, so the HUD stays readable on black
@@ -216,6 +268,15 @@ func _ready() -> void:
 	_fin = _full(FinishBG.new())
 	_fin.visible = false
 	_cutin = _full(CutIn.new())
+	_kiri = _full(KiriCard.new())
+	_kiri.visible = false
+	_hijack = _full(HijackBlock.new())
+	_hijack.visible = false
+	_giant = HijackFx.new()
+	hud.play_root.add_child(_giant)
+	hud.play_root.move_child(_giant, 0)
+	_giant.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_slashes = _full(Slashes.new())
 	_shards = _full(ShardBurst.new())
 	_spark_layer = SparkLayer.new()
 	_spark_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -225,6 +286,7 @@ func _ready() -> void:
 	m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	_spark_layer.material = m
 	add_child(_spark_layer)
+	_takeover = _full(HijackFx.new())
 
 
 # ---------------------------------------------------------------- helpers
@@ -288,6 +350,7 @@ func stamp(text: String, color: Color, size := 24, o := {}) -> void:
 	if o.get("lane", "") == "top":
 		# one message per lane: the newest replaces the boss name card
 		hud.end_boss_card()
+		_stop_cards()
 	if slot == "center":
 		_cutin.stop()
 	var l: Control
@@ -471,6 +534,12 @@ func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	_band.visible = true
 	_lines.kick(0.8, 0.15)
 	_intro_title.visible = true
+	if boss:
+		# HIJACK: the boss seizes the signal before its wave
+		_takeover.takeover()
+		_giant.scroll("BOSS INCOMING", 2.9, Color(1.0, 0.16, 0.22))
+		if hud.post:
+			hud.post.roll(0.15)
 	later(0.09, func():
 		add_shake(5.0)
 		Sfx.play("stamp", -3.0, 1.0, 0.0))
@@ -649,7 +718,7 @@ func centre_busy() -> bool:
 	for s in _stamps:
 		if s.slot in ["center", "intro", "tally"]:
 			return true
-	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or hud.boss_title.visible or hud.reward_card.visible
+	return _cutin.active() or _fin.visible or _card_on or _intro_on or _tally_on or boss_card_showing() or hud.reward_card.visible
 
 
 ## d = {title, rows: [[name, detail, value]], chips, mults: [[name, factor]],
@@ -1037,24 +1106,162 @@ func _update_card(rd: float) -> void:
 
 
 func combo_stamp(n: int, idx: int) -> void:
-	if hud.boss_title.visible or panel_showing():
-		# the boss name card, FINISH, the payout or the boss-defeated card owns
-		# the middle of the screen: sound only, and the HUD combo counter still
-		# shows the number
+	if boss_card_showing() or panel_showing() or (_top_busy() and _top_prio > 0):
+		# the boss name card, FINISH, the payout, the boss-defeated card or a
+		# glory kill's card holds the screen: sound only, and the HUD combo
+		# counter still shows the number
 		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
 		_lines.kick(0.5, 0.1)
 		return
-	if idx >= 1:
-		# bigger milestones get the holographic cut-in instead of a stamp
-		_lines.kick(0.5 + idx * 0.1, 0.1)
-		Sfx.play("mult", -5.0, 0.9 + idx * 0.1, 0.0)
-		cut_in("X%d COMBO" % n, idx % 2 == 1)
-		_shards.burst(Vector2(vs.x * 0.5, hud.top_lane() + 30.0), Color(Game.palette.neon_a), 12, 260.0, true)
-		return
-	var hue := fmod(0.12 - idx * 0.11 + 1.0, 1.0)
+	# KIRI: every milestone arrives on a cut; the colour climbs with it and
+	# the big ones cut the picture too
+	var hue := fmod(0.14 - idx * 0.11 + 1.0, 1.0)
 	var col := Color.from_hsv(hue, 0.75, 1.0)
-	stamp("X%d COMBO" % n, col, 20, {"glitch": true, "tag": "> CHAIN SYNC", "accent": Color(Game.palette.neon_a), "seed": idx, "lane": "top", "from": 2.4, "hold": 0.55, "fade": 0.2, "shake": 3.0 + idx * 0.5, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "burst": 24 + idx * 6})
-	_lines.kick(0.5, 0.1)
+	var pal := Game.palette
+	kiri("X%d COMBO" % n, col, Color(pal.neon_a), 0, {"tag": "CHAIN SYNC", "size": 20 if idx < 2 else 24, "rot": -0.21 if idx % 2 == 0 else 0.21, "sound": "mult", "vol": -5.0, "pitch": 0.9 + idx * 0.1, "sparks": 24 + idx * 6, "shake": 3.0 + idx * 0.5, "cut": 12.0 if idx >= 1 else 0.0})
+	_lines.kick(0.5 + minf(idx, 4) * 0.1, 0.1)
+
+
+## KIRI: a card in the top lane, arriving on a slash. `prio` keeps a combo
+## card from replacing a glory kill's (one message per lane, spec §9.9).
+## Options: those of KiriCard.play, plus sound, vol, pitch, sparks, shake,
+## and cut (the picture cut along the slash, in pixels; 0 for none).
+func kiri(text: String, col: Color, acc: Color, prio: int, o := {}) -> bool:
+	if _top_busy() and prio < _top_prio:
+		return false
+	_top_prio = prio
+	_clear_top()
+	_kiri.top = hud.top_lane()
+	_kiri.play(text, col, acc, o)
+	var r := _kiri.plate_rect()
+	if hud.post and float(o.get("cut", 0.0)) > 0.0:
+		# the cut runs along the lead slash
+		var ang := (Vector2(r.end.x + 70.0, r.position.y - 16.0) - Vector2(r.position.x - 70.0, r.end.y + 16.0)).angle()
+		hud.post.cut(Vector2(0.5, (r.get_center().y) / vs.y), ang, float(o.cut), 0.22, 0.1)
+	var snd := str(o.get("sound", "stamp"))
+	var vol := float(o.get("vol", -3.0))
+	var pitch := float(o.get("pitch", 1.0))
+	var n := int(o.get("sparks", 26))
+	var sh := float(o.get("shake", 4.0))
+	later(KiriCard.SLAM, func():
+		if not _kiri.showing() or _kiri.text != text:
+			return
+		add_shake(sh)
+		if snd != "":
+			Sfx.play(snd, vol, pitch, 0.0)
+		var rr := _kiri.plate_rect()
+		burst(Vector2(rr.end.x + 8.0, rr.position.y), acc, n)
+		burst(Vector2(rr.end.x + 8.0, rr.position.y), col, n / 2))
+	return true
+
+
+## HIJACK: a block in the top lane. `prio` as for kiri(). Options: those
+## of HijackBlock.play, plus sound, vol, pitch, sparks, shake, and roll (the
+## picture's tracking roll as the block lands).
+func hijack(text: String, col: Color, shadow: Color, prio: int, o := {}) -> void:
+	if _top_busy() and prio < _top_prio:
+		return
+	_top_prio = prio
+	_clear_top()
+	_hijack.top = hud.top_lane()
+	_hijack.play(text, col, shadow, o)
+	var snd := str(o.get("sound", "stamp"))
+	var vol := float(o.get("vol", -3.0))
+	var pitch := float(o.get("pitch", 1.0))
+	var n := int(o.get("sparks", 22))
+	var sh := float(o.get("shake", 4.0))
+	var roll := bool(o.get("roll", true))
+	later(HijackBlock.BARS + HijackBlock.OPEN, func():
+		if not _hijack.showing() or _hijack.text != text:
+			return
+		add_shake(sh)
+		if snd != "":
+			Sfx.play(snd, vol, pitch, 0.0)
+		if roll and hud.post:
+			hud.post.roll(0.1)
+		var r := _hijack.block_rect()
+		burst(Vector2(r.end.x + 4.0, r.position.y + 2.0), col, n)
+		burst(Vector2(r.end.x + 4.0, r.position.y + 2.0), shadow, n / 2))
+
+
+## The boss name card (HIJACK): the signal is seized, the name lands on a
+## dark block with a red shadow and scrolls huge behind the HUD.
+func boss_card(title: String, sub: String) -> void:
+	var red := Color(1.0, 0.16, 0.22)
+	_takeover.takeover()
+	if hud.post:
+		hud.post.roll(0.15)
+		hud.post.invert_flash(0.05)
+	hijack(title, HijackBlock.INK, red, 2, {"ink": Color.WHITE, "tag": "HIGH-VALUE TARGET", "sub": sub, "sub_col": red, "size": 28, "pad": 30.0, "hold": 3.0, "sparks": 34, "shake": 7.0, "vol": -6.0, "pitch": 0.7, "roll": false})
+	_boss_card = true
+	_giant.scroll(title, 3.4, red)
+	_lines.kick(0.8, 0.2)
+
+
+func boss_card_showing() -> bool:
+	return _boss_card and _hijack.showing()
+
+
+func end_boss_card() -> void:
+	if _boss_card:
+		_boss_card = false
+		_hijack.stop()
+		_giant.stop_scroll()
+
+
+func _top_busy() -> bool:
+	return _kiri.showing() or _hijack.showing()
+
+
+func _stop_cards() -> void:
+	_kiri.stop()
+	_hijack.stop()
+	_boss_card = false
+
+
+## Ends whatever holds the top lane, for a newer message.
+func _clear_top() -> void:
+	hud.end_boss_card()
+	_stop_cards()
+	_cutin.stop()
+	var i := 0
+	while i < _stamps.size():
+		if _stamps[i].lane == "top":
+			_stamps[i].l.queue_free()
+			_stamps.remove_at(i)
+			continue
+		i += 1
+
+
+## A kill callout ("GLORY KILL +380") that belongs to the glory kill on
+## screen joins its card as the points line instead. True when it did.
+func kiri_points(text: String) -> bool:
+	if _kiri_tag == "" or _kiri_tag_t > 2.5 or not text.begins_with(_kiri_tag + " +"):
+		return false
+	var pts := text.substr(_kiri_tag.length() + 1)
+	if _kiri_tag_t < GLORY_CARD_AT:
+		# the card is still to come: the points go on it when it lands
+		_kiri_sub_wait = pts
+		return true
+	_kiri_tag = ""
+	if _kiri.showing() and _kiri.text == _kiri_word:
+		_kiri.set_sub(pts, GOLD)
+		return true
+	# the card was replaced or never shown: an ordinary callout
+	return false
+
+
+## A boss's stance just broke (HIJACK): a frame of negative, the picture
+## rolls, sparks off the boss bar, and KAMAE BROKEN lands on a gold block.
+func kamae_broken() -> void:
+	var gold := Color(1.0, 0.72, 0.15)
+	var orange := Color(1.0, 0.55, 0.19)
+	burst(Vector2(vs.x * 0.5, hud.top_lane() - 8.0), gold, 40, 120.0)
+	if hud.post:
+		hud.post.invert_flash(0.07)
+		hud.post.roll(0.15)
+	_lines.kick(1.0, 0.3)
+	hijack("KAMAE BROKEN", gold, orange, 1, {"hold": 1.1, "sound": "stamp", "vol": -1.0, "pitch": 0.8, "sparks": 30, "shake": 8.0, "roll": false})
 
 
 ## Passing the best score: one message (the cut-in), never a stamp and a
@@ -1068,18 +1275,54 @@ func hiscore_stamp() -> void:
 
 
 # ---------------------------------------------------------------- persona layer
-## Speed lines, cinematic bars and (for bosses) a cut-in while a glory kill
-## plays.
+## KIRI while a glory kill plays: speed lines, three cuts across the whole
+## screen (two red ones for ONIKIRI), the picture cut and slipping, the
+## diagonal letterbox, then the card in the top lane. The kill's points
+## join the card when they come in (kiri_points).
 func glory_start(kind: String) -> void:
+	var pal := Game.palette
+	var boss := kind == "boss"
 	_lines.kick(1.0, 0.3)
 	_bars_t = 0.0
 	_bars_len = 1.0 if kind in ["brute", "boss"] else 0.85
 	_bars_top.visible = true
 	_bars_bot.visible = true
-	if kind == "boss":
-		# the break blow outranks the boss name card: the card makes way
-		hud.end_boss_card()
-		cut_in("ONIKIRI!")
+	var c1 := Color(1.0, 0.16, 0.24) if boss else Color(pal.neon_a)
+	var c2 := GOLD if boss else Color(pal.neon_b)
+	_bars_top.outline = c1
+	_bars_top.shadow = c2
+	_bars_bot.outline = c2
+	_bars_bot.shadow = c1
+	var cuts: Array = [[Vector2(60, 20), Vector2(420, 250)], [Vector2(420, 20), Vector2(60, 250)]] if boss else [[Vector2(30, 40), Vector2(450, 228)], [Vector2(452, 46), Vector2(28, 222)], [Vector2(20, 150), Vector2(460, 112)]]
+	var k := vs / Vector2(480, 270)
+	for i in cuts.size():
+		_slashes.add(cuts[i][0] * k, cuts[i][1] * k, i * (0.04 if boss else 0.05), c1 if i != 1 or boss else c2, 5.0 if boss else 4.0)
+	if hud.post:
+		hud.post.cut(Vector2(0.5, 0.5), atan(0.6 if boss else 0.45), 16.0 if boss else 10.0, 0.4 if boss else 0.3, 0.15 if boss else 0.0)
+	_kiri_tag = "ONIKIRI" if boss else (Player.PLUNGE_TAG if kind == "plunge" else "GLORY KILL")
+	_kiri_tag_t = 0.0
+	_kiri_sub_wait = ""
+	var word := "ONIKIRI!" if boss else _kiri_tag
+	_kiri_word = word
+	var tag := _kiri_tag
+	later(GLORY_CARD_AT, func():
+		var o := {"rot": 0.24 if boss else 0.17, "sparks": 40 if boss else 26, "shake": 10.0 if boss else 5.0, "sound": "stamp", "vol": -2.0, "pitch": 0.75 if boss else 1.0}
+		if boss:
+			o.size = 32
+		if _kiri_sub_wait != "":
+			o.sub = _kiri_sub_wait
+			o.sub_col = GOLD
+			_kiri_sub_wait = ""
+		if not kiri(word, c1, GOLD if boss else c2, 2 if boss else 1, o):
+			# a bigger card holds the lane: the points become a callout
+			_kiri_tag = ""
+			if o.has("sub"):
+				hud.add_popup("%s %s" % [tag, o.sub], Color(1.0, 0.15, 0.2)))
+
+
+## The scrolling giant name lives under the HUD; the pause screen freezes it.
+func giant() -> HijackFx:
+	return _giant
 
 
 func speed_lines(strength: float, hold := 0.0) -> void:
@@ -1092,6 +1335,7 @@ func cut_in(text: String, flip := false) -> void:
 	_clear_slot("center")
 	# the top lane, clear of the wave, the score and the boss bar
 	_cutin.top = hud.top_lane() - 4.0
+	_stop_cards()
 	_cutin.play(text, Color(pal.neon_a), Color(pal.neon_b), flip)
 	_lines.kick(0.7, 0.25)
 	add_shake(3.0)
@@ -1115,6 +1359,14 @@ func finish_splash() -> void:
 	_fin_t = 0.0
 	_fin.accent = Color(1.0, 0.12, 0.22) # alert red, whatever the palette
 	_fin.visible = true
+	_stop_cards()
+	_giant.stop_scroll()
+	_kiri_tag = ""
+	if hud.post:
+		# the world behind goes two-tone, ink and red (at full flash it is
+		# inverted for a moment first); the backdrop's tint thins out so it shows
+		hud.post.negative(0.9)
+	_fin.negative = Settings.flash > 0.0
 	_lines.kick(1.0, 0.7)
 	add_shake(12.0)
 	Sfx.play("finish", 0.0, 1.0, 0.0)
@@ -1145,11 +1397,12 @@ func _update_bars(rd: float) -> void:
 		return
 	_bars_t += rd
 	var k := minf(ease_out(_bars_t / 0.08), 1.0 - smoothstep(_bars_len - 0.12, _bars_len, _bars_t))
-	var h := roundf(26.0 * k)
-	_bars_top.position = Vector2(-4, -2)
-	_bars_top.size = Vector2(vs.x + 8, h + 2)
-	_bars_bot.position = Vector2(-4, vs.y - h)
-	_bars_bot.size = Vector2(vs.x + 8, h + 2)
+	# they slide in from the edges, the wedge shape kept whole
+	var o := roundf((1.0 - k) * 46.0)
+	_bars_top.position = Vector2(-4, -2 - o)
+	_bars_top.size = Vector2(vs.x + 8, 42)
+	_bars_bot.position = Vector2(-4, vs.y - 40 + o)
+	_bars_bot.size = Vector2(vs.x + 8, 42)
 	if _bars_t > _bars_len:
 		_bars_top.visible = false
 		_bars_bot.visible = false
@@ -1177,6 +1430,14 @@ func _process(_delta: float) -> void:
 	_update_card(rd)
 	_update_bars(rd)
 	_update_finish(rd)
+	_kiri_tag_t += rd
+	_slashes.step(rd)
+	if _kiri.showing():
+		_kiri.top = hud.top_lane()
+	if _hijack.showing():
+		_hijack.top = hud.top_lane()
+	elif _boss_card:
+		_boss_card = false
 	_update_stamps(rd)
 	_update_sparks(rd)
 	shake *= exp(-rd * 9.0)

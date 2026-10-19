@@ -88,8 +88,8 @@ the prototype already works.
   - **From the air:** falling overhead cut (split in two).
   - **Brute:** climb up, chop the skull, blast down into the neck.
   - **Boss (the ONIKIRI, only while its KAMAE is broken):** an X-cut, then a point-blank blast. It takes 20%, unless that is the killing blow.
-- Presentation: cinematic bars, data streaks, impact frames on each hit,
-  hitstop, a hop back out of the gore when it ends.
+- Presentation: KIRI cuts and a diagonal letterbox, data streaks, impact
+  frames on each hit, hitstop, a hop back out of the gore when it ends.
 - **Plunge (SAKAHOKO DROP):** dropping from a ledge at least 2 m above a foe
   (or flying off a jump pad), look at it and press F ("F PLUNGE"): you dive onto it blade-down, drive the
   katana through its collarbone (it splits in two), rip it out and step
@@ -348,9 +348,19 @@ is never lost.
     impact frame.
   - Kills: neon pixel fragments and a target-lock ring burst from the body;
     a pitch-rising tick per kill; the combo label pops and heats up.
-  - Combo milestones (x10, x20, x30, x50, x75, x100...): a glitch stamp. From
-    x20 up, a holographic cut-in: a comm-feed window with a neon wireframe
-    of the protagonist's visored mask, a scan bar and data text.
+  - Two juice styles (owner's pick, 2026-10-19; spec §9.8). KIRI, "the
+    cut", for combo milestones, glory kills and ONIKIRI: a slash crosses the
+    top lane, a leaning plate wipes on along it, the word slams in and lands
+    level, and the plate is sliced in half on the way out; big ones cut the
+    3D picture too, and glory kills add cross cuts and a diagonal
+    letterbox. HIJACK, "the broadcast takeover", for kill callouts,
+    warnings, LEVEL UP, the boss intro and KAMAE BROKEN: solid neon blocks
+    with dark letters and hard shadows, colour bars, tracking rolls and
+    torn-strip exits. FINISH keeps its look with a red two-tone negative on
+    the world behind it.
+  - The holographic cut-in (a comm-feed window with a neon wireframe of the
+    protagonist's visored mask) is kept for NEW HI-SCORE and REWARD
+    UNLOCKED.
   - Combo heat: the screen heats up as the combo climbs (more fringe and
     saturation, halftone pixels creeping in from the edges).
   - End-of-wave tally (Balatro-style): rows deal in, chips and mult boxes
@@ -473,18 +483,20 @@ How (guidelines for the build):
   heated blade whose edge glows red-hot orange. Use it as the visual
   reference, but make our own design rather than a copy. The current katana
   (cyan glowing edge) is a placeholder.
-- **Shotgun:** the look is undecided. The current RAIJIN-12 arc shotgun
-  model (prongs, coils, cell drum) is a placeholder that shows the
-  "shotgun taser" idea.
+- **Shotgun:** the RAIJIN-12 is a detailed Blender model (an angular
+  receiver, two flat barrels, a square cell drum, red and off-white panels;
+  mood taken from Marathon-style sci-fi, our own shapes, no logos), approved
+  by the owner on 2026-10-19.
 
 ## Art assets
 - Everything is built in code from primitive meshes, except the DOJIGIRI
-  katana's Blender model (owner's request, approved 2026-10-19).
-- That model is highly detailed (~13k triangles, baked 2048 px maps) so it
-  holds up with the retro look off, and carries a small baked texture for
-  the retro look. Pipeline and rules: `assets/models/README.md`.
-- Keep the code-built versions as fallbacks (the katana's shows only if its
-  model fails to load). Other models only when the owner asks for them.
+  katana's Blender model (owner's request, approved 2026-10-19) and the
+  RAIJIN-12 shotgun's (owner's request, approved 2026-10-19).
+- Both models are highly detailed (katana ~13k triangles, shotgun ~23k;
+  baked 2048 px maps) so they hold up with the retro look off, and carry a
+  small baked texture for the retro look. Pipeline and rules: `assets/models/README.md`.
+- Keep the code-built versions as fallbacks (each shows only if its model
+  fails to load). Other models only when the owner asks for them.
 
 ## Not planned (to avoid scope creep)
 - New weapons, new mechanics or complex builds. The core stays katana + arc

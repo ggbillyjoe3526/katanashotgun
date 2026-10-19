@@ -3,6 +3,9 @@
 // vignette and a red damage pulse. Plus the anime layer: "impact frames"
 // (the picture crushed to black / accent / white for a few frames on big hits)
 // and combo "heat" (more fringe, saturation and halftone dots at the edges).
+// The juice layer (spec §9.8) adds four short effects: the KIRI cut (the
+// picture sliced along a line, the two sides slipping apart), the HIJACK
+// tracking roll and frame of negative, and FINISH's red negative.
 shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
@@ -20,6 +23,25 @@ uniform bool impact_invert = false;
 uniform vec3 impact_color : source_color = vec3(1.0, 0.1, 0.25);
 uniform float heat = 0.0;
 uniform vec3 heat_color : source_color = vec3(1.0, 0.1, 0.4);
+// KIRI cut: a line through cut_p (screen fraction) along cut_dir (unit, in
+// screen pixels, y down). Each side slides cut_off 540-line pixels along the
+// line, opposite ways; cut_seam lights the line itself.
+uniform vec2 cut_p = vec2(0.5, 0.5);
+uniform vec2 cut_dir = vec2(1.0, 0.0);
+uniform float cut_off = 0.0;
+uniform float cut_seam = 0.0;
+uniform vec3 cut_color : source_color = vec3(1.0, 1.0, 1.0);
+// HIJACK tracking roll: bands of the picture shoved sideways (0..1)
+uniform float roll = 0.0;
+uniform float roll_seed = 0.0;
+// FINISH's red negative: two flat tones, dark ink and red, split by
+// brightness; neg_invert swaps them for the first frames
+uniform float neg = 0.0;
+uniform bool neg_invert = false;
+uniform vec3 neg_color : source_color = vec3(1.0, 0.16, 0.24);
+uniform vec3 neg_ink : source_color = vec3(0.04, 0.024, 0.08);
+// HIJACK's frame of negative (0..1)
+uniform float invert = 0.0;
 // The RETRO LOOK setting (RetroLook). psx_retro scales the scanlines and the
 // resting edge fringe (1 = FULL, 0 = OFF); psx_levels is the colour levels
 // per channel for the banding and Bayer dither (0 = none). Damage, flashes,
@@ -57,7 +79,23 @@ void fragment() {
 	// LIGHT and OFF render more than 540 lines: pixel sizes count in
 	// 540-line pixels, as in FULL
 	float px = max(1.0, 1.0 / (540.0 * SCREEN_PIXEL_SIZE.y));
-	vec2 off = d * SCREEN_PIXEL_SIZE * px * (aberration * psx_retro + heat * 1.6 + impact * 3.0) * 6.0 * length(d);
+	vec2 sp = uv / SCREEN_PIXEL_SIZE;
+	float seam = 0.0;
+	if (cut_off != 0.0 || cut_seam > 0.0) {
+		vec2 rel = sp - cut_p / SCREEN_PIXEL_SIZE;
+		float side = rel.x * cut_dir.y - rel.y * cut_dir.x;
+		uv += cut_dir * (side < 0.0 ? 1.0 : -1.0) * cut_off * px * SCREEN_PIXEL_SIZE;
+		seam = cut_seam * (1.0 - smoothstep(0.5 * px, 2.0 * px, abs(side)));
+	}
+	if (roll > 0.0) {
+		float band = floor(sp.y / (10.0 * px));
+		float h = fract(sin(band * 12.9898 + roll_seed * 78.233) * 43758.5453);
+		float h2 = fract(sin(band * 4.1414 + roll_seed * 17.17) * 24634.6345);
+		if (h > 0.6) {
+			uv.x += (h2 - 0.5) * 140.0 * px * SCREEN_PIXEL_SIZE.x * roll;
+		}
+	}
+	vec2 off = d * SCREEN_PIXEL_SIZE * px * (aberration * psx_retro + heat * 1.6 + impact * 3.0 + roll * 5.0) * 6.0 * length(d);
 	vec3 c;
 	c.r = texture(screen_tex, uv + off).r;
 	c.g = texture(screen_tex, uv).g;
@@ -89,6 +127,16 @@ void fragment() {
 		}
 		c = mix(c, t3, impact);
 	}
+	if (neg > 0.0) {
+		float ln = dot(clamp(c, 0.0, 1.0), vec3(0.299, 0.587, 0.114));
+		bool hi = ln > 0.3;
+		if (neg_invert) {
+			hi = !hi;
+		}
+		c = mix(c, hi ? neg_color : neg_ink, neg);
+	}
+	c = mix(c, vec3(1.0) - clamp(c, 0.0, 1.0), invert);
+	c = mix(c, cut_color, seam);
 	c = clamp(c, 0.0, 1.0);
 	if (psx_levels > 0.0) {
 		float b = bayer4(ivec2(cell)) - 0.5;

@@ -131,7 +131,7 @@ func _collect(n: Node, texts: Array, plates: Array, vs: Vector2) -> void:
 				# panels: a full-width band or a thin bar is not a panel
 				var fill: Color = n.color
 				var r := c.get_global_rect()
-				if fill.a > 0.3 and r.size.x >= 8.0 and r.size.y >= 8.0 and r.size.x < vs.x - 1.0:
+				if fill.a > 0.3 and r.size.x >= 8.0 and r.size.y >= 8.0 and r.size.x < vs.x - 1.0 and not c.has_meta("uiaudit_skip"):
 					plates.append({"node": c, "id": _id(c), "r": r})
 	for ch in n.get_children():
 		_collect(ch, texts, plates, vs)
