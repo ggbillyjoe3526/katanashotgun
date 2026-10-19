@@ -42,7 +42,7 @@ func _ready() -> void:
 ## player's.
 func _default_dir() -> String:
 	var args := OS.get_cmdline_user_args()
-	for a in ["--autoplay", "--juicetest", "--showcase", "--runcard"]:
+	for a in ["--autoplay", "--juicetest", "--showcase", "--runcard", "--menutour"]:
 		if args.has(a):
 			return "user://debug"
 	for a in OS.get_cmdline_args():

@@ -1,9 +1,9 @@
 class_name ArmoryPanel
 extends Control
 ## The armory, on the title and pause screens (spec §11.2): the boss-reward looks, picked with 1
-## (katana edge) and 2 (shotgun coil). Each row shows the equipped look's
-## colour, its name and how many of that slot's looks are owned. Redraws
-## when the profile changes.
+## (katana edge) and 2 (shotgun coil), or a click on the row. Each row shows
+## the equipped look's colour, its name and how many of that slot's looks
+## are owned. Redraws when the profile changes.
 
 const SLOTS := ["katana", "shotgun"]
 const ROW_H := 13.0
@@ -14,7 +14,7 @@ var header: Label
 
 
 func _init() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	header = Ui.label("ARMORY", Ui.font_big, 10, Color(1.0, 0.85, 0.25), 2)
 	add_child(header)
 	for i in SLOTS.size():
@@ -45,6 +45,16 @@ func refresh() -> void:
 		rows[1].text = "NEW WEAPON LOOKS"
 	for sw in swatches:
 		sw.visible = owned > 0
+
+
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		accept_event()
+		for i in rows.size():
+			var r := Rect2(0, rows[i].position.y, size.x, ROW_H)
+			if r.has_point(event.position) and swatches[i].visible:
+				Profile.cycle_equipped(SLOTS[i])
+				Sfx.play("ui_click", -4.0)
 
 
 func _process(_delta: float) -> void:

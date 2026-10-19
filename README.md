@@ -199,6 +199,8 @@ Pass after `--` on the command line:
 - `--mutator=grudge` forces that wave mutator on every regular wave (ids in
   `scripts/mutators.gd`)
 - `--cardtour` deals every level-up card, three at a time, then quits
+- `--menutour` shows every menu in turn (title and its panels, pause, a
+  level-up hand, results), then quits; add `--uiaudit` to check for overlaps
 - `--citytour` The City Is Watching from six fixed views (drones fly in,
   the screens' pages, NEW BEST over a made-up seed record, drones leave),
   then quits; add `--quality=low` to see WEAK's drone count

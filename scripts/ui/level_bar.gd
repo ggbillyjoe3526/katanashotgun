@@ -1,25 +1,24 @@
 class_name LevelBar
 extends Control
-## The persistent Player Level (spec §11.1): "PLAYER LV n", the XP bar and
-## the XP still needed, on a dark plate. Still on the title; on the results
-## screen roll() counts a run's XP into the bar, Balatro-style, and emits
-## leveled(level) as the bar fills, so the HUD can celebrate each level.
+## The persistent Player Level (spec §11.1) on the results screen's level
+## plate: "PLAYER LV n" with the run's XP gain at the right, the XP bar
+## under it and the XP numbers under the bar's right end. roll() counts a
+## run's XP into the bar, Balatro-style, and emits leveled(level) as the bar
+## fills, so the HUD can celebrate each level.
 ## The numbers count but never scramble (spec §9.9).
 
 signal leveled(level: int)
 signal finished(levels_gained: int)
 
-const W := 320.0
-const H := 30.0
-const SLIM_H := 18.0
+const H := 36.0
+const BAR_Y := 17.0
 const FILL_TIME := 1.1 # seconds to fill the bar once
 const MAX_TIME := 3.2 # a big run never holds up the results longer than this
 
-var plate: Shard
 var lv_label: Label
 var xp_label: Label
 var gain_label: Label
-var pop_label: Label # "LEVEL UP" stamped inside the plate as each level fills
+var pop_label: Label # "LEVEL UP" stamped in the gain's place as each level fills
 var bar_bg: ColorRect
 var bar_fill: ColorRect
 var bar_flash: ColorRect
@@ -34,40 +33,26 @@ var _flash := 0.0
 var _tick_t := 0.0
 var _gained := 0
 var _start_level := 1
-var slim := false # one row with the bar inline, for the title screen
 
 
-func _init() -> void:
+func _init(w := 172.0) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	size = Vector2(W, H)
-	plate = Shard.make(Color(0.02, 0.01, 0.06, 0.88), 6.0, Color(0, 0, 0, 0), Color(1, 1, 1, 0.25))
-	plate.size = size
-	add_child(plate)
-	lv_label = Ui.label("", Ui.font_big, 10, Color.WHITE, 2)
-	lv_label.position = Vector2(8, 1)
+	size = Vector2(w, H)
+	lv_label = Ui.label("", Ui.font_bold, 10, Color.WHITE)
 	add_child(lv_label)
-	xp_label = Ui.label("", Ui.font_mono, 9, Color(0.9, 0.88, 1.0), 2)
+	xp_label = Ui.label("", Ui.font_mono, 9, MenuList.REST)
 	add_child(xp_label)
-	gain_label = Ui.label("", Ui.font_mono, 9, Color(1.0, 0.85, 0.25), 2)
+	gain_label = Ui.label("", Ui.font_mono, 9, Color(1.0, 0.85, 0.25))
 	add_child(gain_label)
-	pop_label = Ui.label("LEVEL UP", Ui.font_big, 10, Color(1.0, 0.85, 0.25), 2)
+	pop_label = Ui.label("LEVEL UP", Ui.font_bold, 10, Color(1.0, 0.85, 0.25))
 	pop_label.visible = false
 	add_child(pop_label)
-	bar_bg = Ui.rect(Color(0.16, 0.13, 0.26, 1.0), Vector2(8, 20), Vector2(W - 16, 5))
+	bar_bg = Ui.rect(Color(0.16, 0.13, 0.26, 1.0), Vector2(0, BAR_Y), Vector2(w, 3))
 	add_child(bar_bg)
-	bar_fill = Ui.rect(Color.WHITE, bar_bg.position, Vector2(0, 5))
+	bar_fill = Ui.rect(Color.WHITE, bar_bg.position, Vector2(0, 3))
 	add_child(bar_fill)
 	bar_flash = Ui.rect(Color(1, 1, 1, 0), bar_bg.position - Vector2(1, 1), bar_bg.size + Vector2(2, 2))
 	add_child(bar_flash)
-
-
-func make_slim() -> LevelBar:
-	slim = true
-	size = Vector2(W, SLIM_H)
-	plate.size = size
-	bar_bg.size.y = 4
-	bar_fill.size.y = 4
-	return self
 
 
 ## Shows a level and XP without animation.
@@ -128,32 +113,21 @@ func _refresh() -> void:
 	var need := Progression.xp_to_next(level)
 	var col: Color = Game.palette.get("neon_b", Color(0.3, 0.95, 1.0)) if Game.palette else Color(0.3, 0.95, 1.0)
 	lv_label.text = "PLAYER LV %d" % level
-	lv_label.size = Vector2.ZERO
 	xp_label.text = "%d / %d XP" % [int(xp), need]
 	xp_label.size = Vector2.ZERO
-	xp_label.position = Vector2(W - 8 - xp_label.size.x, 3)
+	xp_label.position = Vector2(size.x - xp_label.size.x, BAR_Y + 4.0)
 	# while a level lands, LEVEL UP takes the gain's place (one message there)
 	pop_label.visible = _flash > 0.0
 	gain_label.visible = _gained > 0 and not pop_label.visible
 	gain_label.text = "+%d XP" % _gained
 	gain_label.size = Vector2.ZERO
-	gain_label.position = Vector2(lv_label.position.x + lv_label.size.x + 10, 3)
+	gain_label.position = Vector2(size.x - gain_label.size.x, 0)
 	pop_label.size = Vector2.ZERO
-	pop_label.position = Vector2(lv_label.position.x + lv_label.size.x + 10, 2)
+	pop_label.position = Vector2(size.x - pop_label.size.x, 0)
 	pop_label.pivot_offset = pop_label.size * 0.5
 	var slam := clampf((1.0 - _flash) / 0.08, 0.0, 1.0) # slams in over 0.07 s
 	pop_label.scale = Vector2.ONE * lerpf(1.8, 1.0, slam)
 	var k := clampf(xp / float(need), 0.0, 1.0)
-	if slim:
-		var x0 := lv_label.position.x + lv_label.size.x + 8.0
-		bar_bg.position = Vector2(x0, roundf(SLIM_H * 0.5) - 2)
-		bar_bg.size.x = xp_label.position.x - 8.0 - x0
-		bar_fill.position = bar_bg.position
-		bar_fill.size = Vector2(roundf(bar_bg.size.x * k), 4)
-		bar_flash.position = bar_bg.position - Vector2(1, 1)
-		bar_flash.size = bar_bg.size + Vector2(2, 2)
-	else:
-		bar_fill.size = Vector2(roundf((W - 16) * k), 5)
+	bar_fill.size = Vector2(roundf(size.x * k), 3)
 	bar_fill.color = col.lerp(Color.WHITE, _flash * 0.8)
 	bar_flash.color = Color(1, 1, 1, 0.6 * _flash)
-	plate.outline = col.lerp(Color.WHITE, _flash) if _flash > 0.0 else Color(col.r, col.g, col.b, 0.5)
