@@ -41,7 +41,7 @@ func _reroll() -> void:
 	_lines.clear()
 	var n := int(70 * amount)
 	for i in n:
-		_lines.append([randf() * TAU, randf_range(0.45, 0.8), randf_range(0.6, 2.2), randf_range(0.35, 1.0), randi() % 4])
+		_lines.append([Game.rng_fx.randf() * TAU, Game.rng_fx.randf_range(0.45, 0.8), Game.rng_fx.randf_range(0.6, 2.2), Game.rng_fx.randf_range(0.35, 1.0), Game.rng_fx.randi() % 4])
 
 
 func _draw() -> void:

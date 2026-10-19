@@ -432,7 +432,9 @@ func health_orbs(pos: Vector3, count: int) -> void:
 		var root: Node3D = o.n
 		root.position = pos
 		root.visible = true
-		o.v = Vector3(_rng.randf_range(-1, 1), _rng.randf_range(1.5, 3.0), _rng.randf_range(-1, 1)) * 3.0
+		# orbs heal, so where they scatter is gameplay: the seeded combat dice
+		var r := Game.rng_combat
+		o.v = Vector3(r.randf_range(-1, 1), r.randf_range(1.5, 3.0), r.randf_range(-1, 1)) * 3.0
 		o.t = 0.0
 		_orbs.append(o)
 
