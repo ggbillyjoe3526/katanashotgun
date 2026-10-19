@@ -45,6 +45,7 @@ var kills := 0
 var executions := 0
 var headshots := 0
 var deflects := 0
+var perfect_deflects := 0 # PERFECT deflects (spec §3.2), also counted in deflects
 var bosses_killed := 0
 var bosses_felled: Array = [] # boss kinds felled this run, in order
 var level := 1
@@ -121,6 +122,7 @@ func reset_run() -> void:
 	executions = 0
 	headshots = 0
 	deflects = 0
+	perfect_deflects = 0
 	bosses_killed = 0
 	bosses_felled = []
 	level = 1
@@ -198,12 +200,12 @@ func add_score(pts: int) -> void:
 ## Remembers the run totals at the start of a wave so the end-of-wave tally
 ## can show what happened during this wave only.
 func begin_wave_stats() -> void:
-	_wave_start = {"kills": kills, "executions": executions, "headshots": headshots, "deflects": deflects}
+	_wave_start = {"kills": kills, "executions": executions, "headshots": headshots, "deflects": deflects, "perfect_deflects": perfect_deflects}
 
 
 func wave_stats() -> Dictionary:
 	var out := {}
-	for k in ["kills", "executions", "headshots", "deflects"]:
+	for k in ["kills", "executions", "headshots", "deflects", "perfect_deflects"]:
 		out[k] = int(get(k)) - int(_wave_start.get(k, 0))
 	return out
 

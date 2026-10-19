@@ -2,6 +2,7 @@
 
 Run:  python3 tools/gen_audio.py        (from the project root; everything)
       python3 tools/gen_audio.py rain   (only the rain beds)
+      python3 tools/gen_audio.py deflect_perfect   (only that sound)
 Writes .wav SFX and .ogg loops into assets/audio/. Requires numpy, scipy, ffmpeg.
 Everything is synthesized so the prototype has no third-party audio.
 """
@@ -280,6 +281,21 @@ def sfx_deflect():
     ting = sum(np.sin(2 * np.pi * f * t) * np.exp(-t * k) for f, k in [(2217, 6), (3322, 8), (5130, 12), (6644, 16)])
     zap = sweep_square(1800, 400, 0.12) * env_exp(0.12, 20) * 0.3
     return mix(ting * 0.5, zap, bp(noise(0.02), 3000, 9000))
+
+
+def sfx_deflect_perfect():
+    """PERFECT deflect: a hard steel strike that rings on, over a low thud.
+    Uses its own noise generator, so adding it never changes the other sounds."""
+    d = 1.3
+    t = t_axis(d)
+    local = np.random.default_rng(4242)
+    # inharmonic bell partials: a long, bright ring
+    ring = sum(a * np.sin(2 * np.pi * f * t) * np.exp(-t * k) for f, k, a in
+               [(1760, 2.6, 1.0), (2643, 3.4, 0.7), (4187, 5.0, 0.5), (5512, 7.0, 0.35), (7041, 10.0, 0.25)])
+    strike = bp(local.uniform(-1, 1, int(SR * 0.03)), 2500, 10000) * env_exp(0.03, 60) * 1.4
+    thud = sweep_sine(170, 55, 0.25) * env_exp(0.25, 14) * 0.9
+    shing = sweep_sine(2400, 5200, 0.18, 0.5) * env_exp(0.18, 16) * 0.25
+    return np.tanh(mix(ring * 0.45, strike, thud, shing) * 1.3)
 
 
 def sfx_headshot():
@@ -763,6 +779,9 @@ def main():
     if sys.argv[1:] == ["rain"]:
         rain_ogg()
         return
+    if sys.argv[1:] == ["deflect_perfect"]:
+        save("deflect_perfect", sfx_deflect_perfect(), 0.85)
+        return
     save("shotgun", sfx_shotgun())
     save("recharge", sfx_recharge(), 0.6)
     save("empty", sfx_empty(), 0.6)
@@ -821,6 +840,7 @@ def main():
     save("mult", sfx_mult(), 0.6)
     save("deal", sfx_deal(), 0.5)
     save("fanfare", sfx_fanfare(), 0.7)
+    save("deflect_perfect", sfx_deflect_perfect(), 0.85)
     rain_ogg()
     print("audio written to", os.path.abspath(OUT))
 

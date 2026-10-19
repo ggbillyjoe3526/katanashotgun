@@ -38,6 +38,9 @@ const RED_COLOR := Color(1.0, 0.1, 0.15)
 const CROSS_LEN := 18.0
 const CROSS_SPEED := 34.0
 const CROSS_GAP := 0.25
+# Tetsugumo's signature round at the end of the gatling sweep
+const SIGNATURE_ROUND_SPEED := 12.0
+const SIGNATURE_ROUND_DAMAGE := 14.0
 # DAEMON GRAB
 const GRAB_TIME := 0.45
 const GRAB_SPEED := 17.0
@@ -511,6 +514,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 					Game.main.director.fire_bolt(true, origin, v * 14.0, 7.0 * damage_mult, "bolt", self)
 					Sfx.play_at("gatling", origin, -4.0)
 				if state_t > spin + 2.0:
+					_signature_round()
 					_barrel_glow.set_shader_parameter("energy", 1.0)
 					recover_time = 1.0
 					_set_state(S.RECOVER)
@@ -553,6 +557,17 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 				_area_release()
 			return [Vector3.ZERO, dir if kind != "ninja" else Vector3(sin(face_yaw), 0, cos(face_yaw))]
 	return [Vector3.ZERO, dir]
+
+
+## Tetsugumo's signature volley (spec §3.2 Perfect deflect): the sweep ends
+## on one heavy white-hot round aimed straight at the player, slower than
+## the stream so it can be read and timed.
+func _signature_round() -> void:
+	var origin := muzzle.global_position
+	var aim := (Game.player.global_position + Vector3(0, 1.0, 0) - origin).normalized()
+	var b: Bolt = Game.main.director.fire_bolt(true, origin, aim * SIGNATURE_ROUND_SPEED, SIGNATURE_ROUND_DAMAGE * damage_mult, "bolt", self)
+	b.mark_signature(next_signature())
+	Sfx.play_at("enemy_shot", origin, 4.0, 0.6)
 
 
 # ---------------------------------------------------------------- sidestep
@@ -870,10 +885,13 @@ func _volley(dir: Vector3) -> void:
 	var target := Game.player.global_position + Vector3(0, 1.0, 0)
 	var aim := (target - origin).normalized()
 	var n := 7 if enraged else 5
-	for i in n:
-		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken", self)
-	Sfx.play_at("shuriken", global_position, 2.0)
 	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
+	# his signature volley (spec §3.2 Perfect deflect): the whole fan is white-hot
+	var sig := next_signature()
+	for i in n:
+		var b: Bolt = Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken", self)
+		b.mark_signature(sig)
+	Sfx.play_at("shuriken", global_position, 2.0)
 
 
 func die(source: String, dir: Vector3, headshot := false) -> void:

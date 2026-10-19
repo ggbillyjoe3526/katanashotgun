@@ -24,6 +24,7 @@ open for a moment.
 | RED SIGNAL | NULL CROSS | BROOD BARRAGE | DAEMON GRAB |
 | Jump over | the smoke ring | the stomp ring, the EMP field | the leap slam ring, the fissures |
 | Deflect back | shuriken fan | gatling bolts | fan volley (enraged) |
+| Signature volley (glows white) | shuriken fan | the round that ends each gatling sweep | fan volley (enraged) |
 | Best way to fill KAMAE | deflected shuriken fans | returned gatling bolts, glory kills on her brood | katana hits while he's open |
 | Points / XP | 5000 / 320 | 7000 / 420 | 8000 / 500 |
 | Felled line | SHADOW DELETED | MACHINE DECOMMISSIONED | DAEMON PURGED |
@@ -50,6 +51,22 @@ gold **KAMAE** bar (its fighting stance) under its health bar.
 
 After a break the bar starts again from empty, and there's no limit on how
 many times you can break a boss.
+
+## Perfect deflects and signature volleys
+
+Every boss has one **signature volley**: shots with a big **white glow**.
+Deflect one in the last moment before it hits you, a
+[perfect deflect](Weapons#perfect-deflect), and when it flies home it fills
+**20% of the boss's KAMAE** on top of its normal hit, with a **PERFECT**
+stamp and a moment of slow motion. Each volley pays this once, however many
+of its shots you catch.
+
+- **Kurokage:** his whole shuriken fan glows white.
+- **Tetsugumo:** each gatling sweep ends with one big white round, slower
+  than the stream, aimed straight at you.
+- **Shuten:** his fan volley once he's enraged.
+
+This is new and being play-tested: it may change after testing.
 
 ## How every boss fights
 
@@ -106,7 +123,7 @@ from behind.
 | Attack | Warning | Damage | How to beat it |
 | --- | --- | --- | --- |
 | Dash-slash chain (2 dashes, 3 enraged) | A neon line 16 m long on the floor. It follows you, then locks just before he goes | 20 per dash, with knockback | Step off the line once it locks, then hit him while he recovers |
-| Shuriken fan (5 stars, 7 enraged) | A windup sound | 10 each | Slash to deflect them back (fills his KAMAE fast), or strafe out of the fan |
+| Shuriken fan (5 stars, 7 enraged) | A windup sound; the stars glow white | 10 each | Slash to deflect them back (fills his KAMAE fast), at the last moment for a PERFECT; or strafe out of the fan |
 | Blink | Smoke and a blink sound; he vanishes | none | He reappears 3 m behind you. Turn round on the sound |
 | Blink strike | A quick windup right after the blink | 16 | Dash away or blast him first |
 | Sword combo (2 hits, 3 enraged) | A 0.45 s windup; some hits are held | 16 per hit | Dash back or sidestep, then punish |
@@ -129,6 +146,7 @@ enemies.
 | Attack | Warning | Damage | How to beat it |
 | --- | --- | --- | --- |
 | Sweeping gatling | A 0.9 s spin-up as the barrel glows | 7 per bolt, 25 bolts over 2 s | Deflect the stream back at her (each return fills her KAMAE), or run against the sweep |
+| Signature round | Ends every gatling sweep: one big white round | 14 | Deflect it at the last moment for a PERFECT, or step aside |
 | Missile strike (7 rings, 9 enraged) | Beeps, glowing pods, then red rings on the floor: the first under you, the rest around it | 20 per missile | Keep moving out of the rings; close in after |
 | Call the brood | A roar | none | 2 grunts and a gunner drop in near her. Glory kill them to fill her KAMAE |
 | Stomp (when you're within 6 m) | Her body rises for 0.8 s; some stomps are held | 22 | **Jump** the shockwave ring |
@@ -154,7 +172,7 @@ namesake of your katana.
 | Two-hit combo | A 0.7 s windup; some swings are held | 32 per hit, big knockback | Dash back out of reach, then punish |
 | Leap slam | A roar as he leaps at you | 26 | **Jump** the shockwave ring (it spreads 24 m) |
 | Charge | A roar and a 0.8 s windup | 30, heavy knockback | Dash sideways. He shakes the screen if he hits a wall |
-| Fan volley (enraged only) | A windup | 14 per bolt, 9 bolts | Deflect them back, or strafe out |
+| Fan volley (enraged only) | A windup; the bolts glow white | 14 per bolt, 9 bolts | Deflect them back, at the last moment for a PERFECT; or strafe out |
 | Fissures (area, within 14 m) | His fist hits the floor; five fire lines crack out in a star | 24 | Jump them, or stand between the lines |
 | **DAEMON GRAB** (RED SIGNAL, from 9.5 m or closer) | Red diamond and alarm; he aims, then lunges | 34: he grabs you and hurls you | Dash through the lunge at the last moment. A missed grab leaves him open for almost 2 s |
 

@@ -36,6 +36,26 @@ back for 96.
 - Boss shots can be deflected too: Kurokage's shuriken, Tetsugumo's gatling
   bolts and Shuten's fan volley.
 
+### Perfect deflect
+
+Wait, and slash a shot in the **last moment before it hits you** (the last
+0.15 s), and it's a **PERFECT DEFLECT**: a ringing clang, a white flash and
+the shot flies back white-hot.
+
+- It hits **12 times** the shot's damage instead of 8 (a gunner's bolt comes
+  back for 144).
+- It gives **+2 cells** instead of 1.
+- Each one adds a **PERFECT DEFLECTS** row to the end-of-wave tally,
+  150 chips each, on top of the DEFLECTS row.
+- A shot that would miss you can't be perfect, but one grazing past your
+  shoulder still counts.
+- Deflecting early is still a normal deflect: nothing is lost.
+- Every boss fires one **signature volley** with a big white glow, made for
+  this. See [Bosses](Bosses#perfect-deflects-and-signature-volleys).
+
+Perfect deflect is new and being play-tested: it may be retuned or removed
+after testing.
+
 ## RAIJIN-12 arc shotgun
 
 **Right hand, right mouse button.** It plays exactly like a shotgun but fires

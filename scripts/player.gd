@@ -40,6 +40,7 @@ const CLIMB_CARRY := 0.5 # of walk speed, kept going forward off the climb
 const KATANA_CD := 0.32
 const KATANA_FINISHER_CD := 0.45
 const SHOTGUN_CD := 0.72
+const PERFECT_DEFLECT_CELLS := 2 # a PERFECT deflect charges two cells (a normal one, one)
 const OVERHEAL_PER_CELL := 6.0 # Chimatsuri Steel: HP of overheal per cell
 const UTSUSEMI_CD := 3.0 # Utsusemi Shell: seconds between saves
 # glory kill reach: a staggered enemy can be finished from this far (metres
@@ -577,15 +578,17 @@ func _slash() -> void:
 	if killed > 0:
 		add_cells(killed * (1 + Game.rank("battery")))
 
-	# deflect bolts
+	# deflect bolts; one about to land is a PERFECT deflect (spec §3.2)
+	var chest := global_position + Vector3(0, 1.0, 0)
 	for b in get_tree().get_nodes_in_group("enemy_projectiles"):
 		var to: Vector3 = b.global_position - origin
 		if to.length() > reach + 2.2:
 			continue
 		if to.length() > 0.5 and fwd.angle_to(to.normalized()) > half + 0.35:
 			continue
-		b.deflect(fwd)
-		add_cells(1)
+		var perfect: bool = b.in_perfect_window(chest)
+		b.deflect(fwd, false, perfect)
+		add_cells(PERFECT_DEFLECT_CELLS if perfect else 1)
 		if Game.rank("yata") > 0:
 			_mirror_split(b)
 
@@ -1287,6 +1290,8 @@ func _autoplay(delta: float) -> Vector2:
 	var close := best_d < 3.0 + best.radius
 	# a staggered enemy gets a glory kill (pressed for the bot above), not a slash
 	_auto_weapons.x = 1.0 if (close and not best.is_staggered()) else 0.0
+	if _autoplay_bolt_landing():
+		_auto_weapons.x = 1.0 # slash it at the last moment: a PERFECT deflect
 	_auto_weapons.y = 1.0 if (best_d < 10.0 and cells > 0 and not best.is_staggered()) else 0.0
 	# walking into a crate or ledge: jump, so the climb gets played too
 	var hspeed := Vector2(velocity.x, velocity.z).length()
@@ -1320,6 +1325,15 @@ func _autoplay_corner(best: Enemy, best_d: float, delta: float) -> Vector3:
 			return Vector3(c.x - global_position.x, 0, c.z - global_position.z)
 		_auto_path_i += 1
 	return Vector3.ZERO
+
+
+## The bot: true when a bolt is about to land on us.
+func _autoplay_bolt_landing() -> bool:
+	var chest := global_position + Vector3(0, 1.0, 0)
+	for b in get_tree().get_nodes_in_group("enemy_projectiles"):
+		if b.in_perfect_window(chest):
+			return true
+	return false
 
 
 func _autoplay_weapons() -> Vector2:
