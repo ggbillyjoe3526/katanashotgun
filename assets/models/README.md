@@ -77,7 +77,7 @@ cd assets/models/shotgun/source
 ### Layout
 - Metres, origin where the code-built gun's `spin_pivot` is, barrels along
   +Y, up +Z in Blender. In Godot: barrels along -Z, muzzle at
-  (0, 0.05, -0.90), like the code-built gun.
+  (0, 0.05, -0.90) (the code-built gun's is at -0.95).
 - Nodes under `RAIJIN12`: `body`, `drum` (origin on its axle, turns about
   Z in Godot), `led_0`..`led_9` (the charge lights), and the empty nodes
   `muzzle` and `arc_point_0`..`arc_point_2` (the idle crackle jumps between

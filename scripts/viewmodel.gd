@@ -317,7 +317,7 @@ func _show_shotgun_model() -> void:
 			"coil": coil_mat, "core": core_mat, "emitter": tip_mat, "cell": drum_cell_mat, "led": led_on,
 		})
 		spin_pivot.add_child(_model_gun)
-	var use_model := _gun_model_on and _model_gun.get_child_count() > 0
+	var use_model := _gun_model_on and _model_gun.get_child_count() > 0 and _has_parts(_model_gun)
 	if _model_gun:
 		_model_gun.visible = use_model
 	_code_gun.visible = not use_model
@@ -342,6 +342,21 @@ func _show_shotgun_model() -> void:
 	_drum_to = 0.0
 	drum.rotation.z = 0.0
 	set_cells(_cells, _max_cells)
+
+
+## True if the model has every node the viewmodel drives (a bad export
+## would otherwise crash set_cells or the idle crackle).
+func _has_parts(model: Node3D) -> bool:
+	var names: Array[String] = ["drum", "muzzle"]
+	for i in ShotgunModel.ARC_POINTS:
+		names.append("arc_point_%d" % i)
+	for i in ShotgunModel.LED_COUNT:
+		names.append("led_%d" % i)
+	for n in names:
+		if ShotgunModel.part(model, n) == null:
+			push_warning("ShotgunModel: no '%s' node, keeping the code-built gun" % n)
+			return false
+	return ShotgunModel.part(model, "led_0") is MeshInstance3D
 
 
 ## Where `node` (inside the model) sits in spin_pivot's space.

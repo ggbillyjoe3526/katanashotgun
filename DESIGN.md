@@ -482,9 +482,9 @@ How (guidelines for the build):
 - Everything is built in code from primitive meshes, except the DOJIGIRI
   katana's Blender model (owner's request, approved 2026-10-19) and the
   RAIJIN-12 shotgun's (owner's request, in testing).
-- Both models are highly detailed (~13k triangles, baked 2048 px maps) so it
-  holds up with the retro look off, and carries a small baked texture for
-  the retro look. Pipeline and rules: `assets/models/README.md`.
+- Both models are highly detailed (katana ~13k triangles, shotgun ~23k;
+  baked 2048 px maps) so they hold up with the retro look off, and carry a
+  small baked texture for the retro look. Pipeline and rules: `assets/models/README.md`.
 - Keep the code-built versions as fallbacks (the katana's shows only if its
   model fails to load; the shotgun's is still the default). Other models only when the owner asks for them.
 
