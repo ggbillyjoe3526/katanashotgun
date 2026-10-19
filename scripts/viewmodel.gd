@@ -84,8 +84,8 @@ var _srot_cur := Vector3.ZERO
 
 var katana_idle_pos := Vector3(-0.5, -0.44, -0.6)
 var katana_idle_rot := Vector3(-0.55, 0.3, -0.3)
-var shotgun_idle_pos := Vector3(0.42, -0.3, -0.52)
-var shotgun_idle_rot := Vector3(0.04, 0.04, 0.05)
+var shotgun_idle_pos := Vector3(0.48, -0.3, -0.52)
+var shotgun_idle_rot := Vector3(0.04, 0.0, 0.05)
 
 var _slash_t := -1.0
 var _slash_from_pos := Vector3.ZERO
