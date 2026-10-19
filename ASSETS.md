@@ -28,6 +28,6 @@ licence file goes in that script's `SHIPPED` list too.
 - Textures: generated at runtime by `scripts/tex_gen.gd`.
 - The DOJIGIRI katana model (`assets/models/katana/`): built and textured by
   our own Blender scripts in `assets/models/katana/source/` (no downloaded
-  models, generators or texture packs). **In review:** shown only when the
-  dev menu's KATANA MODEL is NEW.
+  models, generators or texture packs). The game's katana since 2026-10-19
+  (owner approved); the code-built blade is the fallback.
 - The game icon (`icon.svg`, `installer/icon.ico` via `tools/make_icon.py`). **Placeholder.**

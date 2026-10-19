@@ -1772,8 +1772,8 @@ the holographic cut-in (§9.8).
   - Pipeline: `assets/models/README.md`. Script-built in Blender, exported
     as glTF (.glb), drawn in Godot with `shaders/psx_model.gdshader` (PS1
     treatment on RETRO LOOK FULL, the full maps on LIGHT and OFF).
-  - The code-built katana stays the default until the owner approves the
-    model; the dev menu's KATANA MODEL (F10, LOOK) swaps them.
+  - The owner approved it as the game's katana (2026-10-19). The code-built
+    blade remains only as the fallback if the model fails to load.
   - Other models stay code-built until the owner asks for one.
 
 ### 9.7 UI: cyberpunk, rendered pixel-retro

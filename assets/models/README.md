@@ -53,6 +53,6 @@ with per-pixel light. The `_retro` light is drawn by `retro_shade()` in
 ### Rules
 - Triangle budget: about 20k, ceiling 30k (now about 13k).
 - Our own shapes; no copied designs, logos or text.
-- The code-built katana stays the default until the owner approves the
-  model (dev menu, F10, LOOK, KATANA MODEL).
+- The model is the game's katana (owner approved, 2026-10-19). The
+  code-built blade in `viewmodel.gd` only shows if the model fails to load.
 - Log every model in `ASSETS.md`.

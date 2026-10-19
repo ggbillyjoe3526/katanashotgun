@@ -1,7 +1,7 @@
-### New katana model (preview)
-- A detailed new model of the DOJIGIRI katana, made in Blender: a dark slab
-  blade with a separate glowing edge, and a one-piece open-frame hilt with a
-  glowing core, finger spur, bolts and grip texture.
-- For now it's only shown when the DEV menu's KATANA MODEL is set to NEW, so
-  it can be checked on every RETRO LOOK setting before it replaces
-  the old katana.
+### A new DOJIGIRI katana
+- The katana has a new, detailed model: a dark slab blade with a glowing
+  edge, and a one-piece open-frame hilt with a glowing core, finger spur,
+  bolts and a textured grip.
+- It looks sharp with RETRO LOOK OFF or LIGHT (fine scratches, brushed steel,
+  heat tint near the edge) and keeps the PS1 style on FULL.
+- Your equipped katana look still colours the glowing edge.

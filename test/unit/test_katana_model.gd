@@ -1,13 +1,9 @@
 extends GutTest
 ## The DOJIGIRI katana model (assets/models/katana): it loads, stays inside
-## its triangle budget, gets the game's materials (the glow takes the
-## viewmodel's edge material), and is off until the owner approves it.
+## its triangle budget, and gets the game's materials (the glow takes the
+## viewmodel's edge material).
 
 const MAX_TRIANGLES := 30000
-
-
-func after_each() -> void:
-	DevSettings.reset()
 
 
 func _meshes(root: Node) -> Array[MeshInstance3D]:
@@ -40,11 +36,3 @@ func test_model_loads_with_its_three_surfaces() -> void:
 	assert_between(tris, 1000, MAX_TRIANGLES, "triangle budget")
 	assert_eq(mi.cast_shadow, GeometryInstance3D.SHADOW_CASTING_SETTING_OFF)
 
-
-func test_off_until_approved() -> void:
-	DevSettings.reset()
-	assert_false(DevSettings.katana_model)
-	DevSettings.katana_model = true
-	assert_true(DevSettings.any_on())
-	assert_has(DevSettings.active_tags(), "NEW KATANA")
-	assert_false(DevSettings.cheating(), "a look, not a cheat")

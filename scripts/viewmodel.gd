@@ -12,10 +12,9 @@ const RETURN_DUR := 0.2
 
 var katana: Node3D
 var blade_edge_mat: ShaderMaterial
-# the code-built blade and the Blender model (DevSettings.katana_model picks)
+# the DOJIGIRI model, and the code-built blade kept as its fallback
 var _code_blade: Node3D
 var _model_blade: Node3D
-var _model_on := false
 var shotgun: Node3D
 var spin_pivot: Node3D
 var drum: Node3D
@@ -156,24 +155,13 @@ func _build_katana() -> void:
 	arm.add_child(Psx.box(Vector3(0.085, 0.42, 0.085), chrome, Vector3(0, -0.26, 0)))
 	trim_mat = Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0})
 	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), trim_mat, Vector3(0, -0.28, 0.046)))
-	_show_katana_model()
-
-
-## Shows the Blender model or the code-built blade, as the dev menu says.
-## The code-built one stays until the model is approved (spec §9.6), so the
-## model (and its large textures) loads only the first time it is asked for.
-func _show_katana_model() -> void:
-	_model_on = DevSettings.katana_model
-	if _model_on and _model_blade == null:
-		_model_blade = KatanaModel.build(blade_edge_mat)
-		# turned on its long axis so the flat and the hilt's windows face the
-		# player; the code-built blade shows its edge strip instead
-		_model_blade.rotation.y = KATANA_MODEL_ROLL
-		katana.add_child(_model_blade)
-	var use_model := _model_on and _model_blade.get_child_count() > 0
-	if _model_blade:
-		_model_blade.visible = use_model
-	_code_blade.visible = not use_model
+	_model_blade = KatanaModel.build(blade_edge_mat)
+	# turned on its long axis so the flat and the hilt's windows face the
+	# player; the code-built blade showed its edge strip instead
+	_model_blade.rotation.y = KATANA_MODEL_ROLL
+	katana.add_child(_model_blade)
+	# the code-built blade only shows if the model failed to load
+	_code_blade.visible = _model_blade.get_child_count() == 0
 
 
 func _build_shotgun() -> void:
@@ -460,8 +448,6 @@ func _process(delta: float) -> void:
 	else:
 		_kpos = _kpos.lerp(katana_idle_pos, 1.0 - exp(-12.0 * delta))
 		_krot = _krot.lerp(katana_idle_rot, 1.0 - exp(-12.0 * delta))
-	if _model_on != DevSettings.katana_model:
-		_show_katana_model()
 	katana.position = _kpos + sway3 + bob3 + CLIMB_REACH_K[0] * _reach + CLIMB_PRESS_K[0] * _press
 	katana.rotation = _krot + Vector3(_sway.y, _sway.x, 0) * 0.6 + CLIMB_REACH_K[1] * _reach + CLIMB_PRESS_K[1] * _press
 	_glow = maxf(0.0, _glow - delta * 4.0)
