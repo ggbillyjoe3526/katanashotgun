@@ -248,7 +248,7 @@ func add_shake(amount: float) -> void:
 func shake_offset() -> Vector2:
 	if shake < 0.25:
 		return Vector2.ZERO
-	return Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake * Settings.shake * randf_range(0.5, 1.0)
+	return Vector2(Game.rng_fx.randf_range(-1.0, 1.0), Game.rng_fx.randf_range(-1.0, 1.0)).normalized() * shake * Settings.shake * Game.rng_fx.randf_range(0.5, 1.0)
 
 
 func _pair(text: String, f: Font, size: int, color: Color, shadow: Color, off := Vector2(2, 2)) -> Label:
@@ -370,9 +370,9 @@ func _update_stamps(rd: float) -> void:
 # ---------------------------------------------------------------- sparks
 func burst(p: Vector2, col: Color, n := 30, speed := 90.0) -> void:
 	for i in n:
-		var a := randf() * TAU
-		var sp := randf_range(0.3, 1.0) * speed
-		_add_spark(p, Vector2(cos(a), sin(a)) * sp, col.lerp(Color.WHITE, randf() * 0.5), randf_range(0.35, 0.8), 1 if randf() < 0.7 else 2, 40.0, false)
+		var a := Game.rng_fx.randf() * TAU
+		var sp := Game.rng_fx.randf_range(0.3, 1.0) * speed
+		_add_spark(p, Vector2(cos(a), sin(a)) * sp, col.lerp(Color.WHITE, Game.rng_fx.randf() * 0.5), Game.rng_fx.randf_range(0.35, 0.8), 1 if Game.rng_fx.randf() < 0.7 else 2, 40.0, false)
 
 
 ## A synthwave firework: a white flash, then a ring of twinkling colour.
@@ -380,22 +380,22 @@ func firework(p: Vector2, col: Color, n := 46) -> void:
 	_add_spark(p - Vector2(3, 3), Vector2.ZERO, Color.WHITE, 0.12, 6, 0.0, false)
 	var col2 := Color(col.r, col.g, col.b).lerp(Color.WHITE, 0.35)
 	for i in n:
-		var a := TAU * float(i) / n + randf() * 0.1
-		var sp: float = randf_range(0.8, 1.0) * 95.0 if i % 2 == 0 else randf_range(0.35, 0.7) * 95.0
-		_add_spark(p, Vector2(cos(a), sin(a)) * sp, col if i % 3 else col2, randf_range(0.9, 1.5), 2 if i % 4 == 0 else 1, 55.0, true)
+		var a := TAU * float(i) / n + Game.rng_fx.randf() * 0.1
+		var sp: float = Game.rng_fx.randf_range(0.8, 1.0) * 95.0 if i % 2 == 0 else Game.rng_fx.randf_range(0.35, 0.7) * 95.0
+		_add_spark(p, Vector2(cos(a), sin(a)) * sp, col if i % 3 else col2, Game.rng_fx.randf_range(0.9, 1.5), 2 if i % 4 == 0 else 1, 55.0, true)
 
 
 ## Gold and cyan confetti thrown upward from `p` (the cash-out moment).
 func fountain(p: Vector2, n := 70) -> void:
 	for i in n:
 		var c: Color = [GOLD, CHIPS_COL, MULT_COL, Color.WHITE][i % 4]
-		_add_spark(p + Vector2(randf_range(-30, 30), 0), Vector2(randf_range(-70, 70), randf_range(-190, -70)), c, randf_range(0.8, 1.5), 2 if randf() < 0.5 else 1, 260.0, true)
+		_add_spark(p + Vector2(Game.rng_fx.randf_range(-30, 30), 0), Vector2(Game.rng_fx.randf_range(-70, 70), Game.rng_fx.randf_range(-190, -70)), c, Game.rng_fx.randf_range(0.8, 1.5), 2 if Game.rng_fx.randf() < 0.5 else 1, 260.0, true)
 
 
 func _add_spark(p: Vector2, v: Vector2, c: Color, life: float, s: int, g: float, tw: bool) -> void:
 	if _sparks.size() >= MAX_SPARKS:
 		_sparks.pop_front()
-	_sparks.append({"p": p, "v": v, "c": c, "life": life, "t": 0.0, "s": s, "g": g, "tw": tw, "ph": randf()})
+	_sparks.append({"p": p, "v": v, "c": c, "life": life, "t": 0.0, "s": s, "g": g, "tw": tw, "ph": Game.rng_fx.randf()})
 
 
 func _update_sparks(rd: float) -> void:
@@ -731,9 +731,9 @@ func show_tally(d: Dictionary) -> void:
 			var cols := [Color(pal.neon_a), Color(pal.neon_b), Color(pal.neon_c), GOLD]
 			for i in 8:
 				later(0.08 + i * 0.16, func():
-					firework(Vector2(randf_range(0.1, 0.9) * vs.x, randf_range(0.08, 0.45) * vs.y), cols[i % 4])
+					firework(Vector2(Game.rng_fx.randf_range(0.1, 0.9) * vs.x, Game.rng_fx.randf_range(0.08, 0.45) * vs.y), cols[i % 4])
 					if i % 3 == 0:
-						Sfx.play("chime", -12.0, randf_range(0.85, 1.3), 0.0))
+						Sfx.play("chime", -12.0, Game.rng_fx.randf_range(0.85, 1.3), 0.0))
 		if hud.post:
 			hud.post.flash(0.15)
 		hud.release_score(int(d.total)))

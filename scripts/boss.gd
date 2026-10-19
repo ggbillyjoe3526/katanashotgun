@@ -911,6 +911,7 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 	if kind == "mech":
 		var c := global_position + Vector3(0, 2.4, 0)
 		for k in 4:
-			Game.fx.explosion(c + Vector3(randf_range(-1.5, 1.5), randf_range(-0.6, 0.8), randf_range(-1.5, 1.5)), 0.0, false)
+			var r := Game.rng_fx
+			Game.fx.explosion(c + Vector3(r.randf_range(-1.5, 1.5), r.randf_range(-0.6, 0.8), r.randf_range(-1.5, 1.5)), 0.0, false)
 		source = "explode"
 	super.die(source, dir, headshot)

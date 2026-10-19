@@ -75,10 +75,10 @@ func test_a_roll_always_draws_twice() -> void:
 func test_hazards_depend_only_on_seed_and_wave() -> void:
 	Game.next_seed = SEED
 	Game.reset_run()
-	Game.seed_hazards(4)
+	Game.seed_wave(4)
 	var first := [Game.rng_hazards.randf(), Game.rng_hazards.randf()]
 	Game.rng_waves.randi() # other streams moving must not matter
-	Game.seed_hazards(4)
+	Game.seed_wave(4)
 	assert_eq_deep([Game.rng_hazards.randf(), Game.rng_hazards.randf()], first)
-	Game.seed_hazards(5)
+	Game.seed_wave(5)
 	assert_ne(Game.rng_hazards.randf(), first[0])
