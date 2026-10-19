@@ -103,6 +103,7 @@ var initials_label: Label
 var initials_slots: Array[Label] = []
 var entering := false
 var initials := ""
+var run_card: RunCardPanel # results: save a postcard of the run (spec §19.1 #10)
 
 var post: PostFx
 var juice: Juice
@@ -591,6 +592,8 @@ func _build_death() -> void:
 	level_bar.leveled.connect(_on_player_level)
 	level_bar.finished.connect(_on_level_roll_done)
 	death_root.add_child(level_bar)
+	run_card = RunCardPanel.new()
+	death_root.add_child(run_card)
 
 
 func _build_levelup() -> void:
@@ -783,6 +786,7 @@ func show_death() -> void:
 	death_stats.text = ""
 	death_vals.text = ""
 	death_score.text = "SCORE  %07d" % 0
+	run_card.reset()
 	_update_initials()
 
 
@@ -1353,6 +1357,8 @@ func _process(_delta: float) -> void:
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
+		run_card.visible = death_ready()
+		run_card.place(vs)
 		var t: Label = death_root.get_node("Title")
 		t.size = Vector2.ZERO
 		t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.05)
