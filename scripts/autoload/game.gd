@@ -15,6 +15,12 @@ var debug_autoplay := false
 var debug_god := false
 var debug_no_pause := false
 var debug_palette := "" # --palette=NAME or index: force a palette (debug only)
+## This run used dev settings (DevSettings.cheating()): it pays no top 10
+## entry, XP or unlocks into the profile.
+var dev_run := false
+## A debug mode the dev menu asked for, read on the next scene load (one time).
+var dev_launch := ""
+var _no_pause_args := false
 
 var player: Player
 var main: Node
@@ -96,7 +102,8 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard")
+	_no_pause_args = args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard")
+	debug_no_pause = debug_autoplay or _no_pause_args
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
@@ -104,7 +111,23 @@ func _ready() -> void:
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
 	Settings.boot()
+	if args.has("--plain"):
+		DevSettings.retro = false # debug: start in the dev menu's plain look
+		DevSettings.apply_look()
 	Quality.from_cmdline() # after Settings, so the command line wins
+
+
+## Whether a debug flag is on: from the command line, or launched from the
+## dev menu.
+func has_flag(flag: String) -> bool:
+	return dev_launch == flag or OS.get_cmdline_user_args().has(flag)
+
+
+## The dev menu's AUTOPLAY BOT switch: the bot plays, and a free mouse no
+## longer pauses the game.
+func set_autoplay(on: bool) -> void:
+	debug_autoplay = on
+	debug_no_pause = on or _no_pause_args or dev_launch != ""
 
 
 ## Quits to the desktop. Everything that saves when the window's X is
@@ -125,6 +148,7 @@ func reset_run() -> void:
 		pick.randomize()
 		run_seed = pick.randi() & 0x7fffffff
 	next_seed = -1
+	dev_run = dev_launch != "" # a debug mode from the dev menu is never a real run
 	rng_map.seed = hash(run_seed * 3 + 1)
 	rng_upgrades.seed = hash(run_seed * 7 + 3)
 	seed_wave(0)
@@ -272,6 +296,8 @@ func qualifies(s: int) -> bool:
 ## (-1 if it didn't make the top 10).
 func record_score() -> void:
 	last_rank = -1
+	if dev_run:
+		return
 	if qualifies(score):
 		last_rank = Profile.add_score({"name": "---", "score": score, "wave": wave, "seed": seed_string(run_seed)})
 
@@ -309,8 +335,11 @@ func _process(delta: float) -> void:
 		ts = minf(ts, 0.04)
 	if state == "dead":
 		ts = minf(ts, 0.35)
+	ts *= DevSettings.speed
 	Engine.time_scale = ts
 	_applied_ts = ts
+	if state != "title" and DevSettings.cheating():
+		dev_run = true
 	if state == "playing":
 		run_time += real_dt
 		if combo_hold > 0.0:

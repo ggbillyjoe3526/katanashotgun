@@ -17,6 +17,7 @@ var results: Dictionary = {} # what this run paid into the profile (XP, levels)
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Game.main = self
+	Game.set_autoplay(Game.debug_autoplay) # a dev menu launch (or its end) changes whether a free mouse pauses
 	# a suspended run brings back its own seed, so the title shows its map
 	var wants_resume := (not Game.autostart and not Game.debug_no_pause) or OS.get_cmdline_user_args().has("--continue")
 	if wants_resume and Profile.has_suspended_run():
@@ -56,8 +57,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--uiaudit"):
 		add_child(load("res://scripts/debug_ui_audit.gd").new())
 	add_child(DebugPerf.new())
+	var dev := DevMenu.attach(self)
 	add_child(ShaderWarmup.new())
-	if OS.get_cmdline_user_args().has("--juicetest"):
+	if Game.has_flag("--juicetest"):
 		add_child(load("res://scripts/debug_juice.gd").new())
 		return
 	if OS.get_cmdline_user_args().has("--movetest"):
@@ -90,6 +92,10 @@ func _ready() -> void:
 				hud.settings_menu.open()
 			elif a == "--seedentry":
 				hud.open_seed_entry() # debug: open PLAY A SEED on the title
+			elif a.begins_with("--dev="):
+				# debug: open the dev menu on the title, at a tab
+				dev.tab = maxi(0, DevMenu.DEV_TABS.find(a.substr(6).to_upper()))
+				dev.open()
 
 
 # ---------------------------------------------------------------- flow
@@ -100,7 +106,7 @@ func start_run() -> void:
 	Sfx.duck_music(-6.0)
 	Sfx.start_combat_music(Game.run_seed)
 	Sfx.play("coin", -4.0)
-	var first := 1
+	var first := DevSettings.start_wave
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--wave="):
 			first = int(a.substr(7))
@@ -108,6 +114,7 @@ func start_run() -> void:
 			_debug_augments(a.substr(11))
 	if not resume.is_empty():
 		first = RunSnapshot.apply(resume, director, player)
+		Game.dev_run = Game.dev_run or bool(resume.get("dev", false))
 		hud.on_run_resumed()
 		resume = {}
 	director.start(first)
@@ -133,11 +140,31 @@ func _end_suspended_run() -> void:
 	var stats: Dictionary = resume.get("stats", {})
 	# drop the snapshot first, so a crash here can't pay the run twice
 	Profile.clear_suspended_run()
-	if not stats.is_empty():
-		Profile.finish_run(stats)
-		if Profile.qualifies(int(stats.get("score", 0))):
-			Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(int(resume.get("seed", 0)))})
+	if not stats.is_empty() and not bool(resume.get("dev", false)):
+		_pay_run(stats, int(resume.get("seed", 0)))
 	resume = {}
+
+
+func _pay_run(stats: Dictionary, run_seed: int) -> void:
+	Profile.finish_run(stats)
+	if Profile.qualifies(int(stats.get("score", 0))):
+		Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(run_seed)})
+
+
+## Before the dev menu reloads the scene: the suspended run on the title, or
+## the run in progress, ends here and is paid into the profile like an
+## abandoned run (a dev run pays nothing), so a dev restart loses no progress.
+func leave_run() -> void:
+	match Game.state:
+		"title":
+			if not resume.is_empty():
+				_end_suspended_run()
+		"dead":
+			pass # already paid when the player died
+		_:
+			Profile.clear_suspended_run()
+			if not Game.dev_run:
+				_pay_run(Game.run_stats(), Game.run_seed)
 
 
 func _on_between_waves(next_wave: int) -> void:
@@ -146,6 +173,8 @@ func _on_between_waves(next_wave: int) -> void:
 	var stats := Game.run_stats()
 	stats["wave"] = next_wave
 	snap["stats"] = stats
+	if Game.dev_run:
+		snap["dev"] = true # carries on as a dev run, and pays nothing if abandoned
 	Profile.suspend_run(snap)
 
 
@@ -250,7 +279,7 @@ func on_player_died() -> void:
 	# the run is over: drop its snapshot first, so quitting now can't undo the
 	# death, then pay it into the profile and keep its score
 	Profile.clear_suspended_run()
-	results = Profile.finish_run(Game.run_stats())
+	results = _dev_results() if Game.dev_run else Profile.finish_run(Game.run_stats())
 	Game.record_score()
 	Sfx.music_cut()
 	await get_tree().create_timer(0.6, true, false, true).timeout
@@ -268,7 +297,7 @@ func on_boss_killed(b: Enemy) -> void:
 	Game.bosses_killed += 1
 	Game.bosses_felled.append(b.kind)
 	# the reward is saved at once; its card shows after the boss tally
-	director.pending_reward = Profile.boss_felled(b.kind)
+	director.pending_reward = {} if Game.dev_run else Profile.boss_felled(b.kind)
 	Game.slowmo(0.12, 2.6)
 	# loud, then quiet: the all-out FINISH splash, a hard cut to silence, then
 	# the slow souls-style line fades in
@@ -283,9 +312,19 @@ func on_boss_killed(b: Enemy) -> void:
 	hud.juice.later(5.4, func(): Sfx.resume_combat())
 
 
-func restart(same_seed := false) -> void:
+## What a dev run's results screen counts up: nothing, at the Player Level
+## the profile already has.
+func _dev_results() -> Dictionary:
+	return {"rows": [], "xp_gained": 0, "level_before": Profile.player_level, "xp_before": Profile.player_xp,
+		"level_after": Profile.player_level, "xp_after": Profile.player_xp, "levels_gained": 0}
+
+
+## Reloads the scene for a new run. `launch` starts a debug mode instead
+## (the dev menu's juice test).
+func restart(same_seed := false, launch := "") -> void:
 	if same_seed:
 		Game.next_seed = Game.run_seed
+	Game.dev_launch = launch
 	Game.autostart = true
 	Engine.time_scale = 1.0
 	get_tree().paused = false

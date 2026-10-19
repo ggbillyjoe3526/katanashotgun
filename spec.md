@@ -534,6 +534,7 @@ Notes:
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
+| Dev menu | A hidden developer menu on F10 with a switch for a plain, non-retro look, plus play-test tools; runs that use its cheats are never recorded (owner asked 2026-10-19; §16) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -2546,6 +2547,32 @@ seed | click: new seed).
     churn every 2 s, and prints a summary at exit.
 - **Perf overlay:** F3 in any build (fps, frame time, draw calls, nodes,
   new nodes per second, quality preset).
+- **Dev menu:** F10 in any build, on the title, in a run (pausing first) and
+  on the pause screen (`DevMenu`, settings in `DevSettings`). A developer
+  tool, not a player feature: nothing on screen points to it, it is titled
+  DEV SETTINGS, and F10 is reserved from key rebinding. Mouse only, like the
+  settings screen.
+  - LOOK: RETRO LOOK on/off. Off is the plain look for comparison: the 3D
+    view renders at the window's size (stretch mode `canvas_items` instead
+    of the 960x540 `viewport`), textures filter smoothly, and vertex
+    snapping, affine warping, colour banding, Bayer dither, scanlines and
+    the resting chromatic fringe are off (the shader global `psx_retro`).
+    Lighting stays per-vertex and the UI keeps its pixel fonts. Saved in
+    the settings (`dev.retro`). Also: perf overlay, hide the HUD while
+    playing, force a palette from the next run.
+  - RUN: god mode, autoplay bot, game speed (25 to 200%, menus keep real
+    time), start wave, force a boss, force a mutator. Session only, so a
+    cheat never carries into the next launch.
+  - ACTIONS: skip the wave (kills every enemy), a level-up offer, every
+    card at max rank, refill HP and cells, restart the seed, a new seed,
+    the juice test.
+  - **Dev runs:** a run with anything from RUN on, or an ACTION used, is a
+    dev run (`Game.dev_run`, kept in its suspended snapshot). It writes no
+    top 10 entry, no Player Level XP or lifetime stats, and no boss
+    unlocks. A DEV tag under the score lists what is on; the menu says the
+    same. Restarting from the menu pays the run on screen into the profile
+    like an abandoned run first (unless it is a dev run), so no progress is
+    lost. Debug flags: `--plain`, `--dev=look|run|actions`.
 - **Perf probe:** `tools/perf_bench.sh headless|render [wave] [frames]
   [quality]` runs the autoplay bot on a fixed seed with `--perf`. Draw calls
   and node counts are the same on any machine; frame times only mean
