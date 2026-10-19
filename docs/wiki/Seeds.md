@@ -1,7 +1,7 @@
 # Seeds
 
 Every run has a **seed**, shown as eight characters like `1A2B-3C4D` on the
-pause screen, the results screen and the high-score table.
+title screen, the pause screen and the results screen.
 
 ## What the seed decides
 
@@ -25,19 +25,29 @@ so seeded scores stay comparable.
 - On the results screen, press **R** to retry the same seed.
 - Click instead for a new, random seed.
 
+## Sharing your seed
+
+On the pause screen or the results screen, click **COPY** (or press **C**).
+The seed is now on your clipboard: paste it to a friend in Discord, a text
+or anywhere else. The game never goes online; the seed travels by hand.
+
 ## Playing a friend's seed
 
-There's no box to type a seed into yet. Until there is, you can start the
-game on a seed from a shortcut (Windows):
+1. On the title screen, click **PLAY A SEED** (or press **S**).
+2. Type the eight characters (0 to 9 and A to F; the dash fills itself in),
+   or copy your friend's message and click **PASTE** (or press **Ctrl+V**).
+   Pasting a whole line like `SEED 1A2B-3C4D` works too.
+3. Click **PLAY** (or press **Enter**). The run starts on that seed.
 
-1. Right-click your **KATANA SHOTGUN** desktop shortcut and choose
-   **Properties**.
-2. In **Target**, after the closing quote, add a space and then
-   `-- --seed=1A2B-3C4D` (with your friend's seed).
-3. Click **OK** and start the game from that shortcut.
+**BACK** (or **Esc**) closes the box, and **CLEAR** empties it. If you don't
+pick a seed, every new run gets a random one.
 
-The first run you start plays that seed. Remove the text again to go back to
-random seeds.
+If you have a saved run waiting, playing a seed ends it, just like starting
+a new run with **N**: its XP still counts. PLAY asks you to press it a
+second time first.
+
+Seeds always start with 0 to 7, so the box won't take an 8 to F as the
+first character.
 
 A daily seed is an idea for later, not decided yet (see the
 [Roadmap](Roadmap)).

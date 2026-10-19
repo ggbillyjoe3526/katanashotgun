@@ -33,7 +33,9 @@ You can't any more: the first click only selects a card, and a second click
 (or the same key, or Enter) takes it.
 
 **Can I play the same run as my friend?**
-Yes. Give them your [seed](Seeds). The same seed gives the same map, waves,
+Yes. Copy your [seed](Seeds) on the pause or results screen and send it;
+they click **PLAY A SEED** on the title screen and paste it. The same seed
+gives the same map, waves,
 mutators, bosses and card offers.
 
 **I quit in the middle of a run. Is it lost?**
