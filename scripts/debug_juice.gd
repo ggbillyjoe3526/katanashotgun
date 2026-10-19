@@ -59,6 +59,14 @@ func _process(_delta: float) -> void:
 		[28.0, func(): Game.hud_message.emit("KUROKAGE IS ENRAGED", Color(1, 0.2, 0.3), false)],
 		[30.0, func():
 			_hud.finisher_demo = false
+			_hud.glory_start("front_a")],
+		[30.4, func(): Game.popup.emit("GLORY KILL +380", Color(1.0, 0.15, 0.2))],
+		[32.0, func(): _hud.show_hint("MISSILES INBOUND - GET OUT OF THE RED CIRCLES", true)],
+		[33.4, func(): _hud.kamae_broken()],
+		[35.2, func(): _hud.glory_start("boss")],
+		[37.4, func(): _hud.glory_start("plunge")],
+		[37.75, func(): Game.popup.emit("%s +300" % Player.PLUNGE_TAG, Color(1.0, 0.15, 0.2))],
+		[39.0, func():
 			Game.kills = 212
 			Game.executions = 61
 			Game.headshots = 40
@@ -71,7 +79,7 @@ func _process(_delta: float) -> void:
 			Game.score = 386418
 			Game.player.dead = true
 			Game.main.on_player_died()],
-		[36.5, func():
+		[45.5, func():
 			if _hud.entering:
 				_hud.initials = "JCE"
 				_hud._finish_initials()],

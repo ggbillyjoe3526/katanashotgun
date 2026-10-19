@@ -1,7 +1,8 @@
 # Bosses
 
-**Every third wave is a boss wave** (3, 6, 9 and on). An alarm sounds, **BOSS
-INCOMING** flashes, and the boss's name card slides in with its own music.
+**Every third wave is a boss wave** (3, 6, 9 and on). An alarm sounds, the
+boss hijacks the screen with test-card colour bars, **BOSS INCOMING** scrolls
+across it, and the boss's name card lands with its own music.
 Boss waves never have a mutator.
 
 Bosses fight like duelists: they read you, step out of lazy shots, mix quick
@@ -43,7 +44,8 @@ centre of the screen.
 2. **Don't back off for long.** After 2.5 s without pressure the bar drains,
    7% per second. A quick retreat to heal costs little. The more hurt the
    boss is, the slower it drains: near death only about a third as fast.
-3. **Break it.** When the bar fills, a heavy clang and **KAMAE BROKEN**: the
+3. **Break it.** When the bar fills, a heavy clang, the screen glitches and
+   **KAMAE BROKEN** lands on a gold block: the
    boss reels, defenceless, for about 4 to 5 seconds (Kurokage 4.1 s,
    Tetsugumo 4.7 s, Shuten 4.5 s). The bar shows the time left.
 4. **Press F for the ONIKIRI.** A red **F ONIKIRI** prompt appears. The blow,

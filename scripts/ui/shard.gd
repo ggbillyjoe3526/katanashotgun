@@ -2,8 +2,9 @@ class_name Shard
 extends Control
 ## A cyberpunk tech panel: a translucent plate with chamfered (cut) corners,
 ## a thin neon outline, optional corner brackets, scanlines and a soft offset
-## glow. `chamfer` > 0 cuts the top-left and bottom-right corners by that many
-## pixels; otherwise `points` (fractions of the size) give the outline.
+## glow (or, with shadow_alpha 1, a hard solid shadow). `chamfer` > 0 cuts
+## the top-left and bottom-right corners by that many pixels; otherwise
+## `points` (fractions of the size) give the outline.
 ## `color` mirrors ColorRect so it can stand in for one.
 
 var points := PackedVector2Array([Vector2(0, 0), Vector2(1, 0), Vector2(1, 1), Vector2(0, 1)])
@@ -22,6 +23,7 @@ var shadow := Color(0, 0, 0, 0):
 		shadow = v
 		queue_redraw()
 var shadow_off := Vector2(3, 3)
+var shadow_alpha := 0.55 # 1 gives a hard, solid offset shadow (HIJACK)
 var brackets := Color(0, 0, 0, 0)
 var bracket_len := 6.0
 var scan := 0.0
@@ -71,7 +73,7 @@ func _draw() -> void:
 		for p in pts:
 			sp.append(p + shadow_off)
 		var sc := shadow
-		sc.a *= 0.55
+		sc.a *= shadow_alpha
 		draw_colored_polygon(sp, sc)
 	draw_colored_polygon(pts, color)
 	if scan > 0.0:

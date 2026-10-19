@@ -28,6 +28,12 @@ F is your choice between a quick kill and the full show.
 | Points | **×2** on the kill, tagged **GLORY KILL** |
 | Safety | you can't be hurt during the finisher, and the world slows to a quarter speed for a second |
 
+Every glory kill gets the full show: three blade cuts across the screen, the
+picture sliced and slipping apart for a moment, angled black bars top and
+bottom, and **GLORY KILL** (or **SAKAHOKO DROP** for a plunge) landing at the
+top of the screen with your points under it. The boss's ONIKIRI gets two red
+cuts and a bigger **ONIKIRI!**.
+
 ## The finishers
 
 Which one you see depends on where you are:

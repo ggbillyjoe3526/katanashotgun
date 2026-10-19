@@ -35,9 +35,10 @@ enemy you are aiming at.
   at most, newest on top.
 - **Top left:** the wave and how many enemies are left. **Top right:** your
   score. **Top centre:** a boss's name, health and KAMAE bar.
-- **Big moments** (X10 COMBO, KAMAE BROKEN, a boss enraging) appear just
-  under the top row. **Warnings and hints** (MISSILES INBOUND in red, tips
-  in yellow) appear at the bottom centre.
+- **Big moments** (X10 COMBO, GLORY KILL with its points, KAMAE BROKEN, a
+  boss enraging) appear just under the top row. **Warnings** (MISSILES
+  INBOUND) take over the bottom of the screen as a red emergency band;
+  **hints** (tips, in yellow) appear at the bottom centre.
 - **Bottom left:** the wave's mutator. **Bottom edge:** a thin purple line
   that fills toward your next level-up.
 
