@@ -1249,8 +1249,8 @@ func kamae_broken() -> void:
 ## the lane's colour (red for a warning, yellow for a hint), the rest of the
 ## sentence white under it. A new one replaces the old.
 func show_hint(text: String, warn := false) -> void:
-	if juice.intro_showing() or reward_card.visible:
-		# the intro and the reward card hold the lanes; the hint waits
+	if juice.intro_showing() or juice.panel_showing() or reward_card.visible:
+		# the intro, a big panel or the reward card holds the screen; the hint waits
 		_hint_wait = text
 		_hint_wait_warn = warn
 		return
@@ -1812,22 +1812,25 @@ func _update_play(delta: float) -> void:
 	finisher_prompt.refresh(move, c, delta)
 	# ---- warnings and hints: bottom centre, one at a time
 	hint_t += delta
+	if juice.panel_showing():
+		# FINISH, the payout and the boss-defeated card own the screen
+		hint_bg.visible = false
 	if hint_bg.visible:
 		_fit([hint_label, hint_sub])
 		var w := maxf(hint_label.size.x, hint_sub.size.x if hint_sub.visible else 0.0)
-		hint_label.position = Vector2(10, -2)
+		hint_label.position = Vector2(10, -1)
 		hint_label.size.x = w
-		var hh := _text_bottom(hint_label) + 1.0
+		var hh := _text_bottom(hint_label) + 2.0
 		if hint_sub.visible:
 			hint_sub.position = Vector2(10, hint_label.position.y + LINE)
 			hint_sub.size.x = w
-			hh = _text_bottom(hint_sub) + 1.0
+			hh = _text_bottom(hint_sub) + 2.0
 		hint_bg.size = Vector2(w + 20.0, hh)
 		hint_bg.position = Vector2(roundf((vs.x - hint_bg.size.x) * 0.5), vs.y - HINT_BOTTOM - hh)
 		hint_bg.modulate.a = clampf((4.5 - hint_t) / 0.3, 0.0, 1.0)
 		if hint_t > 4.5:
 			hint_bg.visible = false
-	if not juice.intro_showing() and not reward_card.visible:
+	if not juice.intro_showing() and not juice.panel_showing() and not reward_card.visible:
 		if _hint_wait != "":
 			show_hint(_hint_wait, _hint_wait_warn)
 			_hint_wait = ""

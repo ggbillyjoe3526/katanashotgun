@@ -1822,8 +1822,8 @@ the holographic cut-in (§9.8).
     "RED SIGNAL" or the shockwave; yellow for a hint) and the rest of the
     sentence is white on the line under it; a hint is split at its first
     dash, colon, "!" or "?". 4.5 s, each shown once. The boss reward card
-    also deals into the bottom of the screen; a hint waits until it has
-    gone.
+    also deals into the bottom of the screen; a hint waits until it (or
+    FINISH, the payout or the boss-defeated card) has gone.
 - **Title screen:**
   - The **KATANA / SHOTGUN** logo: KATANA flies in from the left and SHOTGUN
     from the right (0.3 s), on a tech panel. Then a **neon blade cuts the
