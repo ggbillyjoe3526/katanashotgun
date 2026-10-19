@@ -48,6 +48,8 @@ func make() -> void:
 	_show()
 	var f := RunCard.facts()
 	var img: Image = await RunCard.render(self, f)
+	if state != State.BUSY:
+		return # a new results screen reset the panel while it drew
 	path = RunCard.save(img, f) if img != null else ""
 	if path == "":
 		state = State.FAILED
