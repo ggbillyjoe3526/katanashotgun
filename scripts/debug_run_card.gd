@@ -1,7 +1,7 @@
 extends Node
 ## Debug-only check of the run card (spec §19.1 #10). Plays out the end of a
 ## sample run (wave 14, four bosses, two builds), types initials on the
-## results screen, presses SAVE RUN CARD, and quits with exit code 1 if no
+## results screen, presses RUN CARD (P), and quits with exit code 1 if no
 ## card was saved. Needs a renderer, so in the cloud run it under xvfb:
 ##   xvfb-run -a godot --path . --rendering-driver opengl3 -- --runcard --runcard-out=DIR
 ## With --runcard-out, the card and two screenshots of the results screen
@@ -48,12 +48,12 @@ func _process(_delta: float) -> void:
 		return
 	match step:
 		0: # type initials once the results ask for them
-			if hud.initials_root.visible:
+			if hud.entering and hud._scores_shown:
 				hud.initials = "ACE"
 				hud._finish_initials()
 			if hud.death_ready():
 				step = 1
-		1: # the save button is up: capture it, then press it
+		1: # the results row is up: capture it, then save the card
 			if hud.run_card.is_visible_in_tree():
 				step = 2
 				await _capture("results.png")

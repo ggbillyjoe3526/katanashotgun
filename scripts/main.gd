@@ -68,6 +68,8 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--cardtour"):
 		add_child(load("res://scripts/debug_cards.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--menutour"):
+		add_child(load("res://scripts/debug_menus.gd").new())
 	if OS.get_cmdline_user_args().has("--runcard"):
 		add_child(load("res://scripts/debug_run_card.gd").new())
 		return
@@ -347,7 +349,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		match Game.state:
 			"title":
 				Sfx.play("ui_click", -4.0)
-				start_run()
+				if not hud.close_title_panel():
+					start_run()
 				get_viewport().set_input_as_handled()
 			"paused":
 				resume_game()
@@ -373,11 +376,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif Game.state == "title" and event.physical_keycode == KEY_Q:
 			# title only: in a run Q is a dash key, and a lost mouse lock pauses
 			# mid-dash, so the pause screen quits by its button alone
-			hud.title_quit.press()
+			hud.press_title_quit()
 		elif Game.state == "title" and event.physical_keycode == KEY_S:
 			hud.open_seed_entry()
 		elif event.physical_keycode == KEY_C and (Game.state == "paused" or (Game.state == "dead" and hud.death_ready())):
-			hud.copy_seed(hud.pause_copy if Game.state == "paused" else hud.death_copy)
+			hud.copy_seed()
 		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)

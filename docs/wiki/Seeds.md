@@ -1,7 +1,7 @@
 # Seeds
 
 Every run has a **seed**, shown as eight characters like `1A2B-3C4D` on the
-title screen, the pause screen and the results screen.
+pause screen (bottom left) and the results screen (under your Player Level).
 
 ## What the seed decides
 
@@ -28,7 +28,8 @@ so seeded scores stay comparable.
 
 ## Sharing your seed
 
-On the pause screen or the results screen, click **COPY** (or press **C**).
+On the pause screen click **COPY**, or on the results screen **COPY SEED**
+(or press **C** on either).
 The seed is now on your clipboard: paste it to a friend in Discord, a text
 or anywhere else. The game never goes online; the seed travels by hand.
 

@@ -69,11 +69,13 @@ When a wave is cleared, the tally adds up **chips** and multiplies them by a
 
 - The **local top 10** keeps each run's initials, score, wave and
   [seed](Seeds).
-- Your best score shows on the title, pause and results screens. Pass it
-  mid-run and **NEW HI-SCORE** flashes once.
-- If your run makes the table, the results screen asks for **3 initials**
-  (letters and numbers, Enter to confirm). Your score is saved the moment the
-  run ends, even if you quit before typing them.
+- Your best score shows at the bottom left of the title screen, and the
+  table under **HI-SCORES** on the title. Pass your best mid-run and
+  **NEW HI-SCORE** flashes once; the results screen then shows **NEW BEST**.
+- The results screen shows the table with your run's row lit. If your run
+  makes the table, type **3 initials** into that row (letters and numbers,
+  Enter to confirm). Your score is saved the moment the run ends, even if you
+  quit before typing them.
 - High scores live in your profile with the rest of your progress
   ([Saving and Continuing](Saving-and-Continuing)).
 

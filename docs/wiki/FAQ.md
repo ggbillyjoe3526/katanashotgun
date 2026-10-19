@@ -39,7 +39,7 @@ gives the same map, waves,
 mutators, bosses and card offers.
 
 **I quit in the middle of a run. Is it lost?**
-No. The title screen offers **CONTINUE RUN** from the start of the wave you
+No. The title screen offers **CONTINUE** from the start of the wave you
 were on. ([Saving and Continuing](Saving-and-Continuing))
 
 **Where are my saves, and are they safe if I uninstall?**

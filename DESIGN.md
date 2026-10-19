@@ -366,7 +366,8 @@ is never lost.
     and slams.
   - Level-up: cards deal in with a spin, sway, tilt toward the cursor, and the
     pick punches while the others drop away.
-  - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" between them.
+  - Title: KATANA and SHOTGUN fly in, and a neon blade cuts the "/" in front of
+    SHOTGUN. The menus are plain words to click over the scene (spec §9.7).
 
 ## Audio
 - Six procedurally composed, fast (140 to 152 bpm) combat tracks in a dark
