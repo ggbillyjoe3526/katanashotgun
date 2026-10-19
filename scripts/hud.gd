@@ -1905,7 +1905,7 @@ func _update_play(delta: float) -> void:
 	# ---- NEW HI-SCORE: one cut-in when the run passes the best score
 	var best := Game.best_score()
 	var shown_score := Game.score - score_hold
-	if shown_score > best and best > 0 and not _hi_stamped and Game.state == "playing":
+	if shown_score > best and best > 0 and not _hi_stamped and Game.state == "playing" and not Game.cans_run:
 		_hi_stamped = true
 		juice.hiscore_stamp()
 	# ---- top-right: score rolls up; big gains bump it and tint it gold

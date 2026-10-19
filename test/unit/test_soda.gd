@@ -123,8 +123,7 @@ func test_spots_are_on_the_map_and_open_above() -> void:
 
 func test_a_drink_runs_buff_then_crash() -> void:
 	var c := _cans(true)
-	c.active = "kaze"
-	c.phase = "buff"
+	c._set_phase("kaze", "buff")
 	c.phase_t = 0.01
 	assert_eq(c.boost("speed"), 1.25)
 	assert_eq(c.boost("dash_recharge"), 0.5)
@@ -139,8 +138,7 @@ func test_a_drink_runs_buff_then_crash() -> void:
 
 func test_uzume_holds_the_combo_then_halves_it() -> void:
 	var c := _cans(true)
-	c.active = "uzume"
-	c.phase = "buff"
+	c._set_phase("uzume", "buff")
 	assert_true(c.flag("combo_hold"))
 	Game.combo = 20
 	c._end_phase()

@@ -33,6 +33,8 @@ var active := "" # the flavour whose effect is on
 var phase := "" # "buff", "crash" or ""
 var phase_t := 0.0 # seconds left in the phase
 var phase_len := 1.0
+var _boosts := {} # the active phase's multipliers, cached so the hot paths only look up
+var _flags: Array = [] # the active buff's switches
 var drinking := "" # the flavour in the hands, while drinking
 var drink_t := -1.0
 var _cut := false
@@ -70,16 +72,12 @@ func restore(ids: Array) -> void:
 
 ## The multiplier the active can puts on `key` (1.0 for none).
 func boost(key: String) -> float:
-	if phase == "":
-		return 1.0
-	var def := Soda.get_def(active)
-	var table: Dictionary = def.get("boosts", {}) if phase == "buff" else def.get("crash", {})
-	return float(table.get(key, 1.0))
+	return float(_boosts.get(key, 1.0))
 
 
 ## Whether the active can's buff switches `key` on.
 func flag(key: String) -> bool:
-	return phase == "buff" and key in Soda.get_def(active).get("flags", [])
+	return key in _flags
 
 
 ## Both hands are on the can: the weapons wait.
@@ -162,7 +160,7 @@ func _place(id: String, at: Vector3) -> void:
 	n.position = at
 	n.visible = true
 	n.scale = Vector3.ONE * 0.01
-	_floor.append({"n": n, "id": id, "k": 0.0, "out": false})
+	_floor.append({"n": n, "id": id, "k": 0.0, "out": false, "can": n.get_node("Can")})
 
 
 # ---------------------------------------------------------------- the frame
@@ -223,7 +221,7 @@ func _process(delta: float) -> void:
 			_floor.remove_at(i)
 			continue
 		n.scale = Vector3.ONE * maxf(0.01, Juice.ease_out(c.k))
-		var can: Node3D = n.get_node("Can")
+		var can: Node3D = c.can
 		can.rotation.y = _t * 2.2
 		can.position.y = 0.55 + sin(_t * 3.0 + n.position.x) * 0.08
 		i += 1
@@ -292,8 +290,7 @@ func _open(p: Player) -> void:
 	var def := Soda.get_def(drinking)
 	if def.is_empty():
 		return
-	active = drinking
-	phase = "buff"
+	_set_phase(drinking, "buff")
 	phase_len = float(def.time)
 	phase_t = phase_len
 	Sfx.play("can_open", -2.0)
@@ -311,7 +308,7 @@ func _open(p: Player) -> void:
 func _end_phase() -> void:
 	var def := Soda.get_def(active)
 	if phase == "buff" and float(def.get("crash_time", 0.0)) > 0.0:
-		phase = "crash"
+		_set_phase(active, "crash")
 		phase_len = float(def.crash_time)
 		phase_t = phase_len
 		Sfx.play("can_crash", -4.0)
@@ -320,8 +317,17 @@ func _end_phase() -> void:
 		Game.combo = int(Game.combo / 2.0)
 		Game.combo_timer = Game.combo_window()
 		Sfx.play("can_crash", -4.0)
-	phase = ""
-	active = ""
+	_set_phase("", "")
+
+
+## Puts flavour `id` into `ph` ("buff", "crash" or "" for none) and caches
+## what that phase does.
+func _set_phase(id: String, ph: String) -> void:
+	active = id
+	phase = ph
+	var def := Soda.get_def(id) if ph != "" else {}
+	_boosts = def.get("boosts" if ph == "buff" else "crash", {})
+	_flags = def.get("flags", []) if ph == "buff" else []
 
 
 ## Debug (--cantest, with --cans): every wave starts with the hands full of

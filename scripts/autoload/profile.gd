@@ -229,7 +229,8 @@ func finish_run(stats: Dictionary) -> Dictionary:
 		lifetime[k[0]] += int(stats.get(k[1], 0))
 	lifetime.best_wave = maxi(lifetime.best_wave, int(stats.get("wave", 0)))
 	lifetime.best_combo = maxi(lifetime.best_combo, int(stats.get("best_combo", 0)))
-	lifetime.best_score = maxi(lifetime.best_score, int(stats.get("score", 0)))
+	if not Game.cans_run: # a soda-cans play-test run (GAKI doubles score) sets no best score
+		lifetime.best_score = maxi(lifetime.best_score, int(stats.get("score", 0)))
 	play_time += float(stats.get("time", 0.0))
 	save_now()
 	changed.emit()

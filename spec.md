@@ -3010,7 +3010,7 @@ build on is in: PLAY A SEED on the title (§7.5).
    off by default, it is switched on in the DEV menu (F10, RUN tab, SODA
    CANS, from the next run; saved as `dev_cans` in settings.json). Off means
    no can is ever made and nothing draws a number. A run with cans keeps its
-   XP and unlocks but makes no top 10 entry (`Game.cans_run`), so seeded
+   XP and unlocks but makes no top 10 entry or lifetime best score (`Game.cans_run`), so seeded
    scores stay comparable; the DEV tag says CANS RUN: NO TOP 10.
    - **Where:** one can on waves 2 to 5, two from wave 6, none on boss
      waves, at spots picked from `Game.rng_cans` (reseeded per wave from the
