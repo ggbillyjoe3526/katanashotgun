@@ -175,7 +175,7 @@ func resume_game() -> void:
 
 
 func _open_levelup() -> void:
-	var choices := Upgrades.roll(Game.upgrades, 3)
+	var choices := _roll_offer()
 	if choices.is_empty():
 		Game.pending_levelups = 0
 		return
@@ -184,6 +184,15 @@ func _open_levelup() -> void:
 	Sfx.play("levelup", -2.0)
 	Sfx.duck_music(-16.0)
 	hud.show_levelup(choices, _on_upgrade)
+
+
+## The next level-up's three cards.
+func _roll_offer() -> Array:
+	var choices := Upgrades.roll(Game.upgrades, 3)
+	if Game.debug_autoplay:
+		# tools/seed_check.sh compares these lines between two runs of a seed
+		print("[offer] %s" % ",".join(choices.map(func(u: Dictionary) -> String: return u.id)))
+	return choices
 
 
 func _on_upgrade(id: String) -> void:
@@ -202,7 +211,7 @@ func _on_upgrade(id: String) -> void:
 	else:
 		Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
 	if Game.pending_levelups > 0:
-		var choices := Upgrades.roll(Game.upgrades, 3)
+		var choices := _roll_offer()
 		if not choices.is_empty():
 			hud.show_levelup(choices, _on_upgrade)
 			Sfx.play("levelup", -6.0)

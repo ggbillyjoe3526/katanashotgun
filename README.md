@@ -115,6 +115,8 @@ gdlintrc                    gdlint settings
     and any script error fails it.
   - `tools/unit_tests.sh`: the Gut tests in `test/unit/` (settings in
     `.gutconfig.json`).
+  - `tools/seed_check.sh`: the autoplay bot plays one seed twice; the waves
+    (mutator, boss, line-up) and level-up offers both runs reach must match.
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
@@ -206,6 +208,7 @@ godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
 tools/movement_test.sh                                           # movement course
+tools/seed_check.sh 1234-ABCD 24000                              # same seed twice, same waves
 tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
 godot --headless --path . --resolution 960x540 --quit-after 20000 -- --autoplay --uiaudit
 ```

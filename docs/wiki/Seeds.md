@@ -16,6 +16,7 @@ pause screen, the results screen and the high-score table.
 **The same seed always gives the same run.** If you play the same way, the
 same things happen. A friend on your seed faces exactly the same waves,
 mutators, bosses and card offers, so you can race each other on score.
+However a wave goes, fast or slow, it never changes the waves after it.
 
 Your Player Level and unlocked weapon looks don't change anything in a run,
 so seeded scores stay comparable.

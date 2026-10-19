@@ -6,6 +6,10 @@ extends Node3D
 ## query used by gore, and spawn/jump-pad bookkeeping.
 ## New maps: subclass Arena in scripts/maps/ and register it in map_registry.gd.
 
+## A spawn group lands within this many metres of its spawn point (the
+## director's +-2 m offsets, and a boss's reinforcement pair).
+const GROUND_SPAWN_REACH := 3.0
+
 var map_name := "UNNAMED"
 var half := 32.0
 var player_spawn := Vector3(0, 0.1, 24)
@@ -255,9 +259,12 @@ func floor_height_at(x: float, z: float, below := INF) -> float:
 
 ## How far above a spawn point an enemy appears (the director rolls 7-9 m).
 ## Ground spawns (tunnels, lifts, hatches) have a roof over them: walk out.
+## That covers the rest of a spawn group too, which lands up to
+## GROUND_SPAWN_REACH metres away (it used to drop from 9 m into the roof
+## and stay wedged there, so the wave never ended).
 func spawn_clearance(p: Vector3) -> float:
 	for g in ground_spawns:
-		if g.is_equal_approx(p):
+		if absf(g.y - p.y) < 0.5 and Vector2(g.x - p.x, g.z - p.z).length() <= GROUND_SPAWN_REACH:
 			return 0.3
 	return 9.0
 
@@ -370,7 +377,7 @@ func _process(delta: float) -> void:
 	if _storm:
 		_lightning_t -= delta
 		if _lightning_t <= 0.0:
-			_lightning_t = randf_range(3.0, 8.0)
+			_lightning_t = Game.rng_fx.randf_range(3.0, 8.0)
 			_flash = 1.0
 			Sfx.play("thunder", -2.0, 1.0, 0.15)
 			if Game.hud and Game.hud.post:

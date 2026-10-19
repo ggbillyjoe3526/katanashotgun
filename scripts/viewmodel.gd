@@ -349,8 +349,8 @@ func fire() -> void:
 	_drum_from = drum.rotation.z
 	_drum_to = _drum_from + TAU / 6.0
 	flash.visible = true
-	flash.rotation.z = randf() * TAU
-	flash.scale = Vector3.ONE * randf_range(0.8, 1.3)
+	flash.rotation.z = Game.rng_fx.randf() * TAU
+	flash.scale = Vector3.ONE * Game.rng_fx.randf_range(0.8, 1.3)
 
 
 func glory_begin() -> void:
