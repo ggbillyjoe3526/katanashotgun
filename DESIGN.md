@@ -476,16 +476,14 @@ How (guidelines for the build):
   model (prongs, coils, cell drum) is a placeholder that shows the
   "shotgun taser" idea.
 
-## Art assets (note for later)
-- Everything is built in code from primitive meshes for now. That is enough
-  for the prototype; no models should be made yet.
-- If custom 3D models would clearly improve things later, the developer can
-  model them in Blender. They should stay low-detail (low poly, small
-  textures) because the game is low-res by design.
-- Pipeline when that happens: export glTF (.glb) from Blender, import into
-  Godot, apply the existing PSX materials (`Psx.lit`, vertex snapping, affine
-  UVs) so models match. Keep the code-built versions as fallbacks until each
-  model is approved.
+## Art assets
+- Everything is built in code from primitive meshes, except the DOJIGIRI
+  katana's Blender model (owner's request, approved 2026-10-19).
+- That model is highly detailed (~13k triangles, baked 2048 px maps) so it
+  holds up with the retro look off, and carries a small baked texture for
+  the retro look. Pipeline and rules: `assets/models/README.md`.
+- Keep the code-built versions as fallbacks (the katana's shows only if its
+  model fails to load). Other models only when the owner asks for them.
 
 ## Not planned (to avoid scope creep)
 - New weapons, new mechanics or complex builds. The core stays katana + arc

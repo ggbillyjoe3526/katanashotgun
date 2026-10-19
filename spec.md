@@ -1760,13 +1760,21 @@ the holographic cut-in (§9.8).
   **PLACEHOLDER**.
 - **Shotgun "RAIJIN-12":** final look **OPEN**. The current model is a
   placeholder for the shotgun-taser idea.
-- **3D models:** everything is built in code from primitive meshes for now.
-  **Do not create models.**
-  - Later, the developer may make **low-detail** Blender models (low poly,
-    small textures; the game is low-res by design) if they clearly improve
-    on the code-built ones.
-  - Pipeline: glTF (.glb) → Godot → apply the existing PSX materials. Keep
-    the code-built versions as fallbacks until each model is approved.
+- **3D models:** everything else is built in code from primitive meshes.
+  - At the owner's request (2026-10-19) the DOJIGIRI has a **highly
+    detailed** Blender model that also looks good with the retro look off: ~13k
+    triangles (ceiling 30k), fine detail baked into 2048 px colour,
+    roughness/metal (ORM) and normal maps, plus a 256 px texture with the
+    light painted in for RETRO LOOK FULL. Own shapes, no traditional katana
+    look; the pommel, handle, collar and finger spur are one piece.
+  - The glowing edge is one colour-neutral material ("edge") with UVs along
+    the blade, so player colours and effects (Rewards looks) can drive it.
+  - Pipeline: `assets/models/README.md`. Script-built in Blender, exported
+    as glTF (.glb), drawn in Godot with `shaders/psx_model.gdshader` (PS1
+    treatment on RETRO LOOK FULL, the full maps on LIGHT and OFF).
+  - The owner approved it as the game's katana (2026-10-19). The code-built
+    blade remains only as the fallback if the model fails to load.
+  - Other models stay code-built until the owner asks for one.
 
 ### 9.7 UI: cyberpunk, rendered pixel-retro
 **Our own cyberpunk visual language, not Persona 5's.**

@@ -23,7 +23,8 @@ already arrived is in the [Patch Notes](Patch-Notes).
   We're also thinking about runs that **travel from map to map**: beat a
   map's boss and the fight carries on somewhere new, with the seed choosing
   the order. Not decided yet.
-- **A redesigned thermal katana**, and the final look for the arc shotgun.
+- **The final look for the arc shotgun**, like the new DOJIGIRI katana
+  model. The katana's stock edge colour may still change.
 - **Boss variants** (the same boss with a new title and new tricks) and
   **new bosses**.
 - **More boss rewards:** maps, palettes, mutators and boss variants joining
