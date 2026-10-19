@@ -77,6 +77,15 @@ func _on_node_added(_n: Node) -> void:
 	_frame_added += 1
 
 
+func is_shown() -> bool:
+	return _label.visible
+
+
+## The dev menu's PERF OVERLAY switch (the same as F3).
+func show_overlay(on: bool) -> void:
+	_set_shown(on)
+
+
 func _set_shown(on: bool) -> void:
 	_plate.visible = on
 	_label.visible = on

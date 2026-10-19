@@ -1,6 +1,8 @@
 // Body of the PS1 lit surface, shared by psx_lit (every preset) and
 // psx_lit_hd (INSANE on Forward+, which defines PSX_HD).
-uniform sampler2D albedo_tex : source_color, filter_nearest, repeat_enable;
+// Linear, so the plain look (dev menu) can smooth textures; the retro look
+// picks the nearest texel itself (psx_texel), exactly as filter_nearest would.
+uniform sampler2D albedo_tex : source_color, filter_linear, repeat_enable;
 uniform bool use_texture = false;
 uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform bool use_vertex_color = false;
@@ -21,6 +23,8 @@ uniform float affine = 0.55;
 uniform vec3 fog_color : source_color = vec3(0.12, 0.05, 0.2);
 uniform float fog_start = 10.0;
 uniform float fog_end = 90.0;
+// 1 = the PS1 look, 0 = the dev menu's plain look (DevSettings.retro).
+global uniform float psx_retro;
 #ifdef PSX_HD
 // How wet flat floors look: low roughness feeds screen-space reflections.
 uniform float wet = 0.7;
@@ -47,12 +51,12 @@ void vertex() {
 		uv *= uv_scale;
 	}
 	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-	if (snap > 0.0 && clip.w > 0.001) {
+	if (snap * psx_retro > 0.0 && clip.w > 0.001) {
 		vec2 grid = VIEWPORT_SIZE * 0.6 / snap;
 		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
 	}
 	POSITION = clip;
-	float w = mix(1.0, max(clip.w, 0.001), affine);
+	float w = mix(1.0, max(clip.w, 0.001), affine * psx_retro);
 	v_uvw = vec3(uv * w, w);
 	vec3 vpos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_fog = clamp((length(vpos) - fog_start) / (fog_end - fog_start), 0.0, 1.0);
@@ -77,12 +81,19 @@ vec3 psx_linear(vec3 c) {
 }
 #endif
 
+// The centre of the texel `uv` falls in: a linear sampler read there gives
+// that texel alone, like a nearest one.
+vec2 psx_texel(vec2 uv, sampler2D tex) {
+	vec2 size = vec2(textureSize(tex, 0));
+	return (floor(uv * size) + 0.5) / size;
+}
+
 void fragment() {
 	vec2 uv = v_uvw.xy / v_uvw.z;
 	vec4 c = albedo_color;
 	vec4 t = vec4(1.0);
 	if (use_texture) {
-		t = texture(albedo_tex, uv);
+		t = texture(albedo_tex, psx_retro > 0.5 ? psx_texel(uv, albedo_tex) : uv);
 		c *= t;
 	}
 	if (use_vertex_color) {

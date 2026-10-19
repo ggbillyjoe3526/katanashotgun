@@ -38,8 +38,9 @@ const REBINDABLE := [
 	["move_right", "MOVE RIGHT"],
 ]
 const SLOTS := 2 # bindings shown per action
-## Keys the menu keeps for itself: Esc pauses and backs out, F11 is fullscreen.
-const RESERVED_KEYS: Array[int] = [KEY_ESCAPE, KEY_F11]
+## Keys the menu keeps for itself: Esc pauses and backs out, F11 is fullscreen,
+## F10 opens the dev menu (DevSettings.KEY).
+const RESERVED_KEYS: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_F10]
 const DEFAULT_FOV := 88.0
 
 static var path := "user://settings.json"
@@ -143,6 +144,7 @@ static func apply_video() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = fps_cap
 	apply_quality()
+	DevSettings.apply_look()
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree and tree.root:
 		tree.root.scaling_3d_scale = render_scale
@@ -416,6 +418,7 @@ static func to_dict() -> Dictionary:
 		"shake": shake,
 		"flash": flash,
 		"bindings": bindings.duplicate(true),
+		"dev": DevSettings.to_dict(),
 	}
 
 
@@ -452,6 +455,9 @@ static func from_dict(d: Dictionary) -> void:
 		shake = clampf(float(d.shake), 0.0, 1.0)
 	if _is_num(d.get("flash")):
 		flash = clampf(float(d.flash), 0.0, 1.0)
+	var dev: Variant = d.get("dev")
+	if dev is Dictionary:
+		DevSettings.from_dict(dev)
 	var bd: Variant = d.get("bindings")
 	if bd is Dictionary:
 		# only listed actions, no reserved keys, and no key used twice

@@ -135,6 +135,8 @@ func _next_boss() -> String:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--boss="):
 			return a.substr(7)
+	if DevSettings.boss != "":
+		return DevSettings.boss
 	if _boss_cycle.is_empty():
 		_cycle_count += 1
 		if _cycle_count == 1:
@@ -176,6 +178,8 @@ func _next_wave() -> void:
 			if a.begins_with("--mutator="):
 				# debug: force one on every regular wave (the roll still draws)
 				Game.mutator = Mutators.get_def(a.substr(10))
+		if DevSettings.mutator != "":
+			Game.mutator = Mutators.get_def(DevSettings.mutator) # dev menu: the same, by hand
 		if not Game.mutator.is_empty():
 			last_mutator = Game.mutator.id
 		queue = _composition(wave)

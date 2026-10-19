@@ -21,6 +21,10 @@ uniform bool impact_invert = false;
 uniform vec3 impact_color : source_color = vec3(1.0, 0.1, 0.25);
 uniform float heat = 0.0;
 uniform vec3 heat_color : source_color = vec3(1.0, 0.1, 0.4);
+// 1 = the PS1 look; 0 = the dev menu's plain look: no colour banding,
+// dither, scanlines or resting edge fringe. Damage, flashes, impact frames
+// and combo heat stay, they are the game's feedback.
+global uniform float psx_retro;
 
 float bayer2(int x, int y) {
 	return float(((x ^ y) & 1) * 2 + (y & 1));
@@ -34,7 +38,10 @@ float bayer4(ivec2 p) {
 
 void fragment() {
 	vec2 d = SCREEN_UV - 0.5;
-	vec2 off = d * SCREEN_PIXEL_SIZE * (aberration + heat * 1.6 + impact * 3.0) * 6.0 * length(d);
+	// the plain look renders at the window's size: pixel sizes count in
+	// 540-line pixels, as in the retro look
+	float px = psx_retro > 0.5 ? 1.0 : max(1.0, 1.0 / (540.0 * SCREEN_PIXEL_SIZE.y));
+	vec2 off = d * SCREEN_PIXEL_SIZE * px * (aberration * psx_retro + heat * 1.6 + impact * 3.0) * 6.0 * length(d);
 	vec3 c;
 	c.r = texture(screen_tex, SCREEN_UV + off).r;
 	c.g = texture(screen_tex, SCREEN_UV).g;
@@ -43,14 +50,14 @@ void fragment() {
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
 	c = mix(vec3(l), c, (saturation + heat * 0.25) * (1.0 - desaturate));
 	c *= 1.0 - vignette * dot(d, d) * 1.6;
-	c *= 1.0 - scanlines * step(0.5, fract(FRAGCOORD.y * 0.5));
+	c *= 1.0 - scanlines * psx_retro * step(0.5, fract(FRAGCOORD.y * 0.5));
 	float edge = smoothstep(0.15, 0.55, length(d));
 	c = mix(c, vec3(0.75, 0.0, 0.05), damage * edge);
 	c = mix(c, vec3(1.0), flash);
 	// combo heat: halftone dots creeping in from the edges
 	if (heat > 0.0) {
-		vec2 px = FRAGCOORD.xy / 6.0;
-		vec2 cell = fract(vec2(px.x + px.y, px.y - px.x) * 0.7071) - 0.5;
+		vec2 hp = FRAGCOORD.xy / (6.0 * px);
+		vec2 cell = fract(vec2(hp.x + hp.y, hp.y - hp.x) * 0.7071) - 0.5;
 		float edge2 = smoothstep(0.32, 0.75, length(d));
 		float dot_r = 0.5 * edge2 * heat;
 		float dotm = step(length(cell), dot_r);
@@ -66,7 +73,10 @@ void fragment() {
 		}
 		c = mix(c, t3, impact);
 	}
-	float b = bayer4(ivec2(FRAGCOORD.xy)) - 0.5;
-	c = floor(clamp(c, 0.0, 1.0) * color_levels + b * dither_strength + 0.5) / color_levels;
+	c = clamp(c, 0.0, 1.0);
+	if (psx_retro > 0.5) {
+		float b = bayer4(ivec2(FRAGCOORD.xy)) - 0.5;
+		c = floor(c * color_levels + b * dither_strength + 0.5) / color_levels;
+	}
 	COLOR = vec4(c, 1.0);
 }
