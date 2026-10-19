@@ -1414,12 +1414,32 @@ the holographic cut-in (§9.8).
 - Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
-  - `rng_waves = hash(seed × 5 + 2)`: line-ups, mutators, boss order, spawn
-    choices.
-  - `rng_upgrades = hash(seed × 7 + 3)`: augment offers.
+  - `rng_upgrades = hash(seed × 7 + 3)`: augment offers (one shuffle per
+    offer, so the same picks give the same offers).
+  - **Per-wave streams**, reseeded from the seed and the wave number at every
+    wave start (`Game.seed_wave`), so nothing that happens in one wave, nor
+    how long it lasts, can shift a later wave:
+    - `rng_waves`: the wave's plan (mutator, line-up, boss order), drawn only
+      when the wave starts.
+    - `rng_spawns`: spawn points, spawn groups, boss reinforcements.
+    - `rng_combat`: shotgun pellet spread, which glory kill plays, where
+      health orbs scatter.
+    - `rng_hazards`: storm strikes.
+  - Each per-wave stream is seeded from `hash([seed, wave, tag])`, one tag
+    per stream, so nearby seeds never share a stream a few waves apart.
+  - Every enemy's own dice (attack timers, strafing, orb drops) come from
+    the seed, the wave and its place in the wave's spawn order; a boss's
+    from `hash(seed × 13 + wave)` (§5.6).
+  - `rng_fx`: presentation only (sparks, flashes, sound variations, grunt
+    looks). Randomized, never seeded, never used for gameplay.
+- Nothing calls Godot's global `randf()`, `randi()`, `shuffle()` or
+  `pick_random()`: a unit test fails the build if anything does
+  (`test/unit/test_seeds.gd`). `tools/seed_check.sh` (in CI) plays one seed
+  twice with the autoplay bot and fails if the waves or offers differ.
 - The music playlist order also comes from the seed.
-- **The same seed and the same play give the same run.** Keep cosmetic
-  randomness out of the gameplay streams.
+- **The same seed and the same play give the same run**, and however a wave
+  is played, the waves after it keep their line-ups, mutators and bosses.
+  Keep cosmetic randomness out of the gameplay streams.
 - Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.) If
   built, it is made offline from the date, since the game never goes
   online (owner, 2026-10-18).
@@ -2180,7 +2200,8 @@ is never lost.
   must not lose the run.
   - Snapshot **between waves**: seed, wave, score, combo state, run level and
     XP, augments and ranks, HP, cells, dash charges, run stats and **RNG
-    states** (all three streams).
+    states** (the map and augment streams; the per-wave streams reseed from
+    the seed when the next wave starts, §7.5).
   - On launch, offer **CONTINUE RUN**. Delete the snapshot when the run ends,
     so a death can't be undone by reloading.
 - **Robustness:**
@@ -2493,7 +2514,9 @@ seed | click: new seed).
     one stats line every 2 s.
   - `--god`: no damage.
   - `--wave=N`, `--seed=XXXX-XXXX`, `--boss=ninja|mech|oni`, `--restart`
-    (auto-restart after death), `--verbose-ai`.
+    (auto-restart after death), `--verbose-ai`. With `--autoplay` every wave
+    start prints a `[plan]` line and every level-up an `[offer]` line, which
+    `tools/seed_check.sh` compares between two runs of one seed (§7.5).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.

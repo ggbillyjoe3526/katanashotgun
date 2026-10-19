@@ -1,10 +1,12 @@
 class_name RunSnapshot
 ## Suspend and resume (spec §11.3): everything a run needs to carry on from
 ## the start of its next wave. Taken between waves only, after the tally has
-## paid out. The map, palette and music come back from the seed; the three
-## RNG streams are restored to their exact state so the rest of the run plays
-## out as if it had never stopped. RNG states are 64-bit, so they are stored
-## as strings (JSON numbers lose precision past 2^53).
+## paid out. The map, palette and music come back from the seed, and the
+## wave streams reseed from the seed and the wave number when the next wave
+## starts; the map and augment streams are restored to their exact state, so
+## the rest of the run plays out as if it had never stopped. RNG states are
+## 64-bit, so they are stored as strings (JSON numbers lose precision past
+## 2^53). Older snapshots also carry a "waves" state, which is ignored.
 
 const GAME_INTS := ["score", "best_combo", "kills", "executions", "headshots", "deflects", "bosses_killed", "level", "pending_levelups"]
 
@@ -26,7 +28,6 @@ static func capture(next_wave: int, director: WaveDirector, player: Player) -> D
 		"boss_kinds": Game.bosses_felled.duplicate(),
 		"rng": {
 			"map": str(Game.rng_map.state),
-			"waves": str(Game.rng_waves.state),
 			"upgrades": str(Game.rng_upgrades.state),
 		},
 		"director": {"boss_cycle": director._boss_cycle.duplicate(), "cycle_count": director._cycle_count, "last_mutator": director.last_mutator},
@@ -60,7 +61,6 @@ static func apply(snap: Dictionary, director: WaveDirector, player: Player) -> i
 		Game.bosses_felled.append(str(b))
 	var rng: Dictionary = snap.get("rng", {})
 	Game.rng_map.state = str(rng.get("map", str(Game.rng_map.state))).to_int()
-	Game.rng_waves.state = str(rng.get("waves", str(Game.rng_waves.state))).to_int()
 	Game.rng_upgrades.state = str(rng.get("upgrades", str(Game.rng_upgrades.state))).to_int()
 	var d: Dictionary = snap.get("director", {})
 	director._boss_cycle = []
