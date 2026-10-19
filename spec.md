@@ -690,8 +690,7 @@ charges the gun; the gun sets up the blade.**
     hint "WHITE BOLTS: DEFLECT AT THE LAST MOMENT FOR A PERFECT".
   - Yata Mirror copies of a perfect bolt carry its damage but no KAMAE
     bonus. Values live in `scripts/bolt.gd` (`PERFECT_*`, `SIGNATURE_*`).
-  - Not built from the idea: KAMAE recovering more slowly as the boss loses
-    HP (left for the owner's verdict).
+  - KAMAE drains more slowly as the boss loses HP (owner, 2026-10-19; §5.5).
 - **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
   0.22, slash trail, slice sound.
 - **A slash just hits a staggered enemy** (full damage, armour ignored, so it
@@ -1085,7 +1084,12 @@ glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
 - **Glory kills nearby:** a glory kill on an add within **15 m** of the boss
   fills **12%** of its bar. The adds feed the boss fight.
 - **Backing off:** after **2.5 s** without pressure the bar drains at **7%
-  per second**. Gentle: a short retreat to heal costs little.
+  per second** at full HP. Gentle: a short retreat to heal costs little.
+  A hurt boss steadies itself more slowly (Sekiro; owner, 2026-10-19, with
+  Perfect Deflect): the drain scales with its HP, linearly down to **30%**
+  of that at no HP (4.55%/s at half HP, 2.1%/s near death), so pressure
+  sticks better as the fight goes on. `DRAIN_AT_NO_HP` in
+  `scripts/boss_kamae.gd`.
 - **The break:** at full, a heavy clang, hitstop 0.12, shake 0.5, an impact
   frame and the centre stamp **KAMAE BROKEN** (gold). The boss reels (its
   STAGGER state, armour off) for its stagger time **+1.5 s** (Kurokage 4.1 s,
@@ -2736,9 +2740,9 @@ yet, and each needs a spec update with its tuning when it is built.
    after play-testing; tuning in §3.2 (Perfect deflect). A deflect in the
    last 0.15 s before a bolt lands is PERFECT: a ringing clang, a white
    flash, ×12 return damage, +2 cells, a tally row, and on each boss's white
-   signature volley a +20% KAMAE hit. The normal deflect is unchanged. Not
-   built: KAMAE recovering more slowly as the boss loses HP (Sekiro), left
-   open.
+   signature volley a +20% KAMAE hit. The normal deflect is unchanged.
+   KAMAE also drains more slowly as the boss loses HP (Sekiro; owner,
+   2026-10-19, §5.5).
 4. **Bet on the wave.** The wave intro offers the seeded mutator and the
    player takes it (for its score multiplier) or passes; later waves may
    offer a second to stack. The same seed offers the same choices; harsh

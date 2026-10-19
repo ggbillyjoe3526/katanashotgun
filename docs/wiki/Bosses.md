@@ -40,7 +40,8 @@ gold **KAMAE** bar (its fighting stance) under its health bar.
    and so does every shot you deflect back at the boss. A glory kill on one of
    its adds within 15 m fills 12% of the bar in one go.
 2. **Don't back off for long.** After 2.5 s without pressure the bar drains,
-   7% per second. A quick retreat to heal costs little.
+   7% per second. A quick retreat to heal costs little. The more hurt the
+   boss is, the slower it drains: near death only about a third as fast.
 3. **Break it.** When the bar fills, a heavy clang and **KAMAE BROKEN**: the
    boss reels, defenceless, for about 4 to 5 seconds (Kurokage 4.1 s,
    Tetsugumo 4.7 s, Shuten 4.5 s). The bar shows the time left.

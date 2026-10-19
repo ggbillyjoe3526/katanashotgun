@@ -32,7 +32,7 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | KAMAE posture | pressure fills a bar; full = KAMAE BROKEN, the boss reels for its stagger time + 1.5 s, F lands the ONIKIRI for 20% max HP (kills at ≤ 20%) | LIVE |
 | KAMAE fill | katana poise ×1.6 (MASAMUNE EDGE's heavy cut ×1.0), shotgun ×0.6, returned bolt = its damage ×0.5, a glory kill on an add within 15 m = 12% of the bar | LIVE |
 | Perfect deflect | a deflect in the last 0.15 s before a bolt lands: ×12 return damage (×8 normally). Each boss has one **signature volley** drawn with a big white halo; the first perfect deflect on it adds **+20% KAMAE** when the bolt lands (once per volley), a PERFECT stamp and a short slow motion | PR #31 |
-| KAMAE drain | after 2.5 s without pressure, 7% of the bar per second | LIVE |
+| KAMAE drain | after 2.5 s without pressure, 7% of the bar per second at full HP, slowing with the boss's HP down to 30% of that (2.1%/s) near death (slower part: PR #31) | LIVE |
 | Sidestep | aimed at from beyond 7 m (+ radius) for 0.35 s, it steps out of the line; cooldown 4 s (6 s for the run's first boss); never up close, never mid-attack | LIVE |
 | RED SIGNAL | one heavy move per boss: spinning red diamond, alarm, a beep 0.2 s before it lands, 0.9–1.0 s warning; can't be deflected or traded with. Dashing as its hit connects = PERFECT: slow motion and +15% KAMAE. Cooldown 14 s | LIVE |
 | Delayed swings | 30% of melee windups hold 1.7× as long; eyes stay dim, then flare with a hiss 0.22 s before the hit | LIVE |
@@ -209,4 +209,4 @@ A new boss is ready to build when every line below holds. Copy the list into the
 | 2026-10-18 | KAMAE posture and the ONIKIRI are LIVE (PR #17): boss glory kills and the 15% DEATHBLOW are gone. |
 | 2026-10-18 | Movesets built (PR #19): sidesteps, delayed swings, punish windows, an area move and a RED SIGNAL per boss, seeded boss dice. |
 | 2026-10-18 | KAMAE (#17) and the movesets (#19) merged: every row is LIVE. |
-| 2026-10-19 | Perfect deflect (PR #31, play-test experiment): a signature volley per boss (Kurokage's shuriken fan, a new white round at the end of Tetsugumo's gatling sweep, Shuten's fan volley); a perfect deflect on it adds +20% KAMAE. |
+| 2026-10-19 | Perfect deflect (PR #31, play-test experiment): a signature volley per boss (Kurokage's shuriken fan, a new white round at the end of Tetsugumo's gatling sweep, Shuten's fan volley); a perfect deflect on it adds +20% KAMAE. KAMAE drains more slowly as the boss loses HP (30% of the drain near death). |

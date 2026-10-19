@@ -1053,7 +1053,7 @@ func _end_stagger() -> void:
 func _update_poise(delta: float) -> void:
 	poise_t -= delta
 	if kamae:
-		kamae.update(delta)
+		kamae.update(delta, hp / max_hp if max_hp > 0.0 else 1.0)
 	elif poise_t <= 0.0 and state != S.STAGGER:
 		poise = minf(max_poise, poise + max_poise * 0.35 * delta)
 	if marker.visible:
