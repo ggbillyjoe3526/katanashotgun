@@ -72,12 +72,15 @@ func disarm() -> void:
 	_fit()
 
 
-## Shows `note` in place of the label for a moment ("COPIED").
+## Shows `note` in place of the label for a moment ("COPIED"). The button
+## keeps its width, so text laid out beside it holds still.
 func flash(note: String) -> void:
+	var w := size.x
 	_armed_t = 0.0
 	_flash_t = FLASH_S
 	text = note
 	_fit()
+	size.x = maxf(size.x, w)
 
 
 func _process(_delta: float) -> void:

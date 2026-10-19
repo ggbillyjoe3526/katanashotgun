@@ -10,7 +10,7 @@ func test_reads_the_shown_seed() -> void:
 
 
 func test_reads_the_forms_players_paste() -> void:
-	for text in ["1234abcd", "1234 ABCD", "  1234-abcd\n", "SEED 1234-ABCD", "my seed: 1234-ABCD, beat 120000"]:
+	for text in ["1234abcd", "1234 ABCD", "  1234-abcd\n", "SEED 1234-ABCD", "my seed: 1234-ABCD, beat 120000", "cafe 1234-ABCD"]:
 		assert_eq(SeedEntry.parse(text), SEED, text)
 
 
@@ -68,3 +68,12 @@ func test_saved_run_makes_play_ask_twice() -> void:
 	assert_eq(got, [], "the first press only warns that the saved run ends")
 	box.play_btn.press()
 	assert_eq(got, [0x0BADC0DE])
+
+
+func test_copied_note_keeps_the_button_still() -> void:
+	# the seed and prompt are laid out beside COPY; they must not move
+	var b := TechButton.make("COPY SEED  [C]", Color.WHITE)
+	add_child_autofree(b)
+	var w := b.size.x
+	b.flash("COPIED")
+	assert_eq(b.size.x, w)

@@ -17,7 +17,8 @@ const HINT := "TYPE OR PASTE THE 8 CHARACTERS: 0-9, A-F"
 
 ## Text a player can paste: "0BAD-C0DE", "0bad c0de", "0BADC0DE" or a line
 ## that holds one, like "SEED 0BAD-C0DE" copied from the results screen.
-static var _pattern: RegEx
+static var _dashed: RegEx
+static var _loose: RegEx
 
 var digits := "" # what has been typed so far, upper case, no dash
 ## A suspended run is waiting: playing a seed ends it, so PLAY asks twice.
@@ -37,9 +38,15 @@ var _note_t := 0.0 # seconds a warning stays before the hint comes back
 
 ## The seed in `text`, or -1 when it holds none.
 static func parse(text: String) -> int:
-	if _pattern == null:
-		_pattern = RegEx.create_from_string("(?i)(?<![0-9a-f])([0-9a-f]{4})[- ]?([0-9a-f]{4})(?![0-9a-f])")
-	var m := _pattern.search(text)
+	if _dashed == null:
+		var edge := "(?i)(?<![0-9a-f])([0-9a-f]{4})%s([0-9a-f]{4})(?![0-9a-f])"
+		_dashed = RegEx.create_from_string(edge % "-")
+		_loose = RegEx.create_from_string(edge % " ?")
+	# the shown form first, so a word like "dead" or "cafe" before the seed
+	# isn't read as its first half
+	var m := _dashed.search(text)
+	if m == null:
+		m = _loose.search(text)
 	if m == null:
 		return -1
 	var v := (m.get_string(1) + m.get_string(2)).hex_to_int()
@@ -171,6 +178,10 @@ func _input(event: InputEvent) -> void:
 	if not k.pressed:
 		return
 	var ctrl := k.ctrl_pressed or k.meta_pressed
+	if ctrl and k.keycode == KEY_V: # the layout's V, wherever it sits
+		if not k.echo:
+			paste()
+		return
 	match k.physical_keycode:
 		KEY_ESCAPE:
 			close()
@@ -189,11 +200,6 @@ func _input(event: InputEvent) -> void:
 				Sfx.play("type", -6.0, 0.8)
 				_refresh()
 			return
-		KEY_V:
-			if ctrl:
-				if not k.echo:
-					paste()
-				return
 	if ctrl or k.echo or k.unicode == 0:
 		return
 	# the typed character, so every keyboard layout types what it shows
