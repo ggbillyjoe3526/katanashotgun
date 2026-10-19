@@ -63,7 +63,8 @@ feel right:
 - **The city is watching:** drones and billboards on the rooftop follow
   your combo and score, and show the best initials for the seed.
 - **Run cards:** one key saves a picture of your run with its seed code,
-  ready to post anywhere.
+  ready to post anywhere. In the game to try now: see
+  [Run Cards](Run-Cards).
 
 KATANA / SHOTGUN is and stays fully **offline**: no accounts, no servers and
 no online leaderboards. You race friends by sharing seeds instead.
