@@ -46,17 +46,16 @@ TOP_COVER_W = 0.076
 SIGHT = [(-0.215, 0.105), (-0.150, 0.105), (-0.150, 0.132), (-0.158, 0.140), (-0.215, 0.140)]
 SIGHT_W = 0.062
 
-# twin-tube shroud (light): upper tube runs further than the lower one and
-# both fronts are cut at a slant
-UPPER_TUBE = [(0.090, 0.080), (0.905, 0.080), (0.935, 0.098), (0.920, 0.124), (0.090, 0.124)]
-LOWER_TUBE = [(0.130, 0.024), (0.880, 0.024), (0.895, 0.040), (0.880, 0.078), (0.130, 0.078)]
+# twin-tube shroud (light): flat fronts, the upper tube a little longer
+UPPER_TUBE = [(0.090, 0.080), (0.920, 0.080), (0.920, 0.124), (0.090, 0.124)]
+LOWER_TUBE = [(0.130, 0.024), (0.900, 0.024), (0.900, 0.078), (0.130, 0.078)]
 TUBE_W = 0.096
 SEAM_Y = 0.60  # panel break across both tubes
 
 # under-barrel housing (dark) that holds the coil fins, with a chamfered nose
 UNDER = [
-    (0.230, -0.062), (0.700, -0.062), (0.770, -0.030), (0.790, 0.026),
-    (0.230, 0.026),
+    (0.219, -0.062), (0.700, -0.062), (0.770, -0.030), (0.790, 0.026),
+    (0.219, 0.026),
 ]
 UNDER_W = 0.068
 FINS_Y = (0.300, 0.365, 0.430, 0.495)
@@ -80,7 +79,8 @@ FRAME = [
     (-0.262, -0.050), (-0.262, -0.105), (-0.190, -0.188),
 ]
 FRAME_W = 0.038
-TRIGGER = [(0.050, -0.020), (0.070, -0.020), (0.072, -0.045), (0.060, -0.075), (0.050, -0.075), (0.058, -0.045)]
+# curved like a normal trigger: the finger face is hollow and the tip points forward
+TRIGGER = [(0.050, -0.020), (0.066, -0.020), (0.063, -0.045), (0.076, -0.075), (0.066, -0.077), (0.051, -0.047)]
 TRIGGER_W = 0.010
 
 LEDS = [(-0.112 + (i % 5) * 0.022, 0.071 - (i // 5) * 0.022) for i in range(10)]
@@ -217,8 +217,8 @@ def build(offset=(0.0, 0.0, 0.0)):
     # cooling vents in the side panel, ahead of the charge lights
     for s in (-1, 1):
         for k in range(6):
-            y = 0.010 + k * 0.017
-            cut(rec, col, root, f"cut_vent_rec_{s}_{k}", prism([(y, 0.022), (y + 0.006, 0.022), (y + 0.006, 0.082), (y, 0.082)], 0.01, x0=s * RECEIVER_W / 2 - 0.006))
+            y = -0.004 + k * 0.016
+            cut(rec, col, root, f"cut_vent_rec_{s}_{k}", prism([(y, 0.022), (y + 0.006, 0.022), (y + 0.022, 0.082), (y + 0.016, 0.082)], 0.01, x0=s * RECEIVER_W / 2 - 0.006))
     bevel(rec, 0.004, 2)
     plate = _object(col, root, "led_plate", prism(LED_PLATE, 0.003, x0=-RECEIVER_W / 2 - 0.0005), body)
     bevel(plate, 0.001, 1)
@@ -264,6 +264,9 @@ def build(offset=(0.0, 0.0, 0.0)):
              box(0.0, yc, face, 0.040, ylen, 0.004), box(0.0, yc, -face, 0.040, ylen, 0.004)]
     dc = _object(col, root, "drum_cells", merge(cells), glow)
     dc.parent = drum
+    # cradle: holds the drum against the receiver and the shroud, no gap
+    cradle = _object(col, root, "drum_cradle", prism([(0.100, -0.010), (0.240, -0.010), (0.240, 0.030), (0.100, 0.030)], 0.060), body)
+    bevel(cradle, 0.003, 2)
 
     grip = _object(col, root, "grip", prism(GRIP, GRIP_W), body)
     bevel(grip, 0.004, 2)
