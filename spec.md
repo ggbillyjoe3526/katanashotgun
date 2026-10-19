@@ -1399,7 +1399,7 @@ the holographic cut-in (§9.8).
 ### 7.5 Seeds
 - A 31-bit run seed, shown as **XXXX-XXXX** hex. It can be forced with
   `--seed=XXXX-XXXX`.
-- Separate RNG streams, all in `Game`:
+- Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
   - `rng_upgrades = hash(seed × 7 + 3)`: augment offers (one shuffle per
