@@ -156,6 +156,7 @@ const LINE := 14.0 # line pitch of stacked small text (Jersey 10: 10 px capitals
 const SCORE_Y := -4.0
 const COMBO_GAP := 11.0 # the combo sits this far under the vitals frame
 const CALLOUT_X := 32.0 # kill callouts start this far right of the frame
+const HP_PLATE_W := 22.0 # the health number's plate at three digits
 var score_hold := 0 # points already scored but held back until a tally slams
 var _score_bump := 0.0
 var _last_target := 0
@@ -926,6 +927,8 @@ func _on_level_roll_done(levels: int) -> void:
 func show_reward(def: Dictionary) -> void:
 	juice.cut_in("REWARD UNLOCKED")
 	_reward_t = 0.0
+	# the card deals into the bottom of the screen: the warning lane clears
+	hint_bg.visible = false
 	juice.later(0.8, func(): reward_card.play(def))
 
 
@@ -1246,7 +1249,8 @@ func kamae_broken() -> void:
 ## the lane's colour (red for a warning, yellow for a hint), the rest of the
 ## sentence white under it. A new one replaces the old.
 func show_hint(text: String, warn := false) -> void:
-	if juice.intro_showing():
+	if juice.intro_showing() or reward_card.visible:
+		# the intro and the reward card hold the lanes; the hint waits
 		_hint_wait = text
 		_hint_wait_warn = warn
 		return
@@ -1671,7 +1675,9 @@ func _update_play(delta: float) -> void:
 	if noammo_bg.visible:
 		noammo_label.position = Vector2(5, 0)
 		noammo_bg.size = noammo_label.size + Vector2(10, 0)
-		noammo_bg.position = Vector2(hp_label.position.x - 4.0 - noammo_bg.size.x, roundf(c.y - noammo_bg.size.y * 0.5))
+		# placed for a three-digit health number, so it never shifts as health changes
+		var hp_w := maxf(hp_label.size.x, HP_PLATE_W)
+		noammo_bg.position = Vector2(c.x - fh - 5.0 - hp_w - 4.0 - noammo_bg.size.x, roundf(c.y - noammo_bg.size.y * 0.5))
 		noammo_bg.modulate.a = clampf((1.4 - noammo_t) / 0.25, 0.0, 1.0)
 	# ---- run XP: a hairline along the bottom edge
 	xp_bg.position = Vector2(0, vs.y - 2)
@@ -1821,7 +1827,7 @@ func _update_play(delta: float) -> void:
 		hint_bg.modulate.a = clampf((4.5 - hint_t) / 0.3, 0.0, 1.0)
 		if hint_t > 4.5:
 			hint_bg.visible = false
-	if not juice.intro_showing():
+	if not juice.intro_showing() and not reward_card.visible:
 		if _hint_wait != "":
 			show_hint(_hint_wait, _hint_wait_warn)
 			_hint_wait = ""

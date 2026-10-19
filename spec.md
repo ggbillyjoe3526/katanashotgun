@@ -685,7 +685,7 @@ charges the gun; the gun sets up the blade.**
     Tetsugumo's signature round, Shuten's fan volley; §5.2). The first
     perfect deflect on a volley earns the **big KAMAE hit: +20% of the
     bar** when the bolt lands (once per volley, ×1.5 in a punish window like
-    all KAMAE), plus the centre stamp **PERFECT** (cyan, as for the RED
+    all KAMAE), plus the stamp **PERFECT** (cyan, top lane, as for the RED
     SIGNAL dash) and a short slow motion (×0.35 for 0.3 s). The first
     signature volley of a run (once the deflect hint has shown) shows the
     hint "WHITE BOLTS: DEFLECT AT THE LAST MOMENT FOR A PERFECT".
@@ -1786,7 +1786,9 @@ the holographic cut-in (§9.8).
     - The numbers sit just outside on small dark plates: the health number
       left of the frame (white, red below 30%; it never flashes) and the cell
       count right of it (cyan, red at 0).
-    - The crosshair itself is the dot and ticks, with hit ticks on hit.
+    - The crosshair itself is the dot and ticks, with hit ticks on hit. The
+      old katana and shotgun readiness arcs are gone (the approved Focus
+      mockups have none; the frame replaced them).
     - FINISH, the wave payout and the boss-defeated card own the middle of
       the screen: the frame and its numbers step aside while they are up.
   - **Under the frame:** the combo (`x12`, from ×2) on a dark plate, with
@@ -1820,7 +1822,8 @@ the holographic cut-in (§9.8).
     "RED SIGNAL" or the shockwave; yellow for a hint) and the rest of the
     sentence is white on the line under it; a hint is split at its first
     dash, colon, "!" or "?". 4.5 s, each shown once. The boss reward card
-    also deals into the bottom of the screen.
+    also deals into the bottom of the screen; a hint waits until it has
+    gone.
 - **Title screen:**
   - The **KATANA / SHOTGUN** logo: KATANA flies in from the left and SHOTGUN
     from the right (0.3 s), on a tech panel. Then a **neon blade cuts the
@@ -2242,7 +2245,9 @@ is never lost.
 - **It unlocks NOTHING.** It exists purely to show progression. It never
   changes difficulty.
 - **Two different levels:** label "PLAYER LV" (persistent) and "RUN LV" (the
-  in-run augment level) clearly. Example: "PLAYER LV 23" vs "RUN LV 7".
+  in-run augment level) clearly. Example: "PLAYER LV 23" vs "RUN LV 7". The
+  live HUD shows the run's progress only as the XP hairline (§9.7); "RUN LV"
+  is written on the results screen.
 
 ### 11.2 Boss rewards (the ONLY unlocks)
 - **Felling a boss can earn a reward.** Rewards are the only thing that
