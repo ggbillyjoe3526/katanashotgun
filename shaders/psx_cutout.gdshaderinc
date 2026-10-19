@@ -1,6 +1,6 @@
 // Body of the blood-decal surface, shared by psx_cutout and psx_cutout_hd
 // (INSANE on Forward+: fogged by the Environment, like psx_lit_hd).
-// Linear for the plain look; the retro look picks the nearest texel itself.
+// Linear for RETRO LOOK OFF and LIGHT; FULL picks the nearest texel itself.
 uniform sampler2D albedo_tex : source_color, filter_linear, repeat_enable;
 uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform bool use_vertex_color = true;
@@ -9,15 +9,17 @@ uniform float snap = 1.0;
 uniform vec3 fog_color : source_color = vec3(0.12, 0.05, 0.2);
 uniform float fog_start = 10.0;
 uniform float fog_end = 90.0;
-// 1 = the PS1 look, 0 = the dev menu's plain look (DevSettings.retro).
+// The RETRO LOOK setting (RetroLook): above 0.5 (FULL) textures pick the
+// nearest texel. psx_snap_lines: the vertex snap grid's height in lines (0 = off).
 global uniform float psx_retro;
+global uniform float psx_snap_lines;
 
 varying float v_fog;
 
 void vertex() {
 	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-	if (snap * psx_retro > 0.0 && clip.w > 0.001) {
-		vec2 grid = VIEWPORT_SIZE * 0.6 / snap;
+	if (snap * psx_snap_lines > 0.0 && clip.w > 0.001) {
+		vec2 grid = vec2(VIEWPORT_SIZE.x / VIEWPORT_SIZE.y, 1.0) * psx_snap_lines / snap;
 		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
 	}
 	POSITION = clip;

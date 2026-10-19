@@ -19,23 +19,40 @@ effects**, **Ambience** (rain and the city) and **Menus/HUD**.
 | VSync | On (no tearing) or Off (less input lag) | Off |
 | Frame cap | Unlimited, or 60, 75, 120, 144, 165, 240, 360 fps | Unlimited |
 | Graphics | WEAK, MEDIOCRE, INSANE (see [Graphics presets](#graphics-presets)) | MEDIOCRE |
+| Retro look | OFF, LIGHT, FULL (see [Retro look](#retro-look)) | LIGHT |
 | Render scale | 50% to 100% of the 3D view's sharpness. Lower runs faster | 100% (WEAK uses 75%) |
 | Field of view | 70 to 110 | 88 |
 
-The game keeps its chunky PS1/PS2 pixel look at any resolution: the 3D view
-is drawn at 960 × 540 and scaled up in whole steps without smoothing, so on a
-4K screen every game pixel is a sharp 4 × 4 block, and 2 × 2 on 1080p. Text
-uses a true pixel font drawn at 480 × 270, so its letters stay crisp and even
-at any size (8 × 8 blocks on 4K). The Video tab names the screen it
-detected. **F11** switches between full screen and a window.
+Text uses a true pixel font drawn at 480 × 270, so its letters stay crisp
+and even at any size (8 × 8 blocks on 4K) whatever the Retro look. The Video
+tab names the screen it detected. **F11** switches between full screen and a
+window.
 
 **If the game runs slowly:** set Graphics to WEAK first, then lower the
 Render scale. Press **F3** in a game to see your frame rate.
 
+### Retro look
+
+How strong the old-console (PS1/PS2) look is. Colours, glow, lighting and the
+pixel-font HUD are the same on all three.
+
+![The same spot on FULL, LIGHT and OFF, at real 4K pixels](images/retro-look.jpg)
+
+| | FULL | LIGHT (default) | OFF |
+| --- | --- | --- | --- |
+| 3D picture | Very chunky: drawn at 480 × 270 (8 × 8 blocks on 4K) | Sharper: drawn at about 540 lines (4 × 4 blocks on 4K, 2 × 2 on 1080p) | Your screen's full resolution |
+| Wobbling shapes | Strong | Gentle | None |
+| Textures | Blocky, warping | Smooth, a trace of warp | Smooth |
+| Colour banding and dither | Yes | Faint | None |
+| Scanlines and colour fringe | Yes | Faint | None |
+
+Pixels always stay square and sharp: the picture is scaled up in whole steps,
+never smoothed.
+
 ### Graphics presets
 
-Every preset keeps the same chunky PS1/PS2 look. The higher ones add light,
-not realism.
+Every preset keeps the same PS1/PS2 look (set its strength with
+[Retro look](#retro-look)). The higher ones add light, not realism.
 
 ![The same spot on WEAK, MEDIOCRE and INSANE](images/graphics-presets.jpg)
 

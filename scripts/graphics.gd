@@ -13,7 +13,7 @@ class_name Graphics
 ## shadowed light drops out of the Gouraud (vertex-lit) materials or draws in
 ## a brighter per-pixel pass, and its ambient occlusion barely shows. Lamps
 ## never cast: Forward+ ignores omni shadows on vertex-lit materials.
-## Every tier keeps the PS1 look: 960x540, vertex snap, Gouraud lighting, the
+## Every tier keeps the PS1 look (its strength is RetroLook): vertex snap, Gouraud lighting, the
 ## run's palette and the dither post-process. Higher tiers add light, never
 ## realism. WEAK and MEDIOCRE run on Compatibility (OpenGL 3), INSANE on
 ## Forward+ (Vulkan or Direct3D 12). Godot picks the renderer at start-up, so
@@ -292,7 +292,7 @@ static func _apply_server(tier: String, top: bool) -> void:
 		RenderingServer.directional_shadow_atlas_set_size(4096, true)
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree and tree.root:
-		# smoother edges that still sit on the big 960x540 pixels
+		# smoother edges that still sit on the big retro pixels
 		tree.root.msaa_3d = {"low": Viewport.MSAA_DISABLED, "medium": Viewport.MSAA_2X}.get(tier, Viewport.MSAA_4X)
 	if not advanced():
 		return

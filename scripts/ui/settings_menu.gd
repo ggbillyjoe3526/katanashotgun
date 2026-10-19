@@ -155,6 +155,12 @@ func _build_rows(t: String) -> Array:
 			out.append(_option("GRAPHICS", Settings.QUALITY_IDS, q_names,
 				func(): return Settings.quality, _set_quality,
 				_quality_help()))
+			var look_names := []
+			for id in RetroLook.IDS:
+				look_names.append(RetroLook.NAMES[id])
+			out.append(_option("RETRO LOOK", RetroLook.IDS, look_names,
+				func(): return Settings.retro_look, _set_retro_look,
+				_retro_help()))
 			out.append(_slider("RENDER SCALE", Settings.RENDER_SCALE_MIN, 1.0, 0.05,
 				func(): return Settings.render_scale, _set_render_scale,
 				_pct, "SHARPNESS OF THE 3D VIEW. LOWER RUNS FASTER"))
@@ -222,6 +228,19 @@ func _quality_help() -> String:
 ## The chosen preset only fully applies once the game restarts.
 func restart_pending() -> bool:
 	return Graphics.restart_needed(Settings.quality)
+
+
+func _set_retro_look(v: Variant) -> void:
+	Settings.retro_look = v
+	RetroLook.apply(v)
+	_set_tab(tab, true) # the help line describes the chosen level
+
+
+## What the RETRO LOOK row's help line says for the chosen level.
+func _retro_help() -> String:
+	return {"off": "CLEAN, SHARP 3D. NO PS1 EFFECTS",
+		"light": "A HINT OF PS1: SHARPER, LESS WOBBLE",
+		"full": "THE FULL PS1 LOOK: BIG PIXELS, WOBBLE, DITHER"}.get(Settings.retro_look, "")
 
 
 func _set_render_scale(v: float) -> void:

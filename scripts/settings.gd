@@ -8,7 +8,7 @@ class_name Settings
 ## Saved as plain data (to_dict / from_dict) inside the player's profile
 ## (Profile, spec §11.3), which writes it atomically with a backup.
 
-const VERSION := 3 # 2: full screen, VSync off and no frame cap by default; 3: WEAK/MEDIOCRE/INSANE
+const VERSION := 4 # 2: full screen, VSync off and no frame cap by default; 3: WEAK/MEDIOCRE/INSANE; 4: RETRO LOOK
 const BUSES: Array[String] = ["Master", "Music", "SFX", "Ambience", "UI"]
 const SENS_BASE := 0.0024 # radians per mouse pixel at sensitivity 1.0
 const SENS_MIN := 0.1
@@ -18,8 +18,9 @@ const FOV_MAX := 110.0
 const RENDER_SCALE_MIN := 0.5
 const WINDOW_MODES: Array[String] = ["windowed", "fullscreen", "exclusive"]
 const FPS_CAPS: Array[int] = [0, 60, 75, 120, 144, 165, 240, 360] # 0 = unlimited
-## The 3D view's fixed internal size (spec §2); windowed mode scales it by a
-## whole number so every retro pixel stays square and sharp.
+## The project's base size (spec §2): RETRO LOOK FULL draws at it over the
+## stretch scale (480x270); windowed mode scales it by a whole number so
+## every retro pixel stays square and sharp.
 const BASE_SIZE := Vector2i(960, 540)
 const QUALITY_IDS: Array[String] = ["low", "medium", "high"] # WEAK, MEDIOCRE, INSANE
 ## Picking a preset sets render scale to this as a starting point.
@@ -51,6 +52,7 @@ static var vsync := false
 static var fps_cap := 0
 static var render_scale := 1.0
 static var quality := "medium"
+static var retro_look := RetroLook.DEFAULT # how strong the PS1/PS2 look is (RetroLook.IDS)
 static var fov := DEFAULT_FOV
 static var sensitivity := 1.0
 static var shake := 1.0 # comfort: 0 = no screen shake, 1 = full
@@ -92,6 +94,7 @@ static func reset_video() -> void:
 	vsync = false
 	fps_cap = 0
 	quality = "medium"
+	retro_look = RetroLook.DEFAULT
 	render_scale = 1.0
 	fov = DEFAULT_FOV
 
@@ -144,10 +147,7 @@ static func apply_video() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
 	Engine.max_fps = fps_cap
 	apply_quality()
-	DevSettings.apply_look()
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree and tree.root:
-		tree.root.scaling_3d_scale = render_scale
+	RetroLook.apply(retro_look) # also sets the 3D view's scale from render_scale
 
 
 static func apply_window() -> void:
@@ -413,12 +413,12 @@ static func to_dict() -> Dictionary:
 		"fps_cap": fps_cap,
 		"render_scale": render_scale,
 		"quality": quality,
+		"retro_look": retro_look,
 		"fov": fov,
 		"sensitivity": sensitivity,
 		"shake": shake,
 		"flash": flash,
 		"bindings": bindings.duplicate(true),
-		"dev": DevSettings.to_dict(),
 	}
 
 
@@ -430,6 +430,8 @@ static func from_dict(d: Dictionary) -> void:
 		d = _migrate_v1(d)
 	if _is_num(d.get("v")) and int(d.v) < 3:
 		d = _migrate_v2(d)
+	if _is_num(d.get("v")) and int(d.v) < 4:
+		d = _migrate_v3(d)
 	var vol: Variant = d.get("volume")
 	if vol is Dictionary:
 		for b in BUSES:
@@ -445,6 +447,9 @@ static func from_dict(d: Dictionary) -> void:
 	var q: Variant = d.get("quality")
 	if q is String and QUALITY_IDS.has(q):
 		quality = q
+	var rl: Variant = d.get("retro_look")
+	if rl is String and RetroLook.IDS.has(rl):
+		retro_look = rl
 	if _is_num(d.get("render_scale")):
 		render_scale = clampf(snappedf(float(d.render_scale), 0.05), RENDER_SCALE_MIN, 1.0)
 	if _is_num(d.get("fov")):
@@ -455,9 +460,6 @@ static func from_dict(d: Dictionary) -> void:
 		shake = clampf(float(d.shake), 0.0, 1.0)
 	if _is_num(d.get("flash")):
 		flash = clampf(float(d.flash), 0.0, 1.0)
-	var dev: Variant = d.get("dev")
-	if dev is Dictionary:
-		DevSettings.from_dict(dev)
 	var bd: Variant = d.get("bindings")
 	if bd is Dictionary:
 		# only listed actions, no reserved keys, and no key used twice
@@ -503,6 +505,19 @@ static func _migrate_v2(d: Dictionary) -> Dictionary:
 	if q is String and q == "high":
 		out["quality"] = "medium"
 	out["v"] = 3
+	return out
+
+
+## Version 3 to 4: the dev menu's plain-look switch became the RETRO LOOK
+## setting. A player who had switched the retro look off keeps it off;
+## everyone else gets the new default, LIGHT (owner, 2026-10-19).
+static func _migrate_v3(d: Dictionary) -> Dictionary:
+	var out := d.duplicate(true)
+	var dev: Variant = out.get("dev")
+	if dev is Dictionary and dev.get("retro") is bool and not dev.retro:
+		out["retro_look"] = "off"
+	out.erase("dev")
+	out["v"] = 4
 	return out
 
 

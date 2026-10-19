@@ -84,6 +84,7 @@ scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-i
                             data streaks, kill bursts, the settings screen
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
+scripts/retro_look.gd       RETRO LOOK levels (OFF / LIGHT / FULL): shader globals, stretch, 3D scale
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
 scripts/audio/              sound cue, music track and voice pool classes
 assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds one
@@ -210,15 +211,14 @@ Pass after `--` on the command line:
   build
 - **F10** opens the hidden DEV menu in any build: on the title, in a run (it
   pauses first) and on the pause screen. Mouse only, Esc closes. LOOK: the
-  RETRO LOOK switch (off = the plain look: full resolution, smooth textures,
-  no vertex wobble, dither or scanlines; saved), the perf overlay, hide the
-  HUD, force a palette. RUN: god mode, autoplay bot, game speed, start wave,
+  perf overlay, hide the HUD, force a palette (the plain-look switch is now
+  the player's RETRO LOOK setting in Settings > Video). RUN: god mode, autoplay bot, game speed, start wave,
   force a boss or mutator (these last until the game closes). ACTIONS: skip
   the wave, a level-up offer, every card at max rank, refill, restart the
   seed, a new seed, the juice test. A run that used anything on RUN or
   ACTIONS is a dev run: it writes no top 10 entry, XP or unlocks, and a DEV
   tag under the score says so. F10 cannot be bound to an action
-- `--plain` starts in the plain look · `--dev=look|run|actions` opens the DEV
+- `--look=off|light|full` starts on that RETRO LOOK level (`--plain` = off) · `--dev=look|run|actions` opens the DEV
   menu on the title at that tab
 - `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
   any text that leaves the screen, spills out of or across a panel, or

@@ -1,7 +1,7 @@
 // Body of the PS1 lit surface, shared by psx_lit (every preset) and
 // psx_lit_hd (INSANE on Forward+, which defines PSX_HD).
-// Linear, so the plain look (dev menu) can smooth textures; the retro look
-// picks the nearest texel itself (psx_texel), exactly as filter_nearest would.
+// Linear, so RETRO LOOK OFF and LIGHT smooth textures; FULL picks the
+// nearest texel itself (psx_texel), exactly as filter_nearest would.
 uniform sampler2D albedo_tex : source_color, filter_linear, repeat_enable;
 uniform bool use_texture = false;
 uniform vec4 albedo_color : source_color = vec4(1.0);
@@ -23,8 +23,11 @@ uniform float affine = 0.55;
 uniform vec3 fog_color : source_color = vec3(0.12, 0.05, 0.2);
 uniform float fog_start = 10.0;
 uniform float fog_end = 90.0;
-// 1 = the PS1 look, 0 = the dev menu's plain look (DevSettings.retro).
+// The RETRO LOOK setting (RetroLook): how much affine warp (0 = none, 1 =
+// full); above 0.5 (FULL) textures pick the nearest texel. psx_snap_lines: the vertex
+// snap grid's height in lines (0 = no wobble).
 global uniform float psx_retro;
+global uniform float psx_snap_lines;
 #ifdef PSX_HD
 // How wet flat floors look: low roughness feeds screen-space reflections.
 uniform float wet = 0.7;
@@ -51,8 +54,8 @@ void vertex() {
 		uv *= uv_scale;
 	}
 	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-	if (snap * psx_retro > 0.0 && clip.w > 0.001) {
-		vec2 grid = VIEWPORT_SIZE * 0.6 / snap;
+	if (snap * psx_snap_lines > 0.0 && clip.w > 0.001) {
+		vec2 grid = vec2(VIEWPORT_SIZE.x / VIEWPORT_SIZE.y, 1.0) * psx_snap_lines / snap;
 		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
 	}
 	POSITION = clip;

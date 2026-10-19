@@ -535,6 +535,7 @@ Notes:
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
 | Dev menu | A hidden developer menu on F10 with a switch for a plain, non-retro look, plus play-test tools; runs that use its cheats are never recorded (owner asked 2026-10-19; §16) |
+| Retro look strength | The full PS1 look was too strong and the plain look too clean: a RETRO LOOK setting (OFF / LIGHT / FULL) with LIGHT as the default, a sharper, gentler middle; FULL stays as it was (owner asked 2026-10-19; §9.1) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -570,9 +571,16 @@ Notes:
 - **Targets:** Windows x86_64 first (the developer's PC is Windows x64), then
   Mac and Linux. Export Windows with `embed_pck = true` for a single exe.
 - **Display:**
-  - 3D internal resolution **960×540**, stretch mode `viewport`, aspect
+  - Project base size **960×540**, stretch mode `viewport`, aspect
     `expand`, stretch scale **2.0**, so the UI is laid out in **480×270**
-    canvas units.
+    canvas units. Measured 2026-10-19: in `viewport` mode the stretch scale
+    divides the drawn size, so this draws the whole window, 3D included, at
+    **480×270** (8×8 screen pixels per game pixel on 4K), not 960×540 as
+    this section used to say. That is RETRO LOOK FULL.
+  - The **RETRO LOOK** setting (§9.1, `RetroLook`) picks how strong the
+    look is; its default, LIGHT, draws the 3D view at about 540 lines
+    (960×540 on 1080p and 4K) and the UI at the window's size, with the
+    stretch mode `canvas_items`.
   - `default_texture_filter = Nearest`, MSAA off.
   - Add a render-scale setting for the 3D view.
 - **Fonts:** rasterised at the 480×270 canvas size with **no antialiasing**,
@@ -586,11 +594,13 @@ Notes:
 - **Window:** start full screen at the display's own resolution (borderless,
   up to 4K and beyond); F11 or Alt+Enter toggles windowed. Windowed mode is
   the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
-  4K), so the retro pixels stay square and sharp. The 3D view stays 960×540
-  at any screen size and is upscaled with nearest filtering, never smoothed:
-  exactly 4× on 4K and 2× on 1080p; other sizes (1440p) get nearest scaling
-  with slightly uneven pixel widths. Higher resolution never smooths away the
-  PS1/PS2 look. Pause
+  4K), so the retro pixels stay square and sharp. The 3D view keeps its
+  RETRO LOOK resolution at any screen size and is upscaled with nearest
+  filtering, never smoothed: FULL's 480×270 exactly 8× on 4K and 4× on
+  1080p (1440p gets slightly uneven pixel widths); LIGHT picks the whole
+  number of screen pixels per game pixel that comes closest to 540 lines
+  (4 on 4K, 3 on 1440p, 2 on 1080p). Higher resolution never smooths away
+  the PS1/PS2 look. Pause
   when the window loses focus or the mouse capture is lost.
 - **Frame rate:** unlimited by default with VSync off; the frame cap offers
   60, 75, 120, 144, 165, 240 and 360, and VSync can be turned on.
@@ -1569,8 +1579,30 @@ the holographic cut-in (§9.8).
 ## 9. Presentation
 
 ### 9.1 World look: retro PS1/PS2
+- **RETRO LOOK setting** (Settings → Video; `scripts/retro_look.gd`;
+  owner, 2026-10-19: the full look was too strong, the plain look kept the
+  game good-looking but lost the PS1/PS2 feel). Three levels; the tuning
+  lives in `RetroLook.LEVELS` and reaches the shaders as four globals:
+
+  | | FULL | LIGHT (default) | OFF |
+  |---|---|---|---|
+  | 3D drawn at | 480×270 (`viewport` stretch) | about 540 lines: window ÷ whole number (`canvas_items`, 3D scale 1/n, post-process blocks of n×n) | window size |
+  | `psx_retro` (affine × 0.55 lit / 0.4 unlit, fringe, scanlines) | 1.0 | 0.35 | 0 |
+  | Nearest texels | yes | no (smooth, PS2-like) | no |
+  | `psx_snap_lines` (vertex grid height) | 162 (= 270 × 0.6, as before) | 360 | 0 (no wobble) |
+  | `psx_levels` (colour levels, Bayer 4×4 dither) | 48 | 64 | 0 (none) |
+  | `psx_pixel_lines` (post-process blocks) | 0 | 540 | 0 |
+
+  Why LIGHT is the default: the owner liked the plain look but wanted a bit
+  of PS1/PS2 kept, so LIGHT keeps sharp square pixels at twice FULL's
+  resolution (the 960×540 §2 always intended), a wobble under half the size
+  of FULL's and faint dither and fringe, and drops the blocky
+  warping textures that made the full look noisy. FULL is unchanged, for
+  players who want it. Old saves move to LIGHT; a player who had the dev
+  menu's plain look on gets OFF (settings v4). Gameplay never reads it.
 - **PSX lit shader:**
-  - Vertex snapping (grid = viewport size × 0.6 / snap).
+  - Vertex snapping (grid height = `psx_snap_lines` / snap lines, width
+    by the view's aspect).
   - Affine UV warp (uv × w varying).
   - **Per-vertex lighting.**
   - Fog, world-space planar UVs for boxes, and emission (from colour or
@@ -1585,14 +1617,17 @@ the holographic cut-in (§9.8).
     vertex colour.
 - **Post-process** (a full-screen canvas shader on a layer below the HUD, so
   the UI isn't dithered):
-  - colour levels 48 + Bayer 4×4 dither 0.6; saturation 1.22; contrast 1.08
-  - vignette 0.5; scanlines 0.07; edge chromatic aberration 1.2
+  - colour levels `psx_levels` (48 on FULL) + Bayer 4×4 dither 0.6;
+    saturation 1.22; contrast 1.08
+  - vignette 0.5; scanlines 0.07 and resting edge chromatic aberration 1.2,
+    both × `psx_retro`
   - red damage pulse at the edges; white flash; desaturate on death
   - **impact frames** (§9.8)
   - **combo heat:** extra aberration and saturation, and accent-coloured dots
     creeping in from the edges as the combo climbs:
     `heat = clamp((combo − 4)/40, 0, 1)`
-- **Textures:** procedural, small, nearest-filtered. Floor, panels, concrete,
+- **Textures:** procedural, small, nearest-filtered on FULL (the shaders
+  pick the nearest texel; LIGHT and OFF filter smoothly). Floor, panels, concrete,
   windows, containers, hazard, grate, signs and ads (seeded variants),
   splats, glow, star, noise, cloth, skin, lacquer, jump pad, ring, grid,
   chrome.
@@ -2434,8 +2469,8 @@ weak hardware.
 ### 14.1 Graphics presets
 Owner, 2026-10-18: WEAK is today's look, MEDIOCRE a noticeable step up,
 INSANE "lives up to the name" and uses what Godot does best. Ray and path
-tracing are dropped. Every tier keeps the PS1/PS2 direction: 960x540,
-vertex snap, Gouraud (per-vertex) lighting, the run's palette and the
+tracing are dropped. Every tier keeps the PS1/PS2 direction (its strength is
+the separate RETRO LOOK setting, §9.1): low resolution, vertex snap, Gouraud (per-vertex) lighting, the run's palette and the
 dither post-process. Higher tiers add light, never realism.
 `scripts/graphics.gd` applies the lighting to the map's Environment, moon and
 lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
@@ -2600,14 +2635,10 @@ seed | click: new seed).
   tool, not a player feature: nothing on screen points to it, it is titled
   DEV SETTINGS, and F10 is reserved from key rebinding. Mouse only, like the
   settings screen.
-  - LOOK: RETRO LOOK on/off. Off is the plain look for comparison: the 3D
-    view renders at the window's size (stretch mode `canvas_items` instead
-    of the 960x540 `viewport`), textures filter smoothly, and vertex
-    snapping, affine warping, colour banding, Bayer dither, scanlines and
-    the resting chromatic fringe are off (the shader global `psx_retro`).
-    Lighting stays per-vertex and the UI keeps its pixel fonts. Saved in
-    the settings (`dev.retro`). Also: perf overlay, hide the HUD while
-    playing, force a palette from the next run.
+  - LOOK: perf overlay, hide the HUD while playing, force a palette from
+    the next run. Its plain-look switch became the player's RETRO LOOK
+    setting (§9.1; owner, 2026-10-19), and nothing in the dev menu is saved
+    any more.
   - RUN: god mode, autoplay bot, game speed (25 to 200%, menus keep real
     time), start wave, force a boss, force a mutator. Session only, so a
     cheat never carries into the next launch.
@@ -2620,7 +2651,7 @@ seed | click: new seed).
     unlocks. A DEV tag under the score lists what is on; the menu says the
     same. Restarting from the menu pays the run on screen into the profile
     like an abandoned run first (unless it is a dev run), so no progress is
-    lost. Debug flags: `--plain`, `--dev=look|run|actions`.
+    lost. Debug flags: `--look=off|light|full` (`--plain` = off), `--dev=look|run|actions`.
 - **Perf probe:** `tools/perf_bench.sh headless|render [wave] [frames]
   [quality]` runs the autoplay bot on a fixed seed with `--perf`. Draw calls
   and node counts are the same on any machine; frame times only mean
