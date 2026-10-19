@@ -13,9 +13,9 @@ func _init() -> void:
 
 func burst(p: Vector2, accent: Color, n := 7, speed := 160.0, big := false, accent2 := Color(0.3, 0.95, 1.0)) -> void:
 	for i in n * 2:
-		var a := randf() * TAU
+		var a := Game.rng_fx.randf() * TAU
 		var col: Color = [Color.WHITE, accent, accent2][i % 3]
-		_bits.append({"p": p, "v": Vector2(cos(a), sin(a)) * speed * randf_range(0.4, 1.0), "s": float(randi_range(1, 3 if not big else 5)), "c": col, "t": 0.0, "life": randf_range(0.2, 0.45)})
+		_bits.append({"p": p, "v": Vector2(cos(a), sin(a)) * speed * Game.rng_fx.randf_range(0.4, 1.0), "s": float(Game.rng_fx.randi_range(1, 3 if not big else 5)), "c": col, "t": 0.0, "life": Game.rng_fx.randf_range(0.2, 0.45)})
 	_rings.append({"p": p, "t": 0.0, "life": 0.14 if not big else 0.24, "r": 10.0 if not big else 28.0, "c": accent2 if not big else accent})
 	while _bits.size() > 400:
 		_bits.pop_front()

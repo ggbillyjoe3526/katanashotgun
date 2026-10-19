@@ -88,6 +88,8 @@ func _ready() -> void:
 				# debug: open the settings screen on the title, at a tab
 				hud.settings_menu.tab = maxi(0, SettingsMenu.TABS.find(a.substr(11).to_upper()))
 				hud.settings_menu.open()
+			elif a == "--seedentry":
+				hud.open_seed_entry() # debug: open PLAY A SEED on the title
 
 
 # ---------------------------------------------------------------- flow
@@ -114,6 +116,20 @@ func start_run() -> void:
 ## The title's other choice when a run is suspended: the saved run ends
 ## here. Its XP still counts (progress is never lost), then a new seed starts.
 func abandon_suspended_run() -> void:
+	_end_suspended_run()
+	restart(false)
+
+
+## PLAY A SEED on the title: a run on that seed starts at once. A suspended
+## run ends first, the same way N ends it (its XP still counts).
+func play_seed(s: int) -> void:
+	if not resume.is_empty():
+		_end_suspended_run()
+	Game.next_seed = s
+	restart(false)
+
+
+func _end_suspended_run() -> void:
 	var stats: Dictionary = resume.get("stats", {})
 	# drop the snapshot first, so a crash here can't pay the run twice
 	Profile.clear_suspended_run()
@@ -122,7 +138,6 @@ func abandon_suspended_run() -> void:
 		if Profile.qualifies(int(stats.get("score", 0))):
 			Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(int(resume.get("seed", 0)))})
 	resume = {}
-	restart(false)
 
 
 func _on_between_waves(next_wave: int) -> void:
@@ -178,7 +193,7 @@ func resume_game() -> void:
 
 
 func _open_levelup() -> void:
-	var choices := Upgrades.roll(Game.upgrades, 3)
+	var choices := _roll_offer()
 	if choices.is_empty():
 		Game.pending_levelups = 0
 		return
@@ -187,6 +202,15 @@ func _open_levelup() -> void:
 	Sfx.play("levelup", -2.0)
 	Sfx.duck_music(-16.0)
 	hud.show_levelup(choices, _on_upgrade)
+
+
+## The next level-up's three cards.
+func _roll_offer() -> Array:
+	var choices := Upgrades.roll(Game.upgrades, 3)
+	if Game.debug_autoplay:
+		# tools/seed_check.sh compares these lines between two runs of a seed
+		print("[offer] %s" % ",".join(choices.map(func(u: Dictionary) -> String: return u.id)))
+	return choices
 
 
 func _on_upgrade(id: String) -> void:
@@ -205,7 +229,7 @@ func _on_upgrade(id: String) -> void:
 	else:
 		Game.popup.emit("%s ONLINE" % def.name, Upgrades.TAG_COLORS.get(def.tag, Color.WHITE))
 	if Game.pending_levelups > 0:
-		var choices := Upgrades.roll(Game.upgrades, 3)
+		var choices := _roll_offer()
 		if not choices.is_empty():
 			hud.show_levelup(choices, _on_upgrade)
 			Sfx.play("levelup", -6.0)
@@ -308,6 +332,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			# title only: in a run Q is a dash key, and a lost mouse lock pauses
 			# mid-dash, so the pause screen quits by its button alone
 			hud.title_quit.press()
+		elif Game.state == "title" and event.physical_keycode == KEY_S:
+			hud.open_seed_entry()
+		elif event.physical_keycode == KEY_C and (Game.state == "paused" or (Game.state == "dead" and hud.death_ready())):
+			hud.copy_seed(hud.pause_copy if Game.state == "paused" else hud.death_copy)
 		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)

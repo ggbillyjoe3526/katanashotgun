@@ -609,6 +609,8 @@ Notes:
 | quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
+| play a seed | S (title) | PLAY A SEED box (§7.5) |
+| copy seed | C (pause, results) | Also a COPY button (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
 
 Controller support: **OPEN** (not requested; design the input layer so it
@@ -1398,17 +1400,47 @@ the holographic cut-in (§9.8).
   (§19.1 #10).
 
 ### 7.5 Seeds
-- A 31-bit run seed, shown as **XXXX-XXXX** hex. It can be forced with
-  `--seed=XXXX-XXXX`.
+- A 31-bit run seed, shown as **XXXX-XXXX** hex (so it starts with 0 to 7).
+  It can be forced with `--seed=XXXX-XXXX`.
+- **PLAY A SEED** (built 2026-10-19): a button on the title (or **S**) opens
+  a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
+  itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
+  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
+  Enter starts a run on it at once; BACK or Esc closes; CLEAR empties.
+  Left alone, runs keep random seeds. With a suspended run waiting, PLAY
+  asks twice and then ends that run the way N does (its XP counts). The box
+  holds every key while open. Mouse alone or keyboard alone both work.
+- **COPY** puts the run's seed on the clipboard: a button beside the seed
+  on the pause screen and on the results prompt, or **C** there.
 - Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
-  - `rng_waves = hash(seed × 5 + 2)`: line-ups, mutators, boss order, spawn
-    choices.
-  - `rng_upgrades = hash(seed × 7 + 3)`: augment offers.
+  - `rng_upgrades = hash(seed × 7 + 3)`: augment offers (one shuffle per
+    offer, so the same picks give the same offers).
+  - **Per-wave streams**, reseeded from the seed and the wave number at every
+    wave start (`Game.seed_wave`), so nothing that happens in one wave, nor
+    how long it lasts, can shift a later wave:
+    - `rng_waves`: the wave's plan (mutator, line-up, boss order), drawn only
+      when the wave starts.
+    - `rng_spawns`: spawn points, spawn groups, boss reinforcements.
+    - `rng_combat`: shotgun pellet spread, which glory kill plays, where
+      health orbs scatter.
+    - `rng_hazards`: storm strikes.
+  - Each per-wave stream is seeded from `hash([seed, wave, tag])`, one tag
+    per stream, so nearby seeds never share a stream a few waves apart.
+  - Every enemy's own dice (attack timers, strafing, orb drops) come from
+    the seed, the wave and its place in the wave's spawn order; a boss's
+    from `hash(seed × 13 + wave)` (§5.6).
+  - `rng_fx`: presentation only (sparks, flashes, sound variations, grunt
+    looks). Randomized, never seeded, never used for gameplay.
+- Nothing calls Godot's global `randf()`, `randi()`, `shuffle()` or
+  `pick_random()`: a unit test fails the build if anything does
+  (`test/unit/test_seeds.gd`). `tools/seed_check.sh` (in CI) plays one seed
+  twice with the autoplay bot and fails if the waves or offers differ.
 - The music playlist order also comes from the seed.
-- **The same seed and the same play give the same run.** Keep cosmetic
-  randomness out of the gameplay streams.
+- **The same seed and the same play give the same run**, and however a wave
+  is played, the waves after it keep their line-ups, mutators and bosses.
+  Keep cosmetic randomness out of the gameplay streams.
 - Planned: a daily seed. (Mentioned early; not confirmed. **OPEN**.) If
   built, it is made offline from the date, since the game never goes
   online (owner, 2026-10-18).
@@ -2169,7 +2201,8 @@ is never lost.
   must not lose the run.
   - Snapshot **between waves**: seed, wave, score, combo state, run level and
     XP, augments and ranks, HP, cells, dash charges, run stats and **RNG
-    states** (all three streams).
+    states** (the map and augment streams; the per-wave streams reseed from
+    the seed when the next wave starts, §7.5).
   - On launch, offer **CONTINUE RUN**. Delete the snapshot when the run ends,
     so a death can't be undone by reloading.
 - **Robustness:**
@@ -2409,7 +2442,8 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 `title` → `playing` ⇄ `paused` / `levelup` → `dead` → results → (R: same
 seed | click: new seed).
 - **Title:** shows the map built from the next run's seed, with the camera
-  drifting and the title music playing.
+  drifting and the title music playing. PLAY A SEED starts a run on a typed
+  or pasted seed instead (§7.5).
 - **Starting a run:** captures the mouse, starts the combat playlist and
   begins wave 1.
 - **Pause** on Esc, focus loss or mouse-capture loss (the tree pauses; UI
@@ -2481,7 +2515,9 @@ seed | click: new seed).
     one stats line every 2 s.
   - `--god`: no damage.
   - `--wave=N`, `--seed=XXXX-XXXX`, `--boss=ninja|mech|oni`, `--restart`
-    (auto-restart after death), `--verbose-ai`.
+    (auto-restart after death), `--verbose-ai`. With `--autoplay` every wave
+    start prints a `[plan]` line and every level-up an `[offer]` line, which
+    `tools/seed_check.sh` compares between two runs of one seed (§7.5).
   - `--showcase` (+`--bosses`): a frozen model line-up and gore demo.
   - `--juicetest` (+`--juicestart=T`, `--verbose-juice`): plays every
     presentation moment back to back.
@@ -2495,6 +2531,7 @@ seed | click: new seed).
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).
+  - `--seedentry`: opens PLAY A SEED on the title.
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
   - `--runcard` (+`--runcard-out=DIR`): ends a sample run, saves its run
@@ -2653,8 +2690,8 @@ yet, and each needs a spec update with its tuning when it is built.
    pastes it and plays the same seed with a rival line on the HUD ("vs WIL
    +2,350") and a head-to-head row in each tally. Offline: the code travels
    by hand. Put the version in the code (seeds break when the game
-   changes) and mark a player's first attempt on a seed. Needs a seed entry
-   box on the title screen.
+   changes) and mark a player's first attempt on a seed. Pasted into the
+   PLAY A SEED box (§7.5).
 2. **Two Hands, One Rhythm.** Alternating katana and shotgun kills earns an
    extra combo step and lights the matching hand on the HUD; a clean
    left-right-left chain gets a stamp. A bonus only, never a penalty, so
@@ -2676,8 +2713,8 @@ yet, and each needs a spec update with its tuning when it is built.
    never a hit or an input. The player never has to play in rhythm.
 
 Ideas 6 to 10 build on the shared seed and work fully offline: players
-swap a short code or a small file by hand. Most need a seed entry box on
-the title screen first (today a friend's seed needs a shortcut edit).
+swap a short code or a small file by hand. The seed entry box most of them
+build on is in: PLAY A SEED on the title (§7.5).
 6. **Challenge Codes.** A code carrying a seed plus rules the sender picked
    from what exists: mutators locked on for every wave, a starting build, a
    wave to reach and a score to beat. A "dare a friend" builder after a

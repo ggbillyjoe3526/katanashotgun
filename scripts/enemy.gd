@@ -209,6 +209,9 @@ func _ready() -> void:
 ## on a spawn beam. Runs on every spawn, pooled or new.
 func activate() -> void:
 	reset_physics_interpolation() # a pooled enemy jumps to its spawn point
+	if dice_seed >= 0:
+		# a fresh roll of this spawn's dice, pooled or new (spec §7.5)
+		_rng.seed = dice_seed
 	Enemy._spawn_count += 1
 	spawn_id = Enemy._spawn_count
 	add_to_group("enemies")
@@ -268,11 +271,12 @@ func _roll_look() -> void:
 	if kind != "grunt" or _jacket_mat == null:
 		return
 	var jackets := [Color(0.45, 0.08, 0.12), Color(0.3, 0.1, 0.4), Color(0.08, 0.3, 0.32), Color(0.4, 0.25, 0.08)]
-	var jacket: Color = jackets[_rng.randi() % jackets.size()]
+	var r := Game.rng_fx # looks only: the gameplay dice stay untouched
+	var jacket: Color = jackets[r.randi() % jackets.size()]
 	_jacket_mat.set_shader_parameter("albedo_color", jacket)
 	_jacket_mat.set_shader_parameter("emission_color", jacket)
-	_mohawk.visible = _rng.randf() < 0.7
-	_pipe.visible = _rng.randf() < 0.5
+	_mohawk.visible = r.randf() < 0.7
+	_pipe.visible = r.randf() < 0.5
 
 
 # ---------------------------------------------------------------- body
@@ -1073,9 +1077,10 @@ func _update_shock(delta: float) -> void:
 	shock_t -= delta
 	_shock_arc_t -= delta
 	if _shock_arc_t <= 0.0:
-		_shock_arc_t = randf_range(0.04, 0.11)
-		var a := global_position + Vector3(randf_range(-radius, radius) * 0.8, randf_range(0.2, height), randf_range(-radius, radius) * 0.8)
-		var b := a + Vector3(randf_range(-0.7, 0.7), randf_range(-0.7, 0.5), randf_range(-0.7, 0.7)) * (height / 1.8)
+		var r := Game.rng_fx
+		_shock_arc_t = r.randf_range(0.04, 0.11)
+		var a := global_position + Vector3(r.randf_range(-radius, radius) * 0.8, r.randf_range(0.2, height), r.randf_range(-radius, radius) * 0.8)
+		var b := a + Vector3(r.randf_range(-0.7, 0.7), r.randf_range(-0.7, 0.5), r.randf_range(-0.7, 0.7)) * (height / 1.8)
 		Game.fx.arc(a, b, 0.07, 0.018, 0.8, 0)
 	var on := fmod(shock_t, 0.07) < 0.035
 	for m in _mats:
@@ -1165,12 +1170,13 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		var cp := global_position + Vector3(0, height * 0.55, 0)
 		Game.gore.sparks(cp, Vector3.UP, 16, Color(0.6, 1.6, 2.2))
 		Game.fx.smoke(cp, 1.1)
-		Game.fx.arc(cp, cp + Vector3(randf_range(-1, 1), randf_range(-0.6, 0.2), randf_range(-1, 1)) * 1.4, 0.12, 0.025, 1.0, 1)
+		var r := Game.rng_fx
+		Game.fx.arc(cp, cp + Vector3(r.randf_range(-1, 1), r.randf_range(-0.6, 0.2), r.randf_range(-1, 1)) * 1.4, 0.12, 0.025, 1.0, 1)
 	var pos := global_position + Vector3(0, height * 0.5, 0)
 	if mode == "shotgun" or mode == "explode" or kind != "grunt":
 		Sfx.play_at("gore_big", pos, 0.0)
 	else:
-		Sfx.play_at("gore%d" % (_rng.randi() % 3), pos, 0.0)
+		Sfx.play_at("gore%d" % (Game.rng_fx.randi() % 3), pos, 0.0)
 	var pd := global_position.distance_to(Game.player.global_position)
 	if pd < 3.6 or source == "execution":
 		Game.hud.screen_blood(3 if source == "execution" else 1)

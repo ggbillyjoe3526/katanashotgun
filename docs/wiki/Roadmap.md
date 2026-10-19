@@ -65,8 +65,6 @@ feel right:
 - **Run cards:** one key saves a picture of your run with its seed code,
   ready to post anywhere. In the game to try now: see
   [Run Cards](Run-Cards).
-- **A box to type in a seed** on the title screen, so sharing seeds doesn't
-  need a shortcut edit.
 
 KATANA / SHOTGUN is and stays fully **offline**: no accounts, no servers and
 no online leaderboards. You race friends by sharing seeds instead.
