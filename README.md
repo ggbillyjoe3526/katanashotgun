@@ -84,6 +84,7 @@ scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-i
                             data streaks, kill bursts, the settings screen
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
+scripts/retro_look.gd       RETRO LOOK levels (OFF / LIGHT / FULL): shader globals, stretch, 3D scale
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
 scripts/audio/              sound cue, music track and voice pool classes
 assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds one
@@ -158,10 +159,12 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Video:** window mode (full screen at your screen's resolution by
   default, windowed, or exclusive full screen), VSync (off by default), frame
   cap (unlimited by default, or 60 to 360), graphics preset (WEAK, MEDIOCRE,
-  INSANE), render scale (50
-  to 100% of the 3D view), field of view (70 to 110, default 88). At any
-  resolution the 3D view keeps its 960x540 pixel look, upscaled without
-  smoothing (exact 4x blocks on 4K, 2x on 1080p).
+  INSANE), RETRO LOOK (OFF, LIGHT by default, FULL: how strong the PS1/PS2
+  look is), render scale (50 to 100% of the 3D view), field of view (70 to
+  110, default 88). Pixels are upscaled without smoothing at any
+  resolution: LIGHT draws the 3D at about 540 lines (4x4 blocks on 4K, 2x2
+  on 1080p), FULL draws everything at 480x270 (8x8 on 4K), OFF draws at the
+  screen's own resolution.
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
@@ -210,15 +213,14 @@ Pass after `--` on the command line:
   build
 - **F10** opens the hidden DEV menu in any build: on the title, in a run (it
   pauses first) and on the pause screen. Mouse only, Esc closes. LOOK: the
-  RETRO LOOK switch (off = the plain look: full resolution, smooth textures,
-  no vertex wobble, dither or scanlines; saved), the perf overlay, hide the
-  HUD, force a palette. RUN: god mode, autoplay bot, game speed, start wave,
+  perf overlay, hide the HUD, force a palette (the plain-look switch is now
+  the player's RETRO LOOK setting in Settings > Video). RUN: god mode, autoplay bot, game speed, start wave,
   force a boss or mutator (these last until the game closes). ACTIONS: skip
   the wave, a level-up offer, every card at max rank, refill, restart the
   seed, a new seed, the juice test. A run that used anything on RUN or
   ACTIONS is a dev run: it writes no top 10 entry, XP or unlocks, and a DEV
   tag under the score says so. F10 cannot be bound to an action
-- `--plain` starts in the plain look · `--dev=look|run|actions` opens the DEV
+- `--look=off|light|full` starts on that RETRO LOOK level (`--plain` = off) · `--dev=look|run|actions` opens the DEV
   menu on the title at that tab
 - `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
   any text that leaves the screen, spills out of or across a panel, or

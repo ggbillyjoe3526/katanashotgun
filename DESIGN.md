@@ -288,7 +288,8 @@ is never lost.
 - Saves live in `user://` (its own folder, `KatanaShotgun`); later Steam Cloud.
 
 ## Look & feel
-- **World:** retro PS1/PS2. A 960x540 internal resolution, subtle vertex
+- **World:** retro PS1/PS2, at a strength the player picks (RETRO LOOK: OFF,
+  LIGHT (default), FULL). A low internal resolution, subtle vertex
   wobble, affine texture warp, per-vertex lighting, light Bayer dither, VHS
   chromatic fringe and scanlines. Synthwave neon: five seeded palettes (Sunset
   Drive, Miami Nights, Ultraviolet, Blood Chrome, Toxic Tokyo) colour the sky,
@@ -442,8 +443,8 @@ Targets:
 - Fast boot and fast load (seconds), a small install, low RAM use.
 
 How (guidelines for the build):
-- The retro look helps: a low internal 3D resolution (960x540, with a
-  render-scale option), small nearest-filtered textures, simple shaders,
+- The retro look helps: a low internal 3D resolution (about 540 lines on
+  the default LIGHT, 480x270 on FULL, with a render-scale option), small nearest-filtered textures, simple shaders,
   per-vertex lighting, no real-time shadows by default.
 - Keep draw calls low: MultiMesh for repeated things (skyline, gore
   droplets and decals are already MultiMesh), merged static level geometry,
@@ -475,16 +476,14 @@ How (guidelines for the build):
   model (prongs, coils, cell drum) is a placeholder that shows the
   "shotgun taser" idea.
 
-## Art assets (note for later)
-- Everything is built in code from primitive meshes for now. That is enough
-  for the prototype; no models should be made yet.
-- If custom 3D models would clearly improve things later, the developer can
-  model them in Blender. They should stay low-detail (low poly, small
-  textures) because the game is low-res by design.
-- Pipeline when that happens: export glTF (.glb) from Blender, import into
-  Godot, apply the existing PSX materials (`Psx.lit`, vertex snapping, affine
-  UVs) so models match. Keep the code-built versions as fallbacks until each
-  model is approved.
+## Art assets
+- Everything is built in code from primitive meshes, except the DOJIGIRI
+  katana's Blender model (owner's request, approved 2026-10-19).
+- That model is highly detailed (~13k triangles, baked 2048 px maps) so it
+  holds up with the retro look off, and carries a small baked texture for
+  the retro look. Pipeline and rules: `assets/models/README.md`.
+- Keep the code-built versions as fallbacks (the katana's shows only if its
+  model fails to load). Other models only when the owner asks for them.
 
 ## Not planned (to avoid scope creep)
 - New weapons, new mechanics or complex builds. The core stays katana + arc

@@ -6,9 +6,9 @@ already arrived is in the [Patch Notes](Patch-Notes).
 
 ## Next
 
-- **More public builds.** 0.1 Dev 1 is the first. Next come 0.1 Dev 2, Dev 3
-  and on, then 0.1 Beta 1, Beta 2, and then the full **0.1** release. Each one
-  is posted on the
+- **More public builds.** 0.1 Dev 1 is out and 0.1 Dev 2 is in the works.
+  Then come Dev 3 and on, then 0.1 Beta 1, Beta 2, and then the full **0.1**
+  release. Each one is posted on the
   [Releases page](https://github.com/ggbillyjoe3526/katanashotgun/releases)
   with its patch notes.
 - **Difficulty tuning** past the opening waves, by playtesting. Waves 1 to 3
@@ -25,7 +25,8 @@ already arrived is in the [Patch Notes](Patch-Notes).
   We're also thinking about runs that **travel from map to map**: beat a
   map's boss and the fight carries on somewhere new, with the seed choosing
   the order. Not decided yet.
-- **A redesigned thermal katana**, and the final look for the arc shotgun.
+- **The final look for the arc shotgun**, like the new DOJIGIRI katana
+  model. The katana's stock edge colour may still change.
 - **Boss variants** (the same boss with a new title and new tricks) and
   **new bosses**.
 - **More boss rewards:** maps, palettes, mutators and boss variants joining

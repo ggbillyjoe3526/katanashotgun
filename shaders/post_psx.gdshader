@@ -6,7 +6,6 @@
 shader_type canvas_item;
 
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear;
-uniform float color_levels = 48.0;
 uniform float dither_strength = 0.6;
 uniform float saturation = 1.22;
 uniform float contrast = 1.08;
@@ -21,10 +20,17 @@ uniform bool impact_invert = false;
 uniform vec3 impact_color : source_color = vec3(1.0, 0.1, 0.25);
 uniform float heat = 0.0;
 uniform vec3 heat_color : source_color = vec3(1.0, 0.1, 0.4);
-// 1 = the PS1 look; 0 = the dev menu's plain look: no colour banding,
-// dither, scanlines or resting edge fringe. Damage, flashes, impact frames
-// and combo heat stay, they are the game's feedback.
+// The RETRO LOOK setting (RetroLook). psx_retro scales the scanlines and the
+// resting edge fringe (1 = FULL, 0 = OFF); psx_levels is the colour levels
+// per channel for the banding and Bayer dither (0 = none). Damage, flashes,
+// impact frames and combo heat stay at every level: they are the game's
+// feedback.
+// psx_pixel_lines: when the 3D view draws at the window's size (LIGHT), the
+// picture is cut into square blocks so it reads as about that many lines,
+// with sharp pixels at any screen size (0 = no blocks).
 global uniform float psx_retro;
+global uniform float psx_levels;
+global uniform float psx_pixel_lines;
 
 float bayer2(int x, int y) {
 	return float(((x ^ y) & 1) * 2 + (y & 1));
@@ -37,20 +43,30 @@ float bayer4(ivec2 p) {
 }
 
 void fragment() {
-	vec2 d = SCREEN_UV - 0.5;
-	// the plain look renders at the window's size: pixel sizes count in
-	// 540-line pixels, as in the retro look
-	float px = psx_retro > 0.5 ? 1.0 : max(1.0, 1.0 / (540.0 * SCREEN_PIXEL_SIZE.y));
+	// LIGHT: one sample per block of whole screen pixels (the block centre
+	// lands on a texel centre of the 3D view, which RetroLook draws at
+	// 1/block scale, so it stays sharp)
+	vec2 uv = SCREEN_UV;
+	vec2 cell = FRAGCOORD.xy;
+	if (psx_pixel_lines > 0.0) {
+		float block = max(1.0, round(1.0 / (SCREEN_PIXEL_SIZE.y * psx_pixel_lines)));
+		cell = floor(FRAGCOORD.xy / block);
+		uv = (cell + 0.5) * block * SCREEN_PIXEL_SIZE;
+	}
+	vec2 d = uv - 0.5;
+	// LIGHT and OFF render more than 540 lines: pixel sizes count in
+	// 540-line pixels, as in FULL
+	float px = max(1.0, 1.0 / (540.0 * SCREEN_PIXEL_SIZE.y));
 	vec2 off = d * SCREEN_PIXEL_SIZE * px * (aberration * psx_retro + heat * 1.6 + impact * 3.0) * 6.0 * length(d);
 	vec3 c;
-	c.r = texture(screen_tex, SCREEN_UV + off).r;
-	c.g = texture(screen_tex, SCREEN_UV).g;
-	c.b = texture(screen_tex, SCREEN_UV - off).b;
+	c.r = texture(screen_tex, uv + off).r;
+	c.g = texture(screen_tex, uv).g;
+	c.b = texture(screen_tex, uv - off).b;
 	c = (c - 0.5) * contrast + 0.5;
 	float l = dot(c, vec3(0.299, 0.587, 0.114));
 	c = mix(vec3(l), c, (saturation + heat * 0.25) * (1.0 - desaturate));
 	c *= 1.0 - vignette * dot(d, d) * 1.6;
-	c *= 1.0 - scanlines * psx_retro * step(0.5, fract(FRAGCOORD.y * 0.5));
+	c *= 1.0 - scanlines * psx_retro * step(0.5, fract(cell.y * 0.5)); // every other (block) row
 	float edge = smoothstep(0.15, 0.55, length(d));
 	c = mix(c, vec3(0.75, 0.0, 0.05), damage * edge);
 	c = mix(c, vec3(1.0), flash);
@@ -74,9 +90,9 @@ void fragment() {
 		c = mix(c, t3, impact);
 	}
 	c = clamp(c, 0.0, 1.0);
-	if (psx_retro > 0.5) {
-		float b = bayer4(ivec2(FRAGCOORD.xy)) - 0.5;
-		c = floor(c * color_levels + b * dither_strength + 0.5) / color_levels;
+	if (psx_levels > 0.0) {
+		float b = bayer4(ivec2(cell)) - 0.5;
+		c = floor(c * psx_levels + b * dither_strength + 0.5) / psx_levels;
 	}
 	COLOR = vec4(c, 1.0);
 }
