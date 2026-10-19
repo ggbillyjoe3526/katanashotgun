@@ -37,7 +37,8 @@ func _process(_delta: float) -> void:
 			Game.main.start_run()],
 		[14.0, func():
 			Game.upgrades = {"idaten": 1, "edge": 1, "fork": 1}
-			Game.main.pause_game()],
+			Game.main.pause_game()
+			Game.main.lock_failures = 2], # shows the mouse-lock hint
 		[15.5, func(): _click(_hud.pause_menu, Hud.P_ARMORY, "pause ARMORY")],
 		[16.0, func(): print("[menutour] pause armory open: %s" % _hud.pause_armory_plate.visible)],
 		[17.5, func(): Game.main.resume_game()],

@@ -32,7 +32,7 @@ func reset() -> void:
 
 ## Draws the card and saves it. Once saved, pressing again changes nothing.
 func make() -> void:
-	if state != State.IDLE or not is_visible_in_tree():
+	if state == State.BUSY or state == State.SAVED or not is_visible_in_tree():
 		return
 	state = State.BUSY
 	Sfx.play("ui_click", -4.0)

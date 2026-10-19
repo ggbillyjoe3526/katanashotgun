@@ -14,9 +14,9 @@ setting and when you quit.
 - The game takes a snapshot of your run **between waves**, after each tally:
   your wave, score, cards, health, cells, dashes and the seed's position, so
   the rest of the run plays out exactly as it would have.
-- Next time you start the game, the title offers **CONTINUE RUN** from the
-  start of the wave you were on. Click to continue, or press **N** to start a
-  new run instead.
+- Next time you start the game, the title offers **CONTINUE** from the
+  start of the wave you were on. Click it to continue, or click **NEW RUN** (or
+  press **N**) to start a new run instead.
 - Starting a new run over a saved one still pays that run's XP into your
   Player Level, so nothing is lost.
 - When you die, the snapshot is deleted. A death can't be undone by

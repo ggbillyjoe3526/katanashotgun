@@ -192,14 +192,18 @@ func _process(_delta: float) -> void:
 				changed = true
 	if changed:
 		layout()
+	if not is_visible_in_tree():
+		return
 	var on := _hover if _hover >= 0 else current
 	for i in _items.size():
 		var it: Dictionary = _items[i]
 		var lit: bool = i == on
 		var col: Color = WARN if it.armed > 0.0 else (Color.WHITE if lit else it.col)
-		it.label.add_theme_color_override("font_color", col)
-		if horizontal:
-			it.key.add_theme_color_override("font_color", col)
+		if it.get("shown") != col:
+			it.shown = col
+			it.label.add_theme_color_override("font_color", col)
+			if horizontal:
+				it.key.add_theme_color_override("font_color", col)
 			# on a row the pointed-at item is underlined instead of marked
 			it.line.visible = i == _hover
 	_mark.visible = not horizontal and on >= 0 and on < _items.size() and _items[on].row.visible

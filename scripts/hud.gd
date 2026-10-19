@@ -176,9 +176,7 @@ const RESULTS_PLATE_W := 192.0
 const RESULTS_ROW := 15.0
 const SCORE_ROWS := 4 # hi-score rows on the results
 const GOLD := Color(1.0, 0.72, 0.15)
-const D_RETRY := 0 # results row items
-const D_NEW := 1
-const D_CARD := 2
+const D_CARD := 2 # results row items: RETRY SEED, NEW RUN, RUN CARD, COPY SEED
 const D_COPY := 3
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const KAMAE_GOLD := Color(1.0, 0.72, 0.15)
@@ -667,7 +665,8 @@ func _layout_pause() -> void:
 	sens_label.size = Vector2.ZERO
 	sens_label.position = Vector2(vs.x - PAUSE_X - sens_label.size.x, by)
 	var lh: Label = pause_root.get_node("LockHint")
-	lh.visible = Game.main and Game.main.lock_failures >= 2
+	# the open armory takes the hint's place; the mouse is in use there anyway
+	lh.visible = Game.main and Game.main.lock_failures >= 2 and not pause_armory_plate.visible
 	lh.size = Vector2.ZERO
 	lh.position = Vector2(PAUSE_X, by - 18.0)
 
@@ -2002,7 +2001,8 @@ func _update_play(delta: float) -> void:
 		l.size = Vector2.ZERO
 		l.pivot_offset = Vector2(0, l.size.y * 0.5)
 		l.scale = Vector2.ONE * lerpf(1.4, 1.0, Juice.ease_out(k))
-		l.position = Vector2(px0, roundf(pp.y))
+		# a long one ("GASHADOKURO BURST ONLINE") moves in to stay on screen
+		l.position = Vector2(minf(px0, vs.x - 8.0 - l.size.x), roundf(pp.y))
 		var bright := 1.0 + 0.6 * exp(-pp.t * 16.0)
 		l.modulate = Color(bright, bright, bright, clampf((POPUP_LEN - pp.t) / 0.3, 0.0, 1.0))
 		i += 1

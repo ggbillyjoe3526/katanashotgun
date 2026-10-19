@@ -618,11 +618,11 @@ Notes:
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
-| quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
+| quit game | Q twice (title) | Also QUIT on the title, QUIT GAME on pause and in Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | play a seed | S (title) | PLAY A SEED box (§7.5) |
-| copy seed | C (pause, results) | Also a COPY button (§7.5) |
+| copy seed | C (pause, results) | Also COPY / COPY SEED to click (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
 
 Controller support: **OPEN** (not requested; design the input layer so it
@@ -1452,7 +1452,7 @@ the holographic cut-in (§9.8).
 ### 7.5 Seeds
 - A 31-bit run seed, shown as **XXXX-XXXX** hex (so it starts with 0 to 7).
   It can be forced with `--seed=XXXX-XXXX`.
-- **PLAY A SEED** (built 2026-10-19): a button on the title (or **S**) opens
+- **PLAY A SEED** (built 2026-10-19): a title menu item (or **S**) opens
   a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
   itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
   the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
@@ -1460,8 +1460,8 @@ the holographic cut-in (§9.8).
   Left alone, runs keep random seeds. With a suspended run waiting, PLAY
   asks twice and then ends that run the way N does (its XP counts). The box
   holds every key while open. Mouse alone or keyboard alone both work.
-- **COPY** puts the run's seed on the clipboard: a button beside the seed
-  on the pause screen and on the results prompt, or **C** there.
+- **COPY** puts the run's seed on the clipboard: COPY beside the seed on
+  the pause screen, COPY SEED in the results row, or **C** there.
 - Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
@@ -2363,7 +2363,7 @@ is never lost.
     XP, augments and ranks, HP, cells, dash charges, run stats and **RNG
     states** (the map and augment streams; the per-wave streams reseed from
     the seed when the next wave starts, §7.5).
-  - On launch, offer **CONTINUE RUN**. Delete the snapshot when the run ends,
+  - On launch, offer **CONTINUE** (WAVE n) on the title. Delete the snapshot when the run ends,
     so a death can't be undone by reloading.
 - **Robustness:**
   - A versioned format with migrations.
