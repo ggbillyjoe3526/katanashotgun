@@ -242,6 +242,11 @@ def bake(obj, out_dir, samples_ao=32):
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     os.makedirs(out_dir, exist_ok=True)
+    # anything else in the scene would shade the AO bake (a new file's 2 m
+    # default cube encloses the whole katana and turns it black)
+    hidden = [o for o in scene.objects if o is not obj and not o.hide_render]
+    for o in hidden:
+        o.hide_render = True
 
     built = {m.name: _build_bake_material(m) for m in obj.data.materials if m.name in SLOTS}
     # the glow slot is not baked but still needs a target image
@@ -298,6 +303,8 @@ def bake(obj, out_dir, samples_ao=32):
             _shrink(orm, RETRO_SIZE * 2))
         _save_array(_shrink(retro, RETRO_SIZE), os.path.join(out_dir, f"dojigiri_{name}_retro.png"), srgb=True)
     bpy.data.images.remove(dummy)
+    for o in hidden:
+        o.hide_render = False
 
 
 def _px(img, size=SIZE):
