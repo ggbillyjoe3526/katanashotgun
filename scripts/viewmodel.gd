@@ -12,6 +12,10 @@ const RETURN_DUR := 0.2
 
 var katana: Node3D
 var blade_edge_mat: ShaderMaterial
+# the code-built blade and the Blender model (DevSettings.katana_model picks)
+var _code_blade: Node3D
+var _model_blade: Node3D
+var _model_on := false
 var shotgun: Node3D
 var spin_pivot: Node3D
 var drum: Node3D
@@ -40,6 +44,8 @@ var _drum_from := 0.0
 var _drum_to := 0.0
 var _rng := RandomNumberGenerator.new()
 
+# how far the Blender katana turns in the hand (radians, around its blade)
+const KATANA_MODEL_ROLL := -0.9
 # glory kill poses (weapon targets the hands snap to between beats)
 const K_POSES := {
 	"ready": [Vector3(-0.4, -0.3, -0.42), Vector3(-1.0, 0.5, -0.4)],
@@ -118,19 +124,21 @@ func _lit(c: Color, tex := "noise", params := {}) -> ShaderMaterial:
 func _build_katana() -> void:
 	katana = Node3D.new()
 	add_child(katana)
+	_code_blade = Node3D.new()
+	katana.add_child(_code_blade)
 	var wrap := _lit(Color(0.55, 0.07, 0.1), "cloth", {"uv_tiling": Vector2(1, 6)})
 	var gold := _lit(Color(0.85, 0.65, 0.25), "noise")
 	var steel := _lit(Color(0.85, 0.88, 0.95), "noise", {"emission_color": Color(0.5, 0.6, 0.8), "emission_strength": 0.15})
 	var glove := _lit(Color(0.12, 0.12, 0.15), "cloth")
 	var chrome := _lit(Color(0.55, 0.58, 0.65), "panel")
 	blade_edge_mat = Psx.unlit(Color(0.4, 0.95, 1.0), 2.4, null, {"snap": 0.35, "fog_amount": 0.0})
-	katana.add_child(Psx.box(Vector3(0.042, 0.27, 0.042), wrap, Vector3(0, 0.0, 0)))
-	katana.add_child(Psx.box(Vector3(0.05, 0.03, 0.05), gold, Vector3(0, -0.15, 0)))
-	katana.add_child(Psx.box(Vector3(0.12, 0.018, 0.1), gold, Vector3(0, 0.145, 0)))
-	katana.add_child(Psx.box(Vector3(0.05, 0.03, 0.05), gold, Vector3(0, 0.168, 0)))
+	_code_blade.add_child(Psx.box(Vector3(0.042, 0.27, 0.042), wrap, Vector3(0, 0.0, 0)))
+	_code_blade.add_child(Psx.box(Vector3(0.05, 0.03, 0.05), gold, Vector3(0, -0.15, 0)))
+	_code_blade.add_child(Psx.box(Vector3(0.12, 0.018, 0.1), gold, Vector3(0, 0.145, 0)))
+	_code_blade.add_child(Psx.box(Vector3(0.05, 0.03, 0.05), gold, Vector3(0, 0.168, 0)))
 	var blade := Psx.box(Vector3(0.012, 0.86, 0.042), steel, Vector3(0, 0.6, 0))
-	katana.add_child(blade)
-	katana.add_child(Psx.box(Vector3(0.016, 0.86, 0.008), blade_edge_mat, Vector3(0, 0.6, 0.022)))
+	_code_blade.add_child(blade)
+	_code_blade.add_child(Psx.box(Vector3(0.016, 0.86, 0.008), blade_edge_mat, Vector3(0, 0.6, 0.022)))
 	var tip := MeshInstance3D.new()
 	var pm := PrismMesh.new()
 	pm.size = Vector3(0.042, 0.09, 0.012)
@@ -139,7 +147,7 @@ func _build_katana() -> void:
 	tip.material_override = steel
 	tip.position = Vector3(0, 1.075, 0)
 	tip.rotation.y = PI * 0.5
-	katana.add_child(tip)
+	_code_blade.add_child(tip)
 	# hand + cyber forearm
 	katana.add_child(Psx.box(Vector3(0.1, 0.11, 0.11), glove, Vector3(0, 0.02, 0)))
 	var arm := Node3D.new()
@@ -148,6 +156,21 @@ func _build_katana() -> void:
 	arm.add_child(Psx.box(Vector3(0.085, 0.42, 0.085), chrome, Vector3(0, -0.26, 0)))
 	trim_mat = Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0})
 	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), trim_mat, Vector3(0, -0.28, 0.046)))
+	_model_blade = KatanaModel.build(blade_edge_mat)
+	# turned on its long axis so the flat and the hilt's windows face the
+	# player; the code-built blade shows its edge strip instead
+	_model_blade.rotation.y = KATANA_MODEL_ROLL
+	katana.add_child(_model_blade)
+	_show_katana_model()
+
+
+## Shows the Blender model or the code-built blade, as the dev menu says.
+## The code-built one stays until the model is approved (spec §9.6).
+func _show_katana_model() -> void:
+	_model_on = DevSettings.katana_model
+	var use_model := _model_on and _model_blade.get_child_count() > 0
+	_model_blade.visible = use_model
+	_code_blade.visible = not use_model
 
 
 func _build_shotgun() -> void:
@@ -434,6 +457,8 @@ func _process(delta: float) -> void:
 	else:
 		_kpos = _kpos.lerp(katana_idle_pos, 1.0 - exp(-12.0 * delta))
 		_krot = _krot.lerp(katana_idle_rot, 1.0 - exp(-12.0 * delta))
+	if _model_on != DevSettings.katana_model:
+		_show_katana_model()
 	katana.position = _kpos + sway3 + bob3 + CLIMB_REACH_K[0] * _reach + CLIMB_PRESS_K[0] * _press
 	katana.rotation = _krot + Vector3(_sway.y, _sway.x, 0) * 0.6 + CLIMB_REACH_K[1] * _reach + CLIMB_PRESS_K[1] * _press
 	_glow = maxf(0.0, _glow - delta * 4.0)

@@ -93,6 +93,9 @@ func _build_rows(t: String) -> Array:
 				out.append(_option("PERF OVERLAY", on_off, on_off_names,
 					func(): return perf.is_shown(), func(v: Variant): perf.show_overlay(v),
 					"FPS, FRAME TIME, DRAW CALLS, NODES. F3 TOO"))
+			out.append(_option("KATANA MODEL", [true, false], ["NEW", "OLD"],
+				func(): return DevSettings.katana_model, func(v: Variant): DevSettings.katana_model = v,
+				"NEW: THE BLENDER MODEL. OLD: THE CODE-BUILT ONE"))
 			out.append(_option("HIDE HUD", on_off, on_off_names,
 				func(): return DevSettings.hide_hud, func(v: Variant): DevSettings.hide_hud = v,
 				"NO HUD WHILE PLAYING, FOR CLEAN CAPTURES"))
