@@ -885,13 +885,14 @@ func _volley(dir: Vector3) -> void:
 	var target := Game.player.global_position + Vector3(0, 1.0, 0)
 	var aim := (target - origin).normalized()
 	var n := 7 if enraged else 5
-	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
-	# his signature volley (spec §3.2 Perfect deflect): the whole fan is white-hot
+	# his signature volley (spec §3.2 Perfect deflect): the whole fan is
+	# white-hot. Its hint waits for a volley after the deflect hint.
 	var sig := next_signature()
 	for i in n:
 		var b: Bolt = Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - (n - 1) * 0.5) * 0.16) * 13.0, 10.0 * damage_mult, "shuriken", self)
 		b.mark_signature(sig)
 	Sfx.play_at("shuriken", global_position, 2.0)
+	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
 
 
 func die(source: String, dir: Vector3, headshot := false) -> void:
