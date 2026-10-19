@@ -49,8 +49,8 @@ feel right:
   seed sees whether they're ahead of your score, wave by wave.
 - **Two hands, one rhythm:** extra combo for switching between katana and
   shotgun kills.
-- **Perfect deflect:** deflect a shot at the last moment for a harder
-  return and a big hit to a boss's KAMAE.
+- **Perfect deflect:** now in the game to play-test (see
+  [Weapons](Weapons#perfect-deflect)). It stays if it feels right.
 - **Bet on the wave:** choose whether to take each wave's mutator for its
   score bonus.
 - **On the beat:** big moments flash and slam in time with the music.

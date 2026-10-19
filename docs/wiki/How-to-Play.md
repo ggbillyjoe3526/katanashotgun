@@ -35,7 +35,7 @@ Overload card) and each blast spends one.
 | You get cells from | How many |
 | --- | --- |
 | A katana kill | +1 (more with the Blood Battery card) |
-| Deflecting a shot | +1 |
+| Deflecting a shot | +1 (+2 for a [perfect deflect](Weapons#perfect-deflect)) |
 | A glory kill | +3 |
 | Clearing a wave | +2 |
 | Waiting, while you have fewer than 2 | +1 every 2.5 s |

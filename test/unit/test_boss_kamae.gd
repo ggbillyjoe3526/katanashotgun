@@ -30,6 +30,20 @@ func test_drains_slowly_after_backing_off() -> void:
 	assert_eq(k.value, 0.0, "never below empty")
 
 
+func test_a_hurt_boss_drains_more_slowly() -> void:
+	var full := BossKamae.new(100.0)
+	var half := BossKamae.new(100.0)
+	var last := BossKamae.new(100.0)
+	for k: BossKamae in [full, half, last]:
+		k.add(50.0)
+	full.update(BossKamae.GRACE + 1.0, 1.0)
+	half.update(BossKamae.GRACE + 1.0, 0.5)
+	last.update(BossKamae.GRACE + 1.0, 0.0)
+	assert_almost_eq(50.0 - full.value, 100.0 * BossKamae.DRAIN, 0.01)
+	assert_almost_eq(50.0 - half.value, 100.0 * BossKamae.DRAIN * 0.65, 0.01)
+	assert_almost_eq(50.0 - last.value, 100.0 * BossKamae.DRAIN * BossKamae.DRAIN_AT_NO_HP, 0.01)
+
+
 func test_pressure_resets_the_grace_time() -> void:
 	var k := BossKamae.new(100.0)
 	k.add(50.0)

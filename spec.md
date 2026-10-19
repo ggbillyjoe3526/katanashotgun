@@ -666,6 +666,32 @@ charges the gun; the gun sets up the blade.**
   (Owner, 2026-10-18: a deflect always goes back and hurts the shooter, never
   just knocks the shot away. The damage scales with the bolt so the gatling's
   many weak bolts can't shred a boss.)
+- **Perfect deflect** (play-test experiment, §19.1 #3; built 2026-10-19,
+  awaiting the owner's verdict): a slash that catches a bolt **0.15 s or
+  less** before it would hit the player is **PERFECT**. "Would hit": along
+  its straight path it reaches the player's body (bolt radius + 0.5 m
+  around the chest), or passes within 0.6 m of that (the near edge of a
+  fan). The normal deflect is unchanged; a perfect one adds:
+  - **Return damage ×12** instead of ×8 (a gunner's bolt 144, a shuriken
+    120), so it also fills a boss's KAMAE 50% more (§5.5).
+  - **+2 cells** instead of +1.
+  - A tally row, **PERFECT DEFLECTS n × 150**, on top of its DEFLECTS row.
+  - The feel: a ringing steel clang (`deflect_perfect`), a white flash
+    (0.35, scaled by the flash slider), hitstop 0.1 s, shake 0.2, white
+    sparks and the popup **"PERFECT DEFLECT!"** (white; repeats count up).
+    It flies back white-hot with a white trail.
+  - **Signature volleys:** each boss has one volley meant to be deflected
+    perfectly, drawn with a big **white halo** (Kurokage's shuriken fan,
+    Tetsugumo's signature round, Shuten's fan volley; §5.2). The first
+    perfect deflect on a volley earns the **big KAMAE hit: +20% of the
+    bar** when the bolt lands (once per volley, ×1.5 in a punish window like
+    all KAMAE), plus the centre stamp **PERFECT** (cyan, as for the RED
+    SIGNAL dash) and a short slow motion (×0.35 for 0.3 s). The first
+    signature volley of a run (once the deflect hint has shown) shows the
+    hint "WHITE BOLTS: DEFLECT AT THE LAST MOMENT FOR A PERFECT".
+  - Yata Mirror copies of a perfect bolt carry its damage but no KAMAE
+    bonus. Values live in `scripts/bolt.gd` (`PERFECT_*`, `SIGNATURE_*`).
+  - KAMAE drains more slowly as the boss loses HP (owner, 2026-10-19; §5.5).
 - **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
   0.22, slash trail, slice sound.
 - **A slash just hits a staggered enemy** (full damage, armour ignored, so it
@@ -948,7 +974,8 @@ windups, staggers.
 - **Dash-slash chain:** 2 dashes (3 when enraged). Each has a floor
   telegraph line 16 m long (neon). Windup 0.62 s (0.42 enraged), shortened on
   follow-ups. Each dash hits 20 with knockback.
-- **Shuriken fan:** deflectable, 13 m/s, 10 damage, spread 0.16 rad.
+- **Shuriken fan:** deflectable, 13 m/s, 10 damage, spread 0.16 rad. His
+  signature volley: the whole fan is white-hot (§3.2 Perfect deflect).
 - **Blink:** vanishes in smoke and reappears behind you.
 - **Melee combo:** 2 hits (3 enraged), 16 damage each.
 - Strafes at mid range. Specials every 3.2–4.6 s (2.2–3.2 enraged).
@@ -960,7 +987,9 @@ windups, staggers.
 - HP 4400, speed 2.6, radius 1.7, height 3.6, head_y 2.5, KAMAE 1400, stagger
   3.2 s, armour 0.35, XP 420, points 7000, mass 14.
 - **Sweeping gatling:** windup, then a sweep of 7-damage, 14 m/s bolts that
-  can be deflected.
+  can be deflected. The sweep ends on her signature volley: one heavy
+  white-hot round straight at the player (12 m/s, 14 damage; §3.2 Perfect
+  deflect).
 - **Missile strikes:** beeps, then several missiles land at red-ring
   telegraphs around the player (2.6 m radius, 20 damage, ~1.5 s delay each).
 - **Stomp:** within 6 m. A 12 m shockwave that does 22 damage; jump over it.
@@ -977,7 +1006,8 @@ windups, staggers.
 - **Leap slam:** a 24 m shockwave that does 26 damage; jump over it. Hint:
   "JUMP OVER THE SHOCKWAVE".
 - **Charge:** like the brute's.
-- **9-bolt fan volley:** enraged only. 14 damage, spread 0.13 rad.
+- **9-bolt fan volley:** enraged only. 14 damage, spread 0.13 rad. His
+  signature volley: every bolt is white-hot (§3.2 Perfect deflect).
 - Specials every 5–7 s (3.5–5 enraged).
 
 ### 5.3 Boss death sequence ("loud, then quiet")
@@ -1047,14 +1077,20 @@ glory kills on bosses entirely. Values live in `scripts/boss_kamae.gd`.
   18-poise hit gives about 29, armour or not: the blade is the pressure
   tool), shotgun ×0.6 (a point-blank blast gives about 78, less at range),
   a returned bolt by its HP damage ×0.5 instead (about 48 for today's 95;
-  steady for a returned gatling stream, a big swing for a shuriken fan),
+  steady for a returned gatling stream, a big swing for a shuriken fan; a
+  PERFECT deflect on a boss's signature volley adds +20% of the bar, §3.2),
   MASAMUNE EDGE's heavy third cut ×1.0 (100), Susanoo's Wave and Kage
   Step ×1.0, burning nothing (explosions never
   hit bosses).
 - **Glory kills nearby:** a glory kill on an add within **15 m** of the boss
   fills **12%** of its bar. The adds feed the boss fight.
 - **Backing off:** after **2.5 s** without pressure the bar drains at **7%
-  per second**. Gentle: a short retreat to heal costs little.
+  per second** at full HP. Gentle: a short retreat to heal costs little.
+  A hurt boss steadies itself more slowly (Sekiro; owner, 2026-10-19, with
+  Perfect Deflect): the drain scales with its HP, linearly down to **30%**
+  of that at no HP (4.55%/s at half HP, 2.1%/s near death), so pressure
+  sticks better as the fight goes on. `DRAIN_AT_NO_HP` in
+  `scripts/boss_kamae.gd`.
 - **The break:** at full, a heavy clang, hitstop 0.12, shake 0.5, an impact
   frame and the centre stamp **KAMAE BROKEN** (gold). The boss reels (its
   STAGGER state, armour off) for its stagger time **+1.5 s** (Kurokage 4.1 s,
@@ -1378,6 +1414,7 @@ the holographic cut-in (§9.8).
   - GLORY KILLS n × 200
   - HEADSHOTS n × 75
   - DEFLECTS n × 100
+  - PERFECT DEFLECTS n × 150 (play-test experiment, §3.2)
   - BOSS BOUNTY 2000 × wave (boss waves only)
   - Rows only appear if non-zero (WAVE CLEAR always shows). Stats are deltas
     since the wave started.
@@ -2096,8 +2133,8 @@ about 10 LU over the music, and heavy rain louder than the music.
 
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
-  empty (fizzle), zap (arc on a body), swing0–2, slice, deflect, headshot
-  (ding), wave_blade.
+  empty (fizzle), zap (arc on a body), swing0–2, slice, deflect,
+  deflect_perfect (a ringing clang), headshot (ding), wave_blade.
 - **Gore:** gore0–2, gore_big, execution.
 - **Movement:** dash, jump, land, jumppad.
 - **Enemies:** enemy_shot, windup, roar, slam, spawn, blink, shuriken,
@@ -2680,6 +2717,8 @@ seed | click: new seed).
 
 ## 19. Open decisions (ask the developer; don't invent)
 - The Player Level **XP formula** and pacing.
+- **Perfect Deflect** (§19.1 #3, built 2026-10-19 as a play-test
+  experiment, tuning in §3.2): keep, retune or drop it after playing.
 - **Map stages and the boss schedule** (owner idea, 2026-10-18; proposal
   in §6.4, built once a second map exists). To decide, with the defaults
   §6.4 recommends:
@@ -2724,11 +2763,13 @@ yet, and each needs a spec update with its tuning when it is built.
    left-right-left chain gets a stamp. A bonus only, never a penalty, so
    katana-heavy builds stay good. Name to pick from §13 (candidate: NITEN,
    after Musashi's Niten Ichi-ryu).
-3. **Perfect Deflect.** A deflect in the last moment before a bolt lands is
-   PERFECT: a ringing clang, a white flash, more return damage and a big
-   KAMAE hit. Each boss gets one signature volley meant for it (Kurokage's
-   shuriken fan). Possibly KAMAE recovers more slowly as the boss loses HP
-   (Sekiro). The normal deflect stays exactly as it is.
+3. **Perfect Deflect.** BUILT 2026-10-19, awaiting the owner's verdict
+   after play-testing; tuning in §3.2 (Perfect deflect). A deflect in the
+   last 0.15 s before a bolt lands is PERFECT: a ringing clang, a white
+   flash, ×12 return damage, +2 cells, a tally row, and on each boss's white
+   signature volley a +20% KAMAE hit. The normal deflect is unchanged.
+   KAMAE also drains more slowly as the boss loses HP (Sekiro; owner,
+   2026-10-19, §5.5).
 4. **Bet on the wave.** The wave intro offers the seeded mutator and the
    player takes it (for its score multiplier) or passes; later waves may
    offer a second to stack. The same seed offers the same choices; harsh

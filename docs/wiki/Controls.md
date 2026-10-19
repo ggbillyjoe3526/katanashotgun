@@ -11,7 +11,7 @@ rebound in [Settings](Settings) (two keys or mouse buttons each).
 | Mouse | Look |
 | **Left mouse** (or J) | **Katana**: a 3-hit combo that cuts everything in the arc. Hold to keep slashing. Katana kills charge the shotgun |
 | **Right mouse** (or K) | **Arc shotgun**: a lightning spread that staggers. Headshots do double. Hold to keep firing |
-| Slash at an incoming shot | **Deflect** it straight back at whoever fired it |
+| Slash at an incoming shot | **Deflect** it straight back at whoever fired it. Slash in the last moment before it hits for a **perfect deflect** |
 | **F** (near a staggered enemy) | **Glory kill**: a finisher that heals and refills cells. A gold "F GLORY KILL" prompt shows when one is in reach |
 | **F** (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows |
 | **F** (on a boss whose KAMAE is broken) | **ONIKIRI**: the boss break blow, 20% of its health. A red "F ONIKIRI" prompt shows |

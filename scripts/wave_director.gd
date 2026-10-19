@@ -428,7 +428,7 @@ func _wave_cleared() -> void:
 	phase_t = 12.0 # fallback; the HUD's tally normally ends the clear phase
 	var st := Game.wave_stats()
 	var rows: Array = [["WAVE CLEAR", "", 250 * wave]]
-	for spec in [["KILLS", "kills", 25], ["GLORY KILLS", "executions", 200], ["HEADSHOTS", "headshots", 75], ["DEFLECTS", "deflects", 100]]:
+	for spec in [["KILLS", "kills", 25], ["GLORY KILLS", "executions", 200], ["HEADSHOTS", "headshots", 75], ["DEFLECTS", "deflects", 100], ["PERFECT DEFLECTS", "perfect_deflects", 150]]:
 		var n: int = st[spec[1]]
 		if n > 0:
 			rows.append([spec[0], "%d X %d" % [n, spec[2]], n * int(spec[2])])

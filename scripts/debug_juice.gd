@@ -28,8 +28,8 @@ func _process(_delta: float) -> void:
 		[5.2, func(): _fake_kills(10)],
 		[6.4, func():
 			Game.combo = 0
-			_hud.show_tally({"title": "WAVE 4 CLEAR", "rows": [["WAVE CLEAR", "", 1000], ["KILLS", "31 X 25", 775], ["GLORY KILLS", "4 X 200", 800], ["HEADSHOTS", "6 X 75", 450], ["DEFLECTS", "9 X 100", 900]], "chips": 3925, "mults": [["WAVE 4", 1.4], ["FLAWLESS", 1.5], ["HYAKKI YAKO", 1.2]], "total": 9891, "flawless": true})
-			Game.add_score(9891)],
+			_hud.show_tally({"title": "WAVE 4 CLEAR", "rows": [["WAVE CLEAR", "", 1000], ["KILLS", "31 X 25", 775], ["GLORY KILLS", "4 X 200", 800], ["HEADSHOTS", "6 X 75", 450], ["DEFLECTS", "9 X 100", 900], ["PERFECT DEFLECTS", "3 X 150", 450]], "chips": 4375, "mults": [["WAVE 4", 1.4], ["FLAWLESS", 1.5], ["HYAKKI YAKO", 1.2]], "total": 11025, "flawless": true})
+			Game.add_score(11025)],
 		[12.0, func():
 			Sfx.music_cut()
 			_hud.finish_splash()],
@@ -47,6 +47,7 @@ func _process(_delta: float) -> void:
 			Game.popup.emit("HEADSHOT +120", Color(1.0, 0.9, 0.3))
 			Game.popup.emit("GLORY KILL +400", Color(1.0, 0.3, 0.5))
 			Game.popup.emit("DEFLECT +100", Color(0.4, 0.95, 1.0))
+			Game.popup.emit("PERFECT DEFLECT!", Color.WHITE)
 			_hud.no_ammo()
 			_hud.finisher_demo = true
 			_hud.show_hint("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")],

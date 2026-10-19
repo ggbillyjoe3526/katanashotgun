@@ -48,6 +48,8 @@ var defeat_text := "TARGET TERMINATED" # the big card when a boss dies
 var kamae_max := 0.0 # bosses: size of the KAMAE bar before cycle scaling
 var kamae: BossKamae = null # bosses only: the posture bar that replaces poise
 var exposed_t := 0.0 # bosses: armour down after a big move (the punish window)
+var _signature_seq := 0 # bosses: signature volleys fired (spec §3.2 Perfect deflect)
+var _signature_paid := 0 # the last signature volley that paid its KAMAE hit
 var dice_seed := -1 # set before spawning to roll this enemy's dice from the run's seed
 
 var state: S = S.SPAWN
@@ -828,8 +830,12 @@ func _volley(dir: Vector3) -> void:
 	var origin := global_position + Vector3(0, height * 0.6, 0)
 	var target := Game.player.global_position + Vector3(0, 1.0, 0)
 	var aim := (target - origin).normalized()
+	# Shuten's signature volley (spec §3.2 Perfect deflect): white-hot bolts
+	var sig := next_signature() if is_boss else 0
 	for i in 9:
-		Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult, "bolt", self)
+		var b: Bolt = Game.main.director.fire_bolt(true, origin + dir * radius, aim.rotated(Vector3.UP, (i - 4) * 0.13) * 11.0, 14.0 * damage_mult, "bolt", self)
+		if sig != 0:
+			b.mark_signature(sig)
 	Sfx.play_at("enemy_shot", global_position, 4.0, 0.7)
 
 
@@ -967,6 +973,24 @@ func stagger_length() -> float:
 	return stagger_time + (BossKamae.BREAK_EXTRA if is_boss else 0.0)
 
 
+## Bosses: the number of a new signature volley, the white bolts meant to be
+## PERFECT deflected (spec §3.2). Its bolts carry it.
+func next_signature() -> int:
+	_signature_seq += 1
+	if Game.hints_shown.has("bolt"):
+		Game.show_hint_once("perfect", "WHITE BOLTS: DEFLECT AT THE LAST MOMENT FOR A PERFECT")
+	return _signature_seq
+
+
+## A PERFECT deflect on signature volley `id`: true for the first one only,
+## so each volley pays its big KAMAE hit once.
+func claim_signature(id: int) -> bool:
+	if not is_boss or id == _signature_paid:
+		return false
+	_signature_paid = id
+	return true
+
+
 ## Bosses: adds pressure to the KAMAE bar and breaks the stance when it fills.
 func press_kamae(amount: float) -> void:
 	if kamae == null or dead or state == S.STAGGER or state == S.SPAWN:
@@ -1029,7 +1053,7 @@ func _end_stagger() -> void:
 func _update_poise(delta: float) -> void:
 	poise_t -= delta
 	if kamae:
-		kamae.update(delta)
+		kamae.update(delta, hp / max_hp if max_hp > 0.0 else 1.0)
 	elif poise_t <= 0.0 and state != S.STAGGER:
 		poise = minf(max_poise, poise + max_poise * 0.35 * delta)
 	if marker.visible:
