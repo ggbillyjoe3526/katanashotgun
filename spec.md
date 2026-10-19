@@ -1468,6 +1468,9 @@ the holographic cut-in (§9.8).
   - Draws **one** number from `rng_map` and keeps its own RNG after that, so
     it can never shift gameplay (§7.5). Tower bodies, strips and traffic are
     MultiMeshes; nothing in it casts light.
+  - **The City Is Watching** (`CityWatch`, §19.1 #9, on trial): news
+    drones that gather with the combo and city screens with the live score
+    and the seed's best initials.
   - The older layers stay: the far skyline MultiMesh, a sky hologram, neon
     palms, and the synthwave sky shader (palette gradient, striped sun with a
     seeded azimuth, ridge mountains with a rim light, stars, a moon).
@@ -2275,6 +2278,8 @@ historical root with a cyberpunk twist**.
   goddess), TENGU AEROSPACE (the winged mountain yokai), INARI FOODS (the
   kami of rice), TSUKUYOMI MEDIA (the moon god), OMOIKANE SYSTEMS (the kami
   of wisdom), KAPPA HYDRO (the river yokai).
+  TSUKUYOMI LIVE is TSUKUYOMI MEDIA's news feed on the city screens and
+  drones (The City Is Watching, §19.1 #9).
 
 ---
 
@@ -2340,6 +2345,8 @@ weak hardware.
     | Smoke puffs | 20 | 60 | 80 |
     | Impact flashes | 16 | 48 | 64 |
     | Flying cars in the backdrop (40 exist) | 16 | 40 | 40 |
+    | News drones (The City Is Watching) | 4 | 8 | 12 |
+    | City screens (The City Is Watching) | 2 | 4 | 4 |
 
     Fixed at every preset: spawn beams 16, slash trails 8, explosion flashes
     12, explosion lights 4, kill tags 4, screen blood 10. Health orbs are
@@ -2689,6 +2696,37 @@ the title screen first (today a friend's seed needs a shortcut edit).
    gather as the combo climbs, billboards show kills and score live, and
    city screens show the top initials for this seed (yours, or the friend
    whose code is loaded). Presentation only, scaled by the graphics preset.
+   **BUILT for play-testing (2026-10-19), awaiting the owner's verdict.**
+   `CityWatch` (`scripts/maps/city_watch.gd`, one per `CityBackdrop`) and
+   `CityScreen` (`city_screen.gd`). Tuning (constants in `city_watch.gd`):
+   - **Drones:** one TSUKUYOMI news drone per 4 combo, capped per preset
+     (WEAK 4, MEDIOCRE 8, INSANE 12, §14). They fly in from the city over
+     2.6 s to a seeded spot on a ring 36 to 41 m out (outside the 32 m
+     barrier, inside the 45 m traffic lane), 10 to 17 m up, face the player
+     and hold a faint light cone on them (it stops 7 m short so it never
+     fogs the view). When the combo drops they stay 5 s, then one leaves
+     every 0.8 s. Their lenses flash at combo 10, 25, 50, 75, 100, 150 and
+     200 and on a new seed best (lens only, scaled by the flash slider).
+     Drone motion uses game time, so slow-mo and hitstop freeze them too.
+   - **Screens:** four 20 x 11 m screens on masts 60.5 m out, 22 m up
+     (north-north-west, north-north-east, west, east; WEAK keeps the two
+     north ones). Each alternates TSUKUYOMI LIVE (score; kills, or the
+     combo while it is 4+) for 7 s and the seed page (SEED code, the best
+     saved initials, BEST score; OPEN / NO RECORD YET when none) for 5 s;
+     odd screens start on the seed page. Passing the seed's record shows
+     NEW BEST / "<initials> BEATEN" on every screen for 4 s, once a run.
+     Page swaps squash the text to a line and back (0.16 s); held text is
+     still, Jersey 10 at whole multiples of 19 px on a plain dark plate.
+     Timing uses real time.
+   - The record is the best entry in the profile's top 10 on this seed
+     (only top-10 runs are saved). A friend's record waits on Seed Duels
+     (#1), which brings codes.
+   - Presentation only: reads `Game` and `Profile`, writes nothing; its RNG
+     is seeded from `hash(run_seed * 13 + 9)` and never draws from a
+     gameplay stream or the backdrop's, so the run and the city's look are
+     unchanged (unit test). Draw cost: drones 4 surfaces + 1 light
+     MultiMesh, plates 1 MultiMesh, masts and frames join the backdrop's
+     batches, 3 Label3D per screen.
 10. **Run Cards.** One key on the results screen saves a postcard image to
    the Pictures folder: seed code, score, wave, builds, bosses felled and
    the run's best moment, in the game's style. No internet.

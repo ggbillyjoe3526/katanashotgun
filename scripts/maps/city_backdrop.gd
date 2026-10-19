@@ -5,7 +5,8 @@ extends Node3D
 ## traffic, a monorail, a blimp, sweeping searchlights and a slowly drifting
 ## sun). Presentation only: it draws one number from the map stream and keeps
 ## its own RNG, so it can never shift gameplay. Cheap to draw: tower bodies,
-## neon trim and traffic are MultiMeshes; nothing here casts light.
+## neon trim and traffic are MultiMeshes; nothing here casts light. Its
+## CityWatch makes the city react to the run (news drones, live screens).
 
 const LOGO_FONT := preload("res://assets/fonts/orbitron_900.woff2")
 ## Invented corporations (spec §13 naming: Japanese root + cyberpunk trade).
@@ -36,6 +37,7 @@ var _blimp_a := 0.0
 var _beams: Array[Node3D] = []
 var _sun_base := 0.0
 var _t := 0.0
+var watch: CityWatch
 
 
 func build(a: Arena) -> void:
@@ -50,6 +52,9 @@ func build(a: Arena) -> void:
 	_monorail()
 	_blimp_build()
 	_searchlights()
+	watch = CityWatch.new()
+	add_child(watch)
+	watch.build(self) # before the flush: its masts and frames join the batches
 	_flush_batches()
 	# things that move stay out of INSANE's global illumination
 	for n: Node in [_train, _blimp] + _beams:
@@ -333,6 +338,15 @@ func _searchlights() -> void:
 
 
 # ---------------------------------------------------------------- batching
+## A neon (or dark) box of `size` along `basis`'s own axes, batched with
+## every other box of its colour; CityWatch adds its masts and screen frames
+## this way.
+func add_strip(pos: Vector3, basis: Basis, size: Vector3, col: Color) -> void:
+	if not _strips.has(col):
+		_strips[col] = []
+	_strips[col].append(Transform3D(basis * Basis.from_scale(size), pos))
+
+
 func _strip(pos: Vector3, basis: Basis, size: Vector3, col: Color) -> void:
 	if not _strips.has(col):
 		_strips[col] = []

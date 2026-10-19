@@ -60,8 +60,8 @@ feel right:
   beside them as a neon ghost while they play the same seed.
 - **Legendary seeds:** hand-picked seeds on the title screen with bronze,
   silver and gold scores to beat.
-- **The city is watching:** drones and billboards on the rooftop follow
-  your combo and score, and show the best initials for the seed.
+- **The city is watching:** now in the game to try: see
+  [The Map](The-Map#the-city-is-watching).
 - **Run cards:** one key saves a picture of your run with its seed code,
   ready to post anywhere.
 - **A box to type in a seed** on the title screen, so sharing seeds doesn't
