@@ -9,6 +9,8 @@ extends Node3D
 ## A spawn group lands within this many metres of its spawn point (the
 ## director's +-2 m offsets, and the second grunt a boss wave sends in).
 const GROUND_SPAWN_REACH := 3.0
+const PICKUP_TOP := 12.0 # soda cans sit no higher than this (metres)
+const PICKUP_CLEAR := 2.2 # ...with this much open air above them
 
 var map_name := "UNNAMED"
 var half := 32.0
@@ -35,6 +37,8 @@ const NAV_LEAP := 2 # navigation layer: leap links (enemies only; the autoplay b
 
 var _platforms: Array = [] # {c: Vector2, hx, hz, rot, h}
 var _ramps: Array = []     # {a: Vector3, b: Vector3, w}
+var _pickup_spots: Array[Vector3] = []
+var _pickup_spots_done := false
 var _flicker_lights: Array = []
 var _t := 0.0
 var _storm := false
@@ -255,6 +259,40 @@ func floor_height_at(x: float, z: float, below := INF) -> float:
 		if lateral <= r.w * 0.5 and rh <= below:
 			h = maxf(h, rh)
 	return h
+
+
+## Where soda cans may appear (SodaCans): the middle of every platform top
+## that is inside the map, open to the sky for a body's height and no higher
+## than PICKUP_TOP, plus the spawn points on the edges. Worked out once, in
+## build order, so the same seed always sees the same list.
+func pickup_spots() -> Array[Vector3]:
+	if _pickup_spots_done:
+		return _pickup_spots
+	_pickup_spots_done = true
+	var space := get_world_3d().direct_space_state
+	var q := PhysicsRayQueryParameters3D.new()
+	q.collision_mask = 1
+	var cands: Array[Vector3] = []
+	for p in _platforms:
+		if p.hx >= 0.6 and p.hz >= 0.6:
+			cands.append(Vector3(p.c.x, p.h, p.c.y))
+	cands.append_array(spawn_points)
+	for c in cands:
+		if absf(c.x) > half - 1.5 or absf(c.z) > half - 1.5 or c.y > PICKUP_TOP or c.y < floor_base - 0.5:
+			continue
+		# nothing over the spot for a body's height, and the floor is really there
+		q.from = c + Vector3(0, PICKUP_CLEAR, 0)
+		q.to = c - Vector3(0, 0.4, 0)
+		var hit := space.intersect_ray(q)
+		if hit.is_empty() or absf(hit.position.y - c.y) > 0.2:
+			continue
+		var dup := false
+		for o in _pickup_spots:
+			if o.distance_to(c) < 2.0:
+				dup = true
+		if not dup:
+			_pickup_spots.append(Vector3(c.x, hit.position.y, c.z))
+	return _pickup_spots
 
 
 ## How far above a spawn point an enemy appears (the director rolls 7-9 m).

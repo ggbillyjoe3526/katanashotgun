@@ -27,6 +27,8 @@ var score_label: Label
 var combo_label: Label
 var combo_bar: ColorRect
 var crosshair: Crosshair
+var soda_hud: SodaHud # soda cans round the vitals frame (dev-only play-test)
+var pause_cans_plate: Shard # the pause screen: the soda cans in hand and what they do
 var finisher_prompt: FinisherPromptScript
 var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var hint_label: Label # warnings and hints: the head line, in the lane's colour
@@ -35,6 +37,7 @@ var hint_bg: Shard
 var hint_t := 99.0
 var _hint_wait := "" # a hint held back until the wave intro has finished
 var _hint_wait_warn := false
+var _hint_wait_tint := Color(0, 0, 0, 0)
 var _popup_wait: Array = [] # tags held back the same way ([text, colour])
 var popups: Array = []
 var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
@@ -407,6 +410,8 @@ func _build_play() -> void:
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
+	soda_hud = SodaHud.new()
+	play_root.add_child(soda_hud)
 	# the numbers beside the vitals frame: red side health, cyan side cells
 	hp_label = _plated("100", Color.WHITE)
 	cell_label = _plated("4", CYAN)
@@ -619,6 +624,10 @@ func _build_pause() -> void:
 	bl.name = "Builds"
 	bl.position = Vector2(10, 6)
 	pause_builds_plate.add_child(bl)
+	# under the builds: the soda cans in hand, each with what it does
+	pause_cans_plate = _side_plate()
+	pause_cans_plate.visible = false
+	pause_root.add_child(pause_cans_plate)
 	# bottom: the run's seed to copy (rather than cluttering the live HUD),
 	# and the mouse sensitivity, which [ and ] change anywhere
 	var sd := Ui.label("", Ui.font_bold, 10, MenuList.REST, 2)
@@ -655,6 +664,19 @@ func _layout_pause() -> void:
 	pause_builds_plate.visible = bl.text != ""
 	pause_builds_plate.size = (bl.size + Vector2(20, 12)).round()
 	pause_builds_plate.position = Vector2(vs.x - PAUSE_X - pause_builds_plate.size.x, 44).round()
+	if pause_cans_plate.visible:
+		var cw := 0.0
+		var ch := 0.0
+		for l in pause_cans_plate.get_children():
+			if l is Label:
+				l.size = Vector2.ZERO
+				cw = maxf(cw, l.size.x)
+				ch = maxf(ch, l.position.y + l.size.y)
+		pause_cans_plate.size = Vector2(cw + 20.0, ch + 4.0).round()
+		var cy := 44.0
+		if pause_builds_plate.visible:
+			cy = pause_builds_plate.position.y + pause_builds_plate.size.y + 6.0
+		pause_cans_plate.position = Vector2(vs.x - PAUSE_X - pause_cans_plate.size.x, cy).round()
 	var sd: Label = pause_root.get_node("Seed")
 	sd.text = "SEED %s" % Game.seed_string(Game.run_seed)
 	sd.size = Vector2.ZERO
@@ -950,8 +972,37 @@ func show_pause(on: bool) -> void:
 	var lines := Upgrades.build_lines(Game.upgrades)
 	var bl: Label = pause_builds_plate.get_node("Builds")
 	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
+	_fill_pause_cans()
 	if not on:
 		settings_menu.close()
+
+
+## The pause screen's soda can plate: a line per can in hand, its name in its
+## colour and what it does, crash included, under it.
+func _fill_pause_cans() -> void:
+	for ch in pause_cans_plate.get_children():
+		if ch is Label:
+			ch.queue_free()
+			pause_cans_plate.remove_child(ch)
+	var cans := Game.cans
+	if not is_instance_valid(cans) or not cans.enabled or cans.held.is_empty():
+		pause_cans_plate.visible = false
+		return
+	pause_cans_plate.visible = true
+	var y := 6.0
+	var head := Ui.label("SODA CANS IN HAND", Ui.font_bold, 10, Color.WHITE)
+	head.position = Vector2(10, y)
+	pause_cans_plate.add_child(head)
+	for id in cans.held:
+		var def := Soda.get_def(id)
+		y += LINE
+		var n := Ui.label(str(def.name), Ui.font_bold, 10, def.color)
+		n.position = Vector2(10, y)
+		pause_cans_plate.add_child(n)
+		y += LINE
+		var d := Ui.label(str(def.desc), Ui.font_bold, 10, CARD_TEXT)
+		d.position = Vector2(10, y)
+		pause_cans_plate.add_child(d)
 
 
 func _open_settings() -> void:
@@ -1411,6 +1462,17 @@ static func _text_bottom(l: Control) -> float:
 	return l.position.y + roundf(l.size.y * 0.85)
 
 
+## A soda can was opened: its name slams into the top lane in its colour, a
+## burst of its colour sprays off the can and the frame's corners flash.
+func soda_drank(def: Dictionary) -> void:
+	var col: Color = def.color
+	# one message per lane: the name waits out nothing, but never covers FIGHT
+	if not juice.intro_showing():
+		juice.stamp(str(def.name), col, 16, {"lane": "top", "from": 2.2, "hold": 0.9, "shake": 3.0, "sound": "", "burst": 16, "shadow": col.darkened(0.75)})
+	juice.burst((vs * Vector2(0.54, 0.6)).round(), col, 22, 120.0)
+	soda_hud.flash(col)
+
+
 ## Where the top lane starts: under the wave, the score and the boss bar. The
 ## big moments, the wave intro and the boss card sit here, so they never
 ## cover the top row (spec §9.7).
@@ -1458,16 +1520,18 @@ func kamae_broken() -> void:
 
 
 ## Warnings and hints share one lane at the bottom centre: the head line in
-## the lane's colour (red for a warning, yellow for a hint), the rest of the
-## sentence white under it. A new one replaces the old.
-func show_hint(text: String, warn := false) -> void:
+## the lane's colour (red for a warning, yellow for a hint, or `tint`: a soda
+## can's pickup line takes its can's colour), the rest of the sentence white
+## under it. A new one replaces the old.
+func show_hint(text: String, warn := false, tint := Color(0, 0, 0, 0)) -> void:
 	if juice.intro_showing() or juice.panel_showing() or reward_card.visible:
 		# the intro, a big panel or the reward card holds the screen; the hint waits
 		_hint_wait = text
 		_hint_wait_warn = warn
+		_hint_wait_tint = tint
 		return
 	var parts := split_hint(text)
-	var col := HINT_WARN if warn else YELLOW
+	var col := HINT_WARN if warn else (tint if tint.a > 0.0 else YELLOW)
 	hint_label.text = _wrap(parts[0], hint_label, vs.x - 80.0)
 	hint_label.add_theme_color_override("font_color", col)
 	hint_sub.visible = parts.size() > 1
@@ -1804,6 +1868,7 @@ func _update_play(delta: float) -> void:
 	crosshair.dash = p.dash_charges
 	crosshair.max_dash = p.max_dash
 	crosshair.queue_redraw()
+	soda_hud.refresh(c, vitals, delta)
 	hp_label.visible = vitals
 	cell_label.visible = vitals
 	hp_label.text = str(int(ceil(p.hp)))
@@ -1977,7 +2042,7 @@ func _update_play(delta: float) -> void:
 			hint_bg.visible = false
 	if not juice.intro_showing() and not juice.panel_showing() and not reward_card.visible:
 		if _hint_wait != "":
-			show_hint(_hint_wait, _hint_wait_warn)
+			show_hint(_hint_wait, _hint_wait_warn, _hint_wait_tint)
 			_hint_wait = ""
 		for w in _popup_wait:
 			add_popup(w[0], w[1])

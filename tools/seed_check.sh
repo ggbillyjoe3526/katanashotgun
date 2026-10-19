@@ -5,7 +5,8 @@
 # (mutator, boss, line-up) and every augment offer both runs saw must be the
 # same cards. Fails on any difference, on script errors, or if the runs are
 # too short to compare.
-# Usage: tools/seed_check.sh [SEED] [FRAMES]   (GODOT=/path/to/godot to override)
+# Usage: tools/seed_check.sh [SEED] [FRAMES]   (GODOT=/path/to/godot to override;
+#        SEED_ARGS="--cans" adds game flags, e.g. to check the soda cans too)
 set -uo pipefail
 GODOT="${GODOT:-godot}"
 cd "$(dirname "$0")/.."
@@ -21,7 +22,7 @@ fi
 
 # --fixed-fps runs the game faster than real time: FRAMES / 60 game seconds
 run() {
-  timeout 900 "$GODOT" --headless --path . --fixed-fps 60 --quit-after "$FRAMES" -- --autoplay --god --seed="$SEED" > "$1" 2>&1
+  timeout 900 "$GODOT" --headless --path . --fixed-fps 60 --quit-after "$FRAMES" -- --autoplay --god --seed="$SEED" ${SEED_ARGS:-} > "$1" 2>&1
 }
 run "$LOG_A" &
 run "$LOG_B"
@@ -53,6 +54,7 @@ compare() {
 compare plans "^\[plan\]"
 waves=$COMPARED
 compare offers "^\[offer\]"
+compare cans "^\[cans\] wave" # soda cans (only with SEED_ARGS=--cans)
 
 if [ "$waves" -lt "$MIN_WAVES" ]; then
   echo "FAIL: only $waves waves to compare, need $MIN_WAVES (raise FRAMES)"; exit 1

@@ -42,6 +42,7 @@ var _cells := 4
 var _drum_from := 0.0
 var _drum_to := 0.0
 var _rng := RandomNumberGenerator.new()
+var can: ViewmodelCan # a soda can being drunk (spec §19.1 #11)
 
 # how far the Blender katana turns in the hand (radians, around its blade)
 const KATANA_MODEL_ROLL := -0.9
@@ -108,6 +109,9 @@ func _ready() -> void:
 	for g in find_children("*", "GeometryInstance3D", true, false):
 		(g as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	apply_looks()
+	can = ViewmodelCan.new()
+	can.vm = self
+	add_child(can)
 	# equipping from the armory (title or pause) recolours the live weapons
 	Profile.changed.connect(apply_looks)
 	_kpos = katana_idle_pos
@@ -390,6 +394,17 @@ func glory_end() -> void:
 	_glory = false
 
 
+## Drinks a soda can: the shotgun drops, the can comes up, the katana cuts
+## its top off at `cut_at` (ViewmodelCan).
+func drink(color: Color, length: float, cut_at: float) -> void:
+	can.drink(color, length, cut_at)
+
+
+## How far the head is tipped back to drink (0..1).
+func drink_tilt() -> float:
+	return can.tilt
+
+
 ## How far through a ledge climb the player is (0..1), or below 0 for none.
 func set_climb(progress: float) -> void:
 	_climb_p = progress
@@ -489,6 +504,9 @@ func _process(delta: float) -> void:
 			_fire_t = -1.0
 			drum.rotation.z = _drum_to
 			_charge = 1.0
+	# a soda can in the right hand: the shotgun waits at the hip
+	spos += Vector3(0.1, -0.55, 0.18) * can.holster
+	srot += Vector3(-1.0, 0.0, 0.35) * can.holster
 	shotgun.position = spos + sway3 * 0.8 + bob3 * 1.1 + CLIMB_REACH_S[0] * _reach + CLIMB_PRESS_S[0] * _press
 	shotgun.rotation = srot + Vector3(_sway.y, _sway.x, 0) * 0.5 + CLIMB_REACH_S[1] * _reach + CLIMB_PRESS_S[1] * _press
 	# coils: flare on the blast, sit dim while recharging, hum when ready;

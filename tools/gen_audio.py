@@ -3,6 +3,7 @@
 Run:  python3 tools/gen_audio.py        (from the project root; everything)
       python3 tools/gen_audio.py rain   (only the rain beds)
       python3 tools/gen_audio.py deflect_perfect   (only that sound)
+      python3 tools/gen_audio.py cans   (only the soda can sounds)
 Writes .wav SFX and .ogg loops into assets/audio/. Requires numpy, scipy, ffmpeg.
 Everything is synthesized so the prototype has no third-party audio.
 """
@@ -774,6 +775,55 @@ def rain_ogg():
         to_ogg(name, left / peak * 0.9, 3, right / peak * 0.9, normalise=False)
 
 
+# ---------------------------------------------------------------- soda cans
+# (spec §19.1 #11) Their own dice, so adding them shifts no other sound.
+def _can_noise(dur, seed):
+    return np.random.default_rng(seed).uniform(-1, 1, int(SR * dur))
+
+
+def sfx_can_pickup():
+    """A can into the hand: an aluminium clink, then a short slosh."""
+    total = 0.3
+    t = t_axis(0.18)
+    clink = sum(np.sin(2 * np.pi * f * t) * np.exp(-t * k) for f, k in [(2350, 30), (3720, 38), (5100, 45)]) * 0.5
+    slosh = lp(_can_noise(0.2, 11), 900) * np.sin(np.pi * t_axis(0.2) / 0.2) * 0.35
+    return at(clink, 0, total) + at(slosh, 0.05, total)
+
+
+def sfx_can_open():
+    """The katana takes the top off: a metal tick, then the fizz bursting out."""
+    total = 0.75
+    tick = bp(_can_noise(0.025, 12), 3000, 9000) * env_exp(0.025, 120) * 1.2
+    d = 0.65
+    fizz = hp(_can_noise(d, 13), 3500) * np.exp(-t_axis(d) * 4.5) * (0.6 + 0.4 * np.abs(_can_noise(d, 14)))
+    burst = bp(_can_noise(0.12, 15), 600, 2500) * env_exp(0.12, 25) * 0.8
+    return at(tick, 0, total) + at(fizz, 0.02, total) * 0.7 + at(burst, 0.015, total)
+
+
+def sfx_can_gulp():
+    """One gulp: a low, wet glottal knock."""
+    d = 0.12
+    t = t_axis(d)
+    knock = sweep_sine(260, 110, d, 0.6) * np.exp(-t * 30) * 1.2
+    wet = lp(_can_noise(d, 16), 1200) * np.exp(-t * 35) * 0.4
+    return knock + wet
+
+
+def sfx_can_crash():
+    """The sugar crash: a detuned synth that sags down an octave."""
+    d = 0.6
+    t = t_axis(d)
+    sag = sweep_sine(440, 200, d, 0.7) + 0.5 * sweep_sine(447, 203, d, 0.7)
+    return np.tanh(sag * np.exp(-t * 4) * 1.4) * 0.6
+
+
+def soda_sounds():
+    save("can_pickup", sfx_can_pickup(), 0.55)
+    save("can_open", sfx_can_open(), 0.75)
+    save("can_gulp", sfx_can_gulp(), 0.55)
+    save("can_crash", sfx_can_crash(), 0.5)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     if sys.argv[1:] == ["rain"]:
@@ -781,6 +831,9 @@ def main():
         return
     if sys.argv[1:] == ["deflect_perfect"]:
         save("deflect_perfect", sfx_deflect_perfect(), 0.85)
+        return
+    if sys.argv[1:] == ["cans"]:
+        soda_sounds()
         return
     save("shotgun", sfx_shotgun())
     save("recharge", sfx_recharge(), 0.6)
@@ -842,6 +895,7 @@ def main():
     save("fanfare", sfx_fanfare(), 0.7)
     save("deflect_perfect", sfx_deflect_perfect(), 0.85)
     rain_ogg()
+    soda_sounds()
     print("audio written to", os.path.abspath(OUT))
 
 

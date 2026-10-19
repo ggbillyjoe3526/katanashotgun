@@ -180,6 +180,8 @@ func _next_wave() -> void:
 		Game.hud.wave_intro(wave, sub, Color.WHITE, false)
 		Sfx.play("riser", -6.0)
 	Game.arena.set_storm(bool(Game.mut("storm", false)))
+	if Game.cans:
+		Game.cans.on_wave_start(wave, is_boss_wave(wave))
 	if Game.debug_autoplay:
 		# tools/seed_check.sh compares these lines between two runs of a seed
 		print("[plan] wave %d mut=%s boss=%s lineup=%s" % [wave, Game.mutator.get("id", "-"), boss_kind if is_boss_wave(wave) else "-", _lineup_code()])
@@ -455,5 +457,7 @@ func _wave_cleared() -> void:
 	Game.hud.show_tally({"title": "WAVE %02d // CLEAR" % wave, "rows": rows, "chips": chips, "mults": mults, "total": total, "flawless": flawless, "boss": boss_bounty > 0})
 	Sfx.play("wave_clear", -5.0)
 	Game.player.add_cells(2)
+	if Game.cans:
+		Game.cans.on_wave_cleared()
 	Game.mutator = {}
 	Game.arena.set_storm(false)
