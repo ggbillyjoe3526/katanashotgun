@@ -32,6 +32,7 @@ var finisher_demo := false # --juicetest shows the prompt with no enemy around
 var hint_label: Label # warnings and hints: the head line, in the lane's colour
 var hint_sub: Label # and the line under it, white
 var hint_bg: Shard
+var warn_band: HazardBand # warnings (HIJACK); hints keep hint_bg
 var hint_t := 99.0
 var _hint_wait := "" # a hint held back until the wave intro has finished
 var _hint_wait_warn := false
@@ -88,11 +89,6 @@ var _death_t := 0.0
 
 # arcade
 var mut_label: Label
-var banner_band: ColorRect
-var boss_tag: Label
-var boss_title: Label
-var boss_sub: Label
-var boss_t := 99.0
 var boss_bar_sub: Label
 var title_scores: Label
 var title_version: Label
@@ -141,6 +137,7 @@ const CARD_MIN_H := 150.0
 const CARD_GAP := 10.0
 const CARD_PAD := 8.0 # text starts this far in from the card's edge
 const CARD_TOP := 70.0 # the cards' top edge, from the top of the screen
+const LEVELUP_SHADOW := Color(0.59, 1.0, 0.38) # the LEVEL UP block's hard shadow (HIJACK)
 const CARD_EDGE := Color(0.27, 0.24, 0.39) # an unlit card's outline
 const CARD_TEXT := Color(0.63, 0.62, 0.75) # descriptions
 const CARD_INK := Color(0.03, 0.02, 0.07) # dark words on the tag ribbon
@@ -178,7 +175,6 @@ const SCORE_ROWS := 4 # hi-score rows on the results
 const GOLD := Color(1.0, 0.72, 0.15)
 const D_CARD := 2 # results row items: RETRY SEED, NEW RUN, RUN CARD, COPY SEED
 const D_COPY := 3
-const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const KAMAE_GOLD := Color(1.0, 0.72, 0.15)
 const KAMAE_HOT := Color(1.0, 0.93, 0.55) # nearly full: the bar runs white-hot
 const KAMAE_HOT_AT := 0.8
@@ -379,31 +375,6 @@ func _build_play() -> void:
 	score_label = Ui.label("0", Ui.font_mono, 30, Color.WHITE, 3)
 	play_root.add_child(score_label)
 
-	# boss name card: a full-width band with red edges in the top lane
-	banner_band = Ui.rect(Color(0.02, 0.0, 0.06, 0.78), Vector2.ZERO, Vector2(480, 64))
-	banner_band.visible = false
-	var edge_a := Ui.rect(RED, Vector2(0, 0), Vector2(480, 1))
-	edge_a.name = "EdgeA"
-	banner_band.add_child(edge_a)
-	var edge_b := Ui.rect(RED, Vector2(0, 63), Vector2(480, 1))
-	edge_b.name = "EdgeB"
-	banner_band.add_child(edge_b)
-	play_root.add_child(banner_band)
-	boss_tag = Ui.label("> WARNING // HIGH-VALUE TARGET", Ui.font_bold, 10, Color(1.0, 0.35, 0.4), 2)
-	boss_tag.visible = false
-	play_root.add_child(boss_tag)
-	# solid letters on a dark outline with a dark drop shadow (a coloured copy
-	# of the name read as a double image)
-	var bo := _shadowed("", Ui.font_big, 24, Color.WHITE, Color(0.02, 0.0, 0.05, 0.9), Vector2(2, 2))
-	boss_title = bo[0]
-	boss_title.add_theme_constant_override("outline_size", 4)
-	boss_title.add_theme_color_override("font_outline_color", Color(0.02, 0.0, 0.05, 1.0))
-	boss_title.visible = false
-	play_root.add_child(boss_title)
-	boss_sub = Ui.label("", Ui.font_bold, 10, MAGENTA.lerp(Color.WHITE, 0.2), 2)
-	boss_sub.visible = false
-	play_root.add_child(boss_sub)
-
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
@@ -433,6 +404,10 @@ func _build_play() -> void:
 	hint_sub = Ui.label("", Ui.font_bold, 10, Color.WHITE, 0)
 	hint_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_bg.add_child(hint_sub)
+	warn_band = HazardBand.new()
+	warn_band.visible = false
+	play_root.add_child(warn_band)
+	warn_band.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	# boss bar: top centre, the name, its health and the KAMAE row (spec §5.5)
 	boss_root = Control.new()
@@ -831,7 +806,14 @@ func _build_levelup() -> void:
 	var shade := Ui.rect(Color(0.02, 0.0, 0.06, 0.72), Vector2.ZERO, Vector2(480, 270))
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	levelup_root.add_child(shade)
-	var t := Ui.label("LEVEL UP", Ui.font_big, 16, YELLOW, 2)
+	# HIJACK (spec §9.8): LEVEL UP in dark letters on a solid gold block with
+	# a hard lime shadow, like a broadcast caption
+	var tb := Shard.make(YELLOW, 0.0, LEVELUP_SHADOW)
+	tb.shadow_alpha = 1.0
+	tb.shadow_off = Vector2(6, 5)
+	tb.name = "TitleBlock"
+	levelup_root.add_child(tb)
+	var t := Ui.label("LEVEL UP", Ui.font_big, 16, CARD_INK, 0)
 	t.name = "Title"
 	levelup_root.add_child(t)
 	var st := Ui.label(LEVELUP_PROMPT, Ui.font_bold, 10, MenuList.REST, 2)
@@ -841,8 +823,10 @@ func _build_levelup() -> void:
 		var card := Control.new()
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.size = Vector2(CARD_W, CARD_MIN_H)
-		var bg := Shard.make(Color(0.03, 0.02, 0.07, 0.96), 8.0, Color(0, 0, 0, 0), CARD_EDGE)
-		bg.shadow_off = Vector2(0, 3)
+		# a dark card with a hard shadow in its tag's colour (HIJACK)
+		var bg := Shard.make(Color(0.03, 0.02, 0.07, 0.97), 0.0, Color(0, 0, 0, 0), CARD_EDGE)
+		bg.shadow_alpha = 1.0
+		bg.shadow_off = Vector2(5, 5)
 		bg.name = "Bg"
 		card.add_child(bg)
 		# the tag ribbon across the top: the tag left, the card's key right,
@@ -1078,6 +1062,7 @@ func wave_intro(wave: int, sub_text: String, color: Color, boss: bool) -> void:
 			_popup_wait.append([pp.l.text, pp.c])
 	_clear_tags()
 	hint_bg.visible = false
+	warn_band.stop()
 	mut_label.text = ("%s  x%.1f" % [Game.mutator.name, Game.mutator.score]) if not Game.mutator.is_empty() else ""
 
 
@@ -1111,6 +1096,7 @@ func show_reward(def: Dictionary) -> void:
 	_reward_t = 0.0
 	# the card deals into the bottom of the screen: the warning lane clears
 	hint_bg.visible = false
+	warn_band.stop()
 	juice.later(0.8, func(): reward_card.play(def))
 
 
@@ -1187,24 +1173,12 @@ func finish_splash() -> void:
 func show_boss_intro(title_text: String, sub_text: String) -> void:
 	# the boss card replaces the wave intro (one message per region)
 	juice.end_intro()
-	boss_title.text = title_text
-	boss_title.get_child(0).text = title_text
-	boss_sub.text = sub_text
-	boss_title.size = Vector2.ZERO
-	boss_title.get_child(0).size = Vector2.ZERO
-	boss_sub.size = Vector2.ZERO
-	boss_title.visible = true
-	boss_sub.visible = true
-	boss_t = 0.0
-	juice.later(0.25, func():
-		juice.add_shake(6.0)
-		Sfx.play("stamp", -6.0, 0.7, 0.0))
+	juice.boss_card(title_text, sub_text)
 
 
 ## The boss name card makes way for a newer message in the top lane.
 func end_boss_card() -> void:
-	boss_title.visible = false
-	boss_sub.visible = false
+	juice.end_boss_card()
 
 
 func show_levelup(choices: Array, cb: Callable) -> void:
@@ -1393,6 +1367,9 @@ func _pick(i: int) -> void:
 	var c: Control = cards[i]
 	var base: Vector2 = c.get_meta("base", c.position)
 	juice.burst(base + c.size * 0.5, c.get_meta("col", Color.WHITE), 50, 120.0)
+	juice.burst(base + c.size * 0.5, LEVELUP_SHADOW, 24, 160.0)
+	if post:
+		post.invert_flash(0.05)
 	var id: String = _choices[i].id
 	juice.later(0.34, func():
 		_choices = []
@@ -1449,12 +1426,11 @@ func _layout_kamae(boss: Enemy) -> void:
 	kamae_fill.color = col
 
 
-## A boss's stance just broke: the stamp in the top lane, a held impact frame and
-## speed lines. The prompt under the crosshair says what F does next.
+## A boss's stance just broke: the KIRI card in the top lane on a gold
+## impact frame (Juice.kamae_broken). The prompt under the crosshair says
+## what F does next.
 func kamae_broken() -> void:
-	juice.stamp("KAMAE BROKEN", KAMAE_GOLD, 16, {"lane": "top", "hold": 1.0, "rot": -0.04, "shake": 8.0, "vol": -1.0, "pitch": 0.8, "burst": 30, "shadow": Color(0.25, 0.12, 0.0)})
-	juice.speed_lines(1.0, 0.3)
-	impact_frame(0.1)
+	juice.kamae_broken()
 
 
 ## Warnings and hints share one lane at the bottom centre: the head line in
@@ -1467,6 +1443,15 @@ func show_hint(text: String, warn := false) -> void:
 		_hint_wait_warn = warn
 		return
 	var parts := split_hint(text)
+	warn_band.stop()
+	if warn:
+		# HIJACK: an emergency band across the screen in the same lane
+		hint_bg.visible = false
+		warn_band.bottom = vs.y - HINT_BOTTOM
+		warn_band.play(parts[0], parts[1] if parts.size() > 1 else "", 4.5)
+		if post:
+			post.roll(0.1)
+		return
 	var col := HINT_WARN if warn else YELLOW
 	hint_label.text = _wrap(parts[0], hint_label, vs.x - 80.0)
 	hint_label.add_theme_color_override("font_color", col)
@@ -1474,6 +1459,8 @@ func show_hint(text: String, warn := false) -> void:
 	hint_sub.text = _wrap(parts[1], hint_sub, vs.x - 80.0) if parts.size() > 1 else ""
 	hint_bg.outline = col
 	hint_bg.visible = true
+	# hidden until its first layout, so it never shows a frame at the corner
+	hint_bg.modulate.a = 0.0
 	hint_t = 0.0
 
 
@@ -1526,6 +1513,9 @@ func add_popup(text: String, color: Color) -> void:
 	if juice.panel_showing():
 		# kill tags would sit on FINISH, the payout or the boss-defeated card
 		return
+	if juice.kiri_points(text):
+		# a glory kill's points join its card in the top lane
+		return
 	# a repeat of the newest tag counts up ("DEFLECT! x3") instead of stacking
 	# identical lines
 	if not popups.is_empty() and popups[0].text == text and popups[0].t < 0.8:
@@ -1538,17 +1528,42 @@ func add_popup(text: String, color: Color) -> void:
 		_free_popup(popups.pop_back().l)
 	var l: Label
 	if _popup_free.is_empty():
-		l = Ui.label(text, Ui.font_bold, 10, color, 2)
-		# a dark plate: the tags must read over gore and neon alike
-		l.add_theme_stylebox_override("normal", _popup_plate)
+		# HIJACK (spec §9.8): the newest callout is a solid chip in its colour
+		# with dark letters and a hard shadow; older ones turn to a dark plate
+		# with coloured letters and a coloured edge. Each owns its plate.
+		l = Ui.label(text, Ui.font_bold, 10, color, 0)
+		var plate := StyleBoxFlat.new()
+		plate.content_margin_left = 3
+		plate.content_margin_right = 3
+		plate.content_margin_top = 0
+		plate.content_margin_bottom = 0
+		l.add_theme_stylebox_override("normal", plate)
+		var sh := Ui.rect(CARD_INK, Vector2(4, 3), Vector2(10, 10))
+		sh.name = "Shadow"
+		sh.show_behind_parent = true
+		l.add_child(sh)
 		play_root.add_child(l)
 	else:
 		l = _popup_free.pop_back()
 		l.text = text
-		l.add_theme_color_override("font_color", color)
 		l.visible = true
+	_style_popup(l, color, true)
 	l.position = Vector2((vs * 0.5).floor().x + Crosshair.H + CALLOUT_X, (vs * 0.5).floor().y - 16.0)
-	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color})
+	if not popups.is_empty() and popups[0].live:
+		_style_popup(popups[0].l, popups[0].c, false)
+		popups[0].live = false
+	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color, "live": true})
+
+
+## A callout's look: live (the newest) is a solid chip with dark letters and
+## a hard shadow; older ones are dark with coloured letters and edge.
+func _style_popup(l: Label, color: Color, live: bool) -> void:
+	var plate: StyleBoxFlat = l.get_theme_stylebox("normal")
+	plate.bg_color = color if live else Color(0.02, 0.0, 0.05, 0.86)
+	plate.border_color = color
+	plate.border_width_left = 0 if live else 2
+	l.add_theme_color_override("font_color", CARD_INK if live else color)
+	l.get_node("Shadow").visible = live
 
 
 func _free_popup(l: Label) -> void:
@@ -1705,14 +1720,26 @@ func _layout_levelup() -> void:
 	if _picked >= 0:
 		_pick_t += rd
 	var t: Label = levelup_root.get_node("Title")
+	var tb: Shard = levelup_root.get_node("TitleBlock")
 	t.size = Vector2.ZERO
-	t.pivot_offset = t.size * 0.5
-	var tk := clampf(_deal_t / 0.1, 0.0, 1.0)
-	t.scale = Vector2.ONE * (lerpf(2.6, 1.0, tk * tk) if tk < 1.0 else 1.0 - 0.12 * sin((_deal_t - 0.1) * 30.0) * exp(-(_deal_t - 0.1) * 9.0))
-	t.position = Vector2(roundf((vs.x - t.size.x) * 0.5), 6)
+	# the block opens from a scan line, the word lands with a short stretch,
+	# and on a pick the block collapses back into a line
+	var ok := Juice.ease_out(_deal_t / 0.06)
+	if _picked >= 0:
+		ok *= 1.0 - clampf(_pick_t / 0.14, 0.0, 1.0)
+	var bw := t.size.x + 52.0
+	var bh := roundf(t.size.y * 0.8) + 6.0
+	var hh := maxf(1.0, roundf(bh * 0.5 * ok))
+	tb.position = Vector2(roundf((vs.x - bw) * 0.5), 6.0 + roundf(bh * 0.5) - hh)
+	tb.size = Vector2(bw, hh * 2.0)
+	var sk := clampf((_deal_t - 0.02) / 0.08, 0.0, 1.0)
+	t.pivot_offset = (t.size * 0.5).round()
+	t.scale = Vector2(lerpf(2.2, 1.0, sk * sk), 1.0)
+	t.modulate.a = 1.0 if ok > 0.6 else 0.0
+	t.position = Vector2(roundf((vs.x - t.size.x) * 0.5), 6.0 + roundf((bh - t.size.y) * 0.5))
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2(roundf((vs.x - st.size.x) * 0.5), 32)
+	st.position = Vector2(roundf((vs.x - st.size.x) * 0.5), 6.0 + bh + 6.0)
 	var n := _choices.size()
 	var total := n * CARD_W + (n - 1) * CARD_GAP
 	var bottom := CARD_TOP
@@ -1725,12 +1752,13 @@ func _layout_levelup() -> void:
 		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_W + CARD_GAP), CARD_TOP).round()
 		card.set_meta("base", base)
 		bottom = maxf(bottom, base.y + card.size.y)
-		# deal in from below with a spin, then hold still: once dealt a card is
-		# never rotated or scaled, so its pixel text stays sharp (§9.9)
-		var dk := clampf((_deal_t - (0.06 + i * 0.11)) / 0.3, 0.0, 1.0)
-		var e := Juice.ease_out_back(dk)
-		var off_y := (1.0 - e) * 190.0
-		var rot := (1.0 - e) * (0.4 if i % 2 == 0 else -0.4) if dk < 1.0 else 0.0
+		# HIJACK: each card opens from a scan line in turn, then holds still:
+		# once open a card is never squashed or scaled, so its pixel text
+		# stays sharp (§9.9)
+		var dk := clampf((_deal_t - (0.06 + i * 0.11)) / 0.08, 0.0, 1.0)
+		var sy := Juice.ease_out(dk)
+		var off_y := 0.0
+		var off_x := 0.0
 		var sc := 1.0
 		card.modulate.a = 1.0 if dk > 0.0 else 0.0
 		if hov:
@@ -1744,13 +1772,16 @@ func _layout_levelup() -> void:
 				sc = 1.0 + 0.14 * sin(pk * PI)
 				off_y -= 6.0 + 8.0 * sin(pk * PI)
 			else:
-				off_y += pk * pk * 220.0
-				rot += pk * (0.5 if i < _picked else -0.5)
-				card.modulate.a = 1.0 - pk
+				# the others are pulled off the air: they collapse into a line
+				# and are shoved aside
+				var ck := clampf(_pick_t / 0.14, 0.0, 1.0)
+				sy *= 1.0 - ck
+				off_x = (-1.0 if i < _picked else 1.0) * ck * ck * 120.0
+				card.modulate.a = 1.0 - ck * 0.7
 		card.pivot_offset = card.size * 0.5
-		card.scale = Vector2.ONE * sc
-		card.rotation = rot
-		card.position = base + Vector2(0, roundf(off_y))
+		card.scale = Vector2(sc, sc * maxf(sy, 0.02))
+		card.rotation = 0.0
+		card.position = base + Vector2(roundf(off_x), roundf(off_y))
 		# the outline: white when chosen, gold when it links to your build,
 		# the tag's colour while pointed at
 		var col: Color = card.get_meta("col", Color.WHITE)
@@ -1763,7 +1794,12 @@ func _layout_levelup() -> void:
 		if sel or i == _picked:
 			edge = Color.WHITE
 		bg.outline = edge
-		bg.shadow = col.darkened(0.5) if (hov or sel) else Color(0, 0, 0, 0)
+		# the hard shadow: the tag's colour, gold and deeper when chosen, and
+		# the ribbon turns white
+		var chosen := sel or i == _picked
+		bg.shadow = YELLOW if chosen else col
+		bg.shadow_off = Vector2(8, 8) if chosen else Vector2(5, 5)
+		(card.get_node("Ribbon") as ColorRect).color = Color.WHITE if chosen else col
 		var glow := 0.6 * exp(-_pick_t * 6.0) if i == _picked else 0.0
 		bg.color = Color(0.03, 0.02, 0.07, 0.96).lerp(Color(col.r, col.g, col.b, 0.96), glow)
 	var cf: Label = levelup_root.get_node("Confirm")
@@ -1778,7 +1814,7 @@ func _update_play(delta: float) -> void:
 	if p == null:
 		return
 	var m := 8.0
-	_fit([wave_label, foes_label, mut_label, boss_tag, boss_sub, boss_name, kamae_label, hp_label, cell_label, noammo_label, combo_label])
+	_fit([wave_label, foes_label, mut_label, boss_name, kamae_label, hp_label, cell_label, noammo_label, combo_label])
 	var c := (vs * 0.5).floor()
 	var fh := float(Crosshair.H)
 	# ---- the vitals frame round the crosshair. FINISH, the payout and the
@@ -1887,32 +1923,6 @@ func _update_play(delta: float) -> void:
 		bp.size = Vector2(BOSS_W, _boss_plate_h)
 	else:
 		_boss_ghost_v = 1.0
-	var lane := top_lane()
-	# ---- boss name card: a full-width band in the top lane
-	boss_t += delta
-	var band_on := boss_title.visible
-	banner_band.visible = band_on
-	boss_tag.visible = band_on
-	if band_on:
-		var bh := 64.0
-		banner_band.position = Vector2(0, lane)
-		banner_band.size = Vector2(vs.x, bh)
-		banner_band.get_node("EdgeA").size = Vector2(vs.x, 1)
-		var eb: ColorRect = banner_band.get_node("EdgeB")
-		eb.size = Vector2(vs.x, 1)
-		eb.position = Vector2(0, bh - 1)
-		banner_band.modulate.a = clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0)
-		var slide := Juice.ease_out(boss_t / 0.25)
-		boss_tag.position = Vector2(roundf((vs.x - boss_tag.size.x) * 0.5), lane)
-		boss_title.position = Vector2(roundf((vs.x - boss_title.size.x) * 0.5 + (1.0 - slide) * -80.0), lane + 11)
-		boss_sub.position = Vector2(roundf((vs.x - boss_sub.size.x) * 0.5 + (1.0 - slide) * 80.0), lane + 44)
-		var ba := clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0) * clampf(boss_t / 0.08, 0.0, 1.0)
-		boss_title.modulate.a = ba
-		boss_sub.modulate.a = ba
-		boss_tag.modulate.a = ba
-		if boss_t > BOSS_CARD_LEN:
-			boss_title.visible = false
-			boss_sub.visible = false
 	# ---- combo: under the frame; pops on every kill, heats up, milestones stamp
 	if Game.combo == 0:
 		_combo_ms_idx = 0
@@ -1960,6 +1970,8 @@ func _update_play(delta: float) -> void:
 	if juice.panel_showing():
 		# FINISH, the payout and the boss-defeated card own the screen
 		hint_bg.visible = false
+		warn_band.stop()
+	warn_band.bottom = vs.y - HINT_BOTTOM
 	if hint_bg.visible:
 		_fit([hint_label, hint_sub])
 		var w := maxf(hint_label.size.x, hint_sub.size.x if hint_sub.visible else 0.0)
@@ -1997,14 +2009,18 @@ func _update_play(delta: float) -> void:
 			continue
 		var ty := py0 + i * POPUP_STEP
 		pp.y = ty if pp.t <= delta else lerpf(pp.y, ty, 1.0 - exp(-delta * 25.0))
-		var k := clampf(pp.t / 0.1, 0.0, 1.0)
+		# it opens from a scan line and leaves by collapsing back into one,
+		# like a CRT; while held it is still (spec §9.9)
+		var k := Juice.ease_out(pp.t / 0.06)
+		var out := clampf((POPUP_LEN - pp.t) / 0.12, 0.0, 1.0)
 		l.size = Vector2.ZERO
-		l.pivot_offset = Vector2(0, l.size.y * 0.5)
-		l.scale = Vector2.ONE * lerpf(1.4, 1.0, Juice.ease_out(k))
+		var sh: ColorRect = l.get_node("Shadow")
+		sh.size = l.size
+		l.pivot_offset = Vector2(0, roundf(l.size.y * 0.5))
+		l.scale = Vector2(1.0, maxf(0.08, minf(k, out)))
 		# a long one ("GASHADOKURO BURST ONLINE") moves in to stay on screen
 		l.position = Vector2(minf(px0, vs.x - 8.0 - l.size.x), roundf(pp.y))
-		var bright := 1.0 + 0.6 * exp(-pp.t * 16.0)
-		l.modulate = Color(bright, bright, bright, clampf((POPUP_LEN - pp.t) / 0.3, 0.0, 1.0))
+		l.modulate.a = clampf((POPUP_LEN - pp.t) / 0.2, 0.0, 1.0)
 		i += 1
 	# screen blood
 	i = 0

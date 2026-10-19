@@ -800,8 +800,9 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
   bosses). Then lock yaw and pitch on the enemy over 0.1 s.
 - The enemy is pinned (frozen AI, facing the player), and its stagger marker
   is hidden.
-- **Presentation:** cinematic bars, data streaks, an impact frame on each
-  beat, FOV −10, the dash whoosh.
+- **Presentation:** the KIRI glory-kill look (§9.8: cross cuts, the picture
+  cut, a diagonal letterbox, the GLORY KILL card with its points), data
+  streaks, an impact frame on each beat, FOV −10, the dash whoosh.
 
 **Finisher selection:**
 | Situation | Finisher | Beats (seconds from start) | Gore |
@@ -1849,7 +1850,7 @@ the holographic cut-in (§9.8).
     pulses. It fades in 0.08 s when the target is lost and is gone during the
     finisher.
   - **Right of the frame: kill callouts** (HEADSHOT, RETURN TO SENDER,
-    GLORY KILL, DEFLECT, upgrade news...) on dark plates, from 32 px right of
+    DEFLECT, upgrade news...) as HIJACK chips (§9.8), from 32 px right of
     the frame, newest on top, at most 3, 16 px apart, 1.4 s each. The stack
     slides rather than jumps, and a repeat of the newest callout counts up
     ("DEFLECT! x3") instead of stacking.
@@ -1860,14 +1861,16 @@ the holographic cut-in (§9.8).
     KAMAE row under it (§5.5). On a screen too narrow for it between the
     corners, it drops under the top row.
   - **The top lane:** just under the top row (and under the boss bar while
-    it is up). The big moments go here, one at a time: stamps (X10 COMBO with
-    "> CHAIN SYNC", KAMAE BROKEN, PERFECT, build links, FIGHT), boss messages
-    ("<NAME> IS ENRAGED"), the holographic cut-in, the wave intro band and the
-    boss name card. A newer one replaces the boss name card.
+    it is up). The big moments go here, one at a time: KIRI cards (combo
+    milestones, GLORY KILL with its points, ONIKIRI!), HIJACK blocks (KAMAE
+    BROKEN, the boss name card), stamps (PERFECT, build links, FIGHT), boss
+    messages ("<NAME> IS ENRAGED"), the holographic cut-in and the wave
+    intro band. A newer one replaces the one showing, except that a combo
+    milestone never replaces a glory kill's card.
   - **The bottom lane: warnings and hints**, bottom centre, ending 24 px
-    above the bottom edge, on a dark plate edged in the lane's colour. The
-    head line is coloured (red for a warning such as "MISSILES INBOUND",
-    "RED SIGNAL" or the shockwave; yellow for a hint) and the rest of the
+    above the bottom edge. A warning ("MISSILES INBOUND", "RED SIGNAL", the
+    shockwave) is a full-width red HIJACK band (§9.8). A hint is on a dark
+    plate edged in yellow: the head line yellow and the rest of the
     sentence is white on the line under it; a hint is split at its first
     dash, colon, "!" or "?". 4.5 s, each shown once. The boss reward card
     also deals into the bottom of the screen; a hint waits until it (or
@@ -1913,7 +1916,7 @@ the holographic cut-in (§9.8).
   - Dim the screen, "LEVEL UP" stamps in, "CHOOSE ONE  -  CLICK OR PRESS
     1 / 2 / 3" under it, and three **augment cards** (136 px wide, 10 px
     apart; as tall as the tallest text dealt, at least 150 px). Each card is
-    a dark chamfered plate: a ribbon in the tag's colour across the top with
+    a dark square plate with a hard shadow in its tag's colour: a ribbon in the tag's colour across the top with
     the tag and the card's key (1/2/3) in dark letters; the name in white;
     for cards with more than one rank, rank pips and "RANK n" in the tag's
     colour; the description in grey; and, over a rule on the bottom edge,
@@ -1925,11 +1928,11 @@ the holographic cut-in (§9.8).
     Jersey 10 at 19 px, lines 15 px apart, with no outline on the solid
     near-black plate. Card copy stays under 58 characters (a Gut test
     checks).
-  - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
-    (ease-out-back, staggered 0.11 s, with a "deal" sound each), then hold
-    still: until one is taken, a dealt card is never rotated or scaled, so its
-    pixel text stays sharp. Hovering lifts the card 3 px and edges it in its
-    tag's colour.
+  - **Animation (HIJACK, §9.8):** cards open from a scan line one by one
+    (staggered 0.11 s, with a "deal" sound each), then hold still: until one
+    is taken, an open card is never squashed or scaled, so its pixel text
+    stays sharp. Hovering lifts the card 3 px and edges it in its tag's
+    colour.
   - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
     accident). Input is ignored for 0.45 s after the cards appear, and the
     cursor starts below them. The first click or 1/2/3 **selects** a card
@@ -1937,14 +1940,52 @@ the holographic cut-in (§9.8).
     "TAKE <NAME>?  CLICK AGAIN OR PRESS n"; clicking it again, pressing its
     key again or Enter **takes** it. Clicking off the cards clears the
     selection.
-  - Taking punches the card (a flash of its tag colour), the others drop
-    and fade, a chime plays, and the pick applies after 0.34 s.
+  - Taking punches the card (a flash of its tag colour), the others
+    collapse and are shoved aside, a chime plays, and the pick applies after
+    0.34 s.
   - Virtual cursor (mouse captured). Music ducks to −16 dB.
 - **Results (death) screen:** §9.8 "Death".
 
 ### 9.8 Game-feel moments ("juice") and their timings
 Everything runs in **real time** (unaffected by slow motion and hitstop).
 **Every moment must obey §9.9.**
+
+**Two styles** (owner's pick from the concept GIFs in
+`design/juice-concepts/`, 2026-10-19): "mostly HIJACK and KIRI". Shared rule:
+*shapes lean, words don't* (a word only tilts or stretches during its landing,
+under 0.1 s; while held it is level and still on a solid plate).
+- **KIRI ("the cut")** for **combo milestones, glory kills and ONIKIRI**
+  (`KiriCard`). A top-lane card arrives on a blade slash: the slash crosses
+  the lane first (0.06 s), the plate is wiped on along it (0.07 s), leaning
+  forward (top edge 10 px right), dark, with a solid echo in the accent
+  colour 9 px behind it during the slam and 5 px after, a 2 px accent top
+  edge, a bottom edge and a blade tip in the word's colour, and an optional
+  tag tab ("CHAIN SYNC"). The word (Orbitron 20, 24 for the big milestones,
+  32 for ONIKIRI!) slams from 2.6x and tilted (about 12°) to level in
+  0.08 s, squashes 1.12 to 1 over 0.12 s, then holds for its read time
+  + 0.15 s. Exit (0.16 s): the plate is sliced along its middle and the
+  halves slide 46 px apart as it fades. Sparks from the slash head, shake.
+  Big ones also **cut the 3D picture** along the slash: the two sides slip
+  up to 10–16 px apart and close over 0.22–0.4 s (with a white seam on
+  ONIKIRI), following the shake slider.
+- **HIJACK ("broadcast takeover")** for **kill callouts, warnings, LEVEL UP,
+  the boss intro and KAMAE BROKEN** (`HijackBlock`, `HijackFx`,
+  `HazardBand`). Messages sit on solid neon blocks with dark letters and a
+  hard offset shadow, straight lines only. A block shows one frame (0.05 s)
+  of test-card colour bars where it will be, opens from a scan line in
+  0.06 s, and its word lands with a horizontal stretch 2.2x to 1 in 0.08 s;
+  a dark tag chip with a red dot can sit above it, a sub chip below. Exit
+  (0.14 s): torn into seven strips that whip left and right. Big moments
+  roll the picture (tracking bands shoved sideways, 0.1–0.15 s) and some
+  flash one frame of negative.
+- **FINISH stays as it was** (below), plus the **red negative** from the
+  OFUDA concept: the 3D picture behind it goes two flat tones, dark ink and
+  red, split by brightness, for 0.9 s (inverted 0.05–0.1 s at full flash),
+  and the overlay's red tint thins from 78% to 30% so the negative shows.
+  SHADOW DELETED and the souls card are unchanged.
+- All the flashes (colour bars, static, negative, seam, invert) follow the
+  flash comfort slider and are gone at 0; the picture cuts and rolls follow
+  the shake slider.
 
 - **HUD shake:** the whole UI root shakes. Max 12 px, decays `×exp(−9t)`.
   Big moments add 2–12.
@@ -1981,14 +2022,40 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     tag "> ENGAGE", impact frame, data streaks, shard burst, "go" sound). The
     intro is then "ready" and spawning begins. The band fades out in 0.1 s
     as FIGHT slams in.
-  - Boss waves skip FIGHT; the boss intro card appears instead.
+  - Boss waves skip FIGHT; the boss intro card appears instead. HIJACK: a
+    boss wave starts with a **signal takeover** (full-screen colour bars
+    with torn rows for 0.06 s, then 0.06 s of static over a red tint, and a
+    tracking roll), and "BOSS INCOMING" scrolls in huge outlined red letters
+    (96 px, 55% opacity, 70 px/s) under the HUD while the band is up.
+- **Boss name card (HIJACK):** another takeover, a frame of negative and a
+  roll, then the name on a dark block (Orbitron 28, white letters) with a
+  hard red shadow, a "HIGH-VALUE TARGET" tag chip above and the epithet on a
+  red chip below. It holds 3.0 s in the top lane, then tears out; the name
+  scrolls huge behind the HUD as above. A newer top-lane message replaces it.
   - A riser sound under normal intros; an alarm under boss intros.
-- **Combo milestones:**
-  - ×10: a glitch stamp "X10 COMBO" (tag "> CHAIN SYNC") in the top lane.
-  - ×20 and up: the **holographic cut-in** instead of a stamp.
-  - While the boss name card is up, milestones play their sound only (the
-    HUD combo counter still shows the number), so the card is never covered.
-- **Holographic cut-in** (1.0 s, long enough to read its text):
+- **Combo milestones (KIRI):** every milestone is a KIRI card "X10 COMBO"
+  (tag "CHAIN SYNC") in the top lane, its colour climbing with the combo,
+  tilting alternate ways; from ×20 it also cuts the picture (12 px), and
+  from ×30 the word is 24 px. While the boss name card, a glory kill's card,
+  FINISH or a panel is up, milestones play their sound only (the HUD combo
+  counter still shows the number), so nothing is covered.
+- **Glory kills (KIRI):** three cuts across the whole screen (0.05 s apart,
+  the middle one in the second colour), the picture cut along a 0.45 slope
+  (10 px, 0.3 s), data streaks, and a **diagonal letterbox**: dark wedges
+  that slide in from the edges in 0.08 s, the top one 40 px thick on the
+  left and 14 px on the right, the bottom one the mirror, each with a 2 px
+  neon edge and a 3 px band of the other colour. At 0.14 s the card "GLORY
+  KILL" (or "SAKAHOKO DROP" for a plunge) lands; when the kill's points
+  come in, "+380" opens under the word in gold instead of a callout, and
+  the card holds long enough to read it.
+- **ONIKIRI (KIRI):** two red cross cuts corner to corner, the picture cut
+  16 px with a white seam, red and gold letterbox, then "ONIKIRI!" (32 px,
+  red word, gold echo).
+- **KAMAE BROKEN (HIJACK, owner 2026-10-19):** a frame of negative (0.07 s),
+  a tracking roll, sparks off the boss bar, then "KAMAE BROKEN" in dark
+  letters on a gold block with an orange shadow (holds 1.1 s).
+- **Holographic cut-in** (1.0 s, long enough to read its text; now only
+  for NEW HI-SCORE and REWARD UNLOCKED):
   - A full-width comm-feed strip in the top lane (70 px, chamfered, cyan top edge and accent
     bottom edge, hazard ticks) snaps in from the side in 0.08 s, holds still,
     and snaps out in 0.09 s.
@@ -1996,7 +2063,7 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     mask** as a neon wireframe hologram: helmet, cheek plates, vents, a hot
     accent visor with two sharp white eyes. The hex grid, scanlines and
     sweeping scan bar stay inside the portrait box.
-  - Large glitch text beside it ("X20 COMBO", "ONIKIRI!", "NEW HI-SCORE")
+  - Large glitch text beside it ("NEW HI-SCORE", "REWARD UNLOCKED")
     on plain dark glass. (The old "LINK//KAGE-07" and "SYNC n%" data lines
     were dropped: they changed every frame and crowded the text.)
   - RGB-split ghosts on entry and exit only, a "cutin" whoosh-shing sound
@@ -2027,7 +2094,9 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
   - Ready 0.9 s after the slam; fades over 0.3 s.
 - **Boss killed:**
   - **FINISH splash** (0–0.92 s): a full-screen **"system breach"** overlay.
-    - Alert-red tint (always red, whatever the palette), a hex grid,
+    - The red negative on the 3D picture (see "Two styles" above).
+    - Alert-red tint (always red, whatever the palette; 30% over the
+      negative, 78% with the flash slider at 0), a hex grid,
       scrolling warning chevron bands top and bottom, columns of hex data at
       the edges, tear slices.
     - A solid dark plate across the middle, with nothing busy behind the
@@ -2077,14 +2146,29 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
     world desaturates and keeps running in slow motion (×0.35).
 - **Hi-score:** passing the best score mid-run: one message, a "NEW
   HI-SCORE" cut-in, with the highscore sound and fireworks at the sides.
+- **Kill callouts (HIJACK):** the newest is a solid chip in its colour with
+  dark letters and a hard dark shadow (4, 3); when a newer one lands it
+  turns into a dark plate with coloured letters and a 2 px coloured left
+  edge. Each opens from a scan line in 0.06 s, holds still, and collapses
+  back into a line over its last 0.12 s.
+- **Warnings (HIJACK):** a full-width red emergency band in the bottom lane
+  with 4 px hazard-stripe rows above and below, scrolling opposite ways. The
+  head ("MISSILES INBOUND", Orbitron 16, 13 if too wide) in dark letters,
+  landing with a 1.8x to 1 stretch; the rest of the sentence white on a dark
+  chip under it. It opens from a scan line in 0.07 s, rolls the picture,
+  holds 4.5 s and collapses in 0.14 s. Hints keep their yellow-edged plate.
+- **LEVEL UP (HIJACK):** "LEVEL UP" in dark letters on a gold block with a
+  hard lime shadow (6, 5) that opens from a scan line, the word stretching
+  in. The cards are dark square plates with a hard shadow in their tag's
+  colour (5, 5); they open from a scan line one by one (0.08 s each, 0.11 s
+  apart, a "deal" sound each). The selected card's shadow turns gold and
+  deeper (8, 8) and its ribbon white. Taking a card: one frame of negative,
+  gold and lime sparks, the taken card punches, the others collapse into a
+  line and are shoved aside, and the title block collapses.
 - **Other:**
-  - Popups punch in at ×1.4 → 1 in 0.1 s with a brief bright flash, then
-    hold still.
-  - Cells flash when charged. Glory kills show cinematic bars (black, neon
-    edges, scanlines, 26 px, in 0.08 s).
+  - Cells flash when charged.
   - Dash adds data streaks. Executions flash white at 0.4 alpha. Damage
     shakes the HUD in proportion.
-  - KAMAE BROKEN stamp when a boss's stance breaks (§5.5).
 
 ### 9.9 READABILITY RULE (critical feedback; this overrides any style choice)
 The prototype's text effects are **too messy**. Text and numbers must follow
@@ -2130,8 +2214,9 @@ something.
   softly; low HP pulses the bar, never the number.
 - Moving text holds still once it lands: no drift on cut-ins, no wobble on
   the LEVEL UP title, no jitter on the tally total.
-- `--juicetest` also shows the boss name card, kill callouts, NO CHARGE, a hint
-  and an ENRAGED message, for paused-frame checks.
+- `--juicetest` also shows the boss name card, kill callouts, NO CHARGE, a hint,
+  an ENRAGED message, a glory kill with its points, MISSILES INBOUND, KAMAE
+  BROKEN, ONIKIRI and a plunge, for paused-frame checks.
 - Nothing spills out of its panel or sits on other text (tidy pass,
   2026-10-18). The big moments take turns instead of stacking:
   - The level-up screen and the pause screen replace the live HUD (the pause
@@ -2629,9 +2714,9 @@ seed | click: new seed).
 | `Gore` | Droplets, decals, gibs, emitters, mist, chunks, dismember modes |
 | `Fx` | Damage numbers, arcs, impacts, beams, shockwaves, orbs, telegraphs, missiles, explosions, smoke |
 | `Hud` | HUD, title, pause, level-up, results, initials, plates, score roll-up, combo, heat |
-| `Juice` | Stamps, shake, sparks, fireworks, wave intro, tally, souls card, cut-in, data streaks, kill bursts, FINISH, cinematic bars, `later()` real-time scheduler |
-| UI pieces | `Shard` (tech panel), `GlitchText`, `CutIn`, `SpeedLines` (data streaks), `ShardBurst` (kill burst) |
-| `PostFx` | Post-process material, hurt/flash/impact/heat |
+| `Juice` | Stamps, shake, sparks, fireworks, wave intro, tally, souls card, cut-in, data streaks, kill bursts, FINISH, the KIRI cards and slashes, the HIJACK blocks, diagonal letterbox, `later()` real-time scheduler |
+| UI pieces | `Shard` (tech panel), `GlitchText`, `CutIn`, `SpeedLines` (data streaks), `ShardBurst` (kill burst), `KiriCard`, `HijackBlock`, `HijackFx` (takeover, giant name), `HazardBand` (warnings) |
+| `PostFx` | Post-process material, hurt/flash/impact/heat, and the juice layer's cut, roll, invert and red negative |
 | `Psx`, `TexGen`, `Ui` | Material factory, procedural textures, fonts and UI helpers |
 | `Profile` (autoload) | The profile and the suspended run (§11): Player Level and XP, unlocks, equipped looks, top 10, settings, lifetime stats. Crash-safe files through `SaveFile`, migrations in `ProfileMigrations`, run snapshots in `RunSnapshot` |
 | `Palette`, `Mutators`, `Upgrades`, `Rewards`, `Progression` | Data tables |
