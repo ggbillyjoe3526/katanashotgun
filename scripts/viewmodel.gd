@@ -156,20 +156,23 @@ func _build_katana() -> void:
 	arm.add_child(Psx.box(Vector3(0.085, 0.42, 0.085), chrome, Vector3(0, -0.26, 0)))
 	trim_mat = Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0})
 	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), trim_mat, Vector3(0, -0.28, 0.046)))
-	_model_blade = KatanaModel.build(blade_edge_mat)
-	# turned on its long axis so the flat and the hilt's windows face the
-	# player; the code-built blade shows its edge strip instead
-	_model_blade.rotation.y = KATANA_MODEL_ROLL
-	katana.add_child(_model_blade)
 	_show_katana_model()
 
 
 ## Shows the Blender model or the code-built blade, as the dev menu says.
-## The code-built one stays until the model is approved (spec §9.6).
+## The code-built one stays until the model is approved (spec §9.6), so the
+## model (and its large textures) loads only the first time it is asked for.
 func _show_katana_model() -> void:
 	_model_on = DevSettings.katana_model
+	if _model_on and _model_blade == null:
+		_model_blade = KatanaModel.build(blade_edge_mat)
+		# turned on its long axis so the flat and the hilt's windows face the
+		# player; the code-built blade shows its edge strip instead
+		_model_blade.rotation.y = KATANA_MODEL_ROLL
+		katana.add_child(_model_blade)
 	var use_model := _model_on and _model_blade.get_child_count() > 0
-	_model_blade.visible = use_model
+	if _model_blade:
+		_model_blade.visible = use_model
 	_code_blade.visible = not use_model
 
 

@@ -1,7 +1,8 @@
 // Surfaces of the modelled weapons (the DOJIGIRI katana's steel and grip),
 // built from textures baked in Blender (assets/models/katana/source).
-// RETRO LOOK FULL: the PS1 treatment of psx_lit (vertex snap, affine warp,
-// nearest texels) on a small texture with its light painted in, matte.
+// RETRO LOOK FULL: the PS1 treatment of psx_lit (vertex snap, nearest
+// texels; no affine warp unless `affine` is set) on a small texture with
+// its light painted in, matte.
 // LIGHT and OFF: per-pixel light with the full 2048 px colour,
 // roughness/metal and normal maps, so the fine detail shows (LIGHT keeps
 // psx_lit's gentle wobble).

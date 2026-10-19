@@ -5,10 +5,10 @@ extends SettingsMenu
 ## nothing on screen points to it, and it says DEV everywhere it shows.
 ## It is the settings screen with its own tabs, so it works the same way:
 ## mouse only, Esc or BACK closes, DEFAULTS turns every dev setting off.
-## LOOK holds the capture helpers and the katana model switch (the plain look
-## is now the player's RETRO LOOK setting); RUN holds the settings that change how a run plays (any of
-## them on makes the run a dev run, which pays no top 10 entry, XP or
-## unlocks); ACTIONS does things now.
+## LOOK holds the capture helpers and the katana model switch (the plain
+## look is now the player's RETRO LOOK setting); RUN holds the settings that
+## change how a run plays (any of them on makes the run a dev run, which pays
+## no top 10 entry, XP or unlocks); ACTIONS does things now.
 ## While anything is on, a small DEV tag sits top right, under the score.
 
 const DEV_TABS: Array[String] = ["LOOK", "RUN", "ACTIONS"]
