@@ -23,6 +23,7 @@ var perf: DebugPerf # the F3 overlay, shown and hidden by the PERF OVERLAY row
 var tag: Label # the corner tag while dev settings are on
 var _kill_all := false # SKIP WAVE waits until the game runs again
 var _tag_key := "" # what the tag shows now, so it is laid out only on a change
+var _give_at := 0 # GIVE CANS: the next flavour it hands out
 
 
 ## Builds the menu on its own layer under `main`, with its corner tag.
@@ -134,6 +135,17 @@ func _build_rows(t: String) -> Array:
 			out.append(_option("MUTATOR", mut_values, mut_names,
 				func(): return DevSettings.mutator, func(v: Variant): DevSettings.mutator = v,
 				"EVERY REGULAR WAVE GETS THIS MUTATOR"))
+			out.append(_option("SODA CANS", on_off, on_off_names,
+				func(): return DevSettings.cans, func(v: Variant): DevSettings.cans = v,
+				"PLAY-TEST: CANS ON THE MAP FROM THE NEXT RUN. NO TOP 10"))
+			var can_values := [""]
+			var can_names := ["SEEDED"]
+			for f in Soda.LIST:
+				can_values.append(f.id)
+				can_names.append(f.name)
+			out.append(_option("CAN FLAVOUR", can_values, can_names,
+				func(): return DevSettings.can_flavour, func(v: Variant): DevSettings.can_flavour = v,
+				"EVERY SODA CAN IS THIS FLAVOUR"))
 		"ACTIONS":
 			out.append(_action("SKIP WAVE", "KILL ALL", _skip_wave,
 				"KILLS EVERY ENEMY LEFT IN THE WAVE, BOSS TOO"))
@@ -143,6 +155,8 @@ func _build_rows(t: String) -> Array:
 				"EVERY LEVEL-UP CARD AT ITS TOP RANK"))
 			out.append(_action("REFILL", "HP AND CELLS", _refill,
 				"FULL HEALTH AND SHOTGUN CELLS"))
+			out.append(_action("GIVE CANS", "FILL HANDS", _give_cans,
+				"THREE SODA CANS, THE NEXT FLAVOURS IN THE LIST"))
 			out.append(_action("RESTART RUN", "SAME SEED", func(): _restart(true),
 				"STARTS THIS SEED AGAIN WITH THE SETTINGS ABOVE"))
 			out.append(_action("NEW RUN", "NEW SEED", func(): _restart(false),
@@ -209,6 +223,23 @@ func _refill() -> void:
 	_show_note("HEALTH AND CELLS FULL")
 
 
+## Fills the can slots with the next flavours in the list (each press moves
+## on, so every flavour comes round).
+func _give_cans() -> void:
+	if not _in_run():
+		return
+	if not Game.cans.enabled:
+		_show_note("TURN SODA CANS ON AND START A NEW RUN")
+		return
+	_mark_run()
+	Game.cans.held.clear()
+	for i in Soda.MAX_HELD:
+		Game.cans.held.append(Soda.LIST[_give_at % Soda.LIST.size()].id)
+		_give_at += 1
+	Game.cans.selected = 0
+	_show_note("THREE CANS IN HAND")
+
+
 ## Reloads for a run (or the juice test). The run on screen ends here and is
 ## paid into the profile like an abandoned run, unless it is a dev run.
 func _restart(same_seed: bool, launch := "") -> void:
@@ -242,11 +273,13 @@ func _update_tag(hidden: bool) -> void:
 		return
 	var dev_run := Game.dev_run and Game.state != "title"
 	# the results screen has its own layout; the tag keeps out of it
-	tag.visible = not visible and not hidden and Game.state != "dead" and (dev_run or DevSettings.any_on())
+	tag.visible = not visible and not hidden and Game.state != "dead" and (dev_run or DevSettings.any_on() or (Game.cans_run and Game.state != "title"))
 	if not tag.visible:
 		return
 	var words := DevSettings.active_tags()
 	var head := "DEV RUN: NOT RECORDED" if dev_run else "DEV"
+	if not dev_run and Game.cans_run and Game.state != "title":
+		head = "CANS RUN: NO TOP 10"
 	var key := head + "|" + "|".join(words)
 	if key != _tag_key:
 		_tag_key = key

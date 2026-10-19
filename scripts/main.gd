@@ -43,6 +43,10 @@ func _ready() -> void:
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(director)
 	director.between_waves.connect(_on_between_waves)
+	var cans := SodaCans.new()
+	cans.process_mode = Node.PROCESS_MODE_PAUSABLE
+	add_child(cans)
+	Game.cans = cans
 	player = Player.new()
 	player.process_mode = Node.PROCESS_MODE_PAUSABLE
 	player.position = arena.player_spawn
@@ -85,7 +89,7 @@ func _ready() -> void:
 		var sc: Node = load("res://scripts/debug_showcase.gd").new()
 		add_child(sc)
 		return
-	if Game.autostart or Game.debug_autoplay:
+	if Game.autostart or Game.debug_autoplay or OS.get_cmdline_user_args().has("--cantest"):
 		start_run.call_deferred()
 	else:
 		hud.show_title()
@@ -120,6 +124,9 @@ func start_run() -> void:
 	if not resume.is_empty():
 		first = RunSnapshot.apply(resume, director, player)
 		Game.dev_run = Game.dev_run or bool(resume.get("dev", false))
+		if resume.has("cans"):
+			Game.cans_run = true
+			Game.cans.restore(resume.cans)
 		hud.on_run_resumed()
 		resume = {}
 	director.start(first)
@@ -146,13 +153,14 @@ func _end_suspended_run() -> void:
 	# drop the snapshot first, so a crash here can't pay the run twice
 	Profile.clear_suspended_run()
 	if not stats.is_empty() and not bool(resume.get("dev", false)):
-		_pay_run(stats, int(resume.get("seed", 0)))
+		_pay_run(stats, int(resume.get("seed", 0)), not resume.has("cans"))
 	resume = {}
 
 
-func _pay_run(stats: Dictionary, run_seed: int) -> void:
+## A run with soda cans on (`top10` false) keeps its XP but makes no entry.
+func _pay_run(stats: Dictionary, run_seed: int, top10 := true) -> void:
 	Profile.finish_run(stats)
-	if Profile.qualifies(int(stats.get("score", 0))):
+	if top10 and Profile.qualifies(int(stats.get("score", 0))):
 		Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(run_seed)})
 
 
@@ -169,7 +177,7 @@ func leave_run() -> void:
 		_:
 			Profile.clear_suspended_run()
 			if not Game.dev_run:
-				_pay_run(Game.run_stats(), Game.run_seed)
+				_pay_run(Game.run_stats(), Game.run_seed, not Game.cans_run)
 
 
 func _on_between_waves(next_wave: int) -> void:
@@ -180,6 +188,8 @@ func _on_between_waves(next_wave: int) -> void:
 	snap["stats"] = stats
 	if Game.dev_run:
 		snap["dev"] = true # carries on as a dev run, and pays nothing if abandoned
+	if Game.cans_run:
+		snap["cans"] = Game.cans.held.duplicate() # cans stay on for the run, and it makes no top 10 entry
 	Profile.suspend_run(snap)
 
 

@@ -18,6 +18,9 @@ var debug_palette := "" # --palette=NAME or index: force a palette (debug only)
 ## This run used dev settings (DevSettings.cheating()): it pays no top 10
 ## entry, XP or unlocks into the profile.
 var dev_run := false
+## This run has soda cans on (a dev-only play-test): it keeps its XP and
+## unlocks but makes no top 10 entry, so seeded scores stay comparable.
+var cans_run := false
 ## A debug mode the dev menu asked for, read on the next scene load (one time).
 var dev_launch := ""
 var _no_pause_args := false
@@ -28,6 +31,7 @@ var gore: Gore
 var fx: Fx
 var arena: Arena
 var hud: Hud
+var cans: SodaCans # soda cans (dev-only play-test, spec §19.1 #11)
 
 # --- the run
 var run_seed := 0
@@ -51,6 +55,8 @@ var rng_spawns := RandomNumberGenerator.new()
 var rng_combat := RandomNumberGenerator.new()
 ## Mid-wave hazards (storm strikes).
 var rng_hazards := RandomNumberGenerator.new()
+## Where the wave's soda cans sit and which flavours they are.
+var rng_cans := RandomNumberGenerator.new()
 ## Presentation only (sparks, flashes, sound variations): randomized, never
 ## seeded, and never used for anything that changes gameplay.
 var rng_fx := RandomNumberGenerator.new()
@@ -103,7 +109,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	_no_pause_args = args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard") or args.has("--menutour")
+	_no_pause_args = args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard") or args.has("--menutour") or args.has("--cantest")
 	debug_no_pause = debug_autoplay or _no_pause_args
 	for a in args:
 		if a.begins_with("--seed="):
@@ -152,6 +158,7 @@ func reset_run() -> void:
 		run_seed = pick.randi() & 0x7fffffff
 	next_seed = -1
 	dev_run = dev_launch != "" # a debug mode from the dev menu is never a real run
+	cans_run = DevSettings.cans or has_flag("--cans")
 	rng_map.seed = hash(run_seed * 3 + 1)
 	rng_upgrades.seed = hash(run_seed * 7 + 3)
 	seed_wave(0)
@@ -222,6 +229,7 @@ func seed_wave(w: int) -> void:
 	rng_spawns.seed = hash([run_seed, w, "spawns"])
 	rng_combat.seed = hash([run_seed, w, "combat"])
 	rng_hazards.seed = hash([run_seed, w, "hazards"])
+	rng_cans.seed = hash([run_seed, w, "cans"])
 
 
 func combo_mult() -> float:
@@ -229,7 +237,18 @@ func combo_mult() -> float:
 
 
 func score_mult() -> float:
-	return combo_mult() * float(mut("score", 1.0))
+	return combo_mult() * float(mut("score", 1.0)) * boost("score")
+
+
+## What the soda can being drunk does to `key` (a multiplier, 1.0 for none;
+## keys in Soda.LIST).
+func boost(key: String) -> float:
+	return cans.boost(key) if is_instance_valid(cans) else 1.0
+
+
+## Whether the soda can being drunk switches `key` on.
+func boost_flag(key: String) -> bool:
+	return is_instance_valid(cans) and cans.flag(key)
 
 
 func register_kill(base_points: int, xp_amount: float, tag := "", tag_color := Color.WHITE) -> void:
@@ -300,7 +319,7 @@ func qualifies(s: int) -> bool:
 ## (-1 if it didn't make the top 10).
 func record_score() -> void:
 	last_rank = -1
-	if dev_run:
+	if dev_run or cans_run:
 		return
 	if qualifies(score):
 		last_rank = Profile.add_score({"name": "---", "score": score, "wave": wave, "seed": seed_string(run_seed)})
@@ -348,7 +367,7 @@ func _process(delta: float) -> void:
 		run_time += real_dt
 		if combo_hold > 0.0:
 			combo_hold -= real_dt
-		elif combo > 0:
+		elif combo > 0 and not boost_flag("combo_hold"):
 			combo_timer -= real_dt
 			if combo_timer <= 0.0:
 				combo = 0

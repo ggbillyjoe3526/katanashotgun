@@ -419,6 +419,7 @@ static func to_dict() -> Dictionary:
 		"shake": shake,
 		"flash": flash,
 		"bindings": bindings.duplicate(true),
+		"dev_cans": DevSettings.cans,
 	}
 
 
@@ -460,6 +461,8 @@ static func from_dict(d: Dictionary) -> void:
 		shake = clampf(float(d.shake), 0.0, 1.0)
 	if _is_num(d.get("flash")):
 		flash = clampf(float(d.flash), 0.0, 1.0)
+	if d.get("dev_cans") is bool:
+		DevSettings.cans = d.dev_cans
 	var bd: Variant = d.get("bindings")
 	if bd is Dictionary:
 		# only listed actions, no reserved keys, and no key used twice

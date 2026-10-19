@@ -639,7 +639,7 @@ func _update_orbs(delta: float) -> void:
 		if p and not p.dead and o.t > 0.35 and d < 7.0:
 			o.v = o.v.lerp(to.normalized() * 22.0, 1.0 - exp(-8.0 * delta))
 			if d < 1.0:
-				p.heal(6.0)
+				p.heal(6.0 * Game.boost("orb_heal"))
 				Sfx.play("pickup", -6.0)
 				_free_orb(o)
 				_orbs.remove_at(i)

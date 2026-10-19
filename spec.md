@@ -615,6 +615,7 @@ Notes:
 | `jump` | Space | Double jump |
 | `dash` | Shift, Q | |
 | `finisher` | **F** | Glory kill the staggered enemy near the crosshair, or plunge onto a foe below from high ground (§3.4) |
+| `drink`, `can_next`, `can_prev` | **E**, mouse wheel | Soda cans, DEV-ONLY play-test (§19.1 #11): drink the selected can, pick another. Not in the rebind list yet |
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
@@ -2566,6 +2567,14 @@ historical root with a cyberpunk twist**.
   of wisdom), KAPPA HYDRO (the river yokai).
   TSUKUYOMI LIVE is TSUKUYOMI MEDIA's news feed on the city screens and
   drones (The City Is Watching, §19.1 #9).
+- **Soda cans** (§19.1 #11, all INARI FOODS drinks): KAZE RUSH (kaze,
+  wind), KAMINARI SPARK (kaminari, thunder), SHIRANUI BLAZE (shiranui, the
+  phantom sea-fires of Kyushu), MIKAZUKI ZERO (mikazuki, the crescent moon;
+  also Mikazuki Munechika, one of the Five Swords Under Heaven), AKANAME RED
+  (akaname, the yokai that licks clean what others leave), UZUME POP
+  (Ame-no-Uzume, whose dance drew the sun goddess out of her cave), GAKI
+  BLACK (gaki, the hungry ghosts never satisfied), YUKI CHILL (yuki-onna,
+  the snow woman).
 
 ---
 
@@ -2798,6 +2807,9 @@ seed | click: new seed).
     screens swap pages, the score passes a made-up seed record (WIL 60,000)
     for NEW BEST, then the combo breaks and the drones fly off; then quits.
     Nothing is saved.
+  - `--cans`: soda cans on for this launch (§19.1 #11); `--cantest` (with
+    `--cans`): starts a run, fills the hands with the next three flavours
+    each wave and drinks one every 2.5 s, to see the drink and every effect.
   - `--seedentry`: opens PLAY A SEED on the title.
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
@@ -2944,6 +2956,9 @@ seed | click: new seed).
 - The Player Level **XP formula** and pacing.
 - **Perfect Deflect** (§19.1 #3, built 2026-10-19 as a play-test
   experiment, tuning in §3.2): keep, retune or drop it after playing.
+- **Soda cans** (§19.1 #11, built 2026-10-19 as a DEV-ONLY play-test):
+  keep, retune or drop them after playing; then whether they leave the DEV
+  menu.
 - **Map stages and the boss schedule** (owner idea, 2026-10-18; proposal
   in §6.4, built once a second map exists). To decide, with the defaults
   §6.4 recommends:
@@ -3083,6 +3098,73 @@ build on is in: PLAY A SEED on the title (§7.5).
    skyline comes from the seed through its own RNG, never the run's streams.
    Code: `scripts/ui/run_card.gd`, `run_card_panel.gd`; check with
    `--runcard` (§16).
+11. **Soda cans** (owner idea, 2026-10-19). INARI FOODS drinks found on the
+   map, each a short, strong buff and then a shorter, milder "sugar crash".
+   **BUILT as a DEV-ONLY play-test (2026-10-19), awaiting the owner's
+   verdict.** It adds a pickup system on purpose (the owner signed off, §0.3);
+   off by default, it is switched on in the DEV menu (F10, RUN tab, SODA
+   CANS, from the next run; saved as `dev_cans` in settings.json). Off means
+   no can is ever made and nothing draws a number. A run with cans keeps its
+   XP and unlocks but makes no top 10 entry or lifetime best score (`Game.cans_run`), so seeded
+   scores stay comparable; the DEV tag says CANS RUN: NO TOP 10.
+   - **Where:** one can on waves 2 to 5, two from wave 6, none on boss
+     waves, at spots picked from `Game.rng_cans` (reseeded per wave from the
+     seed and the wave, so cans never shift enemies, mutators or offers) out
+     of `Arena.pickup_spots()`: platform tops and edge spawn points at most
+     12 m up with 2.2 m of open air above, two in a wave at least 8 m apart.
+     Each can glows with a 7 m light pillar and a ground ring in its colour.
+     Cans left on the floor vanish when the wave is cleared.
+   - **Pickup:** walk within 1.5 m. Up to 3 in hand; with 3, cans stay on the
+     floor and the hint lane says CANS FULL (at most every 4 s).
+   - **Drink:** **E** (`drink`; not in the rebind list while dev-only, since
+     the Controls tab holds 10 rows), the mouse wheel (`can_next`,
+     `can_prev`) picks the can. 0.9 s: the shotgun drops to the hip, the can
+     comes up, the katana's cut takes the top off at 0.32 s (fizz, a lid
+     spinning away, a 0.03 s hitstop, the effect starts), the player downs
+     it with the head tipped back, tosses it, and the shotgun is back. Both
+     weapons wait (clicks buffer as usual), glory kills wait, movement,
+     jumps and dashes do not. A press 0.2 s early counts. One effect at a
+     time: a new drink replaces the current one and skips its crash.
+     Effects run on game time.
+   - **Reading it:** picking a can up (or wheeling to it) puts one line in
+     the hint lane, head in the can's colour: its name (the first can of a
+     run adds "E TO DRINK"; one that feeds a build you own adds FITS
+     <BUILD>), then what it does, crash included. In hand, cans are small
+     blocks under the cell number, the selected one bright and underlined.
+     While one works, a timer runs along the vitals frame's top edge in its
+     colour, then grey-red with CRASH over it. Opening one slams its name
+     into the top lane, sprays its colour and flashes the frame's corners.
+     The pause screen lists the cans in hand with full text. (A parallel
+     thread is restyling the juice screens; can juice uses today's
+     `Juice.stamp` and may be restyled with it.)
+   - **Flavours** (`scripts/soda.gd`, all tuning there):
+
+     | Can | Buff | Crash | Feeds |
+     |---|---|---|---|
+     | KAZE RUSH | 12 s: +25% move speed, dash recharge 2x | 5 s: dash recharge 1.5x slower | STORM RUNNER, GHOST |
+     | KAMINARI SPARK | 15 s: katana kills +1 cell each | 5 s: shotgun cooldown x1.3 | THUNDER CHAIN |
+     | SHIRANUI BLAZE | 12 s: katana hits set foes on fire | 5 s: move speed x0.85 | INFERNO |
+     | MIKAZUKI ZERO | 15 s: headshots +50% | 5 s: damage dealt x0.85 | HEADHUNTER |
+     | AKANAME RED | 12 s: katana hits heal 3 HP per foe | 6 s: health orbs heal half | BLOOD ENGINE |
+     | UZUME POP | 12 s: combo never drops | the combo halves when it ends | SHOWSTOPPER |
+     | GAKI BLACK (risk, wave 4+) | 15 s: kill score x2, damage taken x2 | none | any |
+     | YUKI CHILL | 10 s: damage taken x0.7 | 5 s: katana cooldown x1.25 | RONIN |
+
+     Natural pairings with mutators: YOMI BLACKOUT and KAMINARI SPARK,
+     MATSURI RUSH and UZUME POP, SENRYO BOUNTY and MIKAZUKI ZERO; KANASHIBARI
+     and KAZE RUSH cancel out. Multipliers stack with mutators and cards, no
+     cap yet (play-test).
+   - **Code:** `Soda` (data), `SodaCans` (runtime, `Game.cans`;
+     `Game.boost(key)` and `Game.boost_flag(key)` are the hooks gameplay
+     reads), `ViewmodelCan` (the hands), `SodaHud` (HUD). Sounds `can_pickup`,
+     `can_open`, `can_gulp`, `can_crash` (placeholder, `tools/gen_audio.py
+     cans`). Debug: `--cans` turns them on for a launch; `--cantest` (with
+     `--cans`) starts a run, fills the hands with the next three flavours
+     every wave and drinks one every 2.5 s; DEV menu CAN FLAVOUR forces a
+     flavour and GIVE CANS fills the hands (both make a dev run).
+   - **Open after play-testing:** keep, retune or drop; drink length;
+     whether cans appear on boss waves; whether the drink key joins the
+     rebind list (needs a scrolling Controls tab); stacking caps.
 
 
 ### 19.2 Standing apart from Mullet MadJack (owner, 2026-10-18)

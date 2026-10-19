@@ -65,6 +65,11 @@ feel right:
 - **Run cards:** one key saves a picture of your run with its seed code,
   ready to post anywhere. In the game to try now: see
   [Run Cards](Run-Cards).
+- **Soda cans:** INARI FOODS drinks to grab around the roof. Press E and
+  you holster the shotgun, cut the top off the can with the katana and down
+  it in one go, for a short, strong boost (more speed, healing cuts, double
+  score) followed by a milder sugar crash. Coming soon: the developer is
+  play-testing it first, so it isn't switched on in the game yet.
 
 KATANA / SHOTGUN is and stays fully **offline**: no accounts, no servers and
 no online leaderboards. You race friends by sharing seeds instead.

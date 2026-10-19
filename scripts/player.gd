@@ -223,7 +223,7 @@ func _process(delta: float) -> void:
 	# a climb dips the view toward the ledge and rolls it a touch
 	var climb := clampf(climb_t / climb_len, 0.0, 1.0) if climb_t >= 0.0 else 0.0
 	var climb_env := sin(climb * PI)
-	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh - 0.14 * climb_env
+	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh - 0.14 * climb_env + 0.1 * vm.drink_tilt()
 	cam.rotation.y = sin(_shake_t * 1.7 + 2.0) * 0.04 * sh
 	tilt = lerpf(tilt, -_input_dir.x * 0.035, 1.0 - exp(-8.0 * delta))
 	cam.rotation.z = tilt + sin(_shake_t * 1.1 + 4.0) * 0.06 * sh + 0.045 * climb_env
@@ -294,7 +294,8 @@ func _physics_process(delta: float) -> void:
 		_set_finisher_target(_find_finisher_target())
 	if Input.is_action_just_pressed("finisher") or (Game.debug_autoplay and gk_ready != null):
 		finisher_buffer = FINISHER_BUFFER
-	if finisher_buffer > 0.0 and gk_ready != null:
+	var drinking := is_instance_valid(Game.cans) and Game.cans.busy()
+	if finisher_buffer > 0.0 and gk_ready != null and not drinking:
 		finisher_buffer = 0.0
 		_start_glory(gk_ready, gk_ready_plunge)
 		return
@@ -317,7 +318,7 @@ func _physics_process(delta: float) -> void:
 	_dash_queued = false
 	if dash_pressed and dash_charges >= 1.0 and dash_t <= 0.0:
 		_start_dash(wish)
-	dash_charges = minf(float(max_dash), dash_charges + delta / (DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0))))
+	dash_charges = minf(float(max_dash), dash_charges + delta / (DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0)) * Game.boost("dash_recharge")))
 
 	if dash_t > 0.0:
 		dash_t -= delta
@@ -330,7 +331,7 @@ func _physics_process(delta: float) -> void:
 		if not is_on_floor():
 			velocity.y -= GRAVITY * delta
 		var hv := Vector3(velocity.x, 0, velocity.z)
-		var target := wish * WALK_SPEED
+		var target := wish * WALK_SPEED * Game.boost("speed")
 		var accel := GROUND_ACCEL if is_on_floor() else AIR_ACCEL
 		if hv.length() > WALK_SPEED * 1.05 and not is_on_floor():
 			accel *= 0.3 # keep jump-pad / dash momentum in the air
@@ -400,9 +401,10 @@ func _physics_process(delta: float) -> void:
 		shotgun_held = auto.y > 0.5
 	if katana_pressed:
 		katana_buffer = 0.18
-	if (katana_buffer > 0.0 or katana_held) and katana_cd <= 0.0:
+	# a soda can in both hands: the weapons wait (a click buffers as usual)
+	if (katana_buffer > 0.0 or katana_held) and katana_cd <= 0.0 and not drinking:
 		_slash()
-	if shotgun_held and shotgun_cd <= 0.0:
+	if shotgun_held and shotgun_cd <= 0.0 and not drinking:
 		_fire()
 
 	if global_position.y < Game.arena.kill_y:
@@ -517,7 +519,7 @@ func _slash() -> void:
 	katana_buffer = 0.0
 	combo_step = (combo_step + 1) % 3 if combo_reset > 0.0 else 0
 	combo_reset = 0.65
-	katana_cd = KATANA_CD if combo_step < 2 else KATANA_FINISHER_CD
+	katana_cd = (KATANA_CD if combo_step < 2 else KATANA_FINISHER_CD) * Game.boost("katana_cd")
 	slash_count += 1
 	vm.slash(combo_step)
 	Game.fx.slash_trail(cam, combo_step)
@@ -529,7 +531,7 @@ func _slash() -> void:
 	var fwd_flat := Vector3(fwd.x, 0, fwd.z).normalized()
 	var reach := 3.4
 	var half := deg_to_rad(68.0)
-	var dmg := 50.0 * float(Game.mut("dmg_out", 1.0))
+	var dmg := 50.0 * float(Game.mut("dmg_out", 1.0)) * Game.boost("dmg_out")
 	# Masamune Edge: the third cut is a heavy one that ignores armour
 	var heavy := combo_step == 2 and Game.rank("edge") > 0
 	var source := "heavy" if heavy else "katana"
@@ -558,12 +560,15 @@ func _slash() -> void:
 
 	var killed := 0
 	var homura := Game.rank("homura") > 0
+	var blaze := Game.boost_flag("ignite") # Shiranui Blaze (a soda can)
 	for e in hits:
 		var d := dmg
 		if homura:
 			# burning enemies are cut deeper; the cut then sets (or keeps) them alight
 			if e.burn_t > 0.0:
 				d *= 1.5
+			e.ignite(1)
+		elif blaze:
 			e.ignite(1)
 		if e.take_hit(d, source, hit_dir, false, poise, 4.0):
 			killed += 1
@@ -575,8 +580,11 @@ func _slash() -> void:
 		add_trauma(0.32 if heavy else 0.22)
 		if Game.rank("chimatsuri") > 0:
 			_blood_heal(float(Game.rank("chimatsuri") * hits.size()))
+		if Game.boost_flag("katana_heal"): # Akaname Red (a soda can)
+			heal(Soda.KATANA_HEAL * hits.size())
 	if killed > 0:
-		add_cells(killed * (1 + Game.rank("battery")))
+		var extra := 1 if Game.boost_flag("kill_cells") else 0 # Kaminari Spark (a soda can)
+		add_cells(killed * (1 + Game.rank("battery") + extra))
 
 	# deflect bolts; one about to land is a PERFECT deflect (spec §3.2)
 	var chest := global_position + Vector3(0, 1.0, 0)
@@ -1034,7 +1042,7 @@ func _fire() -> void:
 	cells -= 1
 	# Inazuma Overload: the blast that spends the last cell is a big one
 	var overload := cells == 0 and Game.rank("inazuma") > 0
-	shotgun_cd = SHOTGUN_CD
+	shotgun_cd = SHOTGUN_CD * Game.boost("shotgun_cd")
 	vm.fire()
 	vm.set_cells(cells, max_cells)
 	Sfx.play("shotgun", 0.0)
@@ -1073,10 +1081,10 @@ func _fire() -> void:
 			if col is Enemy and not col.dead:
 				var dist := origin.distance_to(end)
 				var falloff := clampf(1.0 - (dist - falloff_start) / 22.0, 0.3, 1.0)
-				var dmg := 13.0 * falloff * float(Game.mut("dmg_out", 1.0))
+				var dmg := 13.0 * falloff * float(Game.mut("dmg_out", 1.0)) * Game.boost("dmg_out")
 				var headshot: bool = (end.y - col.global_position.y) > col.head_y
 				if headshot:
-					dmg *= 2.0
+					dmg *= 2.0 * Game.boost("headshot")
 				if not per.has(col):
 					per[col] = {"dmg": 0.0, "head": false, "n": 0}
 				per[col].dmg += dmg
@@ -1200,7 +1208,7 @@ func heal(amount: float) -> void:
 func take_damage(amount: float, from_pos: Vector3) -> void:
 	if dead or invuln > 0.0 or Game.state != "playing":
 		return
-	amount *= float(Game.mut("dmg_in", 1.0))
+	amount *= float(Game.mut("dmg_in", 1.0)) * Game.boost("dmg_in")
 	if Game.debug_god:
 		amount = 0.0
 	# Utsusemi Shell: a ready dash takes the hit instead

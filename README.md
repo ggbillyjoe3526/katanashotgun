@@ -204,6 +204,9 @@ Pass after `--` on the command line:
 - `--citytour` The City Is Watching from six fixed views (drones fly in,
   the screens' pages, NEW BEST over a made-up seed record, drones leave),
   then quits; add `--quality=low` to see WEAK's drone count
+- `--cans` turns the soda cans play-test on for this launch (as the DEV
+  menu's SODA CANS) · `--cantest` (with `--cans`) fills the hands with the
+  next flavours every wave, drops a can 7 m ahead and drinks every 2.5 s
 - `--seedentry` opens the PLAY A SEED box on the title
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
@@ -217,11 +220,15 @@ Pass after `--` on the command line:
   pauses first) and on the pause screen. Mouse only, Esc closes. LOOK: the
   perf overlay, hide the HUD, force a palette (the plain-look switch is now
   the player's RETRO LOOK setting in Settings > Video). RUN: god mode, autoplay bot, game speed, start wave,
-  force a boss or mutator (these last until the game closes). ACTIONS: skip
-  the wave, a level-up offer, every card at max rank, refill, restart the
-  seed, a new seed, the juice test. A run that used anything on RUN or
-  ACTIONS is a dev run: it writes no top 10 entry, XP or unlocks, and a DEV
-  tag under the score says so. F10 cannot be bound to an action
+  force a boss or mutator (these last until the game closes), and the soda
+  cans play-test: SODA CANS (saved, so it stays on until switched off) and
+  CAN FLAVOUR (forces one flavour). ACTIONS: skip the wave, a level-up
+  offer, every card at max rank, refill, GIVE CANS, restart the seed, a new
+  seed, the juice test. A run that used anything on RUN or ACTIONS is a dev
+  run: it writes no top 10 entry, XP or unlocks, and a DEV tag under the
+  score says so. A run with SODA CANS on alone still pays XP but writes no
+  top 10 entry or best score (tag: CANS RUN: NO TOP 10). F10 cannot be bound
+  to an action
 - `--look=off|light|full` starts on that RETRO LOOK level (`--plain` = off) · `--dev=look|run|actions` opens the DEV
   menu on the title at that tab
 - `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
