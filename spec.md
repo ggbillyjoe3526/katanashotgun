@@ -609,6 +609,8 @@ Notes:
 | quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
+| play a seed | S (title) | PLAY A SEED box (§7.5) |
+| copy seed | C (pause, results) | Also a COPY button (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
 
 Controller support: **OPEN** (not requested; design the input layer so it
@@ -1397,8 +1399,18 @@ the holographic cut-in (§9.8).
   seed.
 
 ### 7.5 Seeds
-- A 31-bit run seed, shown as **XXXX-XXXX** hex. It can be forced with
-  `--seed=XXXX-XXXX`.
+- A 31-bit run seed, shown as **XXXX-XXXX** hex (so it starts with 0 to 7).
+  It can be forced with `--seed=XXXX-XXXX`.
+- **PLAY A SEED** (built 2026-10-19): a button on the title (or **S**) opens
+  a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
+  itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
+  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
+  Enter starts a run on it at once; BACK or Esc closes; CLEAR empties.
+  Left alone, runs keep random seeds. With a suspended run waiting, PLAY
+  asks twice and then ends that run the way N does (its XP counts). The box
+  holds every key while open. Mouse alone or keyboard alone both work.
+- **COPY** puts the run's seed on the clipboard: a button beside the seed
+  on the pause screen and on the results prompt, or **C** there.
 - Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
@@ -2408,7 +2420,8 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 `title` → `playing` ⇄ `paused` / `levelup` → `dead` → results → (R: same
 seed | click: new seed).
 - **Title:** shows the map built from the next run's seed, with the camera
-  drifting and the title music playing.
+  drifting and the title music playing. PLAY A SEED starts a run on a typed
+  or pasted seed instead (§7.5).
 - **Starting a run:** captures the mouse, starts the combat playlist and
   begins wave 1.
 - **Pause** on Esc, focus loss or mouse-capture loss (the tree pauses; UI
@@ -2494,6 +2507,7 @@ seed | click: new seed).
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).
+  - `--seedentry`: opens PLAY A SEED on the title.
   - `--settings=audio|video|controls|comfort`: opens the settings screen on
     the title at that tab.
   - `--record-mix=DIR`: records each audio bus to `DIR/<bus>.wav` on quit, to
@@ -2647,8 +2661,8 @@ yet, and each needs a spec update with its tuning when it is built.
    pastes it and plays the same seed with a rival line on the HUD ("vs WIL
    +2,350") and a head-to-head row in each tally. Offline: the code travels
    by hand. Put the version in the code (seeds break when the game
-   changes) and mark a player's first attempt on a seed. Needs a seed entry
-   box on the title screen.
+   changes) and mark a player's first attempt on a seed. Pasted into the
+   PLAY A SEED box (§7.5).
 2. **Two Hands, One Rhythm.** Alternating katana and shotgun kills earns an
    extra combo step and lights the matching hand on the HUD; a clean
    left-right-left chain gets a stamp. A bonus only, never a penalty, so
@@ -2670,8 +2684,8 @@ yet, and each needs a spec update with its tuning when it is built.
    never a hit or an input. The player never has to play in rhythm.
 
 Ideas 6 to 10 build on the shared seed and work fully offline: players
-swap a short code or a small file by hand. Most need a seed entry box on
-the title screen first (today a friend's seed needs a shortcut edit).
+swap a short code or a small file by hand. The seed entry box most of them
+build on is in: PLAY A SEED on the title (§7.5).
 6. **Challenge Codes.** A code carrying a seed plus rules the sender picked
    from what exists: mutators locked on for every wave, a starting build, a
    wave to reach and a score to beat. A "dare a friend" builder after a
