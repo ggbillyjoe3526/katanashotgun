@@ -40,6 +40,8 @@ second early still counts.
 | Results | A-Z, 0-9, Backspace, Enter | Type your initials for the high-score table |
 | Results | **R** | Retry the same seed |
 | Results | Click | New run with a new seed |
+| Results | **C** | Save a [run card](Run-Cards), a picture of your run with its seed |
+| Results | **O** | Open the folder the run card went to |
 
 The game also pauses on its own if you switch away from it (Alt+Tab) and the mouse is released.
 

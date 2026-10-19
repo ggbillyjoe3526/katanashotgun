@@ -30,7 +30,7 @@ and Linux).
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
 | Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
-| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
+| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **C** save a run card (a picture of the run with its seed) |
 
 ## How a run works
 Each run gets a seed (shown on the HUD, as `XXXX-XXXX`). The seed decides the

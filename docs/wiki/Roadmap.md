@@ -63,7 +63,8 @@ feel right:
 - **The city is watching:** drones and billboards on the rooftop follow
   your combo and score, and show the best initials for the seed.
 - **Run cards:** one key saves a picture of your run with its seed code,
-  ready to post anywhere.
+  ready to post anywhere. In the game to try now: see
+  [Run Cards](Run-Cards).
 - **A box to type in a seed** on the title screen, so sharing seeds doesn't
   need a shortcut edit.
 

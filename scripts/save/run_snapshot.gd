@@ -6,7 +6,7 @@ class_name RunSnapshot
 ## out as if it had never stopped. RNG states are 64-bit, so they are stored
 ## as strings (JSON numbers lose precision past 2^53).
 
-const GAME_INTS := ["score", "best_combo", "kills", "executions", "headshots", "deflects", "bosses_killed", "level", "pending_levelups"]
+const GAME_INTS := ["score", "best_combo", "kills", "executions", "headshots", "deflects", "bosses_killed", "level", "pending_levelups", "best_tally", "best_tally_wave"]
 
 
 ## `next_wave` is the wave the run resumes on.

@@ -66,6 +66,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--cardtour"):
 		add_child(load("res://scripts/debug_cards.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--runcard"):
+		add_child(load("res://scripts/debug_run_card.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--palettetour"):
 		add_child(load("res://scripts/debug_palette.gd").new())
 		return

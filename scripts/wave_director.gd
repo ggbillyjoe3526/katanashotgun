@@ -413,6 +413,7 @@ func _wave_cleared() -> void:
 		mult *= float(m[1])
 	var total := int(round(chips * mult))
 	Game.add_score(total)
+	Game.note_tally(wave, total)
 	if Game.debug_autoplay:
 		print("[tally] wave %d chips=%d mult=%.2f total=%d rows=%s" % [wave, chips, mult, total, str(rows)])
 	Game.hud.show_tally({"title": "WAVE %02d // CLEAR" % wave, "rows": rows, "chips": chips, "mults": mults, "total": total, "flawless": flawless, "boss": boss_bounty > 0})
