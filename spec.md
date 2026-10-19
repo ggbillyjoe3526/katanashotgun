@@ -618,11 +618,11 @@ Notes:
 | pause | Esc | |
 | sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
-| quit game | Q twice (title) | Also a QUIT GAME button on the title, pause and Settings |
+| quit game | Q twice (title) | Also QUIT on the title, QUIT GAME on pause and in Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | play a seed | S (title) | PLAY A SEED box (§7.5) |
-| copy seed | C (pause, results) | Also a COPY button (§7.5) |
+| copy seed | C (pause, results) | Also COPY / COPY SEED to click (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
 
 Controller support: **OPEN** (not requested; design the input layer so it
@@ -1441,18 +1441,18 @@ the holographic cut-in (§9.8).
     imported once. The score is kept the moment the run ends (as `---`),
     so quitting before typing initials doesn't lose it.
 - The live HUD does not show the best score (the Focus layout, §9.7); the
-  title, pause and results screens do. Passing the best score triggers the
+  title (BEST, and the HI-SCORES panel) and the results screen do. Passing the best score triggers the
   "NEW HI-SCORE" cut-in once per run.
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
   confirms; blanks become "-"), then the table appears with the new entry
   highlighted. **R** retries the same seed; a click or Enter starts a new
-  seed. **P** (or the SAVE RUN CARD button, top right) saves a run card
+  seed. **P** (or RUN CARD in the results row) saves a run card
   (§19.1 #10).
 
 ### 7.5 Seeds
 - A 31-bit run seed, shown as **XXXX-XXXX** hex (so it starts with 0 to 7).
   It can be forced with `--seed=XXXX-XXXX`.
-- **PLAY A SEED** (built 2026-10-19): a button on the title (or **S**) opens
+- **PLAY A SEED** (built 2026-10-19): a title menu item (or **S**) opens
   a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
   itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
   the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
@@ -1460,8 +1460,8 @@ the holographic cut-in (§9.8).
   Left alone, runs keep random seeds. With a suspended run waiting, PLAY
   asks twice and then ends that run the way N does (its XP counts). The box
   holds every key while open. Mouse alone or keyboard alone both work.
-- **COPY** puts the run's seed on the clipboard: a button beside the seed
-  on the pause screen and on the results prompt, or **C** there.
+- **COPY** puts the run's seed on the clipboard: COPY beside the seed on
+  the pause screen, COPY SEED in the results row, or **C** there.
 - Separate RNG streams:
   - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
     signs.
@@ -1872,50 +1872,73 @@ the holographic cut-in (§9.8).
     dash, colon, "!" or "?". 4.5 s, each shown once. The boss reward card
     also deals into the bottom of the screen; a hint waits until it (or
     FINISH, the payout or the boss-defeated card) has gone.
+- **Menus: "Focus"** (approved with the HUD, 2026-10-19; mockup
+  `design/ui-redesign/B2-focus-3-menus.png`). Words, not buttons: each menu
+  is a list of plain Jersey 10 words on a dark outline, straight over the
+  scene, grey at rest and white with a 2 px cyan marker bar beside the one
+  the mouse points at (the first item is marked until then). Every word is
+  a click target; an item's key, if it has one, shows dim after it
+  (`PLAY A SEED [S]`). Plates appear only where there is a table to hold.
+  Shared in code as `MenuList` (`scripts/ui/menu_list.gd`).
 - **Title screen:**
-  - The **KATANA / SHOTGUN** logo: KATANA flies in from the left and SHOTGUN
-    from the right (0.3 s), on a tech panel. Then a **neon blade cuts the
-    "/"** between them (0.32–0.39 s), with a swing and slice sound, shake,
-    data streaks and a shard burst. The slash occasionally glints. Glitch
-    bursts.
-  - Subtitle "ARCADE HORDE SHOOTER – HOW FAR CAN YOU GET?".
-  - A controls column and a HI-SCORES table (top 5).
-  - "MAP · PALETTE · SEED" line and a softly pulsing "CLICK TO START".
-  - Bottom row: SETTINGS [TAB] on the left; the version and QUIT GAME [Q] on
-    the right. The start prompt sits just above that row.
+  - The **KATANA / SHOTGUN** logo, top left on two lines (Orbitron 32 px):
+    KATANA flies in from the left and SHOTGUN from the right (0.3 s). Then a
+    **neon blade cuts the "/"** in front of SHOTGUN (0.32–0.39 s), with a
+    swing and slice sound, shake, data streaks and a shard burst. The slash
+    occasionally glints.
+  - Under it, the menu (16 px apart): START RUN (or CONTINUE WAVE n and
+    NEW RUN [N] when a run is suspended, §11.3), PLAY A SEED [S], HI-SCORES,
+    ARMORY, HOW TO PLAY, SETTINGS [TAB], QUIT [Q]. A click anywhere else, or
+    Enter or Space, also starts (or continues) the run.
+  - HI-SCORES (top 5), ARMORY (§11.2; click a row or press 1 or 2) and
+    HOW TO PLAY (the controls, a key column and what each does) open on a
+    plate beside the menu, one at a time; choosing the open one again, or a
+    click away from the menu, closes it.
+  - Bottom left: `BEST 0386418     PLAYER LV 6`, with the Player Level's XP
+    as a 2 px hairline under it (§11.1). Bottom right: the version.
   - The title music plays while the camera drifts.
-- **Pause:** dim, "PAUSED", "CLICK TO RESUME", sensitivity readout, and a
-  hint if the mouse fails to lock. SETTINGS [TAB] and QUIT GAME buttons
-  under them (no Q here: Q is a dash key mid-run). Music ducks to −20 dB.
-  The live HUD hides and the big messages freeze until you resume.
-- **Quit:** QUIT GAME on the title, the pause screen and the settings footer
-  closes the game, saving the profile and settings first. The first press only
-  arms it ("PRESS AGAIN TO QUIT" for 3 s) so a stray click or key never quits.
-  A run in progress continues from its last between-wave save (§11.3).
+- **Pause:** dim, "PAUSED" (Orbitron 24 px) top left, and under it RESUME,
+  ARMORY (opens the armory plate under the menu), SETTINGS [TAB] and QUIT
+  GAME (no Q here: Q is a dash key mid-run). A click anywhere else resumes.
+  Your builds so far sit on a plate top right. Bottom left: `SEED 548A-8455
+  [C] COPY`; bottom right: the mouse sensitivity, which [ and ] change; a
+  hint over the seed if the mouse fails to lock. Music ducks to −20 dB. The
+  live HUD hides and the big messages freeze until you resume.
+- **Quit:** QUIT on the title, QUIT GAME on the pause screen and the
+  settings footer closes the game, saving the profile and settings first.
+  The first press only arms it ("QUIT?  CLICK AGAIN" in red for 3 s) so a
+  stray click or key never quits. A run in progress continues from its last
+  between-wave save (§11.3).
 - **Level-up:**
-  - Dim the screen, "LEVEL UP" stamps in, three **augment cards** (148×188
-    tech panels; a tag ribbon in the tag colour with the [1]/[2]/[3] key
-    beside it; then a name of up to two lines, rank pips (cards with more
-    than one rank only) and a description of up to four lines, each placed
-    under the one above; the build lines sit on the bottom edge). A linking
-    card wears a gold RECOMMENDED tab above its top edge (§3.8).
+  - Dim the screen, "LEVEL UP" stamps in, "CHOOSE ONE  -  CLICK OR PRESS
+    1 / 2 / 3" under it, and three **augment cards** (136 px wide, 10 px
+    apart; as tall as the tallest text dealt, at least 150 px). Each card is
+    a dark chamfered plate: a ribbon in the tag's colour across the top with
+    the tag and the card's key (1/2/3) in dark letters; the name in white;
+    for cards with more than one rank, rank pips and "RANK n" in the tag's
+    colour; the description in grey; and, over a rule on the bottom edge,
+    the build lines ("STORM RUNNER 2/3", gold on a linking card). A linking
+    card wears a gold RECOMMENDED tab above its top edge and a gold outline
+    (§3.8).
   - **Card text must read at a glance** (owner, 2026-10-18: card text was
-    hard to read). Name, rank and description are Jersey 10 at 19 px, white
-    with no outline, on a solid near-black plate inset 4 px in the card; the
-    hover and selection glow tints only the rim around the plate. Card copy
-    stays under 58 characters (a Gut test checks).
+    hard to read; 2026-10-19: cards keep their full text). All card text is
+    Jersey 10 at 19 px, lines 15 px apart, with no outline on the solid
+    near-black plate. Card copy stays under 58 characters (a Gut test
+    checks).
   - **Animation:** cards deal in from 190 px below with ±0.4 rad spin
     (ease-out-back, staggered 0.11 s, with a "deal" sound each), then hold
     still: until one is taken, a dealt card is never rotated or scaled, so its
-    pixel text stays sharp. Hovering lifts the card 3 px and lights its border.
+    pixel text stays sharp. Hovering lifts the card 3 px and edges it in its
+    tag's colour.
   - **Picking is deliberate** (owner, 2026-10-18: cards were taken by
     accident). Input is ignored for 0.45 s after the cards appear, and the
     cursor starts below them. The first click or 1/2/3 **selects** a card
-    (lifted 6 px, white outline, rim glow) and the subtitle asks "TAKE <NAME>?";
-    clicking it again, pressing its key again or Enter **takes** it. Clicking
-    off the cards clears the selection.
-  - Taking punches the card, the others drop and fade, a chime plays, and
-    the pick applies after 0.34 s.
+    (lifted 6 px, white outline) and a gold-edged plate under the cards asks
+    "TAKE <NAME>?  CLICK AGAIN OR PRESS n"; clicking it again, pressing its
+    key again or Enter **takes** it. Clicking off the cards clears the
+    selection.
+  - Taking punches the card (a flash of its tag colour), the others drop
+    and fade, a chime plays, and the pick applies after 0.34 s.
   - Virtual cursor (mouse captured). Music ducks to −16 dB.
 - **Results (death) screen:** §9.8 "Death".
 
@@ -2031,14 +2054,25 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
   - The music cuts. At 0.6 s, the souls card **"FLATLINED"** in red (3.2 s)
     with the "flatline" sound (a heart-monitor tone over a low drone).
   - At 3.4 s, the results screen replaces the FLATLINED card and the live
-    HUD:
-    - The stats appear **line by line** every 0.09 s with type ticks: wave
-      reached, bosses, kills, glory kills, headshot kills, deflects, best
-      combo, level, time, seed.
+    HUD (Focus layout, §9.7; mockup `B2-focus/3-menus-results.png`):
+    - Top centre: FLATLINED (red, Orbitron 16 px), the score under it
+      (Orbitron 32 px, white) and, for a new best, a gold NEW BEST chip.
+    - A stats plate on the left, names grey and numbers right-aligned in
+      white, 15 px apart. The stats appear **line by line** every 0.09 s with
+      type ticks: wave reached, bosses slain, kills, glory kills, headshot
+      kills, deflects, best combo, run level, time.
     - The **score counts up** from 0 over 1.2 s (smoothstep, ticks every
       0.05 s rising in pitch), then slams (cash sound, shake 8, burst, bump).
-    - Then either initials entry (with the highscore sound and two
-      fireworks) or the HI-SCORES table.
+    - On the right, the HI-SCORES plate: four rows (rank, name, score, wave),
+      this run's row lit gold (the top three and this run's row when it
+      ranks lower). They show once the score has slammed. A qualifying score
+      then asks for initials in its own row ("TYPE INITIALS + ENTER", the
+      row pulsing, with the highscore sound and two fireworks).
+    - Under it, the level plate: PLAYER LV and the run's XP gain, the XP bar
+      the gain counts into (§11.1), the XP numbers, and the run's seed.
+    - Once ready, a row of words along the bottom: [R] RETRY SEED,
+      [CLICK] NEW RUN, [P] RUN CARD (then [O] OPEN FOLDER, §19.1 #10) and
+      [C] COPY SEED.
   - The title music returns at −14 dB. Input is accepted after 2.4 s. The
     world desaturates and keeps running in slow motion (×0.35).
 - **Hi-score:** passing the best score mid-run: one message, a "NEW
@@ -2315,7 +2349,7 @@ is never lost.
     list is done. Never
     random, so rewards never touch the seeded RNG. The first six are
     weapon looks: a katana edge and a shotgun coil per boss, picked on the
-    title or pause screen (1 and 2). Palettes, maps, mutators and boss variants can
+    title or pause screen (ARMORY: click a row, or 1 and 2). Palettes, maps, mutators and boss variants can
     join the lists once they exist.
 
 ### 11.3 Saving (critical)
@@ -2329,7 +2363,7 @@ is never lost.
     XP, augments and ranks, HP, cells, dash charges, run stats and **RNG
     states** (the map and augment streams; the per-wave streams reseed from
     the seed when the next wave starts, §7.5).
-  - On launch, offer **CONTINUE RUN**. Delete the snapshot when the run ends,
+  - On launch, offer **CONTINUE** (WAVE n) on the title. Delete the snapshot when the run ends,
     so a death can't be undone by reloading.
 - **Robustness:**
   - A versioned format with migrations.
@@ -2657,6 +2691,10 @@ seed | click: new seed).
   - `--augments=id,id:2|all`: start the run with those level-up cards
     (ids in `scripts/upgrades.gd`); `--cardtour`: deals every card, three at
     a time, for a layout check, then quits.
+  - `--menutour` (+`--uiaudit`): every Focus menu in turn (§9.7): the
+    title with each side panel, a suspended run and QUIT armed; pause with
+    builds and the armory; a level-up hand with a card chosen; the results
+    with a new best and initials typed; then quits. Debug profile only.
   - `--palettetour` (+`--palette=NAME|0-4`): four fixed views of the arena,
     1.5 s each, then quits; `--palette=` also forces the palette in a normal
     run (debug only; the seed still draws its palette number).
@@ -2935,10 +2973,10 @@ build on is in: PLAY A SEED on the title (§7.5).
    the Pictures folder: seed code, score, wave, builds, bosses felled and
    the run's best moment, in the game's style. No internet.
    **BUILT (2026-10-19), awaiting the owner's verdict.** Once the results
-   have counted up, **P** (for picture) or the SAVE RUN CARD button (top
-   right) saves a 1920x1080 PNG to `Pictures\KatanaShotgun\` (the save
-   folder's `run_cards` if there is no Pictures folder); the corner then
-   says where it went and OPEN FOLDER (or **O**) shows it in the file
+   have counted up, **P** (for picture) or RUN CARD in the results row
+   saves a 1920x1080 PNG to `Pictures\KatanaShotgun\` (the save
+   folder's `run_cards` if there is no Pictures folder); the top right
+   corner then says where it went and OPEN FOLDER (or **O**) shows it in the file
    manager, ready to drag into a chat. The card is drawn at the UI's 480x270
    and scaled 4x with hard pixels: the run's palette as a dithered sky,
    striped sun, skyline and floor grid, then dark plates holding the score,

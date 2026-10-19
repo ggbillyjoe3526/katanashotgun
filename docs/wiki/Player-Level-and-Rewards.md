@@ -2,8 +2,9 @@
 
 ## Player Level
 
-Your **PLAYER LV** rises after every run and never goes down. It shows on the
-title screen and the results screen.
+Your **PLAYER LV** rises after every run and never goes down. It shows at the
+bottom left of the title screen (with your XP as a thin line under it) and on
+the results screen.
 
 - **It unlocks nothing and never changes difficulty or stats.** It's simply a
   record of how far you've come.
@@ -48,10 +49,12 @@ The stock looks are **STOCK EDGE** (cyan) and **STOCK COIL** (blue).
 
 ### Changing your look
 
-On the **title** or **pause** screen:
+On the **title** or **pause** screen, click **ARMORY**, then:
 
-- **1** cycles your **katana edge**.
-- **2** cycles your **shotgun coil**.
+- click the first row, or press **1**, to cycle your **katana edge**;
+- click the second row, or press **2**, to cycle your **shotgun coil**.
+
+1 and 2 also work with the armory closed.
 
 Your choice is saved with your profile.
 

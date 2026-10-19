@@ -60,14 +60,22 @@ var _score_shown := 0.0
 
 # overlays
 var title_root: Control
-var title_labels: Array[Label] = []
-var title_blink: Label
+var title_menu: MenuList
+var title_panel: Shard # hi-scores, armory or how to play, beside the menu
+var title_howto: Control
+var title_best: Label
+var title_xp_bg: ColorRect
+var title_xp_fill: ColorRect
+var _title_panel_kind := ""
 var pause_root: Control
+var pause_menu: MenuList
+var pause_copy: MenuList
+var pause_armory_plate: Shard
+var pause_builds_plate: Shard
 var sens_label: Label
 var death_root: Control
 var death_stats: Label
 var death_vals: Label # the numbers, in their own column so they line up
-var death_blink: Label
 var levelup_root: Control
 var cards: Array = []
 var cursor: Label
@@ -87,15 +95,16 @@ var boss_sub: Label
 var boss_t := 99.0
 var boss_bar_sub: Label
 var title_scores: Label
-var title_seed: Label
 var title_version: Label
-var title_hi: Label
 var death_score: Label
-var death_table: Label
-var death_prompt: Label
-var initials_root: Control
-var initials_label: Label
-var initials_slots: Array[Label] = []
+var death_best: Label # the NEW BEST chip under the score
+var death_stats_plate: Shard
+var death_scores_plate: Shard
+var death_scores_head: Label
+var death_rows: Array = [] # hi-score rows: [highlight, rank, name, score, wave]
+var death_level_plate: Shard
+var death_seed: Label
+var death_menu: MenuList
 var entering := false
 var initials := ""
 var run_card: RunCardPanel # results: save a postcard of the run (spec §19.1 #10)
@@ -103,19 +112,11 @@ var run_card: RunCardPanel # results: save a postcard of the run (spec §19.1 #1
 var post: PostFx
 var juice: Juice
 var settings_menu: SettingsMenu
-var title_settings: TechButton
-var pause_settings: TechButton
-var title_quit: TechButton
-var pause_quit: TechButton
 # seeds to share (spec §7.5): PLAY A SEED on the title, COPY on pause and results
 var seed_entry: SeedEntry
-var title_play_seed: TechButton
-var pause_copy: TechButton
-var death_copy: TechButton
 
 # profile (spec §11): the Player Level on the title and results, the armory,
 # and the boss-reward card
-var title_level: LevelBar
 var armory: ArmoryPanel
 var pause_armory: ArmoryPanel
 var level_bar: LevelBar
@@ -126,7 +127,6 @@ var _reward_t := 99.0
 var logo_k: GlitchText
 var logo_s: GlitchText
 var logo_slash: Shard
-var logo_band: Shard
 var _title_t := 0.0
 var _title_hit := false
 
@@ -135,12 +135,49 @@ const COMBO_MILESTONES := [10, 20, 30, 50, 75, 100, 150, 200, 300]
 ## Level-up input is ignored this long after the cards appear, so a click or
 ## key already flying from combat can't select anything.
 const CARD_ARM_TIME := 0.45
-const LEVELUP_PROMPT := "CHOOSE AN AUGMENT   (CLICK OR PRESS 1 / 2 / 3)"
-const CARD_SIZE := Vector2(148, 188) # level-up augment card: a two-line name and a four-line description fit
-const CARD_GAP := 8.0
-const CARD_TEXT_W := 132.0 # text width inside the card's solid plate (140 wide, text 6 px in)
-const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
-const CARD_DESC_PT := 12
+const LEVELUP_PROMPT := "CHOOSE ONE  -  CLICK OR PRESS 1 / 2 / 3"
+const CARD_W := 136.0 # level-up augment card; its height fits the tallest text dealt
+const CARD_MIN_H := 150.0
+const CARD_GAP := 10.0
+const CARD_PAD := 8.0 # text starts this far in from the card's edge
+const CARD_TOP := 70.0 # the cards' top edge, from the top of the screen
+const CARD_EDGE := Color(0.27, 0.24, 0.39) # an unlit card's outline
+const CARD_TEXT := Color(0.63, 0.62, 0.75) # descriptions
+const CARD_INK := Color(0.03, 0.02, 0.07) # dark words on the tag ribbon
+const PIP_OFF := Color(0.2, 0.2, 0.29)
+const CARD_LINE_GAP := -1 # card text lines 15 px apart
+# the Focus menus (spec §9.7): words on the left over the scene, plates only
+# where there is a table to hold
+const TITLE_X := 32.0
+const TITLE_PITCH := 16.0
+const TITLE_MENU_W := 140.0 # the side panel opens this far right of the menu
+const LOGO_PX := 32
+const LOGO_LINE := 36.0 # SHOTGUN sits this far under KATANA
+const LOGO_CAP := 23.0 # Orbitron's capital height at LOGO_PX
+const LOGO_CAP_TOP := 10.0 # and its capitals' top inside the text box
+const SLASH_W := 16.0
+const HOWTO_KEY_W := 46.0 # HOW TO PLAY: the keys' column
+const T_START := 0 # title menu items
+const T_NEW := 1
+const T_SEED := 2
+const T_SCORES := 3
+const T_ARMORY := 4
+const T_HOWTO := 5
+const T_SETTINGS := 6
+const T_QUIT := 7
+const PAUSE_X := 40.0
+const PAUSE_PITCH := 20.0
+const P_RESUME := 0 # pause menu items
+const P_ARMORY := 1
+const P_SETTINGS := 2
+const P_QUIT := 3
+const RESULTS_W := 400.0 # the results block: two 192 px plates and a gap
+const RESULTS_PLATE_W := 192.0
+const RESULTS_ROW := 15.0
+const SCORE_ROWS := 4 # hi-score rows on the results
+const GOLD := Color(1.0, 0.72, 0.15)
+const D_CARD := 2 # results row items: RETRY SEED, NEW RUN, RUN CARD, COPY SEED
+const D_COPY := 3
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
 const KAMAE_GOLD := Color(1.0, 0.72, 0.15)
 const KAMAE_HOT := Color(1.0, 0.93, 0.55) # nearly full: the bar runs white-hot
@@ -173,10 +210,10 @@ var _pick_t := 0.0
 var _death_lines := 0
 var _death_full: PackedStringArray = []
 var _death_vals_full: PackedStringArray = []
-var _death_cols := Vector2.ZERO # full widths of the name and number columns
 var _last_cells := 0
 var _cell_flash: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 var _death_counted := false
+var _scores_shown := false # the hi-score rows, once the score has counted up
 var _popup_plate: StyleBoxFlat
 
 
@@ -292,25 +329,6 @@ func _ready() -> void:
 	add_child(seed_entry)
 	seed_entry.visibility_changed.connect(func(): root.visible = not seed_entry.visible)
 	seed_entry.chosen.connect(func(s: int): Game.main.play_seed(s))
-	title_play_seed = TechButton.make("PLAY A SEED  [S]", Color(Game.palette.neon_b))
-	title_play_seed.pressed.connect(open_seed_entry)
-	title_root.add_child(title_play_seed)
-	pause_copy = TechButton.make("COPY  [C]", Color(Game.palette.neon_b))
-	pause_copy.pressed.connect(func(): copy_seed(pause_copy))
-	pause_root.add_child(pause_copy)
-	death_copy = TechButton.make("COPY SEED  [C]", Color(Game.palette.neon_b))
-	death_copy.pressed.connect(func(): copy_seed(death_copy))
-	death_root.add_child(death_copy)
-	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
-	title_settings.pressed.connect(_open_settings)
-	title_root.add_child(title_settings)
-	pause_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
-	pause_settings.pressed.connect(_open_settings)
-	pause_root.add_child(pause_settings)
-	title_quit = _quit_button("QUIT GAME  [Q]")
-	title_root.add_child(title_quit)
-	pause_quit = _quit_button("QUIT GAME")
-	pause_root.add_child(pause_quit)
 	Game.hud_message.connect(show_message)
 	Game.popup.connect(add_popup)
 	Game.hint.connect(show_hint)
@@ -462,69 +480,73 @@ func _build_title() -> void:
 	title_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	title_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(title_root)
-	var shade := Ui.rect(Color(0.02, 0.0, 0.05, 0.6), Vector2.ZERO, Vector2(480, 270))
+	# a light shade: the city behind the title is part of the look
+	var shade := Ui.rect(Color(0.02, 0.0, 0.05, 0.35), Vector2.ZERO, Vector2(480, 270))
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	title_root.add_child(shade)
 	var a: Color = Game.palette.neon_a
 	var b: Color = Game.palette.neon_b
-	for spec in [["KATANA", a, b], ["/", Color.WHITE, a], ["SHOTGUN", b, a]]:
-		var pair := _shadowed(spec[0], Ui.font_big, 24, spec[1], spec[2], Vector2(2, 2))
-		title_root.add_child(pair[0])
-		title_labels.append(pair[0])
-		title_labels.append(pair[1])
-	# short lines, so the controls and the hi-score table fit side by side at
-	# a readable size
-	var lines := [
-		["LMB  DOJIGIRI KATANA - CHARGES THE SHOTGUN", b],
-		["RMB  RAIJIN-12 SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
-		["%s  GLORY KILL A STAGGERED FOE" % Ui.key_name("finisher"), a],
-		["SLASH ENEMY BOLTS TO DEFLECT", b.lerp(Color.WHITE, 0.4)],
-		["WASD MOVE   SPACE JUMP x2   SHIFT DASH", Color(0.9, 0.9, 0.95)],
-		["EVERY 3RD WAVE: BOSS  -  HEADSHOTS x2", a.lerp(Color.WHITE, 0.3)],
-	]
-	var y := 0
-	for ln in lines:
-		var l := Ui.label(ln[0], Ui.font_bold, 9, ln[1], 2)
-		l.set_meta("row", y)
-		title_root.add_child(l)
-		title_labels.append(l)
-		y += 1
-	# cyberpunk logo: KATANA / SHOTGUN in heavy glitch type, a neon blade for
-	# the slash, on a tech panel
-	for i in 6:
-		title_labels[i].visible = false
-	logo_band = Shard.make(Color(0.02, 0.01, 0.06, 0.8), 14.0, a, b)
-	logo_band.shadow_off = Vector2(0, 4)
-	logo_band.scan = 0.04
-	logo_band.brackets = Color.WHITE
-	logo_band.bracket_len = 12.0
-	title_root.add_child(logo_band)
-	logo_k = GlitchText.new().setup("KATANA", 34, Color.WHITE, a, 11, {"accent2": b, "decode": 0.4})
-	logo_s = GlitchText.new().setup("SHOTGUN", 34, Color.WHITE, a, 12, {"accent2": b, "decode": 0.5})
+	# the logo, left on two lines: KATANA, then the neon slash and SHOTGUN
+	logo_k = GlitchText.new().setup("KATANA", LOGO_PX, Color.WHITE, a, 11, {"accent2": b, "decode": 0.4})
+	logo_s = GlitchText.new().setup("SHOTGUN", LOGO_PX, Color.WHITE, a, 12, {"accent2": b, "decode": 0.5})
 	title_root.add_child(logo_k)
 	title_root.add_child(logo_s)
-	logo_slash = Shard.make(Color.WHITE, 0.0, a)
-	logo_slash.points = PackedVector2Array([Vector2(0.78, 0), Vector2(1, 0), Vector2(0.22, 1), Vector2(0, 1)])
-	logo_slash.shadow_off = Vector2(2, 0)
+	logo_slash = Shard.make(a, 0.0, a.darkened(0.6))
+	logo_slash.points = PackedVector2Array([Vector2(0.7, 0), Vector2(1, 0), Vector2(0.3, 1), Vector2(0, 1)])
+	logo_slash.shadow_off = Vector2(1, 1)
 	title_root.add_child(logo_slash)
-	var sub_l := Ui.label("ARCADE HORDE SHOOTER  -  HOW FAR CAN YOU GET?", Ui.font_bold, 10, Color(0.92, 0.85, 1.0), 2)
-	sub_l.name = "Sub"
-	title_root.add_child(sub_l)
-	title_hi = Ui.label("", Ui.font_big, 10, Color(Game.palette.neon_c), 2)
-	title_root.add_child(title_hi)
-	title_scores = Ui.label("", Ui.font_mono, 8, Color(0.95, 0.92, 1.0), 2)
-	title_root.add_child(title_scores)
-	title_seed = Ui.label("", Ui.font_bold, 9, Color(0.8, 0.76, 0.95), 2)
-	title_root.add_child(title_seed)
-	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
-	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")), Ui.font_mono, 9, Color(0.75, 0.7, 0.9), 2)
-	title_root.add_child(title_version)
-	title_blink = Ui.label("CLICK TO START", Ui.font_big, 10, Color.WHITE, 2)
-	title_root.add_child(title_blink)
-	title_level = LevelBar.new().make_slim()
-	title_root.add_child(title_level)
+	# the menu: every choice is a word to click (spec §9.7)
+	title_menu = MenuList.new()
+	title_menu.pitch = TITLE_PITCH
+	title_menu.add("START RUN", func(): Game.main.start_run())
+	title_menu.add("NEW RUN", func(): Game.main.abandon_suspended_run(), "N")
+	title_menu.add("PLAY A SEED", open_seed_entry, "S")
+	title_menu.add("HI-SCORES", func(): _toggle_title_panel("scores"))
+	title_menu.add("ARMORY", func(): _toggle_title_panel("armory"))
+	title_menu.add("HOW TO PLAY", func(): _toggle_title_panel("howto"))
+	title_menu.add("SETTINGS", _open_settings, "TAB")
+	title_menu.add("QUIT", Game.quit_game, "Q", {"confirm": "QUIT?  CLICK AGAIN"})
+	title_root.add_child(title_menu)
+	# the side panel: hi-scores, armory or how to play, one at a time
+	title_panel = _side_plate()
+	title_panel.visible = false
+	title_root.add_child(title_panel)
+	title_scores = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.92, 1.0))
+	title_panel.add_child(title_scores)
 	armory = ArmoryPanel.new()
-	title_root.add_child(armory)
+	title_panel.add_child(armory)
+	title_howto = Control.new()
+	title_howto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_panel.add_child(title_howto)
+	# the controls, a key (or a word) and what it does
+	var lines := [
+		["LMB", "KATANA - CHARGES THE SHOTGUN", b],
+		["RMB", "SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
+		[Ui.key_name("finisher"), "GLORY KILL A STAGGERED FOE", a],
+		["SLASH", "DEFLECTS ENEMY BOLTS", b.lerp(Color.WHITE, 0.4)],
+		["WASD", "MOVE", Color(0.9, 0.9, 0.95)],
+		["SPACE", "JUMP, AGAIN IN THE AIR", Color(0.9, 0.9, 0.95)],
+		["SHIFT", "DASH", Color(0.9, 0.9, 0.95)],
+		["HEAD", "HEADSHOTS DEAL DOUBLE DAMAGE", a.lerp(Color.WHITE, 0.3)],
+		["BOSS", "EVERY 3RD WAVE", a.lerp(Color.WHITE, 0.3)],
+	]
+	for i in lines.size():
+		var k := Ui.label(lines[i][0], Ui.font_bold, 10, lines[i][2])
+		k.position = Vector2(0, i * LINE)
+		title_howto.add_child(k)
+		var l := Ui.label(lines[i][1], Ui.font_bold, 10, Color.WHITE)
+		l.position = Vector2(HOWTO_KEY_W, i * LINE)
+		title_howto.add_child(l)
+	# bottom left: your best and your Player Level, with its XP as a hairline
+	title_best = Ui.label("", Ui.font_bold, 10, MenuList.REST, 2)
+	title_root.add_child(title_best)
+	title_xp_bg = Ui.rect(Color(0.16, 0.13, 0.26, 0.9), Vector2.ZERO, Vector2(1, 1))
+	title_root.add_child(title_xp_bg)
+	title_xp_fill = Ui.rect(Color(b), Vector2.ZERO, Vector2(1, 1))
+	title_root.add_child(title_xp_fill)
+	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
+	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")).to_upper(), Ui.font_bold, 10, MenuList.KEY_DIM, 2)
+	title_root.add_child(title_version)
 	_refresh_title()
 
 
@@ -540,10 +562,25 @@ func _score_table(highlight := -1, count := 5) -> String:
 
 
 func _refresh_title() -> void:
-	title_hi.text = "HI-SCORES"
-	title_scores.text = _score_table(-1, 3)
-	title_level.show_static(Profile.player_level, Profile.player_xp)
-	title_seed.text = "MAP  %s     PALETTE  %s     SEED  %s" % [Game.arena.map_name if Game.arena else "", Game.palette.name, Game.seed_string(Game.run_seed)]
+	title_scores.text = "HI-SCORES\n" + _score_table(-1, 5)
+	title_best.text = "BEST %07d     PLAYER LV %d" % [Game.best_score(), Profile.player_level]
+
+
+## A click on the title away from the menu closes an open side panel
+## rather than starting a run; returns whether it closed one.
+func close_title_panel() -> bool:
+	if _title_panel_kind == "":
+		return false
+	_toggle_title_panel(_title_panel_kind)
+	return true
+
+
+## HI-SCORES, ARMORY and HOW TO PLAY open beside the menu; choosing the open
+## one again closes it.
+func _toggle_title_panel(kind: String) -> void:
+	_title_panel_kind = "" if _title_panel_kind == kind else kind
+	title_menu.current = {"scores": T_SCORES, "armory": T_ARMORY, "howto": T_HOWTO}.get(_title_panel_kind, T_START)
+	_refresh_title()
 
 
 func _build_pause() -> void:
@@ -552,33 +589,86 @@ func _build_pause() -> void:
 	pause_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	pause_root.visible = false
 	root.add_child(pause_root)
-	var shade := Ui.rect(Color(0.02, 0.0, 0.05, 0.7), Vector2.ZERO, Vector2(480, 270))
+	var shade := Ui.rect(Color(0.02, 0.0, 0.05, 0.62), Vector2.ZERO, Vector2(480, 270))
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	pause_root.add_child(shade)
-	var t := Ui.label("PAUSED", Ui.font_big, 16, MAGENTA, 2)
+	var t := Ui.label("PAUSED", Ui.font_big, 19, Color.WHITE, 2)
 	t.name = "Title"
 	pause_root.add_child(t)
-	var c := Ui.label("CLICK TO RESUME", Ui.font_big, 10, Color.WHITE, 2)
-	c.name = "Click"
-	pause_root.add_child(c)
-	sens_label = Ui.label("", Ui.font_bold, 10, CYAN, 2)
-	pause_root.add_child(sens_label)
-	# the run's seed lives here rather than cluttering the live HUD
-	var sd := Ui.label("", Ui.font_mono, 9, Color(0.8, 0.76, 0.95), 2)
+	# in a run Q is a dash key, so QUIT GAME has no key here (a lost mouse
+	# lock pauses mid-dash); a click anywhere else still resumes
+	pause_menu = MenuList.new()
+	pause_menu.pitch = PAUSE_PITCH
+	pause_menu.add("RESUME", func(): Game.main.resume_game())
+	pause_menu.add("ARMORY", func():
+		pause_armory_plate.visible = not pause_armory_plate.visible
+		pause_menu.current = P_ARMORY if pause_armory_plate.visible else P_RESUME)
+	pause_menu.add("SETTINGS", _open_settings, "TAB")
+	pause_menu.add("QUIT GAME", Game.quit_game, "", {"confirm": "QUIT?  CLICK AGAIN"})
+	pause_root.add_child(pause_menu)
+	pause_armory_plate = _side_plate()
+	pause_armory_plate.visible = false
+	pause_root.add_child(pause_armory_plate)
+	pause_armory = ArmoryPanel.new()
+	pause_armory.position = Vector2(10, 6)
+	pause_armory_plate.add_child(pause_armory)
+	# your builds so far, top right, out of the way of the menu
+	pause_builds_plate = _side_plate()
+	pause_root.add_child(pause_builds_plate)
+	var bl := Ui.label("", Ui.font_bold, 10, Upgrades.LINK_COLOR)
+	bl.name = "Builds"
+	bl.position = Vector2(10, 6)
+	pause_builds_plate.add_child(bl)
+	# bottom: the run's seed to copy (rather than cluttering the live HUD),
+	# and the mouse sensitivity, which [ and ] change anywhere
+	var sd := Ui.label("", Ui.font_bold, 10, MenuList.REST, 2)
 	sd.name = "Seed"
 	pause_root.add_child(sd)
+	pause_copy = MenuList.new()
+	pause_copy.horizontal = true
+	pause_copy.current = -1
+	pause_copy.add("COPY", copy_seed, "C", {"col": CYAN})
+	pause_root.add_child(pause_copy)
+	sens_label = Ui.label("", Ui.font_bold, 10, MenuList.KEY_DIM, 2)
+	pause_root.add_child(sens_label)
 	var lock := Ui.label("MOUSE NOT LOCKING?  CLICK INSIDE THE GAME WINDOW", Ui.font_bold, 10, Color(1.0, 0.6, 0.4), 2)
 	lock.name = "LockHint"
 	lock.visible = false
 	pause_root.add_child(lock)
-	pause_armory = ArmoryPanel.new()
-	pause_root.add_child(pause_armory)
-	# your builds so far, top left, out of the way of the menu
-	var bl := Ui.label("", Ui.font_bold, 10, Upgrades.LINK_COLOR, 2)
-	bl.name = "Builds"
-	bl.position = Vector2(8, 44) # under the wave plate, on a plate of its own
-	bl.add_theme_stylebox_override("normal", _popup_plate)
-	pause_root.add_child(bl)
+
+
+## A dark plate for a panel beside a menu.
+func _side_plate() -> Shard:
+	return Shard.make(Color(0.02, 0.01, 0.06, 0.82), 6.0, Color(0, 0, 0, 0), Color(1, 1, 1, 0.18))
+
+
+func _layout_pause() -> void:
+	var t: Label = pause_root.get_node("Title")
+	_fit([t])
+	t.position = Vector2(PAUSE_X, 44)
+	pause_menu.position = Vector2(PAUSE_X, 94)
+	# the armory opens under the menu; the builds hold the right side
+	pause_armory_plate.size = (pause_armory.size + Vector2(20, 12)).round()
+	pause_armory_plate.position = Vector2(PAUSE_X, pause_menu.position.y + pause_menu.size.y + 10.0).round()
+	var bl: Label = pause_builds_plate.get_node("Builds")
+	bl.size = Vector2.ZERO
+	pause_builds_plate.visible = bl.text != ""
+	pause_builds_plate.size = (bl.size + Vector2(20, 12)).round()
+	pause_builds_plate.position = Vector2(vs.x - PAUSE_X - pause_builds_plate.size.x, 44).round()
+	var sd: Label = pause_root.get_node("Seed")
+	sd.text = "SEED %s" % Game.seed_string(Game.run_seed)
+	sd.size = Vector2.ZERO
+	var by := vs.y - 24.0
+	sd.position = Vector2(PAUSE_X, by)
+	pause_copy.position = Vector2(PAUSE_X + sd.size.x + 8.0, by)
+	sens_label.text = "MOUSE SENSITIVITY %.1f   [ ]" % (Game.mouse_sensitivity / 0.0024)
+	sens_label.size = Vector2.ZERO
+	sens_label.position = Vector2(vs.x - PAUSE_X - sens_label.size.x, by)
+	var lh: Label = pause_root.get_node("LockHint")
+	# the open armory takes the hint's place; the mouse is in use there anyway
+	lh.visible = Game.main and Game.main.lock_failures >= 2 and not pause_armory_plate.visible
+	lh.size = Vector2.ZERO
+	lh.position = Vector2(PAUSE_X, by - 18.0)
 
 
 func _build_death() -> void:
@@ -590,39 +680,146 @@ func _build_death() -> void:
 	var shade := Ui.rect(Color(0.12, 0.0, 0.04, 0.62), Vector2.ZERO, Vector2(480, 270))
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	death_root.add_child(shade)
-	var pair := _shadowed("FLATLINED", Ui.font_big, 24, RED, Color(0.3, 0, 0.05), Vector2(2, 2))
+	var pair := _shadowed("FLATLINED", Ui.font_big, 13, RED, Color(0.3, 0, 0.05), Vector2(1, 1))
 	pair[0].name = "Title"
 	death_root.add_child(pair[0])
-	death_score = Ui.label("", Ui.font_big, 16, Color(Game.palette.neon_c), 2)
+	death_score = Ui.label("", Ui.font_big, 26, Color.WHITE, 2)
 	death_root.add_child(death_score)
-	death_stats = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.85, 0.9), 2)
-	death_stats.add_theme_constant_override("line_spacing", 0)
-	death_root.add_child(death_stats)
-	death_vals = Ui.label("", Ui.font_mono, 9, Color.WHITE, 2)
-	death_vals.add_theme_constant_override("line_spacing", 0)
-	death_root.add_child(death_vals)
-	death_table = Ui.label("", Ui.font_mono, 9, Color(0.95, 0.92, 1.0), 2)
-	death_table.add_theme_constant_override("line_spacing", 0)
-	death_root.add_child(death_table)
-	death_prompt = Ui.label("", Ui.font_bold, 10, Color.WHITE, 2)
-	death_root.add_child(death_prompt)
-	death_blink = death_prompt
-	initials_root = Control.new()
-	initials_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	initials_root.visible = false
-	death_root.add_child(initials_root)
-	initials_label = Ui.label("NEW HIGH SCORE!\nTYPE YOUR INITIALS, THEN ENTER", Ui.font_bold, 10, Color(Game.palette.neon_c), 2)
-	initials_root.add_child(initials_label)
-	for i in 3:
-		var slot := Ui.label("_", Ui.font_big, 24, Color(Game.palette.neon_b), 2)
-		initials_root.add_child(slot)
-		initials_slots.append(slot)
-	level_bar = LevelBar.new()
+	death_best = Ui.label("NEW BEST", Ui.font_bold, 10, CARD_INK)
+	death_best.add_theme_stylebox_override("normal", _chip(GOLD))
+	death_best.visible = false
+	death_root.add_child(death_best)
+	# every stat of the run, names left and numbers right on one plate
+	death_stats_plate = _side_plate()
+	death_root.add_child(death_stats_plate)
+	death_stats = Ui.label("", Ui.font_bold, 10, MenuList.REST)
+	death_stats.add_theme_constant_override("line_spacing", int(RESULTS_ROW) - 16)
+	death_stats.position = Vector2(10, 4)
+	death_stats_plate.add_child(death_stats)
+	death_vals = Ui.label("", Ui.font_bold, 10, Color.WHITE)
+	death_vals.add_theme_constant_override("line_spacing", int(RESULTS_ROW) - 16)
+	death_vals.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	death_vals.position = Vector2(10, 4)
+	death_stats_plate.add_child(death_vals)
+	# the hi-score table, with this run's row lit (and its initials typed in)
+	death_scores_plate = _side_plate()
+	death_root.add_child(death_scores_plate)
+	death_scores_head = Ui.label("HI-SCORES", Ui.font_bold, 10, CYAN)
+	death_scores_head.position = Vector2(10, 4)
+	death_scores_plate.add_child(death_scores_head)
+	for i in SCORE_ROWS:
+		var y := 4.0 + (i + 1) * RESULTS_ROW + 2.0
+		var lit := Ui.rect(Color(GOLD.r, GOLD.g, GOLD.b, 0.25), Vector2(4, y + 2), Vector2(RESULTS_PLATE_W - 8, 13))
+		death_scores_plate.add_child(lit)
+		var row := [lit]
+		# rank and name from the left, score and wave to a right edge
+		for c in [[10.0, MenuList.REST, false], [24.0, Color.WHITE, false], [144.0, Color.WHITE, true], [184.0, MenuList.REST, true]]:
+			var l := Ui.label("", Ui.font_mono, 9, c[1])
+			l.position = Vector2(c[0], y)
+			if c[2]:
+				l.set_meta("right", c[0])
+			death_scores_plate.add_child(l)
+			row.append(l)
+		death_rows.append(row)
+	# the Player Level the run's XP counts into, and the seed to retry or share
+	death_level_plate = _side_plate()
+	death_root.add_child(death_level_plate)
+	level_bar = LevelBar.new(RESULTS_PLATE_W - 20.0)
+	level_bar.position = Vector2(10, 4)
 	level_bar.leveled.connect(_on_player_level)
 	level_bar.finished.connect(_on_level_roll_done)
-	death_root.add_child(level_bar)
+	death_level_plate.add_child(level_bar)
+	death_seed = Ui.label("", Ui.font_bold, 10, MenuList.REST)
+	death_level_plate.add_child(death_seed)
 	run_card = RunCardPanel.new()
 	death_root.add_child(run_card)
+	death_menu = MenuList.new()
+	death_menu.horizontal = true
+	death_menu.current = -1
+	death_menu.add("RETRY SEED", func(): Game.main.restart(true), "R", {"col": CYAN})
+	death_menu.add("NEW RUN", func(): Game.main.restart(false), "CLICK", {"col": Color.WHITE})
+	death_menu.add("RUN CARD", func():
+		if run_card.state == RunCardPanel.State.SAVED:
+			run_card.open_folder()
+		else:
+			run_card.make(), "P")
+	death_menu.add("COPY SEED", copy_seed, "C")
+	death_root.add_child(death_menu)
+
+
+## A small solid chip behind a word ("NEW BEST", "RECOMMENDED").
+func _chip(col: Color) -> StyleBoxFlat:
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = col
+	plate.content_margin_left = 4
+	plate.content_margin_right = 4
+	return plate
+
+
+func _layout_death() -> void:
+	var x0 := roundf((vs.x - RESULTS_W) * 0.5)
+	var t: Label = death_root.get_node("Title")
+	_fit([t, death_score, death_best, death_stats, death_seed])
+	t.position = Vector2(roundf((vs.x - t.size.x) * 0.5), 4)
+	death_score.position = Vector2(roundf((vs.x - death_score.size.x) * 0.5), 24)
+	death_score.pivot_offset = death_score.size * 0.5
+	death_best.position = Vector2(roundf((vs.x - death_best.size.x) * 0.5), 66)
+	var top := 88.0
+	death_stats_plate.position = Vector2(x0, top)
+	death_stats_plate.size = Vector2(RESULTS_PLATE_W, 4.0 + _death_full.size() * RESULTS_ROW + 8.0)
+	death_vals.size = Vector2(RESULTS_PLATE_W - 20.0, 0)
+	var rx := x0 + RESULTS_W - RESULTS_PLATE_W
+	death_scores_plate.position = Vector2(rx, top)
+	death_scores_plate.size = Vector2(RESULTS_PLATE_W, 4.0 + (SCORE_ROWS + 1) * RESULTS_ROW + 5.0)
+	_layout_score_rows()
+	var ly := death_scores_plate.position.y + death_scores_plate.size.y + 6.0
+	death_level_plate.position = Vector2(rx, ly)
+	death_level_plate.size = Vector2(RESULTS_PLATE_W, death_stats_plate.position.y + death_stats_plate.size.y - ly)
+	death_seed.text = "SEED %s" % Game.seed_string(Game.run_seed)
+	death_seed.position = Vector2(10, level_bar.position.y + level_bar.size.y)
+	run_card.place(vs)
+	# P saves a card only once the results have counted up
+	run_card.set_process_unhandled_input(death_ready())
+	death_menu.visible = death_ready()
+	death_menu.position = Vector2(roundf((vs.x - death_menu.size.x) * 0.5), vs.y - 22.0)
+	var card_item := "OPEN FOLDER" if run_card.state == RunCardPanel.State.SAVED else ("SAVING..." if run_card.state == RunCardPanel.State.BUSY else "RUN CARD")
+	death_menu.set_text(D_CARD, card_item)
+	death_menu.set_key(D_CARD, "O" if run_card.state == RunCardPanel.State.SAVED else "P")
+
+
+## The hi-score rows: the top four, or the top three and this run's row
+## when it ranks lower. While initials are typed, they show in the row.
+func _layout_score_rows() -> void:
+	var shown := _scores_shown
+	var rank := Game.last_rank
+	var idx: Array[int] = []
+	for i in SCORE_ROWS:
+		idx.append(i)
+	if rank >= SCORE_ROWS:
+		idx[SCORE_ROWS - 1] = rank
+	var typing := entering and shown
+	death_scores_head.text = "TYPE INITIALS + ENTER" if typing else "HI-SCORES"
+	death_scores_head.add_theme_color_override("font_color", GOLD if typing else CYAN)
+	for r in SCORE_ROWS:
+		var row: Array = death_rows[r]
+		var i: int = idx[r]
+		var have := i < Game.high_scores.size()
+		var e: Dictionary = Game.high_scores[i] if have else {}
+		var name := str(e.get("name", "---")) if have else "---"
+		if typing and i == rank:
+			name = ""
+			for k in 3:
+				name += initials[k] if k < initials.length() else ("_" if (k != initials.length() or fmod(_t, 0.6) < 0.35) else " ")
+		var texts := [str(i + 1), name, "%07d" % int(e.score) if have else "-------", "W%d" % int(e.get("wave", 0)) if have else ""]
+		(row[0] as ColorRect).visible = shown and i == rank and rank >= 0
+		(row[0] as ColorRect).color = Color(GOLD.r, GOLD.g, GOLD.b, 0.25 + (0.15 * sin(_t * 6.0) if typing else 0.0))
+		for c in 4:
+			var l: Label = row[c + 1]
+			l.text = texts[c]
+			l.visible = shown
+			l.size = Vector2.ZERO
+			if l.has_meta("right"):
+				l.position.x = float(l.get_meta("right")) - l.size.x
 
 
 func _build_levelup() -> void:
@@ -637,84 +834,83 @@ func _build_levelup() -> void:
 	var t := Ui.label("LEVEL UP", Ui.font_big, 16, YELLOW, 2)
 	t.name = "Title"
 	levelup_root.add_child(t)
-	var st := Ui.label(LEVELUP_PROMPT, Ui.font_bold, 10, Color(0.85, 0.8, 1.0), 2)
+	var st := Ui.label(LEVELUP_PROMPT, Ui.font_bold, 10, MenuList.REST, 2)
 	st.name = "Sub"
 	levelup_root.add_child(st)
 	for i in 3:
 		var card := Control.new()
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.size = CARD_SIZE
-		var bg := Shard.make(Color(0.03, 0.02, 0.08, 1.0), 12.0, Color(Game.palette.neon_a), Color.WHITE)
-		bg.size = CARD_SIZE
-		bg.shadow_off = Vector2(0, 4)
-		bg.brackets = Color(1, 1, 1, 0.6)
-		bg.bracket_len = 8.0
+		card.size = Vector2(CARD_W, CARD_MIN_H)
+		var bg := Shard.make(Color(0.03, 0.02, 0.07, 0.96), 8.0, Color(0, 0, 0, 0), CARD_EDGE)
+		bg.shadow_off = Vector2(0, 3)
 		bg.name = "Bg"
 		card.add_child(bg)
-		var ribbon := Shard.make(Color.WHITE, 4.0)
-		ribbon.size = Vector2(96, 15)
-		ribbon.position = Vector2(14, 3)
+		# the tag ribbon across the top: the tag left, the card's key right,
+		# dark on the tag's colour
+		var ribbon := Ui.rect(Color.WHITE, Vector2(CARD_PAD, 1), Vector2(CARD_W - CARD_PAD - 1, 15))
 		ribbon.name = "Ribbon"
 		card.add_child(ribbon)
-		# a solid plate under the text: the glow only tints the rim around it,
-		# so nothing shows through behind the words
-		var text_plate := Shard.make(Color(0.012, 0.008, 0.03, 1.0), 8.0)
-		text_plate.position = Vector2(4, 20)
-		text_plate.size = CARD_SIZE - Vector2(8, 24)
-		text_plate.name = "Plate"
-		card.add_child(text_plate)
-		for b in 4:
-			var br := Ui.rect(Color.WHITE, Vector2.ZERO, Vector2.ONE)
-			br.name = "B%d" % b
-			br.visible = false
-			card.add_child(br)
-		# the key sits on the ribbon row, so a long description never reaches it
-		var key := Ui.label("[%d]" % (i + 1), Ui.font_bold, 10, Color(0.75, 0.75, 0.85))
-		key.position = Vector2(CARD_SIZE.x - 40, 2)
-		key.size = Vector2(34, 15)
+		var tag := Ui.label("", Ui.font_bold, 10, CARD_INK)
+		tag.name = "Tag"
+		tag.position = Vector2(CARD_PAD + 4, 1)
+		card.add_child(tag)
+		var key := Ui.label(str(i + 1), Ui.font_bold, 10, CARD_INK)
+		key.position = Vector2(CARD_W - 6 - 20, 1)
+		key.size = Vector2(20, 0)
 		key.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		card.add_child(key)
-		var tag := Ui.label("", Ui.font_bold, 10, Color.WHITE)
-		tag.name = "Tag"
-		tag.position = Vector2(19, 3)
-		card.add_child(tag)
-		# the text sits on the solid plate, so it needs no outline to read
-		var nm := Ui.label("", Ui.font_bold, CARD_NAME_PT, Color.WHITE)
+		var nm := Ui.label("", Ui.font_bold, 10, Color.WHITE)
 		nm.name = "Name"
-		nm.position = Vector2(10, 23)
-		nm.size = Vector2(CARD_TEXT_W, 34)
+		nm.position = Vector2(CARD_PAD, 20)
+		nm.size = Vector2(CARD_W - CARD_PAD * 2, 0)
 		nm.autowrap_mode = TextServer.AUTOWRAP_WORD
+		nm.add_theme_constant_override("line_spacing", CARD_LINE_GAP)
 		card.add_child(nm)
-		var rk := Ui.label("", Ui.font_bold, 11, YELLOW)
+		# rank: a pip per rank, lit up to the rank this pick gives
+		var pips := Control.new()
+		pips.name = "Pips"
+		pips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for k in 3:
+			pips.add_child(Ui.rect(PIP_OFF, Vector2(k * 11, 0), Vector2(8, 3)))
+		card.add_child(pips)
+		var rk := Ui.label("", Ui.font_bold, 10, Color.WHITE)
 		rk.name = "Rank"
-		rk.position = Vector2(10, 56)
 		card.add_child(rk)
-		var desc := Ui.label("", Ui.font_bold, CARD_DESC_PT, Color(0.96, 0.95, 1.0))
+		var desc := Ui.label("", Ui.font_bold, 10, CARD_TEXT)
 		desc.name = "Desc"
-		desc.position = Vector2(10, 72)
-		desc.size = Vector2(CARD_TEXT_W, 80)
+		desc.size = Vector2(CARD_W - CARD_PAD * 2, 0)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+		desc.add_theme_constant_override("line_spacing", CARD_LINE_GAP)
 		card.add_child(desc)
-		# the builds this card belongs to, pinned to the bottom edge
-		var bl := Ui.label("", Ui.font_bold, 10, Color(0.7, 0.7, 0.82))
+		# the builds this card belongs to, over a rule at the bottom edge
+		var rule := Ui.rect(CARD_EDGE, Vector2(CARD_PAD, 0), Vector2(CARD_W - CARD_PAD * 2, 1))
+		rule.name = "Rule"
+		card.add_child(rule)
+		var bl := Ui.label("", Ui.font_bold, 10, MenuList.KEY_DIM)
 		bl.name = "Builds"
-		bl.position = Vector2(10, CARD_SIZE.y - 37)
-		bl.size = Vector2(CARD_TEXT_W, 30)
-		bl.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-		bl.add_theme_constant_override("line_spacing", -2) # two build lines fit the bottom edge
+		bl.position.x = CARD_PAD
+		bl.add_theme_constant_override("line_spacing", CARD_LINE_GAP)
 		card.add_child(bl)
 		# a tab above the card when it links to a card you already own
-		var rec := Ui.label("RECOMMENDED", Ui.font_bold, 10, Color(0.08, 0.04, 0.0))
+		var rec := Ui.label("RECOMMENDED", Ui.font_bold, 10, CARD_INK)
 		rec.name = "Rec"
-		var plate := StyleBoxFlat.new()
-		plate.bg_color = Upgrades.LINK_COLOR
-		plate.content_margin_left = 4
-		plate.content_margin_right = 4
-		rec.add_theme_stylebox_override("normal", plate)
+		rec.add_theme_stylebox_override("normal", _chip(Upgrades.LINK_COLOR))
 		rec.visible = false
 		card.add_child(rec)
 		levelup_root.add_child(card)
 		cards.append(card)
+	# a first click lifts a card; this plate asks for the second
+	var confirm := Ui.label("", Ui.font_bold, 10, Color.WHITE)
+	confirm.name = "Confirm"
+	var plate := StyleBoxFlat.new()
+	plate.bg_color = Color(0.02, 0.01, 0.06, 0.9)
+	plate.border_color = Upgrades.LINK_COLOR
+	plate.set_border_width_all(1)
+	plate.content_margin_left = 8
+	plate.content_margin_right = 8
+	confirm.add_theme_stylebox_override("normal", plate)
+	confirm.visible = false
+	levelup_root.add_child(confirm)
 	cursor = Ui.label("+", Ui.font_big, 8, Color.WHITE, 2)
 	cursor.set_meta("uiaudit_skip", true) # the pointer may pass over anything
 	levelup_root.add_child(cursor)
@@ -726,13 +922,14 @@ func show_title() -> void:
 	_title_hit = false
 	# a suspended run is the default: click carries on, N starts over
 	var snap: Dictionary = Game.main.resume if Game.main else {}
-	if snap.is_empty():
-		title_blink.text = "CLICK TO START"
-	else:
-		title_blink.text = "CLICK  CONTINUE RUN - WAVE %d       N  NEW RUN" % int(snap.get("next_wave", 1))
+	title_menu.set_text(T_START, "START RUN" if snap.is_empty() else "CONTINUE  WAVE %d" % int(snap.get("next_wave", 1)))
+	title_menu.set_visible_item(T_NEW, not snap.is_empty())
+	_title_panel_kind = ""
+	title_menu.current = T_START
+	title_menu.disarm()
+	_refresh_title()
 	title_root.visible = true
 	play_root.visible = false
-	title_quit.disarm()
 
 
 func hide_title() -> void:
@@ -747,19 +944,14 @@ func show_pause(on: bool) -> void:
 	play_root.visible = not on
 	juice.visible = not on
 	juice.process_mode = Node.PROCESS_MODE_PAUSABLE if on else Node.PROCESS_MODE_ALWAYS
-	pause_quit.disarm()
+	pause_menu.disarm()
+	pause_menu.current = P_RESUME
+	pause_armory_plate.visible = false
 	var lines := Upgrades.build_lines(Game.upgrades)
-	var bl: Label = pause_root.get_node("Builds")
+	var bl: Label = pause_builds_plate.get_node("Builds")
 	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
 	if not on:
 		settings_menu.close()
-
-
-func _quit_button(label: String) -> TechButton:
-	var b := TechButton.make(label, Color(Game.palette.neon_b))
-	b.confirm_text = "PRESS AGAIN TO QUIT"
-	b.pressed.connect(Game.quit_game)
-	return b
 
 
 func _open_settings() -> void:
@@ -771,21 +963,30 @@ func _open_settings() -> void:
 func open_seed_entry() -> void:
 	if Game.state != "title" or settings_menu.visible or seed_entry.visible:
 		return
-	title_quit.disarm()
+	title_menu.disarm()
 	seed_entry.open(Game.main != null and not Game.main.resume.is_empty())
 
 
 ## Puts this run's seed on the clipboard, to paste to a friend.
-func copy_seed(btn: TechButton) -> void:
+func copy_seed() -> void:
 	DisplayServer.clipboard_set(Game.seed_string(Game.run_seed))
-	btn.flash("COPIED")
+	if pause_root.visible:
+		pause_copy.flash(0, "COPIED")
+	elif death_root.visible:
+		death_menu.flash(D_COPY, "COPIED")
 	Sfx.play("ui_click", -4.0)
+
+
+## Q on the title: QUIT asks once more, like a click on it.
+func press_title_quit() -> void:
+	title_menu.press(T_QUIT)
 
 
 func show_death() -> void:
 	_death_t = 0.0
 	_death_lines = 0
 	_death_counted = false
+	_scores_shown = false
 	_xp_rolled = false
 	var res: Dictionary = Game.main.results if Game.main else {}
 	level_bar.show_static(int(res.get("level_before", Profile.player_level)), int(res.get("xp_before", Profile.player_xp)))
@@ -796,44 +997,26 @@ func show_death() -> void:
 	death_root.visible = true
 	var mins := int(Game.run_time) / 60
 	var secs := int(Game.run_time) % 60
-	death_score.text = "SCORE  %07d" % Game.score
 	# names and numbers are two columns: padding with spaces drifts by a few
 	# pixels in this font, so the numbers would not line up
 	_death_full = PackedStringArray(["WAVE REACHED", "BOSSES SLAIN", "KILLS", "GLORY KILLS", "HEADSHOT KILLS", "DEFLECTS", "BEST COMBO", "RUN LV", "TIME"])
 	_death_vals_full = PackedStringArray([str(Game.wave), str(Game.bosses_killed), str(Game.kills), str(Game.executions), str(Game.headshots), str(Game.deflects), "x%d" % Game.best_combo, str(Game.level), "%d:%02d" % [mins, secs]])
-	var mpx := Ui.px(Ui.font_mono, 9)
-	_death_cols = Vector2.ZERO
-	for i in _death_full.size():
-		_death_cols.x = maxf(_death_cols.x, Ui.font_mono.get_string_size(_death_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
-		_death_cols.y = maxf(_death_cols.y, Ui.font_mono.get_string_size(_death_vals_full[i], HORIZONTAL_ALIGNMENT_LEFT, -1, mpx).x)
 	entering = Game.last_rank >= 0 and not Game.debug_autoplay
 	initials = ""
-	initials_root.visible = false # shown once the score has counted up
-	death_table.visible = false
-	if not entering:
-		death_table.text = "HI-SCORES\n" + _score_table(-1, 8)
+	death_best.visible = false
 	death_stats.text = ""
 	death_vals.text = ""
-	death_score.text = "SCORE  %07d" % 0
+	death_score.text = "%07d" % 0
+	death_menu.disarm()
 	run_card.reset()
-	_update_initials()
-
-
-func _update_initials() -> void:
-	for i in 3:
-		var ch := initials[i] if i < initials.length() else ("_" if (i != initials.length() or fmod(_t, 0.6) < 0.35) else " ")
-		initials_slots[i].text = ch
 
 
 func _finish_initials() -> void:
 	var tag := initials
 	while tag.length() < 3:
 		tag += "-"
-	var rank := Game.submit_score(tag)
+	Game.submit_score(tag)
 	entering = false
-	initials_root.visible = false
-	death_table.visible = true
-	death_table.text = "HI-SCORES\n" + _score_table(rank, 8)
 	_death_t = maxf(_death_t, 0.8)
 	Sfx.play("coin", -2.0)
 	juice.add_shake(3.0)
@@ -854,7 +1037,7 @@ func _death_countup() -> void:
 	death_vals.text = "\n".join(_death_vals_full.slice(0, _death_lines))
 	var k := clampf((_death_t - 0.8) / 1.2, 0.0, 1.0)
 	var shown := int(Game.score * (k * k * (3.0 - 2.0 * k)))
-	death_score.text = "SCORE  %07d" % shown
+	death_score.text = "%07d" % shown
 	death_score.pivot_offset = death_score.size * 0.5
 	if k > 0.0 and k < 1.0:
 		_roll_tick_t -= Game.real_dt
@@ -868,13 +1051,12 @@ func _death_countup() -> void:
 		juice.add_shake(8.0)
 		juice.burst(death_score.position + death_score.size * 0.5, Color(Game.palette.neon_c), 60, 140.0)
 		_score_bump = 1.0
+		_scores_shown = true
+		death_best.visible = Game.last_rank == 0 and Game.score > 0
 		if entering:
-			initials_root.visible = true
 			Sfx.play("highscore", -2.0)
 			juice.firework(Vector2(vs.x * 0.25, vs.y * 0.3), Color(Game.palette.neon_a))
 			juice.later(0.25, func(): juice.firework(Vector2(vs.x * 0.75, vs.y * 0.28), Color(Game.palette.neon_b)))
-		else:
-			death_table.visible = true
 	# then, once any initials are in, the run's XP counts into the Player
 	# Level bar (spec §11.1)
 	if _death_t > 2.1 and not _xp_rolled and not entering:
@@ -1046,45 +1228,77 @@ func show_levelup(choices: Array, cb: Callable) -> void:
 		if Upgrades.is_recommended(choices[i].id, Game.upgrades):
 			juice.later(0.2 + i * 0.11, func(): Sfx.play("chime", -5.0, 1.25, 0.0))
 	juice.later(0.06, func(): juice.add_shake(3.0))
+	var h := CARD_MIN_H
 	for i in cards.size():
 		var card: Control = cards[i]
 		card.visible = i < choices.size()
 		if i >= choices.size():
 			continue
-		var u: Dictionary = choices[i]
-		var col: Color = Upgrades.TAG_COLORS.get(u.tag, Color.WHITE)
-		card.get_node("Tag").text = u.tag
-		card.get_node("Tag").add_theme_color_override("font_color", col)
-		card.get_node("Name").text = u.name
-		var r := Game.rank(u.id)
-		var pips := ""
-		for k in u.max:
-			pips += "#" if k <= r else "-"
-		# single-pick cards skip the rank line to leave room for the text
-		card.get_node("Rank").text = "RANK %s   %s" % [str(r + 1), pips] if u.max > 1 else ""
-		card.get_node("Desc").text = u.desc
-		var rec := Upgrades.is_recommended(u.id, Game.upgrades)
-		var lit: Label = card.get_node("Rec")
-		lit.visible = rec
-		lit.size = Vector2.ZERO
-		lit.position = Vector2(roundf((CARD_SIZE.x - lit.get_minimum_size().x) * 0.5), -lit.get_minimum_size().y)
-		# each build line counts what you would own after this pick
-		var after := Game.upgrades.duplicate()
-		after[u.id] = Game.rank(u.id) + 1
-		var lines := []
-		for b in Upgrades.builds_of(u.id):
-			lines.append("%s %d/3" % [b.name, Upgrades.build_count(b, after)])
+		h = maxf(h, _fill_card(card, choices[i]))
+	# every card takes the tallest card's height, the builds on its bottom edge
+	for card: Control in cards:
+		card.size.y = h
+		(card.get_node("Bg") as Shard).size = card.size
 		var bl: Label = card.get_node("Builds")
-		bl.text = "\n".join(lines)
-		bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else Color(0.7, 0.7, 0.82))
-		card.set_meta("rec", rec)
-		# the rank and description sit under the name, which may take two lines
-		var nm: Label = card.get_node("Name")
-		nm.size = Vector2(CARD_TEXT_W, 0)
-		var ry := nm.position.y + nm.get_minimum_size().y
-		card.get_node("Rank").position.y = ry
-		card.get_node("Desc").position.y = ry + (18.0 if u.max > 1 else 3.0)
-		card.set_meta("col", col)
+		bl.position.y = h - 6.0 - _lines_h(bl)
+		var rule: ColorRect = card.get_node("Rule")
+		rule.visible = bl.text != ""
+		rule.position.y = bl.position.y - 2.0
+	levelup_root.get_node("Confirm").visible = false
+
+
+## Writes one augment onto a card; returns the height its text needs.
+func _fill_card(card: Control, u: Dictionary) -> float:
+	var col: Color = Upgrades.TAG_COLORS.get(u.tag, Color.WHITE)
+	(card.get_node("Ribbon") as ColorRect).color = col
+	card.get_node("Tag").text = u.tag
+	var nm: Label = card.get_node("Name")
+	nm.text = u.name
+	var y := nm.position.y + _lines_h(nm)
+	# the rank this pick gives, for cards taken more than once
+	var r := Game.rank(u.id)
+	var pips: Control = card.get_node("Pips")
+	var rk: Label = card.get_node("Rank")
+	pips.visible = u.max > 1
+	rk.visible = u.max > 1
+	if u.max > 1:
+		for k in 3:
+			var p: ColorRect = pips.get_child(k)
+			p.visible = k < u.max
+			p.color = col if k <= r else PIP_OFF
+		rk.text = "RANK %d" % (r + 1)
+		rk.add_theme_color_override("font_color", col)
+		pips.position = Vector2(CARD_PAD, y + 5.0)
+		rk.position = Vector2(CARD_PAD + u.max * 11 + 3, y - 1.0)
+		y += 15.0
+	var desc: Label = card.get_node("Desc")
+	desc.text = u.desc
+	desc.position = Vector2(CARD_PAD, y + 4.0)
+	y = desc.position.y + _lines_h(desc)
+	var rec := Upgrades.is_recommended(u.id, Game.upgrades)
+	var tab: Label = card.get_node("Rec")
+	tab.visible = rec
+	tab.size = Vector2.ZERO
+	tab.position = Vector2(roundf((CARD_W - tab.size.x) * 0.5), -tab.size.y)
+	# each build line counts what you would own after this pick
+	var after := Game.upgrades.duplicate()
+	after[u.id] = Game.rank(u.id) + 1
+	var lines := []
+	for b in Upgrades.builds_of(u.id):
+		lines.append("%s %d/3" % [b.name, Upgrades.build_count(b, after)])
+	var bl: Label = card.get_node("Builds")
+	bl.text = "\n".join(lines)
+	bl.add_theme_color_override("font_color", Upgrades.LINK_COLOR if rec else MenuList.KEY_DIM)
+	card.set_meta("rec", rec)
+	card.set_meta("col", col)
+	var builds_h := _lines_h(bl) + 10.0 if not lines.is_empty() else 0.0
+	return ceilf(y + 8.0 + builds_h)
+
+
+## The height of a label's text lines, without the gap after the last.
+static func _lines_h(l: Label) -> float:
+	var gap := l.get_theme_constant("line_spacing")
+	return l.get_line_count() * (l.get_line_height() + gap) - gap
 
 
 func hide_levelup() -> void:
@@ -1093,7 +1307,7 @@ func hide_levelup() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if entering and death_root.visible and initials_root.visible:
+	if entering and death_root.visible and _scores_shown:
 		if event is InputEventKey and event.pressed and not event.echo:
 			var kc: int = event.physical_keycode
 			if kc == KEY_ENTER or kc == KEY_KP_ENTER:
@@ -1110,7 +1324,6 @@ func _input(event: InputEvent) -> void:
 				if ch != "":
 					initials += ch
 					Sfx.play("type", -6.0)
-			_update_initials()
 			get_viewport().set_input_as_handled()
 		return
 	if levelup_root.visible:
@@ -1162,11 +1375,10 @@ func _select(i: int) -> void:
 	_selected = i
 	if i >= 0:
 		Sfx.play("ui_hover", -4.0, 1.3, 0.0)
-	var st: Label = levelup_root.get_node("Sub")
-	if i < 0:
-		st.text = LEVELUP_PROMPT
-	else:
-		st.text = "TAKE %s?   CLICK IT AGAIN, OR PRESS %d OR ENTER" % [_choices[i].name, i + 1]
+	var cf: Label = levelup_root.get_node("Confirm")
+	cf.visible = i >= 0
+	if i >= 0:
+		cf.text = "TAKE %s?  CLICK AGAIN OR PRESS %d" % [_choices[i].name, i + 1]
 
 
 ## Picking punches the chosen card and drops the others, then applies it.
@@ -1412,135 +1624,79 @@ func _process(_delta: float) -> void:
 	if title_root.visible:
 		_layout_title()
 	if pause_root.visible:
-		_layout_center(pause_root, ["Title", "Click"], [-30, 0])
-		sens_label.text = "MOUSE SENSITIVITY  %.1f   ([ and ] to change)" % (Game.mouse_sensitivity / 0.0024)
-		sens_label.position = Vector2((vs.x - sens_label.size.x) * 0.5, vs.y * 0.5 + 22)
-		var sd: Label = pause_root.get_node("Seed")
-		sd.text = "SEED %s" % Game.seed_string(Game.run_seed)
-		sd.size = Vector2.ZERO
-		var sx := roundf((vs.x - sd.size.x - 6.0 - pause_copy.size.x) * 0.5)
-		sd.position = Vector2(sx, vs.y * 0.5 + 40)
-		pause_copy.position = Vector2(sx + sd.size.x + 6.0, roundf(sd.position.y + (sd.size.y - pause_copy.size.y) * 0.5))
-		var lh: Label = pause_root.get_node("LockHint")
-		lh.visible = Game.main and Game.main.lock_failures >= 2
-		lh.size = Vector2.ZERO
-		lh.position = Vector2((vs.x - lh.size.x) * 0.5, vs.y * 0.5 + 62)
-		pause_armory.position = Vector2(8, vs.y - pause_armory.size.y - 6)
-		pause_settings.position = Vector2(roundf((vs.x - pause_settings.size.x) * 0.5), vs.y * 0.5 + 84)
-		pause_quit.position = Vector2(roundf((vs.x - pause_quit.size.x) * 0.5), pause_settings.position.y + 20)
+		_layout_pause()
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
-		run_card.visible = death_ready()
-		run_card.place(vs)
-		var t: Label = death_root.get_node("Title")
-		t.size = Vector2.ZERO
-		t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.05)
-		_fit([death_score, death_table, death_prompt, initials_label])
-		# each line sits under the real height of the one above (the label
-		# boxes include empty space under capitals, so they tuck in a little)
-		death_score.position = Vector2((vs.x - death_score.size.x) * 0.5, t.position.y + t.size.y - 6)
-		# column widths come from the full text, so nothing shifts as lines appear
-		_fit([death_stats, death_vals])
-		var stats_w := _death_cols.x + 12.0 + _death_cols.y
-		var col_w := stats_w + 32.0 + maxf(death_table.size.x, 190.0)
-		var x0 := (vs.x - col_w) * 0.5
-		level_bar.position = Vector2(roundf((vs.x - level_bar.size.x) * 0.5), roundf(death_score.position.y + death_score.size.y))
-		var y0 := level_bar.position.y + level_bar.size.y + 4
-		death_stats.position = Vector2(x0, y0)
-		death_vals.position = Vector2(x0 + _death_cols.x + 12.0, y0)
-		death_table.position = Vector2(x0 + stats_w + 32.0, y0)
-		if entering:
-			_update_initials()
-			initials_root.position = Vector2(x0 + stats_w + 32.0, y0)
-			initials_label.position = Vector2.ZERO
-			for i in 3:
-				initials_slots[i].position = Vector2(i * 30, initials_label.size.y + 4)
-		death_prompt.text = "CLICK  NEW RUN        R  RETRY SEED %s" % Game.seed_string(Game.run_seed)
-		# a soft pulse instead of a blink: readable on every frame
-		death_prompt.visible = death_ready()
-		death_prompt.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
-		# the prompt and the COPY SEED button share the bottom line
-		death_copy.visible = death_prompt.visible
-		var px := roundf((vs.x - death_prompt.size.x - 8.0 - death_copy.size.x) * 0.5)
-		death_prompt.position = Vector2(px, vs.y - 22)
-		death_copy.position = Vector2(px + death_prompt.size.x + 8.0, roundf(death_prompt.position.y + (death_prompt.size.y - death_copy.size.y) * 0.5))
+		_layout_death()
 	if levelup_root.visible:
 		_layout_levelup()
 	if play_root.visible:
 		_update_play(delta)
 
 
-func _layout_center(node: Control, names: Array, offsets: Array) -> void:
-	for i in names.size():
-		var l: Control = node.get_node(names[i])
-		l.position = Vector2((vs.x - l.size.x) * 0.5, vs.y * 0.5 + offsets[i])
-
-
 func _layout_title() -> void:
-	var fit_list: Array = []
-	fit_list.append_array(title_labels)
-	fit_list.append_array([title_hi, title_scores, title_seed, title_version, title_blink, title_root.get_node("Sub")])
-	_fit(fit_list)
-	var y := vs.y * 0.1
+	_fit([title_best, title_version, title_scores])
 	# logo: KATANA flies in from the left, SHOTGUN from the right, then the
-	# slash cuts down between them
+	# slash cuts down in front of SHOTGUN
 	_title_t += Game.real_dt
 	var tt := _title_t
-	var gap := 30.0
-	var lw := logo_k.size.x + gap + logo_s.size.x
-	var lx0 := (vs.x - lw) * 0.5
-	var ly := y - 4.0
+	var x0 := TITLE_X
 	var kin := Juice.ease_out(tt / 0.3)
-	logo_k.position = Vector2(lx0 - (1.0 - kin) * 300.0, ly).round()
-	logo_s.position = Vector2(lx0 + logo_k.size.x + gap + (1.0 - kin) * 300.0, ly + 4).round()
-	logo_band.position = Vector2(lx0 - 18, ly - 8)
-	logo_band.size = Vector2(lw + 36, logo_k.size.y + 16)
+	var pad := logo_k._pad()
+	var ky := 18.0
+	var sy := ky + LOGO_LINE
+	logo_k.position = Vector2(x0 - pad.x - (1.0 - kin) * 300.0, ky).round()
+	logo_s.position = Vector2(x0 + SLASH_W + 6.0 - pad.x + (1.0 - kin) * 300.0, sy).round()
+	var cap_top := sy + pad.y + LOGO_CAP_TOP
 	var sk := clampf((tt - 0.32) / 0.07, 0.0, 1.0)
 	logo_slash.visible = tt > 0.32
-	# the slash stops above the subtitle line
-	logo_slash.size = Vector2(22, (logo_k.size.y + 22) * sk)
-	logo_slash.position = Vector2(lx0 + logo_k.size.x + gap * 0.5 - 11, ly - 12)
+	logo_slash.size = Vector2(SLASH_W, LOGO_CAP * sk)
+	logo_slash.position = Vector2(x0, cap_top)
 	if tt > 0.39 and not _title_hit:
 		_title_hit = true
 		Sfx.play("swing2", -3.0, 1.1)
 		Sfx.play("slice", -2.0)
 		juice.add_shake(6.0)
 		juice.speed_lines(0.8, 0.1)
-		juice._shards.burst(logo_slash.position + Vector2(13, logo_slash.size.y * 0.5), Color(Game.palette.neon_a), 16, 260.0, true)
-	if fmod(_t, 3.1) < 0.06:
-		logo_slash.color = Color(Game.palette.neon_b)
-	else:
-		logo_slash.color = Color.WHITE
-	var sub_l: Label = title_root.get_node("Sub")
-	sub_l.position = Vector2((vs.x - sub_l.size.x) * 0.5, logo_band.position.y + logo_band.size.y + 3)
-	# the persistent Player Level under the subtitle (spec §11.1)
-	title_level.position = Vector2(roundf((vs.x - title_level.size.x) * 0.5), sub_l.position.y + sub_l.size.y + 3)
-	# two columns: how to play | hi-scores over the armory
-	var left_w := 0.0
-	for i in range(6, title_labels.size()):
-		left_w = maxf(left_w, title_labels[i].size.x)
-	var right_w := maxf(maxf(title_scores.size.x, title_hi.size.x), armory.size.x)
-	var total := left_w + 28.0 + right_w
-	var lx := (vs.x - total) * 0.5
-	var top := title_level.position.y + title_level.size.y + 5
-	for i in range(6, title_labels.size()):
-		var l: Label = title_labels[i]
-		var row: int = l.get_meta("row")
-		l.position = Vector2(lx, top + row * 15)
-	title_hi.position = Vector2(lx + left_w + 28.0, top - 2)
-	title_scores.position = Vector2(lx + left_w + 28.0, top + 16)
-	armory.position = Vector2(lx + left_w + 28.0, title_scores.position.y + title_scores.size.y + 4)
-	title_seed.position = Vector2((vs.x - title_seed.size.x) * 0.5, vs.y - 48)
-	# bottom row: SETTINGS left, version and QUIT right; the start prompt sits
-	# just above it, so even the long continue-run prompt clears both buttons
-	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 4)
-	title_play_seed.position = Vector2(title_settings.position.x + title_settings.size.x + 6, title_settings.position.y)
-	title_quit.position = Vector2(vs.x - title_quit.size.x - 8, title_settings.position.y)
-	title_version.position = Vector2(title_quit.position.x - title_version.size.x - 6,
-		roundf(title_quit.position.y + (title_quit.size.y - title_version.size.y) * 0.5))
-	title_blink.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
-	title_blink.position = Vector2((vs.x - title_blink.size.x) * 0.5, title_settings.position.y - title_blink.size.y)
+		juice._shards.burst(logo_slash.position + Vector2(SLASH_W * 0.5, LOGO_CAP * 0.5), Color(Game.palette.neon_a), 16, 260.0, true)
+	logo_slash.color = Color.WHITE if fmod(_t, 3.1) < 0.06 else Color(Game.palette.neon_a)
+	# the menu under the logo, the side panel beside it
+	title_menu.position = Vector2(x0, cap_top + LOGO_CAP + 18.0).round()
+	_layout_title_panel()
+	# bottom row: best and level left (the XP as a hairline under it), version right
+	var by := vs.y - 22.0
+	title_best.position = Vector2(x0, by)
+	var need := Progression.xp_to_next(Profile.player_level)
+	title_xp_bg.position = Vector2(x0, _text_bottom(title_best) + 2.0)
+	title_xp_bg.size = Vector2(title_best.size.x, 2)
+	title_xp_fill.position = title_xp_bg.position
+	title_xp_fill.size = Vector2(roundf(title_best.size.x * clampf(Profile.player_xp / float(need), 0.0, 1.0)), 2)
+	title_version.position = Vector2(vs.x - 8.0 - title_version.size.x, by)
+
+
+func _layout_title_panel() -> void:
+	title_panel.visible = _title_panel_kind != ""
+	if not title_panel.visible:
+		return
+	title_scores.visible = _title_panel_kind == "scores"
+	armory.visible = _title_panel_kind == "armory"
+	title_howto.visible = _title_panel_kind == "howto"
+	var inner := Vector2.ZERO
+	match _title_panel_kind:
+		"scores":
+			inner = title_scores.size
+		"armory":
+			inner = armory.size
+		"howto":
+			for l: Label in title_howto.get_children():
+				l.size = Vector2.ZERO
+				inner = Vector2(maxf(inner.x, l.position.x + l.size.x), l.position.y + l.size.y)
+	var pad := Vector2(10, 6)
+	for c: Control in [title_scores, armory, title_howto]:
+		c.position = pad
+	title_panel.size = (inner + pad * 2.0).round()
+	title_panel.position = Vector2(title_menu.position.x + TITLE_MENU_W + 16.0, title_menu.position.y - pad.y).round()
 
 
 func _layout_levelup() -> void:
@@ -1553,21 +1709,22 @@ func _layout_levelup() -> void:
 	t.pivot_offset = t.size * 0.5
 	var tk := clampf(_deal_t / 0.1, 0.0, 1.0)
 	t.scale = Vector2.ONE * (lerpf(2.6, 1.0, tk * tk) if tk < 1.0 else 1.0 - 0.12 * sin((_deal_t - 0.1) * 30.0) * exp(-(_deal_t - 0.1) * 9.0))
-	t.rotation = 0.0
-	t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.5 - 119)
+	t.position = Vector2(roundf((vs.x - t.size.x) * 0.5), 6)
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2((vs.x - st.size.x) * 0.5, vs.y * 0.5 - 100)
+	st.position = Vector2(roundf((vs.x - st.size.x) * 0.5), 32)
 	var n := _choices.size()
-	var total := n * CARD_SIZE.x + (n - 1) * CARD_GAP
+	var total := n * CARD_W + (n - 1) * CARD_GAP
+	var bottom := CARD_TOP
 	for i in cards.size():
 		var card: Control = cards[i]
 		if not card.visible:
 			continue
 		var hov := i == hovered and _picked < 0
 		var sel := i == _selected and _picked < 0
-		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_SIZE.x + CARD_GAP), vs.y * 0.5 - 64).round()
+		var base := Vector2((vs.x - total) * 0.5 + i * (CARD_W + CARD_GAP), CARD_TOP).round()
 		card.set_meta("base", base)
+		bottom = maxf(bottom, base.y + card.size.y)
 		# deal in from below with a spin, then hold still: once dealt a card is
 		# never rotated or scaled, so its pixel text stays sharp (§9.9)
 		var dk := clampf((_deal_t - (0.06 + i * 0.11)) / 0.3, 0.0, 1.0)
@@ -1594,37 +1751,25 @@ func _layout_levelup() -> void:
 		card.scale = Vector2.ONE * sc
 		card.rotation = rot
 		card.position = base + Vector2(0, roundf(off_y))
+		# the outline: white when chosen, gold when it links to your build,
+		# the tag's colour while pointed at
 		var col: Color = card.get_meta("col", Color.WHITE)
-		var bcol := col if hov else col.darkened(0.45)
-		if card.get_meta("rec", false):
-			bcol = Upgrades.LINK_COLOR if hov else Upgrades.LINK_COLOR.darkened(0.2)
-		var w := card.size.x
-		var h := card.size.y
-		var b0: ColorRect = card.get_node("B0")
-		var b1: ColorRect = card.get_node("B1")
-		var b2: ColorRect = card.get_node("B2")
-		var b3: ColorRect = card.get_node("B3")
-		b0.position = Vector2.ZERO
-		b0.size = Vector2(w, 1)
-		b1.position = Vector2(0, h - 1)
-		b1.size = Vector2(w, 1)
-		b2.position = Vector2.ZERO
-		b2.size = Vector2(1, h)
-		b3.position = Vector2(w - 1, 0)
-		b3.size = Vector2(1, h)
-		for b in [b0, b1, b2, b3]:
-			b.color = bcol
 		var bg: Shard = card.get_node("Bg")
-		var glow := 0.3 if sel else (0.18 if hov else 0.0)
-		if i == _picked:
-			glow = 0.85 * exp(-_pick_t * 6.0) + 0.25
-		bg.color = Color(0.06, 0.03, 0.1, 0.95).lerp(Color(col.r, col.g, col.b, 0.95), glow)
-		bg.outline = Color.WHITE if (hov or sel) else bcol
-		bg.shadow = col if hov else col.darkened(0.5)
-		var rib: Shard = card.get_node("Ribbon")
-		rib.color = col
-		var tg: Label = card.get_node("Tag")
-		tg.add_theme_color_override("font_color", Color(0.02, 0, 0.03))
+		var edge := CARD_EDGE
+		if card.get_meta("rec", false):
+			edge = Upgrades.LINK_COLOR
+		if hov:
+			edge = col
+		if sel or i == _picked:
+			edge = Color.WHITE
+		bg.outline = edge
+		bg.shadow = col.darkened(0.5) if (hov or sel) else Color(0, 0, 0, 0)
+		var glow := 0.6 * exp(-_pick_t * 6.0) if i == _picked else 0.0
+		bg.color = Color(0.03, 0.02, 0.07, 0.96).lerp(Color(col.r, col.g, col.b, 0.96), glow)
+	var cf: Label = levelup_root.get_node("Confirm")
+	cf.visible = _selected >= 0 and _picked < 0
+	cf.size = Vector2.ZERO
+	cf.position = Vector2(roundf((vs.x - cf.size.x) * 0.5), minf(bottom + 10.0, vs.y - cf.size.y - 4.0))
 	cursor.position = cursor_pos - Vector2(4, 4)
 
 
@@ -1856,7 +2001,8 @@ func _update_play(delta: float) -> void:
 		l.size = Vector2.ZERO
 		l.pivot_offset = Vector2(0, l.size.y * 0.5)
 		l.scale = Vector2.ONE * lerpf(1.4, 1.0, Juice.ease_out(k))
-		l.position = Vector2(px0, roundf(pp.y))
+		# a long one ("GASHADOKURO BURST ONLINE") moves in to stay on screen
+		l.position = Vector2(minf(px0, vs.x - 8.0 - l.size.x), roundf(pp.y))
 		var bright := 1.0 + 0.6 * exp(-pp.t * 16.0)
 		l.modulate = Color(bright, bright, bright, clampf((POPUP_LEN - pp.t) / 0.3, 0.0, 1.0))
 		i += 1

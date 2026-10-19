@@ -1,10 +1,9 @@
 class_name RunCardPanel
 extends Control
-## The run card's corner of the results screen (spec §19.1 #10): a SAVE RUN
-## CARD button (or P, for picture), then where the card went and an OPEN
-## FOLDER button (or O) that shows it in the file manager, ready to drag
-## into a chat.
-## The HUD shows it once the results have counted up.
+## The run card on the results screen (spec §19.1 #10): P (picture) or the
+## results row's RUN CARD saves it, then a note in the top right corner says
+## where it went, and O or OPEN FOLDER shows it in the file manager, ready to
+## drag into a chat. The HUD's results row carries the words to click.
 
 enum State { IDLE, BUSY, SAVED, FAILED }
 
@@ -13,19 +12,11 @@ const FAIL_COLOR := Color(1.0, 0.35, 0.35)
 
 var state := State.IDLE
 var path := "" # the saved card's full path
-var save_button: TechButton
-var open_button: TechButton
 var note: Label
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	save_button = TechButton.make("SAVE RUN CARD  [P]", Color(Game.palette.neon_b))
-	save_button.pressed.connect(make)
-	add_child(save_button)
-	open_button = TechButton.make("OPEN FOLDER  [O]", Color(Game.palette.neon_a))
-	open_button.pressed.connect(open_folder)
-	add_child(open_button)
 	note = Ui.label("", Ui.font_bold, 10, SAVED_COLOR, 2)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(note)
@@ -41,7 +32,7 @@ func reset() -> void:
 
 ## Draws the card and saves it. Once saved, pressing again changes nothing.
 func make() -> void:
-	if state != State.IDLE or not is_visible_in_tree():
+	if state == State.BUSY or state == State.SAVED or not is_visible_in_tree():
 		return
 	state = State.BUSY
 	Sfx.play("ui_click", -4.0)
@@ -73,8 +64,6 @@ func open_folder() -> void:
 
 
 func _show() -> void:
-	save_button.visible = state == State.IDLE
-	open_button.visible = state == State.SAVED
 	note.visible = state != State.IDLE
 	match state:
 		State.BUSY:
@@ -88,17 +77,13 @@ func _show() -> void:
 			note.add_theme_color_override("font_color", FAIL_COLOR)
 
 
-## Top right of the results screen, beside the FLATLINED title (the rest
-## of the screen is full): the button, and once saved the note under it.
+## The note goes in the top right corner of the results screen, beside the
+## FLATLINED title, clear of the score and the plates.
 func place(vs: Vector2) -> void:
 	position = Vector2.ZERO
 	size = vs
 	note.size = Vector2.ZERO
-	var right := vs.x - 6.0
-	save_button.position = Vector2(roundf(right - save_button.size.x), 6)
-	open_button.position = Vector2(roundf(right - open_button.size.x), 6)
-	var y := 6.0 if state != State.SAVED else 24.0
-	note.position = Vector2(roundf(right - note.size.x), y)
+	note.position = Vector2(roundf(vs.x - 6.0 - note.size.x), 4)
 
 
 func _unhandled_input(event: InputEvent) -> void:

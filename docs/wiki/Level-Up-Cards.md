@@ -7,9 +7,9 @@ style.
 
 ## How picking works
 
-- **Click a card (or press 1, 2 or 3) to select it.** It lifts and its border
-  lights. **Click it again, press the same key again, or press Enter** to
-  take it. Clicks from the fight in the first instant after the cards appear
+- **Click a card (or press 1, 2 or 3) to select it.** It lifts, its outline
+  turns white and a box under the cards asks **TAKE ...?**. **Click it again,
+  press the same key again, or press Enter** to take it. Clicks from the fight in the first instant after the cards appear
   are ignored, so you can't grab one by accident.
 - Some cards have **ranks** (shown as "max 2" or "max 3" below). Picking one
   again ranks it up.
@@ -19,7 +19,8 @@ style.
   it (while one is left).
 - The bottom of each card names its builds and the count you'd have after
   picking it, such as **RONIN 2/3**. Picking the second card of a build says
-  **LINKED**, the third **COMPLETE**. The pause screen lists your builds.
+  **LINKED**, the third **COMPLETE**. The pause screen lists your builds in
+  its top right corner.
 - The hands you're dealt come from your [seed](Seeds): the same seed and the
   same picks give the same cards.
 

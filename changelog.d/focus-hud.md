@@ -4,4 +4,4 @@
 - Your combo and the F prompt sit under the frame; kill tags (HEADSHOT, RETURN TO SENDER...) stack just right of it.
 - Every kind of message has its own place and a new one replaces the old: big moments like X10 COMBO and KAMAE BROKEN just under the top row, warnings and hints at the bottom centre (warnings in red).
 - The wave intro, the boss's name card and the cut-ins now show near the top of the screen, clear of your crosshair. The boss reward card deals in at the bottom.
-- The best score is no longer on the fight screen (the title, pause and results screens show it); NEW HI-SCORE still flashes when you pass it.
+- The best score is no longer on the fight screen (the title and results screens show it); NEW HI-SCORE still flashes when you pass it.
