@@ -1319,6 +1319,8 @@ func _process(_delta: float) -> void:
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
+		run_card.visible = death_ready()
+		run_card.place(vs)
 		var t: Label = death_root.get_node("Title")
 		t.size = Vector2.ZERO
 		t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.05)
@@ -1347,8 +1349,6 @@ func _process(_delta: float) -> void:
 		death_prompt.visible = death_ready()
 		death_prompt.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
 		death_prompt.position = Vector2((vs.x - death_prompt.size.x) * 0.5, vs.y - 22)
-		run_card.visible = death_ready()
-		run_card.place(vs)
 	if levelup_root.visible:
 		_layout_levelup()
 	if play_root.visible:

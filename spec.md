@@ -1394,7 +1394,7 @@ the holographic cut-in (§9.8).
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
   confirms; blanks become "-"), then the table appears with the new entry
   highlighted. **R** retries the same seed; a click or Enter starts a new
-  seed. **C** (or the SAVE RUN CARD button, top right) saves a run card
+  seed. **P** (or the SAVE RUN CARD button, top right) saves a run card
   (§19.1 #10).
 
 ### 7.5 Seeds
@@ -2699,20 +2699,20 @@ the title screen first (today a friend's seed needs a shortcut edit).
    the Pictures folder: seed code, score, wave, builds, bosses felled and
    the run's best moment, in the game's style. No internet.
    **BUILT (2026-10-19), awaiting the owner's verdict.** Once the results
-   have counted up, **C** or the SAVE RUN CARD button (top right) saves a
-   1920x1080 PNG to `Pictures\KatanaShotgun\` (the save folder's
-   `run_cards` if there is no Pictures folder); the corner then says where
-   it went and OPEN FOLDER (or **O**) shows it in the file manager, ready to
-   drag into a chat. The card is drawn at the UI's 480x270 and scaled 4x
-   with hard pixels: the run's palette as a dithered sky, striped sun,
-   skyline and floor grid, then dark plates holding the score, wave, best
-   combo, kills, glory kills, time, bosses felled, builds linked (2/3) or
-   complete, the best moment (the run's biggest end-of-wave payout, else
-   its best combo), initials and table place if the run made the top 10,
-   Player Level, map, version and the seed as `XXXX-XXXX` in the pixel face
-   (0 and D never look alike), the form the title's seed box takes. The
-   skyline comes from the seed through its own RNG, never the run's
-   streams. Code: `scripts/ui/run_card.gd`, `run_card_panel.gd`; check with
+   have counted up, **P** (for picture) or the SAVE RUN CARD button (top
+   right) saves a 1920x1080 PNG to `Pictures\KatanaShotgun\` (the save
+   folder's `run_cards` if there is no Pictures folder); the corner then
+   says where it went and OPEN FOLDER (or **O**) shows it in the file
+   manager, ready to drag into a chat. The card is drawn at the UI's 480x270
+   and scaled 4x with hard pixels: the run's palette as a dithered sky,
+   striped sun, skyline and floor grid, then dark plates holding the score,
+   wave, best combo, kills, glory kills, time, bosses felled, builds linked
+   (2/3) or complete, the best moment (the run's biggest end-of-wave payout,
+   else its best combo), initials and table place if the run made the top
+   10, Player Level, map, version and the seed as `XXXX-XXXX` in the pixel
+   face (0 and D never look alike), the form the title's seed box takes. The
+   skyline comes from the seed through its own RNG, never the run's streams.
+   Code: `scripts/ui/run_card.gd`, `run_card_panel.gd`; check with
    `--runcard` (§16).
 
 

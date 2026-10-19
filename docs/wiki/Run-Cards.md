@@ -10,7 +10,7 @@ one image. The game stays fully offline; you send the picture yourself.
 
 1. When a run ends, wait for the results screen to finish counting up (and
    type your initials if you made the high-score table).
-2. Press **C**, or click **SAVE RUN CARD** in the top right corner.
+2. Press **P** (for picture), or click **SAVE RUN CARD** in the top right corner.
 3. The corner says **RUN CARD SAVED**. Press **O**, or click
    **OPEN FOLDER**, to open the folder with your card picked out, ready to
    drag into a chat.

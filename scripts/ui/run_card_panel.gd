@@ -1,8 +1,9 @@
 class_name RunCardPanel
 extends Control
 ## The run card's corner of the results screen (spec §19.1 #10): a SAVE RUN
-## CARD button (or C), then where the card went and an OPEN FOLDER button
-## (or O) that shows it in the file manager, ready to drag into a chat.
+## CARD button (or P, for picture), then where the card went and an OPEN
+## FOLDER button (or O) that shows it in the file manager, ready to drag
+## into a chat.
 ## The HUD shows it once the results have counted up.
 
 enum State { IDLE, BUSY, SAVED, FAILED }
@@ -19,7 +20,7 @@ var note: Label
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	save_button = TechButton.make("SAVE RUN CARD  [C]", Color(Game.palette.neon_b))
+	save_button = TechButton.make("SAVE RUN CARD  [P]", Color(Game.palette.neon_b))
 	save_button.pressed.connect(make)
 	add_child(save_button)
 	open_button = TechButton.make("OPEN FOLDER  [O]", Color(Game.palette.neon_a))
@@ -101,7 +102,7 @@ func place(vs: Vector2) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not (event is InputEventKey and event.pressed and not event.echo):
 		return
-	if event.physical_keycode == KEY_C:
+	if event.physical_keycode == KEY_P:
 		make()
 		get_viewport().set_input_as_handled()
 	elif event.physical_keycode == KEY_O and state == State.SAVED:
