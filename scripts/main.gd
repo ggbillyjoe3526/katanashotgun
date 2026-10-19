@@ -273,7 +273,7 @@ func _on_upgrade(id: String) -> void:
 	Sfx.duck_music(-7.0)
 	_capture_grace = 0.6
 	if _build_stamp != "":
-		hud.stamp(_build_stamp, Upgrades.LINK_COLOR, 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 1.2, "shake": 6.0, "pitch": 1.2, "burst": 30, "shadow": Color(0.3, 0.2, 0.0)})
+		hud.stamp(_build_stamp, Upgrades.LINK_COLOR, 16, {"lane": "top", "hold": 1.2, "shake": 6.0, "pitch": 1.2, "burst": 30, "shadow": Color(0.3, 0.2, 0.0)})
 		_build_stamp = ""
 
 

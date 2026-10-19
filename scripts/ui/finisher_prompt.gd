@@ -1,9 +1,8 @@
 class_name FinisherPrompt
 extends Control
-## The glory kill prompt just under the crosshair: a gold key cap with the
-## bound key ("F") and the move's name on a dark plate. It leans left, ending
-## just past the crosshair, so it never runs into the kill tags stacking down
-## the right (and sits under "NO CHARGE" on the left). It shows while a staggered
+## The glory kill prompt under the vitals frame and the combo: a gold key cap
+## with the bound key ("F") and the move's name on a dark plate, centred under
+## the crosshair (spec §9.7). It shows while a staggered
 ## enemy (or a boss with its KAMAE broken) is in reach, so the prompt and the
 ## world always agree (spec §3.4, §5.5).
 ## Readability (spec §9.9): it pops in fast and then holds perfectly still in
@@ -14,8 +13,7 @@ const GOLD := Color(1.0, 0.8, 0.15)
 const BOSS_RED := Color(1.0, 0.15, 0.2)
 const BOSS_MOVE := "ONIKIRI" # the blow on a boss whose KAMAE is broken
 const INK := Color(0.03, 0.0, 0.06)
-const GAP_BELOW_CROSSHAIR := 16.0
-const RIGHT_OF_CROSSHAIR := 8.0 # the kill tags start 18 px right of it
+const GAP_BELOW_CROSSHAIR := 58.0 # under the vitals frame (24 px) and the combo
 const POP_TIME := 0.1
 const FADE_TIME := 0.08
 const POP_SCALE := 1.3 # starting scale of the pop-in
@@ -83,4 +81,4 @@ func _layout(crosshair: Vector2) -> void:
 	_plate.position = Vector2(_cap.size.x + 3.0, 0.0)
 	size = Vector2(_plate.position.x + _plate.size.x, h)
 	pivot_offset = (size * 0.5).round()
-	position = Vector2(roundf(crosshair.x + RIGHT_OF_CROSSHAIR - size.x), crosshair.y + GAP_BELOW_CROSSHAIR)
+	position = Vector2(roundf(crosshair.x - size.x * 0.5), crosshair.y + GAP_BELOW_CROSSHAIR)

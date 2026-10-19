@@ -17,16 +17,10 @@ var vs := Vector2(480, 270)
 
 # gameplay
 var play_root: Control
-var hp_bg: ColorRect
-var hp_fill: ColorRect
-var hp_ghost: ColorRect
 var hp_label: Label
-var dash_pips: Array[ColorRect] = []
-var cell_icons: Array[ColorRect] = []
 var cell_label: Label
 var xp_bg: ColorRect
 var xp_fill: ColorRect
-var lvl_label: Label
 var wave_label: Label
 var foes_label: Label
 var score_label: Label
@@ -35,18 +29,19 @@ var combo_bar: ColorRect
 var crosshair: Crosshair
 var finisher_prompt: FinisherPromptScript
 var finisher_demo := false # --juicetest shows the prompt with no enemy around
-var center_label: Label
-var center_shadow: Label
-var center_t := 99.0
-var hint_label: Label
-var hint_bg: ColorRect
+var hint_label: Label # warnings and hints: the head line, in the lane's colour
+var hint_sub: Label # and the line under it, white
+var hint_bg: Shard
 var hint_t := 99.0
 var _hint_wait := "" # a hint held back until the wave intro has finished
+var _hint_wait_warn := false
 var _popup_wait: Array = [] # tags held back the same way ([text, colour])
 var popups: Array = []
 var _popup_free: Array[Label] = [] # kill tags and screen blood are pooled (spec §14)
 var boss_root: Control
 var boss_fill: ColorRect
+var boss_ghost: ColorRect
+var _boss_ghost_v := 1.0
 var boss_name: Label
 var kamae_label: Label
 var kamae_bg: ColorRect
@@ -84,9 +79,9 @@ var _t := 0.0
 var _death_t := 0.0
 
 # arcade
-var hi_label: Label
 var mut_label: Label
 var banner_band: ColorRect
+var boss_tag: Label
 var boss_title: Label
 var boss_sub: Label
 var boss_t := 99.0
@@ -128,12 +123,6 @@ var reward_card: RewardCard
 var _xp_rolled := false
 var _reward_t := 99.0
 
-# persona plates behind the HUD clusters
-var plate_tl: Shard
-var plate_tr: Shard
-var plate_bl: Shard
-var plate_br: Shard
-var combo_plate: Shard
 var logo_k: GlitchText
 var logo_s: GlitchText
 var logo_slash: Shard
@@ -153,14 +142,20 @@ const CARD_TEXT_W := 132.0 # text width inside the card's solid plate (140 wide,
 const CARD_NAME_PT := 12 # card name and description sizes (Ui.px scales them)
 const CARD_DESC_PT := 12
 const BOSS_CARD_LEN := 3.6 # boss name card, seconds
-const CENTER_LEN := 2.4 # centre message, seconds
 const KAMAE_GOLD := Color(1.0, 0.72, 0.15)
 const KAMAE_HOT := Color(1.0, 0.93, 0.55) # nearly full: the bar runs white-hot
 const KAMAE_HOT_AT := 0.8
-const KAMAE_BAR_W := 190.0
-const POPUP_LEN := 1.4 # kill tags, seconds
-const POPUP_STEP := 15.0 # kill tag line spacing, pixels
-const MAX_POPUPS := 4
+const BOSS_W := 220.0 # the boss bar's plate
+const POPUP_LEN := 1.4 # kill callouts, seconds
+const POPUP_STEP := 16.0 # callout line spacing, pixels
+const MAX_POPUPS := 3
+const HINT_WARN := Color(1.0, 0.25, 0.3) # warnings ("MISSILES INBOUND"); hints are YELLOW
+const HINT_BOTTOM := 24.0 # the warning lane ends this far above the bottom edge
+const LOW_RED := Color(1.0, 0.32, 0.34) # health below 30%, no cells left
+const LINE := 14.0 # line pitch of stacked small text (Jersey 10: 10 px capitals)
+const SCORE_Y := -4.0
+const COMBO_GAP := 11.0 # the combo sits this far under the vitals frame
+const CALLOUT_X := 32.0 # kill callouts start this far right of the frame
 var score_hold := 0 # points already scored but held back until a tally slams
 var _score_bump := 0.0
 var _last_target := 0
@@ -184,26 +179,81 @@ var _death_counted := false
 var _popup_plate: StyleBoxFlat
 
 
+## The crosshair, and round it the player's vitals as a square frame drawn by
+## its corners (spec §9.7): health up the left edge, one block per power cell
+## up the right edge, dash charges along the bottom. The middle stays open, so
+## the enemy under the crosshair is never covered.
 class Crosshair:
 	extends Control
-	var katana_k := 1.0
-	var shotgun_k := 1.0
+	const H := 24 # half the side of the square
+	const ARM := 5 # corner bracket arms
+	const INSET := 8 # the health and cell columns stop this far short of the corners
+	const INK := Color(0.02, 0.0, 0.05, 0.85)
+	const LIME := Color(0.55, 1.0, 0.35)
 	var hit_t := 0.0
+	var frame := true
+	var hp_k := 1.0
+	var ghost_k := 1.0
+	var low_t := -1.0 # below 30% health: the time, for the bar's soft pulse
+	var cells := 0
+	var max_cells := 4
+	var cell_flash: Array[float] = []
+	var dash := 0.0
+	var max_dash := 2
 
 	func _draw() -> void:
-		var c := Vector2.ZERO
 		var col := Color(1, 1, 1, 0.9)
-		draw_rect(Rect2(c, Vector2(1, 1)), col)
-		draw_rect(Rect2(c + Vector2(3, 0), Vector2(3, 1)), col)
-		draw_rect(Rect2(c + Vector2(-5, 0), Vector2(3, 1)), col)
-		draw_rect(Rect2(c + Vector2(0, 3), Vector2(1, 3)), col)
-		draw_rect(Rect2(c + Vector2(0, -5), Vector2(1, 3)), col)
-		# katana readiness (left), shotgun readiness (right)
-		draw_arc(c, 11.0, PI * 0.7, PI * 0.7 + PI * 0.6 * katana_k, 8, Hud.CYAN, 1.0, false)
-		draw_arc(c, 11.0, -PI * 0.3, -PI * 0.3 + PI * 0.6 * shotgun_k, 8, Color(1.0, 0.55, 0.2), 1.0, false)
+		draw_rect(Rect2(0, 0, 1, 1), col)
+		draw_rect(Rect2(3, 0, 3, 1), col)
+		draw_rect(Rect2(-5, 0, 3, 1), col)
+		draw_rect(Rect2(0, 3, 1, 3), col)
+		draw_rect(Rect2(0, -5, 1, 3), col)
 		if hit_t > 0.0:
 			for d in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-				draw_line(c + d * 5, c + d * 8, Color(1, 0.3, 0.3), 1.0)
+				draw_line(d * 5, d * 8, Color(1, 0.3, 0.3), 1.0)
+		if not frame:
+			return
+		# corner brackets: the square is drawn by its corners only
+		for c: Vector2i in [Vector2i(-H, -H), Vector2i(H, -H), Vector2i(-H, H), Vector2i(H, H)]:
+			var x := c.x if c.x < 0 else c.x - ARM + 1
+			var y := c.y if c.y < 0 else c.y - ARM + 1
+			draw_rect(Rect2(x, c.y, ARM, 1), col)
+			draw_rect(Rect2(c.x, y, 1, ARM), col)
+		var by0 := -H + INSET
+		var bh := 2 * (H - INSET) + 1
+		var bot := by0 + bh
+		# health: the left edge, filling from the bottom, with a white trail
+		draw_rect(Rect2(-H - 2, by0 - 1, 5, bh + 2), INK)
+		draw_rect(Rect2(-H - 1, by0, 3, bh), Color(0.32, 0.06, 0.12))
+		var gh := roundi(bh * ghost_k)
+		draw_rect(Rect2(-H - 1, bot - gh, 3, gh), Color(1, 1, 1, 0.75))
+		var fh := roundi(bh * hp_k)
+		var red := Hud.RED
+		if low_t >= 0.0:
+			red = Hud.RED.lerp(Color(1, 0.6, 0.6), 0.5 + 0.5 * sin(low_t * 12.0))
+		draw_rect(Rect2(-H - 1, bot - fh, 3, fh), red)
+		# cells: the right edge, one block each, filled from the bottom
+		draw_rect(Rect2(H - 2, by0 - 1, 5, bh + 2), INK)
+		var n := maxi(1, max_cells)
+		var gap := 2 if n <= 6 else 1
+		var seg := maxi(1, floori(float(bh - gap * (n - 1)) / n))
+		for k in n:
+			var top := bot - (k + 1) * seg - k * gap
+			var on := k < cells
+			var f: float = cell_flash[k] if k < cell_flash.size() else 0.0
+			draw_rect(Rect2(H - 1, top, 3, seg), Hud.CYAN.lerp(Color.WHITE, f) if on else Color(0.17, 0.2, 0.32))
+		# dash: pips along the bottom edge, between the corners
+		var w := 8 if max_dash <= 3 else 6
+		var g := 4 if max_dash <= 3 else 3
+		var x0 := -floori((max_dash * w + (max_dash - 1) * g) * 0.5)
+		for i in max_dash:
+			var px := x0 + i * (w + g)
+			var fill := clampf(dash - i, 0.0, 1.0)
+			draw_rect(Rect2(px, H - 1, w, 3), Color(0.14, 0.24, 0.12))
+			if fill >= 1.0:
+				draw_rect(Rect2(px, H - 1, w, 3), LIME)
+			elif fill > 0.0:
+				draw_rect(Rect2(px, H - 1, roundi(w * fill), 3), LIME.darkened(0.45))
 
 
 func _ready() -> void:
@@ -291,141 +341,119 @@ func _build_play() -> void:
 	blood_root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	play_root.add_child(blood_root)
 	var pal := Game.palette
-	# tech panels behind each HUD cluster: dark glass, neon edge, brackets.
-	# Dark enough to read text over any part of the city, and no scanlines
-	# behind the numbers (spec §9.9).
-	var glass := Color(0.02, 0.01, 0.06, 0.78)
-	plate_tl = Shard.make(glass, 7.0, Color(0, 0, 0, 0), Color(pal.neon_b))
-	plate_tr = Shard.make(glass, 7.0, Color(0, 0, 0, 0), Color(pal.neon_a))
-	plate_bl = Shard.make(glass, 7.0, Color(0, 0, 0, 0), Color(pal.neon_a))
-	plate_br = Shard.make(glass, 7.0, Color(0, 0, 0, 0), Color(pal.neon_b))
-	combo_plate = Shard.make(Color(pal.neon_a), 4.0, Color(0, 0, 0, 0), Color.WHITE)
-	for pl in [plate_tl, plate_tr, plate_bl, plate_br]:
-		pl.brackets = Color(1, 1, 1, 0.55)
-		pl.bracket_len = 5.0
-	for pl in [plate_tl, plate_tr, plate_bl, plate_br, combo_plate]:
-		play_root.add_child(pl)
+	# The Focus layout (spec §9.7): no corner panels. Wave and score sit bare
+	# in the top corners with a dark outline, the vitals frame the crosshair,
+	# and every other kind of message has a fixed lane of its own.
 
-	hp_bg = Ui.rect(Color(0.05, 0.02, 0.07, 0.85), Vector2.ZERO, Vector2(122, 9))
-	hp_ghost = Ui.rect(Color(1, 1, 1, 0.8), Vector2(1, 1), Vector2(120, 7))
-	hp_fill = Ui.rect(RED, Vector2(1, 1), Vector2(120, 7))
-	hp_bg.add_child(hp_ghost)
-	hp_bg.add_child(hp_fill)
-	play_root.add_child(hp_bg)
-	hp_label = Ui.label("100", Ui.font_big, 10, Color.WHITE, 2)
-	play_root.add_child(hp_label)
-	for i in 4:
-		var pip := Ui.rect(CYAN, Vector2.ZERO, Vector2(10, 3))
-		play_root.add_child(pip)
-		dash_pips.append(pip)
-	for i in 12:
-		# a little power cell: body, terminal nub, highlight
-		var s := Ui.rect(CYAN, Vector2.ZERO, Vector2(4, 10))
-		s.add_child(Ui.rect(Color(0.85, 0.95, 1.0), Vector2(1, -1), Vector2(2, 1)))
-		s.add_child(Ui.rect(Color(1, 1, 1, 0.7), Vector2(0, 1), Vector2(1, 7)))
-		play_root.add_child(s)
-		cell_icons.append(s)
-	cell_label = Ui.label("CELLS", Ui.font_bold, 10, Color(0.45, 0.85, 1.0), 2)
-	play_root.add_child(cell_label)
-	# short and steady (no blinking), left of the crosshair so it never
-	# collides with the kill tags on the right
-	noammo_bg = Shard.make(Color(0.08, 0.0, 0.02, 0.85), 4.0, Color(0, 0, 0, 0), RED)
-	noammo_bg.visible = false
-	play_root.add_child(noammo_bg)
-	noammo_label = Ui.label("NO CHARGE", Ui.font_big, 10, Color(1.0, 0.35, 0.35), 2)
-	noammo_bg.add_child(noammo_label)
-
-	xp_bg = Ui.rect(Color(0.05, 0.02, 0.07, 0.8), Vector2.ZERO, Vector2(200, 4))
-	xp_fill = Ui.rect(Color(0.75, 0.35, 1.0), Vector2(1, 1), Vector2(0, 2))
+	# run XP: a hairline along the bottom edge
+	xp_bg = Ui.rect(Color(0.12, 0.08, 0.2, 0.85), Vector2.ZERO, Vector2(480, 2))
+	xp_fill = Ui.rect(Color(0.75, 0.35, 1.0), Vector2.ZERO, Vector2(0, 2))
 	xp_bg.add_child(xp_fill)
 	play_root.add_child(xp_bg)
-	lvl_label = Ui.label("RUN LV 1", Ui.font_bold, 10, Color(0.85, 0.6, 1.0), 2)
-	play_root.add_child(lvl_label)
 
-	wave_label = Ui.label("WAVE 1", Ui.font_big, 10, Color.WHITE, 2)
+	wave_label = Ui.label("WAVE 01", Ui.font_bold, 10, Color.WHITE, 2)
 	play_root.add_child(wave_label)
-	foes_label = Ui.label("", Ui.font_mono, 9, Color(0.85, 0.85, 0.95), 2)
+	foes_label = Ui.label("", Ui.font_bold, 10, Color(0.75, 0.73, 0.88), 2)
 	play_root.add_child(foes_label)
-	mut_label = Ui.label("", Ui.font_bold, 10, Color(Game.palette.neon_c), 2)
+	mut_label = Ui.label("", Ui.font_bold, 10, Color(pal.neon_c), 2)
 	play_root.add_child(mut_label)
-	hi_label = Ui.label("", Ui.font_mono, 10, Color(Game.palette.neon_c), 2)
-	play_root.add_child(hi_label)
-	banner_band = Ui.rect(Color(0.02, 0.0, 0.06, 0.7), Vector2.ZERO, Vector2(480, 44))
+	score_label = Ui.label("0", Ui.font_mono, 30, Color.WHITE, 3)
+	play_root.add_child(score_label)
+
+	# boss name card: a full-width band with red edges in the top lane
+	banner_band = Ui.rect(Color(0.02, 0.0, 0.06, 0.78), Vector2.ZERO, Vector2(480, 64))
 	banner_band.visible = false
-	var edge_a := Ui.rect(Color(Game.palette.neon_a), Vector2(0, 0), Vector2(480, 1))
+	var edge_a := Ui.rect(RED, Vector2(0, 0), Vector2(480, 1))
 	edge_a.name = "EdgeA"
 	banner_band.add_child(edge_a)
-	var edge_b := Ui.rect(Color(Game.palette.neon_b), Vector2(0, 43), Vector2(480, 1))
+	var edge_b := Ui.rect(RED, Vector2(0, 63), Vector2(480, 1))
 	edge_b.name = "EdgeB"
 	banner_band.add_child(edge_b)
 	play_root.add_child(banner_band)
-	# boss name card: solid letters on a dark outline with a dark drop shadow
-	# (a coloured copy of the name read as a double image)
+	boss_tag = Ui.label("> WARNING // HIGH-VALUE TARGET", Ui.font_bold, 10, Color(1.0, 0.35, 0.4), 2)
+	boss_tag.visible = false
+	play_root.add_child(boss_tag)
+	# solid letters on a dark outline with a dark drop shadow (a coloured copy
+	# of the name read as a double image)
 	var bo := _shadowed("", Ui.font_big, 24, Color.WHITE, Color(0.02, 0.0, 0.05, 0.9), Vector2(2, 2))
 	boss_title = bo[0]
 	boss_title.add_theme_constant_override("outline_size", 4)
 	boss_title.add_theme_color_override("font_outline_color", Color(0.02, 0.0, 0.05, 1.0))
 	boss_title.visible = false
 	play_root.add_child(boss_title)
-	boss_sub = Ui.label("", Ui.font_bold, 11, Color.WHITE, 2)
+	boss_sub = Ui.label("", Ui.font_bold, 10, MAGENTA.lerp(Color.WHITE, 0.2), 2)
 	boss_sub.visible = false
 	play_root.add_child(boss_sub)
-	score_label = Ui.label("0", Ui.font_mono, 13, Color.WHITE, 2)
-	play_root.add_child(score_label)
-	# dark letters on the bright accent plate: readable whatever the heat
-	combo_label = Ui.label("", Ui.font_big, 10, Color(0.03, 0.0, 0.06), 0)
-	play_root.add_child(combo_label)
-	combo_bar = Ui.rect(YELLOW, Vector2.ZERO, Vector2(40, 2))
-	play_root.add_child(combo_bar)
 
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
+	# the numbers beside the vitals frame: red side health, cyan side cells
+	hp_label = _plated("100", Color.WHITE)
+	cell_label = _plated("4", CYAN)
+	# out of cells: a short steady warning left of the health number
+	noammo_bg = Shard.make(Color(0.08, 0.0, 0.02, 0.85), 4.0, Color(0, 0, 0, 0), RED)
+	noammo_bg.visible = false
+	play_root.add_child(noammo_bg)
+	noammo_label = Ui.label("NO CHARGE", Ui.font_bold, 10, Color(1.0, 0.35, 0.35), 0)
+	noammo_bg.add_child(noammo_label)
+	# the combo under the frame, with its timer as a line under the number
+	combo_label = _plated("", YELLOW)
+	combo_bar = Ui.rect(YELLOW, Vector2.ZERO, Vector2(10, 1))
+	play_root.add_child(combo_bar)
 	finisher_prompt = FinisherPromptScript.new()
 	play_root.add_child(finisher_prompt)
 
-	var cl := _shadowed("", Ui.font_big, 16, Color.WHITE, Color(0.1, 0, 0.04), Vector2(1, 1))
-	center_label = cl[0]
-	center_shadow = cl[1]
-	center_label.add_theme_constant_override("outline_size", 2)
-	center_label.add_theme_color_override("font_outline_color", Color(0.02, 0.0, 0.05, 1.0))
-	center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center_shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	center_label.visible = false
-	play_root.add_child(center_label)
-
-	hint_bg = Ui.rect(Color(0.02, 0.0, 0.05, 0.85), Vector2.ZERO, Vector2(10, 12))
+	# warnings and hints: bottom centre, one at a time, edged in their colour
+	hint_bg = Shard.make(Color(0.02, 0.0, 0.05, 0.86), 4.0, Color(0, 0, 0, 0), YELLOW)
 	hint_bg.visible = false
 	play_root.add_child(hint_bg)
 	hint_label = Ui.label("", Ui.font_bold, 10, YELLOW, 0)
 	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint_bg.add_child(hint_label)
+	hint_sub = Ui.label("", Ui.font_bold, 10, Color.WHITE, 0)
+	hint_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_bg.add_child(hint_sub)
 
+	# boss bar: top centre, the name, its health and the KAMAE row (spec §5.5)
 	boss_root = Control.new()
 	boss_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	boss_root.visible = false
 	play_root.add_child(boss_root)
-	var boss_plate := Shard.make(Color(0.02, 0.01, 0.06, 0.78), 5.0, Color(0, 0, 0, 0), Color(0.85, 0.08, 0.1, 0.8))
+	var boss_plate := Shard.make(Color(0.02, 0.01, 0.06, 0.8), 5.0, Color(0, 0, 0, 0), Color(0.85, 0.08, 0.1, 0.8))
 	boss_plate.name = "Plate"
+	boss_plate.size = Vector2(BOSS_W, 10)
 	boss_root.add_child(boss_plate)
-	var bb := Ui.rect(Color(0.05, 0.02, 0.05, 0.9), Vector2(0, 16), Vector2(242, 7))
-	boss_root.add_child(bb)
-	boss_fill = Ui.rect(Color(0.85, 0.08, 0.1), Vector2(1, 1), Vector2(240, 5))
-	bb.add_child(boss_fill)
-	boss_name = Ui.label("", Ui.font_bold, 10, Color(1.0, 0.78, 0.65), 2)
+	boss_name = Ui.label("", Ui.font_bold, 10, Color(1.0, 0.3, 0.32), 0)
 	boss_root.add_child(boss_name)
+	var bb := Ui.rect(Color(0.24, 0.05, 0.09, 0.95), Vector2(8, 16), Vector2(BOSS_W - 16, 5))
+	bb.name = "Bar"
+	boss_root.add_child(bb)
+	boss_ghost = Ui.rect(Color(1, 1, 1, 0.75), Vector2(1, 1), Vector2(BOSS_W - 18, 3))
+	bb.add_child(boss_ghost)
+	boss_fill = Ui.rect(Color(0.92, 0.1, 0.14), Vector2(1, 1), Vector2(BOSS_W - 18, 3))
+	bb.add_child(boss_fill)
 	# KAMAE (posture, spec §5.5): fills from the middle out as the player
 	# presses the boss; full means the stance breaks
-	kamae_label = Ui.label("KAMAE", Ui.font_bold, 10, KAMAE_GOLD, 2)
+	kamae_label = Ui.label("KAMAE", Ui.font_bold, 10, KAMAE_GOLD, 0)
 	boss_root.add_child(kamae_label)
-	kamae_bg = Ui.rect(Color(0.05, 0.02, 0.05, 0.9), Vector2.ZERO, Vector2(KAMAE_BAR_W + 2, 6))
+	kamae_bg = Ui.rect(Color(0.22, 0.15, 0.04, 0.95), Vector2.ZERO, Vector2(BOSS_W - 60, 5))
 	boss_root.add_child(kamae_bg)
-	kamae_fill = Ui.rect(KAMAE_GOLD, Vector2(1, 1), Vector2(KAMAE_BAR_W, 4))
+	kamae_fill = Ui.rect(KAMAE_GOLD, Vector2(1, 1), Vector2(BOSS_W - 62, 3))
 	kamae_bg.add_child(kamae_fill)
 
 	exec_rect = Ui.rect(Color(1, 1, 1, 0), Vector2.ZERO, Vector2(480, 270))
 	exec_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	play_root.add_child(exec_rect)
+
+
+## A small readout on a dark plate: the numbers beside the vitals frame and
+## the combo.
+func _plated(text: String, col: Color) -> Label:
+	var l := Ui.label(text, Ui.font_bold, 10, col, 0)
+	l.add_theme_stylebox_override("normal", _popup_plate)
+	play_root.add_child(l)
+	return l
 
 
 func _build_title() -> void:
@@ -988,6 +1016,12 @@ func show_boss_intro(title_text: String, sub_text: String) -> void:
 		Sfx.play("stamp", -6.0, 0.7, 0.0))
 
 
+## The boss name card makes way for a newer message in the top lane.
+func end_boss_card() -> void:
+	boss_title.visible = false
+	boss_sub.visible = false
+
+
 func show_levelup(choices: Array, cb: Callable) -> void:
 	_choices = choices
 	_choice_cb = cb
@@ -1151,32 +1185,39 @@ func _pick(i: int) -> void:
 
 
 # ---------------------------------------------------------------- events
+## A boss message ("<NAME> IS ENRAGED"): a stamp in the top lane, where the
+## big moments go (spec §9.7).
 func show_message(text: String, color: Color, big := true) -> void:
-	center_label.text = text
-	center_shadow.text = text
-	center_label.add_theme_color_override("font_color", color)
-	var f := Ui.face(Ui.font_big, 16 if big else 10)
-	var sz := Ui.px(f, 16 if big else 10)
-	for l in [center_label, center_shadow]:
-		l.add_theme_font_override("font", f)
-		l.add_theme_font_size_override("font_size", sz)
-	center_label.size = Vector2.ZERO
-	center_shadow.size = Vector2.ZERO
-	center_label.visible = true
-	center_t = 0.0
+	juice.stamp(text, color, 16 if big else 14, {"lane": "top", "font": Ui.font_big, "from": 1.8, "hold": 1.6, "shake": 3.0, "sound": "", "shadow": color.darkened(0.8)})
+
+
+## The text box's bottom, less the empty space a label keeps under its capitals.
+static func _text_bottom(l: Control) -> float:
+	return l.position.y + roundf(l.size.y * 0.85)
+
+
+## Where the top lane starts: under the wave, the score and the boss bar. The
+## big moments, the wave intro and the boss card sit here, so they never
+## cover the top row (spec §9.7).
+func top_lane() -> float:
+	var y := maxf(_text_bottom(score_label), _text_bottom(foes_label))
+	if boss_root.visible:
+		y = maxf(y, boss_root.position.y + _boss_plate_h)
+	return roundf(y + 3.0)
 
 
 ## The KAMAE row under the boss's HP bar. While the stance is broken the bar
 ## shows the time left to land the ONIKIRI, glowing gold to white; the word
 ## itself never moves or changes (spec §9.9).
 func _layout_kamae(boss: Enemy) -> void:
-	var row_y := 23.0
+	var row_y := 19.0
 	var lh := kamae_label.size.y
-	var row_w := kamae_label.size.x + 4.0 + KAMAE_BAR_W + 2.0
-	var x0 := roundf((242.0 - row_w) * 0.5)
-	kamae_label.position = Vector2(x0, row_y)
-	kamae_bg.position = Vector2(x0 + kamae_label.size.x + 4.0, row_y + roundf((lh - kamae_bg.size.y) * 0.5))
-	_boss_plate_h = row_y + lh + 1.0
+	kamae_label.position = Vector2(8, row_y - 2)
+	var bar_x := 8.0 + kamae_label.size.x + 4.0
+	var bar_w := BOSS_W - 8.0 - bar_x
+	kamae_bg.size = Vector2(bar_w, 5)
+	kamae_bg.position = Vector2(bar_x, row_y + roundf((lh - 5.0) * 0.5) - 1.0)
+	_boss_plate_h = row_y + roundf(lh * 0.85) - 1.0
 	var k := 0.0
 	var col := KAMAE_GOLD
 	if boss.is_staggered():
@@ -1186,28 +1227,57 @@ func _layout_kamae(boss: Enemy) -> void:
 		k = boss.kamae.ratio()
 		if k >= KAMAE_HOT_AT:
 			col = KAMAE_HOT
-	var w := roundf(KAMAE_BAR_W * k)
+	var inner := bar_w - 2.0
+	var w := roundf(inner * k)
 	kamae_fill.size.x = w
-	kamae_fill.position.x = 1.0 + roundf((KAMAE_BAR_W - w) * 0.5)
+	kamae_fill.position.x = 1.0 + roundf((inner - w) * 0.5)
 	kamae_fill.color = col
 
 
-## A boss's stance just broke: the centre stamp, a held impact frame and
+## A boss's stance just broke: the stamp in the top lane, a held impact frame and
 ## speed lines. The prompt under the crosshair says what F does next.
 func kamae_broken() -> void:
-	juice.stamp("KAMAE BROKEN", KAMAE_GOLD, 16, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 1.0, "rot": -0.04, "shake": 8.0, "vol": -1.0, "pitch": 0.8, "burst": 30, "shadow": Color(0.25, 0.12, 0.0)})
+	juice.stamp("KAMAE BROKEN", KAMAE_GOLD, 16, {"lane": "top", "hold": 1.0, "rot": -0.04, "shake": 8.0, "vol": -1.0, "pitch": 0.8, "burst": 30, "shadow": Color(0.25, 0.12, 0.0)})
 	juice.speed_lines(1.0, 0.3)
 	impact_frame(0.1)
 
 
-func show_hint(text: String) -> void:
+## Warnings and hints share one lane at the bottom centre: the head line in
+## the lane's colour (red for a warning, yellow for a hint), the rest of the
+## sentence white under it. A new one replaces the old.
+func show_hint(text: String, warn := false) -> void:
 	if juice.intro_showing():
-		# the countdown and FIGHT use the lower middle of the screen
 		_hint_wait = text
+		_hint_wait_warn = warn
 		return
-	hint_label.text = _wrap(text, hint_label, vs.x - 60.0)
+	var parts := split_hint(text)
+	var col := HINT_WARN if warn else YELLOW
+	hint_label.text = _wrap(parts[0], hint_label, vs.x - 80.0)
+	hint_label.add_theme_color_override("font_color", col)
+	hint_sub.visible = parts.size() > 1
+	hint_sub.text = _wrap(parts[1], hint_sub, vs.x - 80.0) if parts.size() > 1 else ""
+	hint_bg.outline = col
 	hint_bg.visible = true
 	hint_t = 0.0
+
+
+## Splits a hint into its head and the line under it, at the first dash,
+## colon, "!" or "?" ("MISSILES INBOUND - GET OUT OF THE RED CIRCLES").
+static func split_hint(text: String) -> PackedStringArray:
+	var at := -1
+	var sep := ""
+	for s in [" - ", ": ", "! ", "? "]:
+		var i := text.find(s)
+		if i > 0 and (at < 0 or i < at):
+			at = i
+			sep = s
+	if at < 0:
+		return PackedStringArray([text.strip_edges()])
+	var head := text.left(at + (1 if sep[0] in "!?" else 0)).strip_edges()
+	var rest := text.substr(at + sep.length()).strip_edges()
+	if rest == "":
+		return PackedStringArray([head])
+	return PackedStringArray([head, rest])
 
 
 ## Breaks `text` at word gaps into lines of about equal width, none wider
@@ -1261,7 +1331,7 @@ func add_popup(text: String, color: Color) -> void:
 		l.text = text
 		l.add_theme_color_override("font_color", color)
 		l.visible = true
-	l.position = Vector2(vs.x * 0.5 + 18, vs.y * 0.5 - 8)
+	l.position = Vector2((vs * 0.5).floor().x + Crosshair.H + CALLOUT_X, (vs * 0.5).floor().y - 16.0)
 	popups.push_front({"l": l, "t": 0.0, "y": l.position.y, "text": text, "n": 1, "c": color})
 
 
@@ -1331,7 +1401,7 @@ func _process(_delta: float) -> void:
 	_t += delta
 	_reward_t += delta
 	root.position = juice.shake_offset().round() if juice else Vector2.ZERO
-	_fit([center_label, center_shadow, hint_label, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats, lvl_label])
+	_fit([hint_label, hint_sub, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats])
 	vs = root.get_rect().size
 	if vs.x < 10:
 		vs = Vector2(480, 270)
@@ -1559,106 +1629,69 @@ func _update_play(delta: float) -> void:
 	if p == null:
 		return
 	var m := 8.0
-	_fit([mut_label, hi_label, boss_sub, boss_name, kamae_label, cell_label, noammo_label])
-	# ---- bottom-left: HP number and dash pips over the HP bar
+	_fit([wave_label, foes_label, mut_label, boss_tag, boss_sub, boss_name, kamae_label, hp_label, cell_label, noammo_label, combo_label])
+	var c := (vs * 0.5).floor()
+	var fh := float(Crosshair.H)
+	# ---- the vitals frame round the crosshair. FINISH, the payout and the
+	# boss-defeated card own the middle of the screen: it steps aside for them
+	var vitals := not juice.panel_showing()
 	var hpk := clampf(p.hp / p.max_hp, 0.0, 1.0)
-	hp_bg.position = Vector2(m, vs.y - m - 9)
-	hp_bg.size = Vector2(122, 9)
-	hp_fill.size.x = 120.0 * hpk
 	_hp_ghost_v = move_toward(_hp_ghost_v, hpk, delta * 0.6) if _hp_ghost_v > hpk else hpk
-	hp_ghost.size.x = 120.0 * _hp_ghost_v
+	# low health pulses the bar and turns the number red; the number never flashes
 	var low := hpk < 0.3
-	# low HP pulses the bar, never the number
-	hp_fill.color = RED if not low else RED.lerp(Color(1, 0.6, 0.6), 0.5 + 0.5 * sin(_t * 12.0))
-	hp_label.text = str(int(ceil(p.hp)))
-	hp_label.position = Vector2(m, hp_bg.position.y - hp_label.size.y)
-	for i in dash_pips.size():
-		var pip := dash_pips[i]
-		pip.visible = i < p.max_dash
-		pip.position = Vector2(m + maxf(hp_label.size.x, 26.0) + 8 + i * 13, hp_bg.position.y - 9)
-		var fill := clampf(p.dash_charges - i, 0.0, 1.0)
-		pip.color = CYAN if fill >= 1.0 else Color(0.2, 0.35, 0.4)
-		pip.size = Vector2(10, 4)
-	# ---- bottom-right: power cells
-	var sx := vs.x - m - 4
-	for i in cell_icons.size():
-		var s := cell_icons[i]
-		s.visible = i < p.max_cells
-		s.position = Vector2(sx - i * 7, vs.y - m - 10)
-		var full := i < p.cells
-		if full and i >= _last_cells:
+	for i in _cell_flash.size():
+		if i < p.cells and i >= _last_cells:
 			_cell_flash[i] = 1.0
 		_cell_flash[i] = move_toward(_cell_flash[i], 0.0, delta * 5.0)
-		s.color = CYAN.lerp(Color.WHITE, _cell_flash[i]) if full else Color(0.06, 0.1, 0.16)
-		s.get_child(0).color = Color(0.85, 0.95, 1.0) if full else Color(0.12, 0.16, 0.22)
-		s.get_child(1).visible = full
-		s.scale = Vector2.ONE * (1.0 + 0.5 * _cell_flash[i])
-		s.pivot_offset = Vector2(2, 5)
 	_last_cells = p.cells
-	cell_label.position = Vector2(vs.x - m - cell_label.size.x, vs.y - m - 12 - cell_label.size.y)
-	# ---- out of cells: a short steady warning left of the crosshair (the
-	# kill tags own the right side)
+	crosshair.position = c
+	crosshair.frame = vitals
+	crosshair.hp_k = hpk
+	crosshair.ghost_k = _hp_ghost_v
+	crosshair.low_t = _t if low else -1.0
+	crosshair.cells = p.cells
+	crosshair.max_cells = p.max_cells
+	crosshair.cell_flash = _cell_flash
+	crosshair.dash = p.dash_charges
+	crosshair.max_dash = p.max_dash
+	crosshair.queue_redraw()
+	hp_label.visible = vitals
+	cell_label.visible = vitals
+	hp_label.text = str(int(ceil(p.hp)))
+	hp_label.add_theme_color_override("font_color", LOW_RED if low else Color.WHITE)
+	hp_label.size = Vector2.ZERO
+	hp_label.position = Vector2(c.x - fh - 5.0 - hp_label.size.x, roundf(c.y - hp_label.size.y * 0.5))
+	cell_label.text = str(p.cells)
+	cell_label.add_theme_color_override("font_color", CYAN if p.cells > 0 else LOW_RED)
+	cell_label.size = Vector2.ZERO
+	cell_label.position = Vector2(c.x + fh + 5.0, roundf(c.y - cell_label.size.y * 0.5))
+	# ---- out of cells: a short steady warning left of the health number
 	noammo_t += delta
-	noammo_bg.visible = noammo_t < 1.4
+	noammo_bg.visible = vitals and noammo_t < 1.4
 	if noammo_bg.visible:
-		noammo_label.position = Vector2(5, 1)
-		noammo_bg.size = noammo_label.size + Vector2(10, 2)
-		noammo_bg.position = Vector2(roundf(vs.x * 0.5 - 20.0 - noammo_bg.size.x), roundf(vs.y * 0.5 - noammo_bg.size.y * 0.5))
+		noammo_label.position = Vector2(5, 0)
+		noammo_bg.size = noammo_label.size + Vector2(10, 0)
+		noammo_bg.position = Vector2(hp_label.position.x - 4.0 - noammo_bg.size.x, roundf(c.y - noammo_bg.size.y * 0.5))
 		noammo_bg.modulate.a = clampf((1.4 - noammo_t) / 0.25, 0.0, 1.0)
-	# ---- bottom-centre: run level and XP
-	xp_bg.size = Vector2(200, 4)
-	xp_bg.position = Vector2((vs.x - 200) * 0.5, vs.y - m - 4)
-	xp_fill.size.x = 198.0 * clampf(Game.xp / Game.xp_next, 0.0, 1.0)
-	lvl_label.text = "RUN LV %d" % Game.level
-	lvl_label.position = Vector2((vs.x - lvl_label.size.x) * 0.5, xp_bg.position.y - 1 - lvl_label.size.y)
-	# ---- top-left: wave, hostiles, mutator
+	# ---- run XP: a hairline along the bottom edge
+	xp_bg.position = Vector2(0, vs.y - 2)
+	xp_bg.size = Vector2(vs.x, 2)
+	xp_fill.size = Vector2(roundf(vs.x * clampf(Game.xp / Game.xp_next, 0.0, 1.0)), 2)
+	# ---- top-left: the wave and the hostiles left
 	wave_label.text = "WAVE %02d" % Game.wave
-	wave_label.position = Vector2(m + 1, m - 2)
-	foes_label.text = "HOSTILES %d" % Game.main.hostiles_left() if Game.main else ""
-	foes_label.position = Vector2(m + 1, wave_label.position.y + wave_label.size.y - 1)
-	mut_label.visible = not Game.mutator.is_empty()
-	mut_label.position = Vector2(m + 1, foes_label.position.y + foes_label.size.y - 1)
-	var tl_bottom := (mut_label.position.y + mut_label.size.y) if mut_label.visible else (foes_label.position.y + foes_label.size.y)
-	plate_tl.position = Vector2(3, 3)
-	plate_tl.size = Vector2(maxf(maxf(wave_label.size.x, foes_label.size.x), mut_label.size.x if mut_label.visible else 0.0) + 14, tl_bottom - 1)
-	# ---- top-centre: best score (steady, never blinking)
+	wave_label.position = Vector2(m, 1)
+	foes_label.text = ("%d LEFT" % Game.main.hostiles_left()) if Game.main else ""
+	foes_label.position = Vector2(m, wave_label.position.y + LINE)
+	# ---- bottom-left: the wave's mutator (the reward card takes the bottom
+	# of the screen between waves)
+	mut_label.visible = not Game.mutator.is_empty() and not reward_card.visible
+	mut_label.position = Vector2(m, vs.y - 5 - mut_label.size.y)
+	# ---- NEW HI-SCORE: one cut-in when the run passes the best score
 	var best := Game.best_score()
 	var shown_score := Game.score - score_hold
 	if shown_score > best and best > 0 and not _hi_stamped and Game.state == "playing":
 		_hi_stamped = true
 		juice.hiscore_stamp()
-	if shown_score > best and best > 0:
-		hi_label.text = "NEW HI-SCORE"
-	else:
-		hi_label.text = "HI %07d" % maxi(best, shown_score)
-	# the wave payout panel reaches up to it, so it steps aside meanwhile
-	hi_label.visible = not juice.tally_showing()
-	hi_label.position = Vector2(roundf((vs.x - hi_label.size.x) * 0.5), m - 3)
-	# ---- boss name card (the big one when a boss arrives)
-	var band_on := boss_title.visible
-	banner_band.visible = band_on
-	if band_on:
-		var bh := 58.0
-		var by := roundf(vs.y * 0.24)
-		banner_band.position = Vector2(0, by)
-		banner_band.size = Vector2(vs.x, bh)
-		banner_band.get_node("EdgeA").size = Vector2(vs.x, 1)
-		var eb: ColorRect = banner_band.get_node("EdgeB")
-		eb.size = Vector2(vs.x, 1)
-		eb.position = Vector2(0, bh - 1)
-		banner_band.modulate.a = clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0)
-	boss_t += delta
-	if boss_title.visible:
-		var slide := Juice.ease_out(boss_t / 0.25)
-		var by2 := roundf(vs.y * 0.24)
-		boss_title.position = Vector2(roundf((vs.x - boss_title.size.x) * 0.5 + (1.0 - slide) * -80.0), by2 + 3)
-		boss_sub.position = Vector2(roundf((vs.x - boss_sub.size.x) * 0.5 + (1.0 - slide) * 80.0), by2 + 37)
-		var ba := clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0) * clampf(boss_t / 0.08, 0.0, 1.0)
-		boss_title.modulate.a = ba
-		boss_sub.modulate.a = ba
-		if boss_t > BOSS_CARD_LEN:
-			boss_title.visible = false
-			boss_sub.visible = false
 	# ---- top-right: score rolls up; big gains bump it and tint it gold
 	var target := float(shown_score)
 	if shown_score > _last_target + 400:
@@ -1675,12 +1708,61 @@ func _update_play(delta: float) -> void:
 			_rolling = false
 	_score_bump = move_toward(_score_bump, 0.0, delta * 3.5)
 	score_label.text = "%07d" % int(_score_shown)
+	score_label.size = Vector2.ZERO
 	score_label.pivot_offset = Vector2(score_label.size.x, score_label.size.y * 0.5)
 	score_label.scale = Vector2.ONE * (1.0 + 0.2 * _score_bump * _score_bump)
 	score_label.add_theme_color_override("font_color", Color.WHITE.lerp(Juice.GOLD, minf(1.0, _score_bump * 1.5)))
-	score_label.position = Vector2(vs.x - m - score_label.size.x, m - 2)
-	var score_bottom := score_label.position.y + score_label.size.y - 2.0
-	# ---- combo: pops on every kill, the plate heats up, milestones stamp
+	score_label.position = Vector2(vs.x - m - score_label.size.x, SCORE_Y)
+	# ---- boss bar: top centre, between the wave and the score
+	var boss: Enemy = Game.main.boss if Game.main else null
+	var boss_on := boss != null and is_instance_valid(boss) and not boss.dead
+	boss_root.visible = boss_on
+	if boss_on:
+		boss_name.text = boss.display_name
+		var bx := roundf((vs.x - BOSS_W) * 0.5)
+		var by := 3.0
+		# a narrow screen: under the top row, never on the wave or the score
+		var left := m + maxf(wave_label.size.x, foes_label.size.x) + 6.0
+		if bx < left or bx + BOSS_W > score_label.position.x - 6.0:
+			by = maxf(_text_bottom(score_label), _text_bottom(foes_label)) + 2.0
+		boss_root.position = Vector2(bx, by)
+		boss_name.position = Vector2(roundf((BOSS_W - boss_name.size.x) * 0.5), -2)
+		var bk := clampf(boss.hp / boss.max_hp, 0.0, 1.0)
+		_boss_ghost_v = move_toward(_boss_ghost_v, bk, delta * 0.5) if _boss_ghost_v > bk else bk
+		boss_fill.size.x = roundf((BOSS_W - 18.0) * bk)
+		boss_ghost.size.x = roundf((BOSS_W - 18.0) * _boss_ghost_v)
+		_layout_kamae(boss)
+		var bp: Shard = boss_root.get_node("Plate")
+		bp.size = Vector2(BOSS_W, _boss_plate_h)
+	else:
+		_boss_ghost_v = 1.0
+	var lane := top_lane()
+	# ---- boss name card: a full-width band in the top lane
+	boss_t += delta
+	var band_on := boss_title.visible
+	banner_band.visible = band_on
+	boss_tag.visible = band_on
+	if band_on:
+		var bh := 64.0
+		banner_band.position = Vector2(0, lane)
+		banner_band.size = Vector2(vs.x, bh)
+		banner_band.get_node("EdgeA").size = Vector2(vs.x, 1)
+		var eb: ColorRect = banner_band.get_node("EdgeB")
+		eb.size = Vector2(vs.x, 1)
+		eb.position = Vector2(0, bh - 1)
+		banner_band.modulate.a = clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0)
+		var slide := Juice.ease_out(boss_t / 0.25)
+		boss_tag.position = Vector2(roundf((vs.x - boss_tag.size.x) * 0.5), lane)
+		boss_title.position = Vector2(roundf((vs.x - boss_title.size.x) * 0.5 + (1.0 - slide) * -80.0), lane + 11)
+		boss_sub.position = Vector2(roundf((vs.x - boss_sub.size.x) * 0.5 + (1.0 - slide) * 80.0), lane + 44)
+		var ba := clampf((BOSS_CARD_LEN - boss_t) / 0.4, 0.0, 1.0) * clampf(boss_t / 0.08, 0.0, 1.0)
+		boss_title.modulate.a = ba
+		boss_sub.modulate.a = ba
+		boss_tag.modulate.a = ba
+		if boss_t > BOSS_CARD_LEN:
+			boss_title.visible = false
+			boss_sub.visible = false
+	# ---- combo: under the frame; pops on every kill, heats up, milestones stamp
 	if Game.combo == 0:
 		_combo_ms_idx = 0
 	if Game.combo > _last_combo:
@@ -1694,51 +1776,25 @@ func _update_play(delta: float) -> void:
 	# the screen heats up as the combo climbs
 	if post:
 		post.heat = move_toward(post.heat, clampf((Game.combo - 4) / 40.0, 0.0, 1.0), delta * 2.0)
-	var combo_on := Game.combo >= 2
+	var combo_on := Game.combo >= 2 and vitals
 	combo_label.visible = combo_on
 	combo_bar.visible = combo_on
-	combo_plate.visible = combo_on
-	var tr_bottom := score_bottom
 	if combo_on:
-		combo_label.text = "x%d COMBO" % Game.combo
+		combo_label.text = "x%d" % Game.combo
 		combo_label.size = Vector2.ZERO
 		var heat := clampf(Game.combo / 50.0, 0.0, 1.0)
 		var ccol := YELLOW.lerp(Color(1.0, 0.25, 0.55), heat)
 		if Game.combo >= 50:
 			ccol = Color.from_hsv(fmod(_t * 0.5, 1.0), 0.55, 1.0)
-		var cw := combo_label.size.x + 10.0
-		var ch := combo_label.size.y
-		var cpos := Vector2(vs.x - m - cw, score_bottom + 1)
-		combo_plate.size = Vector2(cw, ch)
-		combo_plate.position = cpos
-		combo_plate.color = ccol.lerp(Color.WHITE, _combo_pop * 0.5)
-		combo_label.position = cpos + Vector2(5, 0)
-		# grows down and to the left, never into the score above
-		var pop := Vector2.ONE * (1.0 + 0.15 * _combo_pop * _combo_pop)
-		combo_plate.pivot_offset = Vector2(cw, 0)
-		combo_plate.scale = pop
-		combo_label.pivot_offset = Vector2(cw - 5, 0)
-		combo_label.scale = pop
+		combo_label.add_theme_color_override("font_color", ccol.lerp(Color.WHITE, _combo_pop * 0.5))
+		combo_label.position = Vector2(roundf(c.x - combo_label.size.x * 0.5), c.y + fh + COMBO_GAP)
+		combo_label.pivot_offset = (combo_label.size * 0.5).round()
+		combo_label.scale = Vector2.ONE * (1.0 + 0.15 * _combo_pop * _combo_pop)
+		var cw := combo_label.size.x - 6.0
 		combo_bar.color = ccol
-		combo_bar.size = Vector2(roundf(60.0 * clampf(Game.combo_timer / Game.combo_window(), 0.0, 1.0)), 2)
-		combo_bar.position = Vector2(vs.x - m - combo_bar.size.x, cpos.y + ch + 3)
-		tr_bottom = combo_bar.position.y + 2
-	plate_tr.size = Vector2(maxf(score_label.size.x, combo_plate.size.x if combo_on else 0.0) + 14, tr_bottom + 3 - 3)
-	plate_tr.position = Vector2(vs.x - plate_tr.size.x - 3, 3)
-	# ---- bottom plates
-	var bl_top := hp_label.position.y - 2
-	plate_bl.position = Vector2(3, bl_top)
-	plate_bl.size = Vector2(134, vs.y - 3 - bl_top)
-	var br_top := cell_label.position.y - 2
-	plate_br.size = Vector2(maxf(p.max_cells * 7.0 + 10.0, cell_label.size.x + 12.0) + 6.0, vs.y - 3 - br_top)
-	plate_br.position = Vector2(vs.x - plate_br.size.x - 3, br_top)
-
-	# crosshair
-	crosshair.position = (vs * 0.5).floor()
-	crosshair.katana_k = clampf(1.0 - p.katana_cd / p.KATANA_FINISHER_CD, 0.0, 1.0)
-	crosshair.shotgun_k = clampf(1.0 - p.shotgun_cd / p.SHOTGUN_CD, 0.0, 1.0) if p.cells > 0 else 0.0
-	crosshair.queue_redraw()
-	# ---- glory kill prompt: a fixed spot under the crosshair
+		combo_bar.size = Vector2(roundf(cw * clampf(Game.combo_timer / Game.combo_window(), 0.0, 1.0)), 1)
+		combo_bar.position = Vector2(combo_label.position.x + 3.0, combo_label.position.y + combo_label.size.y - 4.0)
+	# ---- glory kill prompt: a fixed spot under the combo
 	var move := ""
 	if is_instance_valid(p.gk_ready):
 		if p.gk_ready_plunge:
@@ -1747,55 +1803,35 @@ func _update_play(delta: float) -> void:
 			move = FinisherPromptScript.BOSS_MOVE if p.gk_ready.is_boss else "GLORY KILL"
 	elif finisher_demo:
 		move = "GLORY KILL"
-	finisher_prompt.refresh(move, crosshair.position, delta)
-	# ---- boss bar: top centre, under the best score
-	var boss: Enemy = Game.main.boss if Game.main else null
-	var boss_on := boss != null and is_instance_valid(boss) and not boss.dead
-	boss_root.visible = boss_on
-	if boss_on:
-		boss_name.text = "%s - %s" % [boss.display_name, boss.subtitle]
-		boss_root.position = Vector2(roundf((vs.x - 242) * 0.5), hi_label.position.y + hi_label.size.y)
-		boss_name.position = Vector2(roundf((242 - boss_name.size.x) * 0.5), 0)
-		var bp: Shard = boss_root.get_node("Plate")
-		var bpw := maxf(250.0, boss_name.size.x + 16.0)
-		bp.position = Vector2(roundf((242 - bpw) * 0.5), -1)
-		boss_fill.size.x = 240.0 * clampf(boss.hp / boss.max_hp, 0.0, 1.0)
-		_layout_kamae(boss)
-		bp.size = Vector2(bpw, _boss_plate_h)
-	# ---- centre message ("<NAME> IS ENRAGED"): a fixed spot under the boss bar
-	center_t += delta
-	if center_label.visible:
-		var pop := 1.0 + maxf(0.0, 0.1 - center_t) * 3.0
-		center_label.scale = Vector2.ONE * pop
-		center_label.pivot_offset = center_label.size * 0.5
-		var cy := (boss_root.position.y + _boss_plate_h + 1.0) if boss_on else (hi_label.position.y + hi_label.size.y + 4.0)
-		center_label.position = Vector2(roundf((vs.x - center_label.size.x) * 0.5), cy)
-		center_label.modulate.a = clampf((CENTER_LEN - center_t) / 0.3, 0.0, 1.0)
-		if center_t > CENTER_LEN:
-			center_label.visible = false
-	# ---- hint: bottom centre, above the level
+	finisher_prompt.refresh(move, c, delta)
+	# ---- warnings and hints: bottom centre, one at a time
 	hint_t += delta
 	if hint_bg.visible:
-		hint_label.size = Vector2.ZERO
-		hint_bg.size = Vector2(hint_label.size.x + 12, hint_label.size.y + 2)
-		hint_label.position = Vector2(6, 1)
-		# above the level and the bottom plates, so it never sits on them
-		var hb := minf(lvl_label.position.y, minf(plate_bl.position.y, plate_br.position.y))
-		hint_bg.position = Vector2(roundf((vs.x - hint_bg.size.x) * 0.5), hb - 4 - hint_bg.size.y)
+		_fit([hint_label, hint_sub])
+		var w := maxf(hint_label.size.x, hint_sub.size.x if hint_sub.visible else 0.0)
+		hint_label.position = Vector2(10, -2)
+		hint_label.size.x = w
+		var hh := _text_bottom(hint_label) + 1.0
+		if hint_sub.visible:
+			hint_sub.position = Vector2(10, hint_label.position.y + LINE)
+			hint_sub.size.x = w
+			hh = _text_bottom(hint_sub) + 1.0
+		hint_bg.size = Vector2(w + 20.0, hh)
+		hint_bg.position = Vector2(roundf((vs.x - hint_bg.size.x) * 0.5), vs.y - HINT_BOTTOM - hh)
 		hint_bg.modulate.a = clampf((4.5 - hint_t) / 0.3, 0.0, 1.0)
 		if hint_t > 4.5:
 			hint_bg.visible = false
 	if not juice.intro_showing():
 		if _hint_wait != "":
-			show_hint(_hint_wait)
+			show_hint(_hint_wait, _hint_wait_warn)
 			_hint_wait = ""
 		for w in _popup_wait:
 			add_popup(w[0], w[1])
 		_popup_wait.clear()
-	# ---- kill tags: right of the crosshair, newest on top; the stack slides
-	# smoothly instead of jumping, and each tag holds still once it lands
-	var px0 := roundf(vs.x * 0.5 + 18)
-	var py0 := roundf(vs.y * 0.5 - 8)
+	# ---- kill callouts: right of the frame, newest on top; the stack slides
+	# smoothly instead of jumping, and each callout holds still once it lands
+	var px0 := c.x + fh + CALLOUT_X
+	var py0 := c.y - 16.0
 	var i := 0
 	while i < popups.size():
 		var pp: Dictionary = popups[i]

@@ -13,6 +13,8 @@ already arrived is in the [Patch Notes](Patch-Notes).
   with its patch notes.
 - **Difficulty tuning** past the opening waves, by playtesting. Waves 1 to 3
   stay easy.
+- **Tidier menus.** The pause, results and title screens and the level-up
+  cards get the same clean layout as the new fight screen.
 
 ## Later
 

@@ -35,7 +35,7 @@ and Linux).
 | After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **P** save a run card (a picture of the run with its seed) |
 
 ## How a run works
-Each run gets a seed (shown on the HUD, as `XXXX-XXXX`). The seed decides the
+Each run gets a seed (shown on the pause and results screens, as `XXXX-XXXX`). The seed decides the
 map, colour palette, weather, cover layout, wave line-ups, mutators, boss order
 and level-up offers. Waves never end and keep getting harder. Every third wave is
 a boss (Kurokage, Tetsugumo or Shuten). Scores are saved locally (top 10) with

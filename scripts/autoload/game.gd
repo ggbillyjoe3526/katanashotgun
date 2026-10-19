@@ -4,7 +4,7 @@ extends Node
 
 signal hud_message(text: String, color: Color, big: bool)
 signal popup(text: String, color: Color)
-signal hint(text: String)
+signal hint(text: String, warn: bool)
 
 const COMBO_WINDOW := 4.0
 
@@ -277,11 +277,11 @@ func add_xp(amount: float) -> void:
 		pending_levelups += 1
 
 
-func show_hint_once(key: String, text: String) -> void:
+func show_hint_once(key: String, text: String, warn := false) -> void:
 	if hints_shown.has(key):
 		return
 	hints_shown[key] = true
-	hint.emit(text)
+	hint.emit(text, warn)
 
 
 # ---------------------------------------------------------------- high scores

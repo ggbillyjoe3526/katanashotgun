@@ -34,7 +34,8 @@ Damage numbers are against your 100 HP the first time you meet each boss.
 ## KAMAE and the ONIKIRI
 
 Bosses can't be staggered, glory killed or plunged. Instead each one has a
-gold **KAMAE** bar (its fighting stance) under its health bar.
+gold **KAMAE** bar (its fighting stance) under its health bar, at the top
+centre of the screen.
 
 1. **Fill it by attacking.** Katana hits fill it fastest. Shotgun blasts help,
    and so does every shot you deflect back at the boss. A glory kill on one of

@@ -533,7 +533,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 					Game.fx.missile_strike(t, 1.5 + i * 0.09, 2.6, 20.0 * damage_mult)
 				Game.gore.sparks(global_position + Vector3(0, 3.6, 0), Vector3.UP, 24, Color(Game.palette.neon_c) * 1.6)
 				Sfx.play_at("missile", global_position, 4.0)
-				Game.show_hint_once("missile", "MISSILES INBOUND - GET OUT OF THE RED CIRCLES")
+				Game.show_hint_once("missile", "MISSILES INBOUND - GET OUT OF THE RED CIRCLES", true)
 				recover_time = 0.9
 				_set_state(S.RECOVER)
 			return [Vector3.ZERO, dir]
@@ -641,7 +641,7 @@ func _begin_red(dir: Vector3) -> void:
 	_lunge = dir
 	_set_state(S.RED_WINDUP)
 	Sfx.play("alarm", -6.0, 1.5)
-	Game.show_hint_once("red_signal", "RED SIGNAL: GET CLEAR, OR DASH THROUGH IT AT THE LAST MOMENT")
+	Game.show_hint_once("red_signal", "RED SIGNAL: GET CLEAR, OR DASH THROUGH IT AT THE LAST MOMENT", true)
 	_log_move("red")
 	if kind == "ninja":
 		_plan_cross()
@@ -763,7 +763,7 @@ func _perfect_dodge() -> void:
 	if _perfect:
 		return
 	_perfect = true
-	Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 0.7, "shake": 4.0, "pitch": 1.3})
+	Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"lane": "top", "hold": 0.7, "shake": 4.0, "pitch": 1.3})
 	Sfx.play("deflect", 0.0, 1.4, 0.0)
 	Game.slowmo(0.35, 0.4)
 	press_kamae(kamae.max_value * PERFECT_KAMAE)
