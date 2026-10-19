@@ -36,6 +36,9 @@ const DIM := Color(0.62, 0.58, 0.78)
 const DARK := Color(0.03, 0.015, 0.07)
 const AUDIO_NAMES := {"Master": "MASTER", "Music": "MUSIC", "SFX": "SOUND EFFECTS", "Ambience": "AMBIENCE", "UI": "MENUS AND HUD"}
 
+## The screen's tabs and title (the dev menu, DevMenu, brings its own).
+var tabs: Array[String] = TABS
+var title := "SETTINGS"
 var tab := 0
 var sel := 0 # selected row
 var slot := 0 # selected binding slot on a key row
@@ -100,6 +103,11 @@ func close() -> void:
 	closed.emit()
 
 
+## The key that opens this screen.
+func open_key() -> Key:
+	return KEY_TAB
+
+
 ## Settings can be opened only from the title and the pause screen.
 func can_open() -> bool:
 	return not visible and Game.state in ["title", "paused"]
@@ -107,8 +115,8 @@ func can_open() -> bool:
 
 # ---------------------------------------------------------------- rows
 func _set_tab(i: int, keep_row := false) -> void:
-	tab = wrapi(i, 0, TABS.size())
-	rows = _build_rows(TABS[tab])
+	tab = wrapi(i, 0, tabs.size())
+	rows = _build_rows(tabs[tab])
 	sel = clampi(sel, 0, maxi(rows.size() - 1, 0)) if keep_row else 0
 	slot = 0
 	capturing = false
@@ -238,6 +246,11 @@ func _set_flash(v: float) -> void:
 	Settings.flash = v
 
 
+## A row with a button: `run` is called when it is clicked.
+func _action(label: String, button: String, run: Callable, help: String) -> Dictionary:
+	return {"type": "action", "label": label, "button": button, "run": run, "help": help}
+
+
 func _slider(label: String, lo: float, hi: float, step: float, getter: Callable, setter: Callable, fmt: Callable, help: String) -> Dictionary:
 	return {"type": "slider", "label": label, "lo": lo, "hi": hi, "step": step, "get": getter, "set": setter, "fmt": fmt, "help": help}
 
@@ -287,7 +300,7 @@ func _flush_save() -> void:
 
 
 func _reset_tab() -> void:
-	match TABS[tab]:
+	match tabs[tab]:
 		"AUDIO":
 			Settings.reset_audio()
 		"VIDEO":
@@ -298,7 +311,7 @@ func _reset_tab() -> void:
 			Settings.reset_comfort()
 	Settings.apply_all()
 	_set_tab(tab, true)
-	_show_note("%s RESET TO DEFAULTS" % TABS[tab])
+	_show_note("%s RESET TO DEFAULTS" % tabs[tab])
 	_changed()
 
 
@@ -328,7 +341,7 @@ func _finish_capture(ev: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		# Tab opens the menu from the title and the pause screen
-		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_TAB and can_open():
+		if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == open_key() and can_open():
 			open()
 			get_viewport().set_input_as_handled()
 		return
@@ -424,6 +437,10 @@ func _gui_input(event: InputEvent) -> void:
 				for s in Settings.SLOTS:
 					if _slot_rect(row, s).has_point(mp):
 						_start_capture(row, s)
+			"action":
+				if _value_rect(row).has_point(mp):
+					Sfx.play("ui_click", -4.0)
+					r.run.call()
 	elif event is InputEventMouseMotion:
 		if _dragging >= 0:
 			_drag_to(mp.x)
@@ -498,7 +515,7 @@ func _row_at(p: Vector2) -> int:
 
 
 func _tab_at(p: Vector2) -> int:
-	for i in TABS.size():
+	for i in tabs.size():
 		if _tab_rect(i).has_point(p):
 			return i
 	return -1
@@ -566,16 +583,16 @@ func _paint() -> void:
 	var a: Color = Game.palette.get("neon_a", Hud.MAGENTA)
 	var b: Color = Game.palette.get("neon_b", Hud.CYAN)
 	var gold: Color = Game.palette.get("neon_c", Hud.YELLOW)
-	_text(c, "SETTINGS", Ui.font_big, TITLE_PX, Vector2(14, 9), Color.WHITE)
+	_text(c, title, Ui.font_big, TITLE_PX, Vector2(14, 9), Color.WHITE)
 	# tabs
-	for i in TABS.size():
+	for i in tabs.size():
 		var tr := _tab_rect(i)
 		var on := i == tab
 		c.draw_rect(tr, a if on else Color(0.1, 0.07, 0.18))
 		if i == _hover_tab and not on:
 			c.draw_rect(tr, a, false, 1.0)
-		var tw := _w(TABS[i], Ui.font_bold, LABEL_PX)
-		_text_in(c, TABS[i], Ui.font_bold, LABEL_PX, tr.position.x + (tr.size.x - tw) * 0.5, tr, DARK if on else TEXT)
+		var tw := _w(tabs[i], Ui.font_bold, LABEL_PX)
+		_text_in(c, tabs[i], Ui.font_bold, LABEL_PX, tr.position.x + (tr.size.x - tw) * 0.5, tr, DARK if on else TEXT)
 	c.draw_rect(Rect2(Vector2(10, 50), Vector2(PANEL.x - 20, 1)), Color(a, 0.6))
 	# rows
 	for i in rows.size():
@@ -593,6 +610,8 @@ func _paint() -> void:
 				_paint_option(c, i, r, a, picked)
 			"key":
 				_paint_key(c, i, r, a, gold, picked)
+			"action":
+				_paint_action(c, i, r, b, picked)
 	# help line (or a note, such as a key that moved) and the footer buttons
 	var help_y := ROW_Y + MAX_ROWS * ROW_H + 3
 	var line := ""
@@ -637,6 +656,14 @@ func _paint_option(c: Control, i: int, r: Dictionary, col: Color, picked: bool) 
 	_text_in(c, ">", Ui.font_mono, VALUE_PX, vr.end.x - _w(">", Ui.font_mono, VALUE_PX), vr, arrow)
 	var nw := _w(name, Ui.font_mono, VALUE_PX)
 	_text_in(c, name, Ui.font_mono, VALUE_PX, vr.position.x + (vr.size.x - nw) * 0.5, vr, Color.WHITE)
+
+
+func _paint_action(c: Control, i: int, r: Dictionary, col: Color, picked: bool) -> void:
+	var vr := _value_rect(i)
+	c.draw_rect(vr, Color(col, 0.9) if picked else Color(0.1, 0.07, 0.18))
+	c.draw_rect(vr, col, false, 1.0)
+	var t: String = r.button
+	_text_in(c, t, Ui.font_mono, VALUE_PX, vr.position.x + (vr.size.x - _w(t, Ui.font_mono, VALUE_PX)) * 0.5, vr, DARK if picked else Color.WHITE)
 
 
 func _paint_key(c: Control, i: int, r: Dictionary, col: Color, gold: Color, picked: bool) -> void:

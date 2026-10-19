@@ -21,7 +21,7 @@ const UI_CUES := [
 ]
 const AMBIENCE_CUES := ["thunder"]
 const CRITICAL := [
-	"shotgun", "recharge", "empty", "swing0", "swing1", "swing2", "slice", "execution", "deflect", "headshot",
+	"shotgun", "recharge", "empty", "swing0", "swing1", "swing2", "slice", "execution", "deflect", "deflect_perfect", "headshot",
 	"hurt", "windup", "roar", "slam", "zap", "alarm", "player_death", "felled", "flatline", "finish", "cutin", "boss_intro",
 	"levelup", "wave_clear", "highscore",
 ]

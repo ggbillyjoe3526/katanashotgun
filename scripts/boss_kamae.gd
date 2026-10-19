@@ -8,8 +8,11 @@ extends RefCounted
 
 ## Seconds with no pressure before the bar starts to drain.
 const GRACE := 2.5
-## Share of the full bar lost per second while draining.
+## Share of the full bar lost per second while draining, at full HP.
 const DRAIN := 0.07
+## A hurt boss steadies itself more slowly (Sekiro): the drain scales with
+## its HP, down to this share of DRAIN at no HP left.
+const DRAIN_AT_NO_HP := 0.3
 ## A break lasts the boss's stagger time plus this many seconds.
 const BREAK_EXTRA := 1.5
 ## A glory kill on an add this close to the boss fills this share of its bar.
@@ -64,13 +67,19 @@ func add(amount: float) -> bool:
 	return false
 
 
-## Drains the bar once the player has backed off. Frozen while broken.
-func update(delta: float) -> void:
+## Drains the bar once the player has backed off, more slowly the less HP
+## the boss has left (`hp_ratio`, 0 to 1). Frozen while broken.
+func update(delta: float, hp_ratio := 1.0) -> void:
 	if broken:
 		return
 	var draining := minf(delta, maxf(0.0, idle_t + delta - GRACE))
 	idle_t += delta
-	value = maxf(0.0, value - max_value * DRAIN * draining)
+	value = maxf(0.0, value - max_value * drain_rate(hp_ratio) * draining)
+
+
+## Share of the bar drained per second at this share of the boss's HP.
+static func drain_rate(hp_ratio: float) -> float:
+	return DRAIN * lerpf(DRAIN_AT_NO_HP, 1.0, clampf(hp_ratio, 0.0, 1.0))
 
 
 ## The boss has recovered its stance: an empty bar, ready to fill again.

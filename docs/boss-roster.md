@@ -31,7 +31,8 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | No glory kill | bosses never get a glory kill or poise stagger; Hyakunin-giri doesn't stagger them | LIVE |
 | KAMAE posture | pressure fills a bar; full = KAMAE BROKEN, the boss reels for its stagger time + 1.5 s, F lands the ONIKIRI for 20% max HP (kills at ≤ 20%) | LIVE |
 | KAMAE fill | katana poise ×1.6 (MASAMUNE EDGE's heavy cut ×1.0), shotgun ×0.6, returned bolt = its damage ×0.5, a glory kill on an add within 15 m = 12% of the bar | LIVE |
-| KAMAE drain | after 2.5 s without pressure, 7% of the bar per second | LIVE |
+| Perfect deflect | a deflect in the last 0.15 s before a bolt lands: ×12 return damage (×8 normally). Each boss has one **signature volley** drawn with a big white halo; the first perfect deflect on it adds **+20% KAMAE** when the bolt lands (once per volley), a PERFECT stamp and a short slow motion | PR #31 |
+| KAMAE drain | after 2.5 s without pressure, 7% of the bar per second at full HP, slowing with the boss's HP down to 30% of that (2.1%/s) near death (slower part: PR #31) | LIVE |
 | Sidestep | aimed at from beyond 7 m (+ radius) for 0.35 s, it steps out of the line; cooldown 4 s (6 s for the run's first boss); never up close, never mid-attack | LIVE |
 | RED SIGNAL | one heavy move per boss: spinning red diamond, alarm, a beep 0.2 s before it lands, 0.9–1.0 s warning; can't be deflected or traded with. Dashing as its hit connects = PERFECT: slow motion and +15% KAMAE. Cooldown 14 s | LIVE |
 | Delayed swings | 30% of melee windups hold 1.7× as long; eyes stay dim, then flare with a hiss 0.22 s before the hit | LIVE |
@@ -56,7 +57,7 @@ The fast duelist: a neon-piped cyber-ninja who tests your eyes and footwork, not
 | Attack | Telegraph | Damage | Range | Cooldown | Answer |
 | --- | --- | --- | --- | --- | --- |
 | Dash-slash chain (2 dashes, 3 enraged) | Neon floor line 16 m long that tracks you for the first 60% of a 0.62 s windup (0.42 enraged), then locks; follow-ups windup ×0.6 | 20 + knockback per dash | dash at 30 m/s for up to 0.42 s (about 12 m) | special rotation, 1st of 3 | Step off the line after it locks; punish the 1.0 s recovery at the end |
-| Shuriken fan (5, 7 enraged) | 0.75 s windup sound | 10 each | 13 m/s, 0.16 rad spread | special rotation, 3rd of 3 | Slash to deflect back (fills KAMAE), or strafe out of the fan |
+| Shuriken fan (5, 7 enraged) | 0.75 s windup sound; the shuriken glow white (his signature volley, PR #31) | 10 each | 13 m/s, 0.16 rad spread | special rotation, 3rd of 3 | Slash to deflect back (fills KAMAE); slash at the last moment for a PERFECT and +20% KAMAE; or strafe out of the fan |
 | Blink | Smoke and blink sound, invisible for 0.35 s | none itself | reappears 3.2 m behind you | special rotation, 2nd of 3 | Turn on the sound; dash away or slash first |
 | Blink strike | One-hit windup 0.45 s right after the blink | 16 | 3.8 m, frontal | follows blink | Dash out or interrupt with the shotgun |
 | Melee combo (2 hits, 3 enraged) | Windup 0.45 s, follow-ups 0.3 s | 16 per hit | starts within 3.1 m, hits to 3.8 m, frontal | 1.2–1.8 s | Dash back or sidestep; punish the 0.7 s recovery |
@@ -85,6 +86,7 @@ The zone controller: a six-legged spider mech that keeps its distance and fills 
 | Attack | Telegraph | Damage | Range | Cooldown | Answer |
 | --- | --- | --- | --- | --- | --- |
 | Sweeping gatling | 0.9 s spin-up, barrel glows brighter | 7 per bolt, 25 bolts over 2 s | 14 m/s, sweeps from one side of you to the other | special rotation, 2nd and 4th of 4 | Deflect the stream (each return fills KAMAE) or run against the sweep; punish the 1.0 s recovery |
+| Signature round (PR #31) | ends every gatling sweep: one big white-haloed round, aimed straight at you | 14 | 12 m/s | with the gatling | Deflect it at the last moment: PERFECT, +20% KAMAE; or sidestep |
 | Missile strike (7 rings, 9 enraged) | Beep, pods glow for 0.7 s, then red floor rings; the first lands on you, the rest 2.5–8 m around | 20 per missile | 2.6 m rings, landing 1.5 s after, staggered 0.09 s apart | special rotation, 1st of 4 | Keep moving out of the rings; close in during the 0.9 s recovery |
 | Call the brood | Roar | none itself | 3 adds (2 grunts, 1 gunner) 4–7 m from her | special rotation, 3rd of 4; becomes a gatling if more than 6 enemies are alive | Glory-kill the adds near her (each fills 12% of her KAMAE) |
 | Stomp | Chassis rises over 0.8 s | 22 | shockwave ring to 12 m at 13 m/s | within 6 m, every 2.5–3.5 s | Jump the ring; punish the 1.0 s recovery |
@@ -115,7 +117,7 @@ The heavyweight: a chrome oni that walks you down and hits like a truck. Most HP
 | Melee combo (2 hits) | Windup 0.7 s, follow-up 0.45 s | 32 per hit + big knockback | starts within 4.45 m, hits to 5.65 m, frontal | 1.3–2.0 s | Dash back out of reach; punish the 0.7 s recovery |
 | Leap slam | Roar, leaps toward you (up to 14 m) | 26 | shockwave ring to 24 m at 15 m/s | special rotation, 1st and 3rd (calm) | Jump the ring (hint: "JUMP OVER THE SHOCKWAVE"); punish the 1.0 s recovery |
 | Charge | Roar, 0.8 s windup | 30 + heavy knockback | straight line at 15.5 m/s for up to 1.15 s | special rotation, 2nd | Dash sideways; a wall hit shakes the screen; punish the 1.4 s recovery |
-| Fan volley (enraged only) | 0.75 s windup | 14 per bolt, 9 bolts | 11 m/s, 0.13 rad spread | special rotation, 3rd (enraged) | Deflect back or strafe out |
+| Fan volley (enraged only) | 0.75 s windup; the bolts glow white (his signature volley, PR #31) | 14 per bolt, 9 bolts | 11 m/s, 0.13 rad spread | special rotation, 3rd (enraged) | Deflect back; at the last moment for a PERFECT and +20% KAMAE; or strafe out |
 
 - **Movement:** always walks straight at you. No strafing, no retreat.
 - **Enrage (50% HP):** speed jumps to 5.6, the fan volley replaces every third leap, shorter special cooldowns. His eyes turn red.
@@ -142,6 +144,7 @@ Each boss owns a different distance and a different answer: KUROKAGE is about re
 | Jump answers | none | Stomp ring | Leap slam ring |
 | Dash answers | Dash lines, blink strike | Missile rings | Combo, charge |
 | Deflect answers (fills KAMAE) | Shuriken fan | Gatling | Fan volley (enraged) |
+| Signature volley (perfect deflect, PR #31) | Shuriken fan | Round at the end of each gatling sweep | Fan volley (enraged) |
 | Calls adds | no | yes, 3 at a time | no |
 | Reinforcement timer | 7 s | 10 s | 7 s |
 | Enrage adds | 3rd dash, 3rd hit, wider fan | more missiles | speed 5.6, fan volley |
@@ -175,6 +178,7 @@ A new boss is ready to build when every line below holds. Copy the list into the
 - [ ] HP sits inside the current range (2600–5200), justified by its role.
 - [ ] Its KAMAE bar scales with how hard it is to pressure (900–1600 today).
 - [ ] At least one attack can be deflected or turned against it, so KAMAE has an aggressive route.
+- [ ] One deflectable volley is its signature volley (white halo, `Bolt.mark_signature`), timed so a perfect deflect is fair to read.
 - [ ] If it can be the first boss (wave 3), a newcomer can beat it; the hardest moves wait for 50% HP.
 - [ ] Enrage at 50% adds pressure, not a new wall.
 - [ ] All its randomness comes from the run's seeded dice, so a seed replays the same fight.
@@ -205,3 +209,4 @@ A new boss is ready to build when every line below holds. Copy the list into the
 | 2026-10-18 | KAMAE posture and the ONIKIRI are LIVE (PR #17): boss glory kills and the 15% DEATHBLOW are gone. |
 | 2026-10-18 | Movesets built (PR #19): sidesteps, delayed swings, punish windows, an area move and a RED SIGNAL per boss, seeded boss dice. |
 | 2026-10-18 | KAMAE (#17) and the movesets (#19) merged: every row is LIVE. |
+| 2026-10-19 | Perfect deflect (PR #31, play-test experiment): a signature volley per boss (Kurokage's shuriken fan, a new white round at the end of Tetsugumo's gatling sweep, Shuten's fan volley); a perfect deflect on it adds +20% KAMAE. KAMAE drains more slowly as the boss loses HP (30% of the drain near death). |

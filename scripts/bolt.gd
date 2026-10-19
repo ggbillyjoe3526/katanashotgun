@@ -2,7 +2,9 @@ class_name Bolt
 extends Node3D
 ## Slow plasma bolts fired by gunners and the boss. Slashing one with the
 ## katana sends it straight back at whoever fired it: it homes on its shooter
-## and hits it, hard (spec §3.2 Deflect).
+## and hits it, hard (spec §3.2 Deflect). A slash in the last moment before
+## it lands is a PERFECT deflect: it goes back harder, and on a boss's white
+## signature volley it also hits the boss's KAMAE hard (spec §3.2).
 ## Also used for the player's Crimson Wave (kind = "wave", pierces enemies).
 ## Bolts come from the WaveDirector's pool (`fire_bolt`): a spent bolt hides
 ## and goes back instead of being freed.
@@ -33,6 +35,14 @@ var _shooter_spawn := 0
 var _target_spawn := 0
 ## Deflected and on its way back (homing while it has a target).
 var _returning := false
+## Part of a boss's signature volley (its number; 0: an ordinary bolt).
+var volley := 0
+## Sent back by a PERFECT deflect.
+var perfect := false
+## Share of its target's KAMAE bar this bolt fills when it lands (a perfect
+## deflect on a signature volley; 0 otherwise).
+var kamae_bonus := 0.0
+var _halo_size := 1.0
 
 ## A returned bolt hits this many times harder than it was fired.
 const RETURN_DAMAGE_MULT := 8.0
@@ -41,6 +51,20 @@ const RETURN_SPEED_MULT := 2.4
 ## With the shooter dead, the bolt takes the enemy nearest the aim inside
 ## this cone (dot product with the aim).
 const FALLBACK_MIN_DOT := 0.8
+## PERFECT deflect: the slash lands this many seconds or less before the
+## bolt would hit the player.
+const PERFECT_WINDOW := 0.15
+## A bolt heading this far past the player's body still counts as landing
+## (the near edge of a fan).
+const PERFECT_NEAR_MISS := 0.6
+## A perfect return hits this many times harder than the bolt was fired
+## (a normal return: RETURN_DAMAGE_MULT).
+const PERFECT_DAMAGE_MULT := 12.0
+## The first perfect deflect on a signature volley fills this share of the
+## boss's KAMAE bar when the bolt lands (once per volley).
+const SIGNATURE_KAMAE := 0.2
+const SIGNATURE_COLOR := Color(1.0, 1.0, 1.0, 0.95)
+const PERFECT_COLOR := Color(0.85, 1.0, 1.0)
 const _NO_HIT := {}
 
 
@@ -55,6 +79,9 @@ func setup(is_hostile: bool, pos: Vector3, velocity: Vector3, dmg: float, k := "
 	target = null
 	_target_spawn = 0
 	_returning = false
+	volley = 0
+	perfect = false
+	kamae_bonus = 0.0
 	if kind == "wave":
 		radius = 1.4
 		life = 0.55
@@ -65,6 +92,10 @@ func reuse() -> void:
 	shooter = null
 	target = null
 	_returning = false
+	volley = 0
+	perfect = false
+	kamae_bonus = 0.0
+	_halo_size = 1.0
 	vel = Vector3.ZERO
 	damage = 12.0
 	hostile = true
@@ -158,9 +189,45 @@ func _build_wave() -> void:
 	_core = mi
 
 
+## Marks this bolt as part of a boss's signature volley: a white-hot halo
+## that says "time this one" (spec §3.2 Perfect deflect).
+func mark_signature(id: int) -> void:
+	volley = id
+	_halo_size = 1.45
+	_halo_mat.set_shader_parameter("color", SIGNATURE_COLOR)
+
+
+## Seconds until a bolt at `pos` flying at `velocity` reaches a body of
+## radius `reach` around `center`, along its straight path. 0 if it is
+## already there; INF if it is flying away or would pass farther than
+## `reach + near_miss` from the centre.
+static func time_to_hit(pos: Vector3, velocity: Vector3, center: Vector3, reach: float, near_miss := 0.0) -> float:
+	var v2 := velocity.length_squared()
+	if v2 < 0.0001:
+		return INF
+	var rel := center - pos
+	if rel.length() <= reach:
+		return 0.0
+	var t_close := rel.dot(velocity) / v2
+	if t_close <= 0.0:
+		return INF
+	var miss := (rel - velocity * t_close).length()
+	if miss > reach + near_miss:
+		return INF
+	# time to the body's edge; a near miss counts at its closest point
+	return maxf(0.0, t_close - sqrt(maxf(0.0, reach * reach - miss * miss)) / sqrt(v2))
+
+
+## True when a slash now would be a PERFECT deflect: the bolt is about to
+## hit the player whose chest is at `chest`.
+func in_perfect_window(chest: Vector3) -> bool:
+	return hostile and time_to_hit(global_position, vel, chest, radius + 0.5, PERFECT_NEAR_MISS) <= PERFECT_WINDOW
+
+
 ## `split` is a Yata Mirror copy: it flies at its parent's speed and makes
-## no fuss of its own (no count, popup, sound or hitstop).
-func deflect(dir: Vector3, split := false) -> void:
+## no fuss of its own (no count, popup, sound or hitstop). `is_perfect`: the
+## slash landed in the last moment (see `in_perfect_window`).
+func deflect(dir: Vector3, split := false, is_perfect := false) -> void:
 	if not hostile:
 		return
 	hostile = false
@@ -181,21 +248,50 @@ func deflect(dir: Vector3, split := false) -> void:
 		else:
 			life = 2.0
 		vel = dir * speed
-		damage *= RETURN_DAMAGE_MULT
+		perfect = is_perfect
+		damage *= PERFECT_DAMAGE_MULT if perfect else RETURN_DAMAGE_MULT
+	var col := PERFECT_COLOR if perfect else Color(0.4, 1.0, 1.0)
 	if kind == "shuriken":
-		_core_mat.set_shader_parameter("color", Color(0.4, 1.0, 1.0, 1.0))
+		_core_mat.set_shader_parameter("color", Color(col.r, col.g, col.b, 1.0))
 	else:
-		_core_mat.set_shader_parameter("albedo_color", Color(0.4, 1.0, 1.0))
-	_halo_mat.set_shader_parameter("color", Color(0.3, 0.9, 1.0, 0.9))
+		_core_mat.set_shader_parameter("albedo_color", col)
+	_halo_mat.set_shader_parameter("color", Color(0.75, 1.0, 1.0, 0.95) if perfect else Color(0.3, 0.9, 1.0, 0.9))
 	if split:
 		return
 	Game.deflects += 1
+	if perfect:
+		_perfect_deflect(dir)
+		return
 	Sfx.play("deflect", 0.0)
 	Game.hitstop(0.07)
 	if Game.hud and Game.hud.post:
 		Game.hud.post.flash(0.12)
 	Game.popup.emit("DEFLECT!", Color(0.4, 1.0, 1.0))
 	Game.gore.sparks(global_position, dir, 18, Color(0.6, 1.8, 2.0))
+
+
+## The PERFECT deflect: a ringing clang, a white flash and a longer beat of
+## hitstop. The first one on a boss's signature volley also earns the big
+## KAMAE hit (paid when the bolt lands) and the centre stamp PERFECT.
+func _perfect_deflect(dir: Vector3) -> void:
+	Game.perfect_deflects += 1
+	if Game.debug_autoplay:
+		print("[perfect] deflect kind=%s signature=%d frame=%d" % [kind, volley, Engine.get_frames_drawn()])
+	Sfx.play("deflect_perfect", 0.0, 1.0, 0.03)
+	Game.hitstop(0.1)
+	if Game.hud and Game.hud.post:
+		Game.hud.post.flash(0.35)
+	Game.popup.emit("PERFECT DEFLECT!", Color.WHITE)
+	Game.gore.sparks(global_position, dir, 32, Color(2.0, 2.0, 2.0))
+	if Game.player:
+		Game.player.add_trauma(0.2)
+	if volley != 0 and _same_spawn(shooter, _shooter_spawn) and shooter.claim_signature(volley):
+		kamae_bonus = SIGNATURE_KAMAE
+		if Game.debug_autoplay:
+			print("[perfect] signature volley %d pays %.0f%% KAMAE on landing" % [volley, SIGNATURE_KAMAE * 100.0])
+		if Game.hud:
+			Game.hud.stamp("PERFECT", Color(0.4, 1.0, 1.0), 14, {"anchor": Vector2(0.5, 0.5), "off": Vector2(0, -44), "hold": 0.7, "shake": 5.0, "sound": ""})
+		Game.slowmo(0.35, 0.3)
 
 
 ## Where a returned bolt aims on an enemy's body.
@@ -261,13 +357,14 @@ func _physics_process(delta: float) -> void:
 		_core.scale = Vector3.ONE * (1.0 + (1.0 - k) * 0.6)
 		_core.material_override.set_shader_parameter("intensity", 2.2 * k)
 	else:
-		_halo.scale = Vector3.ONE * (1.0 + sin(life * 40.0) * 0.15)
+		_halo.scale = Vector3.ONE * _halo_size * (1.0 + sin(life * 40.0) * 0.15)
 		if kind == "shuriken":
 			_core.rotate_y(delta * 25.0)
 		_trail_t -= delta
 		if _trail_t <= 0.0:
 			_trail_t = 0.03
-			Game.gore.spawn_drop(global_position, Vector3.ZERO, 0.15, 0.08, 1, Color(1.8, 0.7, 0.2) if hostile else Color(0.5, 1.6, 2.0))
+			var trail := Color(1.8, 0.7, 0.2) if hostile else (Color(1.8, 2.0, 2.0) if perfect else Color(0.5, 1.6, 2.0))
+			Game.gore.spawn_drop(global_position, Vector3.ZERO, 0.15, 0.08, 1, trail)
 	if hostile:
 		var p := Game.player
 		if p and not p.dead:
@@ -290,6 +387,10 @@ func _physics_process(delta: float) -> void:
 					e.take_hit(damage, "wave", vel.normalized(), false, damage * 0.5, 4.0)
 				else:
 					var killed: bool = e.take_hit(damage, "deflect", vel.normalized(), false, 140.0, 12.0)
+					if kamae_bonus > 0.0 and not killed and e.kamae:
+						# a perfect deflect on its signature volley: the big KAMAE hit
+						e.press_kamae(e.kamae.max_value * kamae_bonus)
+						Game.gore.sparks(to, Vector3.UP, 24, Color(2.0, 2.0, 2.0))
 					Game.gore.sparks(to, -vel.normalized(), 14, Color(0.6, 1.8, 2.0))
 					# the payback lands: a cyan flash on the body and a crack;
 					# a kill also gets a beat of hitstop (not every hit, so a

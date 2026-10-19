@@ -47,6 +47,7 @@ When a wave is cleared, the tally adds up **chips** and multiplies them by a
 | GLORY KILLS | 200 each |
 | HEADSHOTS | 75 each |
 | DEFLECTS | 100 each |
+| PERFECT DEFLECTS | 150 each ([perfect deflects](Weapons#perfect-deflect), on top of DEFLECTS) |
 | BOSS BOUNTY | 2000 × the wave number (boss waves only) |
 
 **Mult:**

@@ -19,6 +19,7 @@ const MAX_SPARKS := 1400
 const MAX_ROWS := 7
 # tally layout (UI pixels): narrow enough to clear the HUD corner panels
 const TALLY_W := 260.0
+const TALLY_DETAIL_X := 118.0 # where the tally's detail column ("31 X 25") starts, at the least
 const ROW_Y0 := 40.0
 const ROW_H := 15.0
 const BOX_H := 26.0
@@ -48,6 +49,7 @@ var _tally_on := false
 var _tally_ready := true
 var _tt := 0.0
 var _td: Dictionary = {}
+var _detail_x := TALLY_DETAIL_X # this tally's detail column
 var _panel: Control
 var _panel_bg: Shard
 var _panel_edges: Array[ColorRect] = []
@@ -672,6 +674,10 @@ func show_tally(d: Dictionary) -> void:
 		if on:
 			r.name.text = rows[i][0]
 			r.detail.text = rows[i][1]
+	# the detail column starts after the widest row name (PERFECT DEFLECTS)
+	_detail_x = TALLY_DETAIL_X
+	for i in mini(rows.size(), MAX_ROWS):
+		_detail_x = maxf(_detail_x, 14.0 + _rows[i].name.get_combined_minimum_size().x + 8.0)
 	var n := mini(rows.size(), MAX_ROWS)
 	var mults: Array = d.mults
 	_mult_shown = float(mults[0][1])
@@ -794,7 +800,7 @@ func _update_tally(rd: float) -> void:
 		r.name.size = Vector2.ZERO
 		r.name.position = Vector2(14 + slide, y)
 		r.detail.size = Vector2.ZERO
-		r.detail.position = Vector2(118 + slide, y + 1)
+		r.detail.position = Vector2(_detail_x + slide, y + 1)
 		var kv := clampf((t - rt) / 0.16, 0.0, 1.0)
 		var val := int(float(rows[i][2]) * kv)
 		r.value.text = _num(val)
