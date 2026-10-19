@@ -80,4 +80,5 @@ Your [Player Level](Player-Level-and-Rewards) and boss rewards never change
 your stats, so scores on the same seed are always a fair race.
 
 The game is fully offline, so there are no online leaderboards. To race a
-friend, play the same [seed](Seeds) and compare scores.
+friend, play the same [seed](Seeds) and compare scores. A
+[run card](Run-Cards) is a quick way to show them yours.

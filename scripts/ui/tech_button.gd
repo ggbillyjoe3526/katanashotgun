@@ -8,6 +8,7 @@ extends Control
 signal pressed
 
 const ARM_S := 3.0
+const FLASH_S := 1.5
 
 var text := ""
 var accent := Color(1.0, 0.2, 0.7)
@@ -15,6 +16,7 @@ var font_px := Ui.PIX
 var confirm_text := ""
 var _label := ""
 var _armed_t := 0.0 # seconds left to confirm, in real time
+var _flash_t := 0.0 # seconds a flash() note stays, in real time
 var _hover := false
 
 
@@ -70,7 +72,23 @@ func disarm() -> void:
 	_fit()
 
 
+## Shows `note` in place of the label for a moment ("COPIED"). The button
+## keeps its width, so text laid out beside it holds still.
+func flash(note: String) -> void:
+	var w := size.x
+	_armed_t = 0.0
+	_flash_t = FLASH_S
+	text = note
+	_fit()
+	size.x = maxf(size.x, w)
+
+
 func _process(_delta: float) -> void:
+	if _flash_t > 0.0:
+		_flash_t -= Game.real_dt
+		if _flash_t <= 0.0:
+			text = _label
+			_fit()
 	if _armed_t > 0.0:
 		_armed_t -= Game.real_dt
 		if _armed_t <= 0.0:

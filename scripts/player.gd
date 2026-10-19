@@ -735,7 +735,7 @@ func _start_glory(e: Enemy, plunge := false) -> void:
 	elif facing.dot(to_me) < -0.35:
 		gk_kind = "back"
 	else:
-		gk_kind = "front_a" if randf() < 0.5 else "front_b"
+		gk_kind = "front_a" if Game.rng_combat.randf() < 0.5 else "front_b"
 	gk_target = e
 	gk_t = 0.0
 	gk_from = _head_base # where the camera is drawn now (a tick behind the body), so it doesn't pop
@@ -968,8 +968,9 @@ func _glory_beat(beat: String) -> void:
 				muzzle_light.light_energy = 9.0
 				var muzzle := vm.muzzle_position()
 				var target := headp if beat.ends_with("headpop") else chest
+				var r := Game.rng_fx
 				for i in 5:
-					Game.fx.arc(muzzle, target + Vector3(randf_range(-0.3, 0.3), randf_range(-0.3, 0.3), randf_range(-0.3, 0.3)), 0.14, 0.04, 1.0, 1)
+					Game.fx.arc(muzzle, target + Vector3(r.randf_range(-0.3, 0.3), r.randf_range(-0.3, 0.3), r.randf_range(-0.3, 0.3)), 0.14, 0.04, 1.0, 1)
 			if beat.contains("kill_"):
 				_glory_kill(beat.get_slice("kill_", 1))
 
@@ -1054,9 +1055,10 @@ func _fire() -> void:
 	var falloff_start := 18.0 if focus else 7.0
 	var per := {}
 	var muzzle := vm.muzzle_position()
+	var dice := Game.rng_combat
 	for i in pellets:
-		var a := randf() * TAU
-		var r := sqrt(randf()) * spread
+		var a := dice.randf() * TAU
+		var r := sqrt(dice.randf()) * spread
 		var dir := (basis * Vector3(cos(a) * r, sin(a) * r, -1.0)).normalized()
 		var to := origin + dir * 48.0
 		var q := PhysicsRayQueryParameters3D.create(origin, to, 1 | 4)
@@ -1083,9 +1085,10 @@ func _fire() -> void:
 		if i % 2 == 0:
 			Game.fx.arc(muzzle, end, 0.1, 0.035, 1.0, 1 if i % 4 == 0 else 0)
 	# a few short arcs spray off the electrodes
+	var fx_r := Game.rng_fx
 	for k in 3:
-		var sd := (basis * Vector3(randf_range(-0.5, 0.5), randf_range(-0.4, 0.4), -1.0)).normalized()
-		Game.fx.arc(muzzle, muzzle + sd * randf_range(0.5, 1.3), 0.06, 0.02, 1.3, 0)
+		var sd := (basis * Vector3(fx_r.randf_range(-0.5, 0.5), fx_r.randf_range(-0.4, 0.4), -1.0)).normalized()
+		Game.fx.arc(muzzle, muzzle + sd * fx_r.randf_range(0.5, 1.3), 0.06, 0.02, 1.3, 0)
 	var stagger_mult := 1.0 + 0.6 * Game.rank("ikazuchi")
 	var kb := 6.0 + 8.0 * Game.rank("ikazuchi")
 	# Raijin's Fork: pick the leap targets before anyone dies, so the arcs
@@ -1282,7 +1285,7 @@ func _autoplay(delta: float) -> Vector2:
 	yaw = lerp_angle(yaw, want_yaw, 1.0 - exp(-10.0 * delta))
 	pitch = lerpf(pitch, atan2(aim.y, Vector2(aim.x, aim.z).length()), 1.0 - exp(-10.0 * delta))
 	if _auto_t <= 0.0:
-		_auto_t = randf_range(0.8, 2.0)
+		_auto_t = Game.rng_fx.randf_range(0.8, 2.0) # the bot stands in for a player: unseeded on purpose
 		_auto_strafe = -_auto_strafe
 	var close := best_d < 3.0 + best.radius
 	# a staggered enemy gets a glory kill (pressed for the bot above), not a slash

@@ -9,6 +9,8 @@ smoke.log
 # Unit test log (tools/unit_tests.sh)
 unit.log
 movement.log
+seed_a.log
+seed_b.log
 # OS / editors
 .DS_Store
 Thumbs.db

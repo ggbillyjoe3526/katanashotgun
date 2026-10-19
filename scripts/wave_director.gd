@@ -40,7 +40,9 @@ var _boss_cycle: Array = []
 var _cycle_count := 0
 var _cleanup: Array = []
 var _cleanup_t := 0.0
-var _rng: RandomNumberGenerator
+var _rng: RandomNumberGenerator # the wave plan: mutators, line-ups, boss order
+var _spawn_rng: RandomNumberGenerator # where and how enemies arrive
+var _spawn_index := 0 # spawns so far this wave: each one's dice come from it
 var boss_bounty := 0
 var last_mutator := "" # never the same mutator twice in a row
 var _strike_t := 0.0
@@ -53,6 +55,7 @@ var _clock := 0.0
 
 func _ready() -> void:
 	_rng = Game.rng_waves
+	_spawn_rng = Game.rng_spawns
 	Enemy.list_dirty = true
 	for kind in ENEMY_PREWARM:
 		_enemy_pool[kind] = []
@@ -158,27 +161,16 @@ func _next_wave() -> void:
 	Game.wave = wave
 	Game.wave_damage = 0.0
 	Game.begin_wave_stats()
-	Game.seed_hazards(wave)
+	plan_wave(wave)
 	_strike_t = STRIKE_FIRST
 	boss_bounty = 0
 	boss_bounty_name = ""
 	phase = "intro"
 	phase_t = 6.0 # fallback; the HUD's countdown normally ends the intro
 	if is_boss_wave(wave):
-		Game.mutator = {}
-		boss_kind = _next_boss()
-		queue = []
 		Game.hud.wave_intro(wave, "BOSS INCOMING", Color(Game.palette.neon_a), true)
 		Sfx.play("alarm", -3.0)
 	else:
-		Game.mutator = Mutators.roll(_rng, wave, last_mutator)
-		for a in OS.get_cmdline_user_args():
-			if a.begins_with("--mutator="):
-				# debug: force one on every regular wave (the roll still draws)
-				Game.mutator = Mutators.get_def(a.substr(10))
-		if not Game.mutator.is_empty():
-			last_mutator = Game.mutator.id
-		queue = _composition(wave)
 		var sub := ""
 		if not Game.mutator.is_empty():
 			# two lines: the name and its score, then what it does
@@ -186,8 +178,33 @@ func _next_wave() -> void:
 		Game.hud.wave_intro(wave, sub, Color.WHITE, false)
 		Sfx.play("riser", -6.0)
 	Game.arena.set_storm(bool(Game.mut("storm", false)))
+	if Game.debug_autoplay:
+		# tools/seed_check.sh compares these lines between two runs of a seed
+		print("[plan] wave %d mut=%s boss=%s lineup=%s" % [wave, Game.mutator.get("id", "-"), boss_kind if is_boss_wave(wave) else "-", _lineup_code()])
 	if wave == 1:
 		Game.hint.emit("KATANA KILLS CHARGE THE SHOTGUN  -  KEEP BOTH HANDS BUSY")
+
+
+## Seeds are law (spec §7.5): reseeds the wave streams from the seed and `w`,
+## then rolls the wave's plan (its mutator and line-up, or its boss). Only
+## the seed and the plans of the waves before decide it, never how they
+## were played.
+func plan_wave(w: int) -> void:
+	Game.seed_wave(w)
+	_spawn_index = 0
+	if is_boss_wave(w):
+		Game.mutator = {}
+		boss_kind = _next_boss()
+		queue = []
+		return
+	Game.mutator = Mutators.roll(_rng, w, last_mutator)
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--mutator="):
+			# debug: force one on every regular wave (the roll still draws)
+			Game.mutator = Mutators.get_def(a.substr(10))
+	if not Game.mutator.is_empty():
+		last_mutator = Game.mutator.id
+	queue = _composition(w)
 
 
 func _composition(w: int) -> Array:
@@ -212,6 +229,15 @@ func _composition(w: int) -> Array:
 	return rest
 
 
+## The queued line-up as one letter per enemy (g grunt, n gunner, b brute),
+## for the autoplay log.
+func _lineup_code() -> String:
+	var out := ""
+	for item in queue:
+		out += {"grunt": "g", "gunner": "n", "brute": "b"}.get(item[0], "?")
+	return out
+
+
 func _max_alive() -> int:
 	return int(mini(8 + wave * 2, 22) * float(Game.mut("max_alive", 1.0)))
 
@@ -224,12 +250,16 @@ func _pick_spawn() -> Vector3:
 		if d > 11.0 and d < 46.0:
 			cands.append(sp)
 	if cands.is_empty():
-		return Game.arena.spawn_points[_rng.randi() % Game.arena.spawn_points.size()]
-	return cands[_rng.randi() % cands.size()]
+		return Game.arena.spawn_points[_spawn_rng.randi() % Game.arena.spawn_points.size()]
+	return cands[_spawn_rng.randi() % cands.size()]
 
 
 func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()) -> Enemy:
-	var at := pos + Vector3(0, minf(7.0 + _rng.randf() * 2.0, Game.arena.spawn_clearance(pos)), 0)
+	var at := pos + Vector3(0, minf(7.0 + _spawn_rng.randf() * 2.0, Game.arena.spawn_clearance(pos)), 0)
+	# each enemy's own dice (timers, strafing, drops) come from the seed, the
+	# wave and its place in the wave's spawn order
+	_spawn_index += 1
+	var dice := hash([Game.run_seed, wave, _spawn_index, "dice"]) & 0x7fffffff
 	var free: Array = _enemy_pool.get(kind, [])
 	if not free.is_empty() and free[0][1] <= _clock:
 		# only horde kinds are pooled, so `before_ready` (bosses) never runs here
@@ -237,6 +267,7 @@ func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()
 		var pe: Enemy = free.pop_front()[0]
 		pe.reuse()
 		pe.setup(kind, scale)
+		pe.dice_seed = dice
 		pe.position = at
 		pe.activate()
 		return pe
@@ -248,6 +279,7 @@ func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()
 	if _enemy_pool.has(kind):
 		e.pool = self
 	e.setup(kind, scale)
+	e.dice_seed = dice
 	e.position = at
 	if before_ready.is_valid():
 		before_ready.call(e)
@@ -258,8 +290,8 @@ func _spawn(kind: String, scale: float, pos: Vector3, before_ready := Callable()
 ## Reinforcements, called by bosses (the mech radios for help).
 func spawn_adds(n: int, near: Vector3) -> void:
 	for i in n:
-		var a := _rng.randf() * TAU
-		var p := near + Vector3(cos(a), 0, sin(a)) * _rng.randf_range(4.0, 7.0)
+		var a := _spawn_rng.randf() * TAU
+		var p := near + Vector3(cos(a), 0, sin(a)) * _spawn_rng.randf_range(4.0, 7.0)
 		var lim := Game.arena.half - 2.0
 		p.x = clampf(p.x, -lim, lim)
 		p.z = clampf(p.z, -lim, lim)
@@ -310,7 +342,7 @@ func _physics_process(delta: float) -> void:
 			_cleanup_t = 0.12
 			var e = _cleanup.pop_front()
 			if is_instance_valid(e) and not e.dead:
-				e.die("explode", Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)))
+				e.die("explode", Vector3(Game.rng_fx.randf_range(-1, 1), 0, Game.rng_fx.randf_range(-1, 1)))
 	if phase in ["spawning", "boss"] and Game.mut("strikes", false):
 		_storm_strikes(delta)
 	match phase:
@@ -326,10 +358,10 @@ func _physics_process(delta: float) -> void:
 			var alive := Game.enemy_list.size()
 			if not queue.is_empty() and spawn_t <= 0.0 and alive < _max_alive():
 				var sp := _pick_spawn()
-				var group := mini(_rng.randi_range(1, 3), queue.size())
+				var group := mini(_spawn_rng.randi_range(1, 3), queue.size())
 				for i in group:
 					var item: Array = queue.pop_front()
-					var off := Vector3(_rng.randf_range(-2.0, 2.0), 0, _rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
+					var off := Vector3(_spawn_rng.randf_range(-2.0, 2.0), 0, _spawn_rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
 					_spawn(item[0], item[1], sp + off)
 				spawn_t = maxf(0.8, 1.8 - wave * 0.06) * float(Game.mut("spawn_rate", 1.0))
 			if queue.is_empty() and alive == 0:
@@ -413,6 +445,7 @@ func _wave_cleared() -> void:
 		mult *= float(m[1])
 	var total := int(round(chips * mult))
 	Game.add_score(total)
+	Game.note_tally(wave, total)
 	if Game.debug_autoplay:
 		print("[tally] wave %d chips=%d mult=%.2f total=%d rows=%s" % [wave, chips, mult, total, str(rows)])
 	Game.hud.show_tally({"title": "WAVE %02d // CLEAR" % wave, "rows": rows, "chips": chips, "mults": mults, "total": total, "flawless": flawless, "boss": boss_bounty > 0})

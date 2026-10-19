@@ -103,6 +103,7 @@ var initials_label: Label
 var initials_slots: Array[Label] = []
 var entering := false
 var initials := ""
+var run_card: RunCardPanel # results: save a postcard of the run (spec §19.1 #10)
 
 var post: PostFx
 var juice: Juice
@@ -111,6 +112,11 @@ var title_settings: TechButton
 var pause_settings: TechButton
 var title_quit: TechButton
 var pause_quit: TechButton
+# seeds to share (spec §7.5): PLAY A SEED on the title, COPY on pause and results
+var seed_entry: SeedEntry
+var title_play_seed: TechButton
+var pause_copy: TechButton
+var death_copy: TechButton
 
 # profile (spec §11): the Player Level on the title and results, the armory,
 # and the boss-reward card
@@ -228,6 +234,22 @@ func _ready() -> void:
 	# the settings screen covers the title or pause screen; the text behind it
 	# would peek out at its edges
 	settings_menu.visibility_changed.connect(func(): root.visible = not settings_menu.visible)
+	# added after the settings screen so it sees keys first: Tab is typed
+	# into it, never opens settings behind it
+	seed_entry = SeedEntry.new()
+	seed_entry.theme = root.theme
+	add_child(seed_entry)
+	seed_entry.visibility_changed.connect(func(): root.visible = not seed_entry.visible)
+	seed_entry.chosen.connect(func(s: int): Game.main.play_seed(s))
+	title_play_seed = TechButton.make("PLAY A SEED  [S]", Color(Game.palette.neon_b))
+	title_play_seed.pressed.connect(open_seed_entry)
+	title_root.add_child(title_play_seed)
+	pause_copy = TechButton.make("COPY  [C]", Color(Game.palette.neon_b))
+	pause_copy.pressed.connect(func(): copy_seed(pause_copy))
+	pause_root.add_child(pause_copy)
+	death_copy = TechButton.make("COPY SEED  [C]", Color(Game.palette.neon_b))
+	death_copy.pressed.connect(func(): copy_seed(death_copy))
+	death_root.add_child(death_copy)
 	title_settings = TechButton.make("SETTINGS  [TAB]", Color(Game.palette.neon_a))
 	title_settings.pressed.connect(_open_settings)
 	title_root.add_child(title_settings)
@@ -570,6 +592,8 @@ func _build_death() -> void:
 	level_bar.leveled.connect(_on_player_level)
 	level_bar.finished.connect(_on_level_roll_done)
 	death_root.add_child(level_bar)
+	run_card = RunCardPanel.new()
+	death_root.add_child(run_card)
 
 
 func _build_levelup() -> void:
@@ -714,6 +738,21 @@ func _open_settings() -> void:
 		settings_menu.open()
 
 
+## The title's PLAY A SEED box (S or its button).
+func open_seed_entry() -> void:
+	if Game.state != "title" or settings_menu.visible or seed_entry.visible:
+		return
+	title_quit.disarm()
+	seed_entry.open(Game.main != null and not Game.main.resume.is_empty())
+
+
+## Puts this run's seed on the clipboard, to paste to a friend.
+func copy_seed(btn: TechButton) -> void:
+	DisplayServer.clipboard_set(Game.seed_string(Game.run_seed))
+	btn.flash("COPIED")
+	Sfx.play("ui_click", -4.0)
+
+
 func show_death() -> void:
 	_death_t = 0.0
 	_death_lines = 0
@@ -747,6 +786,7 @@ func show_death() -> void:
 	death_stats.text = ""
 	death_vals.text = ""
 	death_score.text = "SCORE  %07d" % 0
+	run_card.reset()
 	_update_initials()
 
 
@@ -1304,7 +1344,9 @@ func _process(_delta: float) -> void:
 		var sd: Label = pause_root.get_node("Seed")
 		sd.text = "SEED %s" % Game.seed_string(Game.run_seed)
 		sd.size = Vector2.ZERO
-		sd.position = Vector2((vs.x - sd.size.x) * 0.5, vs.y * 0.5 + 40)
+		var sx := roundf((vs.x - sd.size.x - 6.0 - pause_copy.size.x) * 0.5)
+		sd.position = Vector2(sx, vs.y * 0.5 + 40)
+		pause_copy.position = Vector2(sx + sd.size.x + 6.0, roundf(sd.position.y + (sd.size.y - pause_copy.size.y) * 0.5))
 		var lh: Label = pause_root.get_node("LockHint")
 		lh.visible = Game.main and Game.main.lock_failures >= 2
 		lh.size = Vector2.ZERO
@@ -1315,6 +1357,8 @@ func _process(_delta: float) -> void:
 	if death_root.visible:
 		_death_t += delta
 		_death_countup()
+		run_card.visible = death_ready()
+		run_card.place(vs)
 		var t: Label = death_root.get_node("Title")
 		t.size = Vector2.ZERO
 		t.position = Vector2((vs.x - t.size.x) * 0.5, vs.y * 0.05)
@@ -1342,7 +1386,11 @@ func _process(_delta: float) -> void:
 		# a soft pulse instead of a blink: readable on every frame
 		death_prompt.visible = death_ready()
 		death_prompt.modulate.a = 0.7 + 0.3 * sin(_t * 4.0)
-		death_prompt.position = Vector2((vs.x - death_prompt.size.x) * 0.5, vs.y - 22)
+		# the prompt and the COPY SEED button share the bottom line
+		death_copy.visible = death_prompt.visible
+		var px := roundf((vs.x - death_prompt.size.x - 8.0 - death_copy.size.x) * 0.5)
+		death_prompt.position = Vector2(px, vs.y - 22)
+		death_copy.position = Vector2(px + death_prompt.size.x + 8.0, roundf(death_prompt.position.y + (death_prompt.size.y - death_copy.size.y) * 0.5))
 	if levelup_root.visible:
 		_layout_levelup()
 	if play_root.visible:
@@ -1413,6 +1461,7 @@ func _layout_title() -> void:
 	# bottom row: SETTINGS left, version and QUIT right; the start prompt sits
 	# just above it, so even the long continue-run prompt clears both buttons
 	title_settings.position = Vector2(8, vs.y - title_settings.size.y - 4)
+	title_play_seed.position = Vector2(title_settings.position.x + title_settings.size.x + 6, title_settings.position.y)
 	title_quit.position = Vector2(vs.x - title_quit.size.x - 8, title_settings.position.y)
 	title_version.position = Vector2(title_quit.position.x - title_version.size.x - 6,
 		roundf(title_quit.position.y + (title_quit.size.y - title_version.size.y) * 0.5))

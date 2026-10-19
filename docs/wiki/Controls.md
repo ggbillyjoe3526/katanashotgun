@@ -32,14 +32,18 @@ second early still counts.
 | --- | --- | --- |
 | Title | Click | Start a run, or continue your saved run |
 | Title | N | Start a new run when a saved run is waiting |
+| Title | **S** | [Play a seed](Seeds#playing-a-friends-seed): type or paste a friend's seed (Ctrl+V pastes, Enter plays, Esc goes back) |
 | Title or pause | **Tab** | Open [Settings](Settings) |
 | Title or pause | 1 / 2 | Change your katana edge / shotgun coil look ([rewards](Player-Level-and-Rewards)) |
 | Title | Q twice | Quit the game (or click QUIT GAME twice) |
 | Pause | Click | Resume |
+| Pause or results | **C** | [Copy the seed](Seeds#sharing-your-seed) to share it (or click COPY) |
 | Level-up | 1, 2, 3 or click | Select a card. The same key again, a second click or Enter takes it |
 | Results | A-Z, 0-9, Backspace, Enter | Type your initials for the high-score table |
 | Results | **R** | Retry the same seed |
 | Results | Click | New run with a new seed |
+| Results | **P** | Save a [run card](Run-Cards), a picture of your run with its seed |
+| Results | **O** | Open the folder the run card went to |
 
 The game also pauses on its own if you switch away from it (Alt+Tab) and the mouse is released.
 

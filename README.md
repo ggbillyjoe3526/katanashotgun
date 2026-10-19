@@ -30,7 +30,9 @@ and Linux).
 | Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
 | Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
-| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
+| S (title) | **Play a seed**: type or paste a friend's seed, Enter plays it |
+| C (pause or results) | **Copy the seed** to share it; also a COPY button |
+| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **P** save a run card (a picture of the run with its seed) |
 
 ## How a run works
 Each run gets a seed (shown on the HUD, as `XXXX-XXXX`). The seed decides the
@@ -117,6 +119,8 @@ gdlintrc                    gdlint settings
     and any script error fails it.
   - `tools/unit_tests.sh`: the Gut tests in `test/unit/` (settings in
     `.gutconfig.json`).
+  - `tools/seed_check.sh`: the autoplay bot plays one seed twice; the waves
+    (mutator, boss, line-up) and level-up offers both runs reach must match.
   - The licence notices: `THIRD_PARTY_NOTICES.txt` must match what
     `tools/make_notices.gd` writes.
   - `gdlint scripts test tools` (gdtoolkit 4.5.0, settings in `gdlintrc`).
@@ -192,6 +196,7 @@ Pass after `--` on the command line:
 - `--mutator=grudge` forces that wave mutator on every regular wave (ids in
   `scripts/mutators.gd`)
 - `--cardtour` deals every level-up card, three at a time, then quits
+- `--seedentry` opens the PLAY A SEED box on the title
 - `--settings=audio|video|controls|comfort` opens the settings screen on the
   title at that tab
 - `--record-mix=DIR` records each audio bus to `DIR/<bus>.wav` on quit, to
@@ -209,6 +214,7 @@ godot --path . -- --autoplay --god --wave=3 --seed=1234-5678
 tools/smoke_test.sh                                              # smoke test
 tools/unit_tests.sh                                              # unit tests
 tools/movement_test.sh                                           # movement course
+tools/seed_check.sh 1234-ABCD 24000                              # same seed twice, same waves
 tools/perf_bench.sh render 7 2400                                # perf probe (draw calls, node churn)
 godot --headless --path . --resolution 960x540 --quit-after 20000 -- --autoplay --uiaudit
 ```

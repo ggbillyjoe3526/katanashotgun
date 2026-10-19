@@ -27,12 +27,27 @@ var hud: Hud
 var run_seed := 0
 var next_seed := -1 # set before a restart to replay a seed
 var palette: Dictionary = {}
+## Seeds are law (spec §7.5): every gameplay roll comes from one of these
+## streams. `rng_map` builds the map and `rng_upgrades` deals the augment
+## offers (one shuffle per offer, so the same picks give the same offers).
+## The wave streams are reseeded from the seed and the wave number at every
+## wave start (`seed_wave`), so nothing a player does in one wave, nor how
+## long it lasts, can shift the waves after it.
 var rng_map := RandomNumberGenerator.new()
-var rng_waves := RandomNumberGenerator.new()
 var rng_upgrades := RandomNumberGenerator.new()
-## Mid-wave hazards (storm strikes). Reseeded from the seed at every wave
-## start, so how long a wave lasts never shifts the waves after it.
+## The wave's plan: its mutator, line-up and boss order. Drawn only when a
+## wave starts, never mid-fight.
+var rng_waves := RandomNumberGenerator.new()
+## Where and how the wave's enemies arrive (spawn points, groups, boss adds).
+var rng_spawns := RandomNumberGenerator.new()
+## Combat rolls that follow the player's actions: shotgun pellet spread,
+## which glory kill plays, where health orbs scatter.
+var rng_combat := RandomNumberGenerator.new()
+## Mid-wave hazards (storm strikes).
 var rng_hazards := RandomNumberGenerator.new()
+## Presentation only (sparks, flashes, sound variations): randomized, never
+## seeded, and never used for anything that changes gameplay.
+var rng_fx := RandomNumberGenerator.new()
 var mutator: Dictionary = {}
 var wave_damage := 0.0
 
@@ -47,6 +62,8 @@ var headshots := 0
 var deflects := 0
 var bosses_killed := 0
 var bosses_felled: Array = [] # boss kinds felled this run, in order
+var best_tally := 0 # the run's biggest end-of-wave payout (the run card's best moment)
+var best_tally_wave := 0
 var level := 1
 var xp := 0.0
 var xp_next := 60.0
@@ -75,10 +92,11 @@ var _applied_ts := 1.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_last_ticks = Time.get_ticks_usec()
+	rng_fx.randomize()
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
@@ -103,11 +121,13 @@ func reset_run() -> void:
 	if next_seed >= 0:
 		run_seed = next_seed
 	else:
-		run_seed = randi() & 0x7fffffff
+		var pick := RandomNumberGenerator.new() # a fresh seed: the one roll no seed decides
+		pick.randomize()
+		run_seed = pick.randi() & 0x7fffffff
 	next_seed = -1
 	rng_map.seed = hash(run_seed * 3 + 1)
-	rng_waves.seed = hash(run_seed * 5 + 2)
 	rng_upgrades.seed = hash(run_seed * 7 + 3)
+	seed_wave(0)
 	palette = Palette.pick(rng_map, debug_palette)
 	state = "title"
 	mutator = {}
@@ -123,6 +143,8 @@ func reset_run() -> void:
 	deflects = 0
 	bosses_killed = 0
 	bosses_felled = []
+	best_tally = 0
+	best_tally_wave = 0
 	level = 1
 	xp = 0.0
 	xp_next = 60.0
@@ -164,9 +186,14 @@ func combo_window() -> float:
 	return COMBO_WINDOW * float(mut("combo_window", 1.0))
 
 
-## Called at each wave start: the hazard stream depends only on seed and wave.
-func seed_hazards(w: int) -> void:
-	rng_hazards.seed = hash(run_seed * 11 + w * 131 + 5)
+## Called at each wave start: the wave streams depend only on seed and wave.
+## Each key hashes the seed, the wave and a stream tag together, so two
+## nearby seeds never share a stream a few waves apart.
+func seed_wave(w: int) -> void:
+	rng_waves.seed = hash([run_seed, w, "waves"])
+	rng_spawns.seed = hash([run_seed, w, "spawns"])
+	rng_combat.seed = hash([run_seed, w, "combat"])
+	rng_hazards.seed = hash([run_seed, w, "hazards"])
 
 
 func combo_mult() -> float:
@@ -193,6 +220,13 @@ func register_kill(base_points: int, xp_amount: float, tag := "", tag_color := C
 
 func add_score(pts: int) -> void:
 	score += pts
+
+
+## Remembers the run's biggest end-of-wave payout.
+func note_tally(w: int, total: int) -> void:
+	if total > best_tally:
+		best_tally = total
+		best_tally_wave = w
 
 
 ## Remembers the run totals at the start of a wave so the end-of-wave tally
