@@ -61,11 +61,11 @@ func open_key() -> Key:
 
 
 ## Opens on the title, the pause screen, and mid-run (pausing first); not
-## over the settings screen, a level-up offer or the results.
+## over the settings screen, PLAY A SEED, a level-up offer or the results.
 func can_open() -> bool:
 	if visible or Game.state not in ["title", "playing", "paused"]:
 		return false
-	return not (Game.hud and Game.hud.settings_menu.visible)
+	return not (Game.hud and (Game.hud.settings_menu.visible or Game.hud.seed_entry.visible))
 
 
 func open() -> void:
@@ -110,7 +110,7 @@ func _build_rows(t: String) -> Array:
 				"YOU TAKE NO DAMAGE"))
 			out.append(_option("AUTOPLAY BOT", on_off, on_off_names,
 				func(): return Game.debug_autoplay, func(v: Variant): Game.set_autoplay(v),
-				"A BOT PLAYS THE RUN. F10 TO TAKE OVER"))
+				"A BOT PLAYS. TURN IT OFF HERE TO TAKE OVER"))
 			var speed_names := []
 			for sp in DevSettings.SPEEDS:
 				speed_names.append("%d%%" % roundi(sp * 100.0))
@@ -248,7 +248,8 @@ func _update_tag(hidden: bool) -> void:
 	if tag == null:
 		return
 	var dev_run := Game.dev_run and Game.state != "title"
-	tag.visible = not visible and not hidden and (dev_run or DevSettings.any_on())
+	# the results screen has its own layout; the tag keeps out of it
+	tag.visible = not visible and not hidden and Game.state != "dead" and (dev_run or DevSettings.any_on())
 	if not tag.visible:
 		return
 	var words := DevSettings.active_tags()
