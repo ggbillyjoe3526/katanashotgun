@@ -32,7 +32,7 @@ and Linux).
 | Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
 | S (title) | **Play a seed**: type or paste a friend's seed, Enter plays it |
 | C (pause or results) | **Copy the seed** to share it; also a COPY button |
-| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run |
+| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **P** save a run card (a picture of the run with its seed) |
 
 ## How a run works
 Each run gets a seed (shown on the HUD, as `XXXX-XXXX`). The seed decides the

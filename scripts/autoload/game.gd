@@ -62,6 +62,8 @@ var headshots := 0
 var deflects := 0
 var bosses_killed := 0
 var bosses_felled: Array = [] # boss kinds felled this run, in order
+var best_tally := 0 # the run's biggest end-of-wave payout (the run card's best moment)
+var best_tally_wave := 0
 var level := 1
 var xp := 0.0
 var xp_next := 60.0
@@ -94,7 +96,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour") or args.has("--movetest")
+	debug_no_pause = debug_autoplay or args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard")
 	for a in args:
 		if a.begins_with("--seed="):
 			var hex := a.substr(7).replace("-", "")
@@ -141,6 +143,8 @@ func reset_run() -> void:
 	deflects = 0
 	bosses_killed = 0
 	bosses_felled = []
+	best_tally = 0
+	best_tally_wave = 0
 	level = 1
 	xp = 0.0
 	xp_next = 60.0
@@ -216,6 +220,13 @@ func register_kill(base_points: int, xp_amount: float, tag := "", tag_color := C
 
 func add_score(pts: int) -> void:
 	score += pts
+
+
+## Remembers the run's biggest end-of-wave payout.
+func note_tally(w: int, total: int) -> void:
+	if total > best_tally:
+		best_tally = total
+		best_tally_wave = w
 
 
 ## Remembers the run totals at the start of a wave so the end-of-wave tally

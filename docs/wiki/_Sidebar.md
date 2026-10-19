@@ -18,6 +18,7 @@
 - [Builds](Builds)
 - [Scoring and High Scores](Scoring-and-High-Scores)
 - [Seeds](Seeds)
+- [Run Cards](Run-Cards)
 
 **Progress and options**
 - [Player Level and Rewards](Player-Level-and-Rewards)
