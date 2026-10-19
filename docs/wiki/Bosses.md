@@ -1,7 +1,8 @@
 # Bosses
 
-**Every third wave is a boss wave** (3, 6, 9 and on). An alarm sounds, **BOSS
-INCOMING** flashes, and the boss's name card slides in with its own music.
+**Every third wave is a boss wave** (3, 6, 9 and on). An alarm sounds, the
+boss hijacks the screen with test-card colour bars, **BOSS INCOMING** scrolls
+across it, and the boss's name card lands with its own music.
 Boss waves never have a mutator.
 
 Bosses fight like duelists: they read you, step out of lazy shots, mix quick

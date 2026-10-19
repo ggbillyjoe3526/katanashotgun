@@ -15,6 +15,7 @@ var _cut_len := 0.22
 var _cut_off := 0.0
 var _seam_len := 0.1
 var _roll := 0.0
+var _roll_seed_t := 0.0
 var _neg := 0.0
 var _neg_t := 99.0
 var _inv := 0.0
@@ -102,7 +103,10 @@ func _process(delta: float) -> void:
 	mat.set_shader_parameter("cut_seam", Settings.flash if _cut_t < _seam_len else 0.0)
 	_roll -= rd
 	mat.set_shader_parameter("roll", Settings.shake if _roll > 0.0 else 0.0)
-	if _roll > 0.0 and fmod(_t, 0.05) < rd:
+	_roll_seed_t -= rd
+	if _roll > 0.0 and _roll_seed_t <= 0.0:
+		# new bands every 0.05 s of real time
+		_roll_seed_t = 0.05
 		mat.set_shader_parameter("roll_seed", float(Game.rng_fx.randi() % 1000))
 	_inv -= rd
 	mat.set_shader_parameter("invert", Settings.flash * 0.9 if _inv > 0.0 else 0.0)

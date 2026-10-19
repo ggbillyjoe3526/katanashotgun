@@ -1951,7 +1951,7 @@ Everything runs in **real time** (unaffected by slow motion and hitstop).
 **Every moment must obey §9.9.**
 
 **Two styles** (owner's pick from the concept GIFs in
-`design/juice-concepts/`, 2026-10-19): "mostly HIJACK and KIRI". Shared rule:
+`/mnt/project-files/design/juice-concepts/`, outside the repo, 2026-10-19): "mostly HIJACK and KIRI". Shared rule:
 *shapes lean, words don't* (a word only tilts or stretches during its landing,
 under 0.1 s; while held it is level and still on a solid plate).
 - **KIRI ("the cut")** for **combo milestones, glory kills and ONIKIRI**
@@ -1962,8 +1962,8 @@ under 0.1 s; while held it is level and still on a solid plate).
   edge, a bottom edge and a blade tip in the word's colour, and an optional
   tag tab ("CHAIN SYNC"). The word (Orbitron 20, 24 for the big milestones,
   32 for ONIKIRI!) slams from 2.6x and tilted (about 12°) to level in
-  0.08 s, squashes 1.12 to 1 over 0.12 s, then holds for its read time
-  + 0.15 s. Exit (0.16 s): the plate is sliced along its middle and the
+  0.08 s, then holds still for its read time + 0.15 s. With a tag tab the
+  plate sits 13 px lower, so the tab stays off the boss bar. Exit (0.16 s): the plate is sliced along its middle and the
   halves slide 46 px apart as it fades. Sparks from the slash head, shake.
   Big ones also **cut the 3D picture** along the slash: the two sides slip
   up to 10–16 px apart and close over 0.22–0.4 s (with a white seam on
@@ -1983,9 +1983,10 @@ under 0.1 s; while held it is level and still on a solid plate).
   red, split by brightness, for 0.9 s (inverted 0.05–0.1 s at full flash),
   and the overlay's red tint thins from 78% to 30% so the negative shows.
   SHADOW DELETED and the souls card are unchanged.
-- All the flashes (colour bars, static, negative, seam, invert) follow the
-  flash comfort slider and are gone at 0; the picture cuts and rolls follow
-  the shake slider.
+- All the flashes (colour bars, static, negative, seam, invert, the white
+  core of the slashes) follow the flash comfort slider and are gone at 0;
+  the picture cuts and rolls follow the shake slider. The pause screen
+  freezes every one of these pieces where it is, like the stamps.
 
 - **HUD shake:** the whole UI root shakes. Max 12 px, decays `×exp(−9t)`.
   Big moments add 2–12.

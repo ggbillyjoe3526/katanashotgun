@@ -928,6 +928,9 @@ func show_pause(on: bool) -> void:
 	play_root.visible = not on
 	juice.visible = not on
 	juice.process_mode = Node.PROCESS_MODE_PAUSABLE if on else Node.PROCESS_MODE_ALWAYS
+	# the pieces of it that live under the HUD freeze with it
+	warn_band.process_mode = juice.process_mode
+	juice.giant().process_mode = juice.process_mode
 	pause_menu.disarm()
 	pause_menu.current = P_RESUME
 	pause_armory_plate.visible = false
@@ -1540,6 +1543,7 @@ func add_popup(text: String, color: Color) -> void:
 		l.add_theme_stylebox_override("normal", plate)
 		var sh := Ui.rect(CARD_INK, Vector2(4, 3), Vector2(10, 10))
 		sh.name = "Shadow"
+		sh.set_meta("uiaudit_skip", true) # the callout's own shadow, not a panel
 		sh.show_behind_parent = true
 		l.add_child(sh)
 		play_root.add_child(l)
@@ -1739,7 +1743,7 @@ func _layout_levelup() -> void:
 	t.position = Vector2(roundf((vs.x - t.size.x) * 0.5), 6.0 + roundf((bh - t.size.y) * 0.5))
 	var st: Label = levelup_root.get_node("Sub")
 	st.size = Vector2.ZERO
-	st.position = Vector2(roundf((vs.x - st.size.x) * 0.5), 6.0 + bh + 6.0)
+	st.position = Vector2(roundf((vs.x - st.size.x) * 0.5), 6.0 + bh + 2.0)
 	var n := _choices.size()
 	var total := n * CARD_W + (n - 1) * CARD_GAP
 	var bottom := CARD_TOP

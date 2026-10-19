@@ -15,6 +15,7 @@ extends Control
 const CHIPS_COL := Color(0.15, 0.7, 1.0)
 const MULT_COL := Color(1.0, 0.18, 0.32)
 const GOLD := Color(1.0, 0.85, 0.25)
+const GLORY_CARD_AT := 0.14 # the glory kill's card lands this long after its cuts
 const MAX_SPARKS := 1400
 const MAX_ROWS := 7
 const INTRO_LINE := 14.0 # line pitch of the intro's mutator lines
@@ -103,6 +104,7 @@ var _top_prio := 0 # what the live top-lane card is: 0 combo, 1 glory kill or KA
 var _kiri_tag := "" # the kill tag whose points join the glory card ("GLORY KILL")
 var _kiri_tag_t := 99.0
 var _kiri_sub_wait := "" # points that arrived before the card
+var _kiri_word := "" # the glory kill's card word ("GLORY KILL", "ONIKIRI!")
 var _slashes: Slashes
 # HIJACK (spec §9.8): the block (KAMAE BROKEN, the boss card), the signal
 # takeover over everything and the giant scrolling name under the HUD
@@ -1124,9 +1126,9 @@ func combo_stamp(n: int, idx: int) -> void:
 ## card from replacing a glory kill's (one message per lane, spec §9.9).
 ## Options: those of KiriCard.play, plus sound, vol, pitch, sparks, shake,
 ## and cut (the picture cut along the slash, in pixels; 0 for none).
-func kiri(text: String, col: Color, acc: Color, prio: int, o := {}) -> void:
+func kiri(text: String, col: Color, acc: Color, prio: int, o := {}) -> bool:
 	if _top_busy() and prio < _top_prio:
-		return
+		return false
 	_top_prio = prio
 	_clear_top()
 	_kiri.top = hud.top_lane()
@@ -1150,6 +1152,7 @@ func kiri(text: String, col: Color, acc: Color, prio: int, o := {}) -> void:
 		var rr := _kiri.plate_rect()
 		burst(Vector2(rr.end.x + 8.0, rr.position.y), acc, n)
 		burst(Vector2(rr.end.x + 8.0, rr.position.y), col, n / 2))
+	return true
 
 
 ## HIJACK: a block in the top lane. `prio` as for kiri(). Options: those
@@ -1236,12 +1239,16 @@ func kiri_points(text: String) -> bool:
 	if _kiri_tag == "" or _kiri_tag_t > 2.5 or not text.begins_with(_kiri_tag + " +"):
 		return false
 	var pts := text.substr(_kiri_tag.length() + 1)
-	_kiri_tag = ""
-	if _kiri.showing() and _top_prio > 0:
-		_kiri.set_sub(pts, GOLD)
-	else:
+	if _kiri_tag_t < GLORY_CARD_AT:
+		# the card is still to come: the points go on it when it lands
 		_kiri_sub_wait = pts
-	return true
+		return true
+	_kiri_tag = ""
+	if _kiri.showing() and _kiri.text == _kiri_word:
+		_kiri.set_sub(pts, GOLD)
+		return true
+	# the card was replaced or never shown: an ordinary callout
+	return false
 
 
 ## A boss's stance just broke (HIJACK): a frame of negative, the picture
@@ -1296,7 +1303,9 @@ func glory_start(kind: String) -> void:
 	_kiri_tag_t = 0.0
 	_kiri_sub_wait = ""
 	var word := "ONIKIRI!" if boss else _kiri_tag
-	later(0.14, func():
+	_kiri_word = word
+	var tag := _kiri_tag
+	later(GLORY_CARD_AT, func():
 		var o := {"rot": 0.24 if boss else 0.17, "sparks": 40 if boss else 26, "shake": 10.0 if boss else 5.0, "sound": "stamp", "vol": -2.0, "pitch": 0.75 if boss else 1.0}
 		if boss:
 			o.size = 32
@@ -1304,7 +1313,16 @@ func glory_start(kind: String) -> void:
 			o.sub = _kiri_sub_wait
 			o.sub_col = GOLD
 			_kiri_sub_wait = ""
-		kiri(word, c1, GOLD if boss else c2, 2 if boss else 1, o))
+		if not kiri(word, c1, GOLD if boss else c2, 2 if boss else 1, o):
+			# a bigger card holds the lane: the points become a callout
+			_kiri_tag = ""
+			if o.has("sub"):
+				hud.add_popup("%s %s" % [tag, o.sub], Color(1.0, 0.15, 0.2)))
+
+
+## The scrolling giant name lives under the HUD; the pause screen freezes it.
+func giant() -> HijackFx:
+	return _giant
 
 
 func speed_lines(strength: float, hold := 0.0) -> void:

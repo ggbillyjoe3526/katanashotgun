@@ -134,13 +134,17 @@ func _paint(s: Control) -> void:
 	var y1 := r.end.y
 	if _t < BARS:
 		# one frame of colour bars where the block will be, rows torn sideways
+		# (a flash: gone with the comfort slider at 0)
+		if Settings.flash <= 0.0:
+			s.draw_set_transform(Vector2.ZERO)
+			return
 		var bw := (x1 - x0 + 40.0) / BAR_COLS.size()
 		var y := y0 - 6.0
 		var row := 0
 		while y < y1 + 6.0:
 			var o := roundf(fmod(sin((row + _seed) * 12.9898) * 43758.5453, 1.0) * 14.0)
 			for i in BAR_COLS.size():
-				s.draw_rect(Rect2(x0 - 20.0 + roundf(i * bw) + o, y, ceilf(bw), 2), BAR_COLS[i])
+				s.draw_rect(Rect2(x0 - 20.0 + roundf(i * bw) + o, y, ceilf(bw), 2), Color(BAR_COLS[i], Settings.flash))
 			y += 3.0
 			row += 1
 		s.draw_set_transform(Vector2.ZERO)

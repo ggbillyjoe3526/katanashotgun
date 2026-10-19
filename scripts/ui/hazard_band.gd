@@ -20,6 +20,7 @@ var bottom := 246.0 # the band's lower stripe ends here
 var _t := 99.0
 var _font: Font
 var _fs := 20
+var _stripe := PackedVector2Array([Vector2(0, 4), Vector2(4, 4), Vector2(8, 0), Vector2(4, 0)])
 
 
 func _init() -> void:
@@ -95,11 +96,14 @@ func _draw() -> void:
 		draw_string(jf, Vector2(cx, cy + 10.0), rest, HORIZONTAL_ALIGNMENT_LEFT, -1, Ui.PIX, Color.WHITE)
 
 
-## A row of hazard stripes, 4 pixels high, scrolling `dir`ward.
+## A row of hazard stripes, 4 pixels high, scrolling `dir`ward. One stripe
+## shape is reused, moved along the row.
 func _stripes(y: float, dir: float) -> void:
 	draw_rect(Rect2(0, y, size.x, 4), INK)
 	var off := fmod(_t * 50.0 * dir, 8.0)
 	var x := -12.0 + off
 	while x < size.x + 8.0:
-		draw_colored_polygon(PackedVector2Array([Vector2(x, y + 4.0), Vector2(x + 4.0, y + 4.0), Vector2(x + 8.0, y), Vector2(x + 4.0, y)]), RED)
+		draw_set_transform(Vector2(x, y))
+		draw_colored_polygon(_stripe, RED)
 		x += 8.0
+	draw_set_transform(Vector2.ZERO)
