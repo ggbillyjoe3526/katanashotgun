@@ -11,7 +11,8 @@ Each version number goes through three stages:
 | Beta | `0.1 Beta 1`, `0.1 Beta 2`, ... | feature-complete, being tested |
 | Release | `0.1` | out of beta |
 
-The game is currently **0.1 Dev 1**. Each update moves to the next name:
+`0.1 Dev 1` was released on 2026-10-18; the game is now working towards
+**0.1 Dev 2**. Each update moves to the next name:
 the Dev count goes up until the game enters beta, the Beta count goes up
 until it is released, and then the release is plain `0.1`. What comes after
 `0.1` (for example `0.2 Dev 1`, or fixes to `0.1`) is for the owner to decide
@@ -22,11 +23,11 @@ The version is set in **one place**: `config/version` in `project.godot`,
 written exactly as players see it:
 
 ```
-config/version="0.1 Dev 1"
+config/version="0.1 Dev 2"
 ```
 
 Everything else reads it from there:
-- **Title screen:** bottom-right corner shows the name as is (`0.1 Dev 1`).
+- **Title screen:** bottom-right corner shows the name as is (`0.1 Dev 2`).
 - **Release pipeline** (`.github/workflows/release.yml`): `tools/version.sh`
   turns the name into the forms below.
 - **Windows installer** (`installer/KatanaShotgun.iss`): the name, the file
@@ -49,14 +50,17 @@ Check any name with `tools/version.sh "0.1 Beta 2"`.
 
 ## Releasing a new version
 Only when the owner asks for a release.
-1. In a pull request, set `config/version` in `project.godot` to the new
-   name (for example `0.1 Dev 2`), then run `tools/changelog.sh release`: it
-   gathers the notes in `changelog.d/` into a `## 0.1 Dev 2 (date)` section
-   of `CHANGELOG.md` and deletes them. Read the section over and commit it.
-   The owner merges it. (Nothing has been released yet, so the first release
-   is `0.1 Dev 1` itself and only needs the changelog step.)
+1. In a pull request, check `config/version` in `project.godot` is the
+   version being released (for example `0.1 Dev 2`), then run
+   `tools/changelog.sh release`: it gathers the notes in `changelog.d/` into
+   a `## 0.1 Dev 2 (date)` section of `CHANGELOG.md` and deletes them. Read
+   the section over and commit it. The owner merges it.
 2. *Actions → Release → Run workflow* on `main`. It releases the version in
    `project.godot` and creates its tag (`v0.1-dev.2`).
+3. Straight after, in a small pull request, set `config/version` to the next
+   name (`0.1 Dev 3`) so the title screen shows what is being worked on. The
+   release workflow refuses to release a version twice, so this has to
+   happen before the next release.
 
 Pushing a tag works too, but the tag must match `project.godot` or the
 release stops with an error. A version that has already been released can't

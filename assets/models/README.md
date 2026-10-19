@@ -41,11 +41,13 @@ A full bake takes several minutes. Then run `godot --headless --import`.
 | `_basecolor` | 2048 | VRAM compressed, mipmaps |
 | `_orm` (R AO, G roughness, B metal) | 2048 | VRAM compressed, mipmaps |
 | `_normal` (OpenGL, Y up) | 2048 | VRAM compressed as a normal map, mipmaps |
-| `_retro` (colour with the shine baked in) | 256 | lossless, no mipmaps |
+| `_retro` (colour with light and shine painted in) | 256 | lossless, no mipmaps |
 
-`shaders/psx_model.gdshader` picks by the global `psx_retro`: the retro
-look snaps vertices and reads `_retro` texel by texel with no live shine
-(like the PS1); the plain look uses the full maps with per-pixel light.
+`shaders/psx_model.gdshader` follows the RETRO LOOK setting (the globals
+`psx_retro` and `psx_snap`): FULL snaps vertices and reads `_retro` texel
+by texel with no live shine (like the PS1); LIGHT and OFF use the full maps
+with per-pixel light. The `_retro` light is drawn by `retro_shade()` in
+`surface_dojigiri.py` from an object-space normal bake.
 `scripts/katana_model.gd` loads the .glb and sets the materials.
 
 ### Rules

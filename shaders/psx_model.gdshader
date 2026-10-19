@@ -1,9 +1,10 @@
 // Surfaces of the modelled weapons (the DOJIGIRI katana's steel and grip),
 // built from textures baked in Blender (assets/models/katana/source).
-// Retro look: the PS1 treatment of psx_lit (vertex snap, affine warp,
-// nearest texels) on a small texture with its shine baked in, matte.
-// Plain look (dev menu): per-pixel light with the full 2048 px colour,
-// roughness/metal and normal maps, so the fine detail shows.
+// RETRO LOOK FULL: the PS1 treatment of psx_lit (vertex snap, affine warp,
+// nearest texels) on a small texture with its light painted in, matte.
+// LIGHT and OFF: per-pixel light with the full 2048 px colour,
+// roughness/metal and normal maps, so the fine detail shows (LIGHT keeps
+// psx_lit's gentle wobble).
 shader_type spatial;
 render_mode cull_back, diffuse_lambert;
 
@@ -16,15 +17,18 @@ uniform vec4 albedo_color : source_color = vec4(1.0);
 uniform float normal_depth = 1.0;
 uniform float snap = 0.35;
 uniform float affine = 0.0;
-// 1 = the PS1 look, 0 = the dev menu's plain look (DevSettings.retro).
+// The RETRO LOOK setting (RetroLook), as in psx_lit: psx_retro scales the
+// affine warp (above 0.5, FULL, the small texture is used), psx_snap is the
+// vertex grid (0 = no wobble).
 global uniform float psx_retro;
+global uniform float psx_snap;
 
 varying vec3 v_uvw;
 
 void vertex() {
 	vec4 clip = PROJECTION_MATRIX * (MODELVIEW_MATRIX * vec4(VERTEX, 1.0));
-	if (snap * psx_retro > 0.0 && clip.w > 0.001) {
-		vec2 grid = VIEWPORT_SIZE * 0.6 / snap;
+	if (snap * psx_snap > 0.0 && clip.w > 0.001) {
+		vec2 grid = VIEWPORT_SIZE * psx_snap / snap;
 		clip.xy = round(clip.xy / clip.w * grid) / grid * clip.w;
 	}
 	POSITION = clip;

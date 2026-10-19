@@ -112,9 +112,11 @@ func _ready() -> void:
 		elif a.begins_with("--palette="):
 			debug_palette = a.substr(10)
 	Settings.boot()
-	if args.has("--plain"):
-		DevSettings.retro = false # debug: start in the dev menu's plain look
-		DevSettings.apply_look()
+	for a in args: # debug: start on a RETRO LOOK level (--plain = off)
+		var look := "off" if a == "--plain" else (a.substr(7) if a.begins_with("--look=") else "")
+		if RetroLook.IDS.has(look):
+			Settings.retro_look = look
+			RetroLook.apply(look)
 	Quality.from_cmdline() # after Settings, so the command line wins
 
 

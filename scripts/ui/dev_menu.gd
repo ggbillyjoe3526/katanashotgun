@@ -5,9 +5,10 @@ extends SettingsMenu
 ## nothing on screen points to it, and it says DEV everywhere it shows.
 ## It is the settings screen with its own tabs, so it works the same way:
 ## mouse only, Esc or BACK closes, DEFAULTS turns every dev setting off.
-## LOOK holds the plain-look switch and capture helpers; RUN holds the
-## settings that change how a run plays (any of them on makes the run a dev
-## run, which pays no top 10 entry, XP or unlocks); ACTIONS does things now.
+## LOOK holds the capture helpers and the katana model switch (the plain look
+## is now the player's RETRO LOOK setting); RUN holds the settings that change how a run plays (any of
+## them on makes the run a dev run, which pays no top 10 entry, XP or
+## unlocks); ACTIONS does things now.
 ## While anything is on, a small DEV tag sits top right, under the score.
 
 const DEV_TABS: Array[String] = ["LOOK", "RUN", "ACTIONS"]
@@ -86,9 +87,6 @@ func _build_rows(t: String) -> Array:
 	var on_off_names := ["ON", "OFF"]
 	match t:
 		"LOOK":
-			out.append(_option("RETRO LOOK", on_off, on_off_names,
-				func(): return DevSettings.retro, _set_retro,
-				"OFF: PLAIN LOOK. FULL RES, SMOOTH, NO WOBBLE OR DITHER"))
 			if perf:
 				out.append(_option("PERF OVERLAY", on_off, on_off_names,
 					func(): return perf.is_shown(), func(v: Variant): perf.show_overlay(v),
@@ -155,11 +153,6 @@ func _build_rows(t: String) -> Array:
 			out.append(_action("JUICE TEST", "PLAY", func(): _restart(false, "--juicetest"),
 				"EVERY BIG MOMENT BACK TO BACK. CLICK AFTER TO PLAY"))
 	return out
-
-
-func _set_retro(v: Variant) -> void:
-	DevSettings.retro = v
-	DevSettings.apply_look()
 
 
 ## Turns every dev setting off (the footer's ALL OFF).
