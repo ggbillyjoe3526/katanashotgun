@@ -34,7 +34,7 @@ Player Level that never resets shows how far you've come.
 
 ## Where the game is today
 
-KATANA / SHOTGUN is in early development, version **0.1 Dev**. Everything on
+KATANA / SHOTGUN is in early development, version **0.1 Dev 2**. Everything on
 these pages describes the game as it is built today. Things still being
 built are marked **Coming soon**, and numbers can change as the game is
 tuned. The game runs on Windows first, with Linux and macOS builds too.

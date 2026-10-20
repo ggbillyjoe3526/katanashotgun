@@ -9,6 +9,111 @@ Don't edit this file for a change: add a note to `changelog.d/` instead (its
 `README.md` says how). At release time `tools/changelog.sh release` gathers
 those notes into a new section here.
 
+## 0.1 Dev 2 (2026-10-20)
+
+### Seeds you can trust
+- The same seed now always gives the same waves. Before, how you played a wave could change the next waves' enemies and mutators, so a friend on your seed could face a different run.
+- Seeds from 0.1 Dev 1 play differently now.
+- Shotgun spread, enemy attack timing and health orb drops now follow the seed too.
+- Fixed enemies that came out of a tunnel in a group sometimes getting stuck in the metro tunnel roof, which stopped the wave from ever ending.
+
+### Play a friend's seed
+- New **PLAY A SEED** button on the title screen (or press S): type or paste a friend's seed and start a run on it. No more editing a shortcut.
+- Pasting is forgiving: a whole line like "SEED 1A2B-3C4D" works, and the dash fills itself in when you type.
+- **COPY** your seed from the pause screen or the results screen (or press C), ready to paste to a friend.
+
+### A cleaner fight screen
+- The in-fight HUD is redesigned: no more panels in the corners and no more text piling up on itself.
+- Your health, cells and dashes now sit in a square frame round the crosshair: health up the left edge, one block per cell up the right, dash charges along the bottom, with the numbers beside it. The middle stays open, so you can always see what you are aiming at.
+- Your combo and the F prompt sit under the frame; kill tags (HEADSHOT, RETURN TO SENDER...) stack just right of it.
+- Every kind of message has its own place and a new one replaces the old: big moments like X10 COMBO and KAMAE BROKEN just under the top row, warnings and hints at the bottom centre (warnings in red).
+- The wave intro, the boss's name card and the cut-ins now show near the top of the screen, clear of your crosshair. The boss reward card deals in at the bottom.
+- The best score is no longer on the fight screen (the title and results screens show it); NEW HI-SCORE still flashes when you pass it.
+
+### Cleaner menus
+- The title, pause, level-up and results screens get the same clean look as the fight screen: plain words to click on the left, the city left in view, and panels only where there is a table.
+- Every menu choice is a word you can click; it lights white with a cyan bar when you point at it. QUIT asks once more before it quits.
+- Title: START RUN (or CONTINUE and NEW RUN when a run is saved), PLAY A SEED, HI-SCORES, ARMORY, HOW TO PLAY, SETTINGS and QUIT. The high scores, the armory and the controls now open beside the menu instead of all showing at once. Your best score and Player Level sit in the bottom corner.
+- Pause: RESUME, ARMORY, SETTINGS and QUIT GAME, your builds in the top right corner, and the seed with COPY at the bottom.
+- The armory can now be changed with the mouse: click a row to change your katana edge or shotgun coil.
+- Level-up cards are redrawn to the new design and keep their full text: a coloured ribbon with the card's tag and key, the name, its rank, what it does, and its builds along the bottom. Choosing a card asks "TAKE ...? CLICK AGAIN" in a box under the cards.
+- Results: every stat on one plate, the high-score table beside it with your row lit (type your initials straight into it), NEW BEST under your score, and your Player Level and seed below. RETRY SEED, NEW RUN, RUN CARD and COPY SEED are words along the bottom.
+
+### Flashier big moments
+- Combo milestones, glory kills and the ONIKIRI now arrive on a blade cut: a slash crosses the top of the screen, the word slams onto a leaning plate, and the plate is sliced in half when it leaves. Big ones slice the picture itself for a moment.
+- Glory kills get three cuts across the screen and angled black bars, and their points now show under GLORY KILL instead of in the kill tags.
+- Kill tags, warnings, LEVEL UP, KAMAE BROKEN and the boss's entrance now look like a pirate broadcast taking over the city's screens: solid neon blocks with dark letters and hard shadows, test-card colour bars, rolling picture glitches and torn-strip exits.
+- MISSILES INBOUND and other warnings take over the bottom of the screen as a red emergency band with hazard stripes.
+- A boss's name now scrolls across the screen in huge outlined letters while its card is up.
+- FINISH keeps its look, and the world behind it now turns into a red-and-black negative.
+- The flash comfort setting turns off the new colour bars, static and negatives; the screen shake setting calms the picture cuts and rolls.
+
+### A more detailed rooftop
+- The Shin-Kagura rooftop is built up: raised floor plates with lit seams, pipes, air-con units, vending machines, lit shop shutters, hanging signs, roof vents, skylights, a small shrine, and cables with paper lanterns across the shaft.
+- Coloured haze over the city, mist in the shaft and below the roof edge, pools of lamp light, light beams, steam and floating dust.
+- Rain leaves puddles where water would really collect, and only puddles and skylight glass reflect the neon. More rain, more puddles; a clear night leaves only the metro floor wet.
+- Floors no longer look wet on INSANE graphics: dry surfaces stay matte on every preset.
+- WEAK graphics keeps the new shapes and haze but skips the reflections, dust, steam and beams.
+- Vending machines, vents, street lamps, skylight frames and the pipe benches by the parapet are solid. They never block a spawn, a ramp or an enemy's leap spot.
+
+### A new DOJIGIRI katana
+- The katana has a new, detailed model: a dark slab blade with a glowing
+  edge, and a one-piece open-frame hilt with a glowing core, finger spur,
+  bolts and a textured grip.
+- It looks sharp with RETRO LOOK OFF or LIGHT (fine scratches, brushed steel,
+  heat tint near the edge) and keeps the PS1 style on FULL.
+- Your equipped katana look still colours the glowing edge.
+
+### A new RAIJIN-12 shotgun
+- The arc shotgun has a new, detailed model: an angular receiver, two flat
+  barrels with a square emitter, slanted cooling vents and a square drum of
+  power cells that turns a quarter turn after every blast, in red, gunmetal
+  and off-white.
+- It looks sharp with RETRO LOOK OFF or LIGHT (worn edges, scratches, grime,
+  muzzle soot, small markings) and keeps the PS1 style on FULL.
+- Your equipped shotgun look still colours the coils, cells and charge lights.
+- The shotgun sits a little further right, clear of the frame round the
+  crosshair, and the katana is turned so its glowing edge faces right.
+
+### A softer retro look
+- New RETRO LOOK setting in Settings > Video: OFF, LIGHT or FULL.
+- LIGHT is the new default: the world is drawn twice as sharp (crisp square
+  pixels, 960x540 on a 1080p or 4K screen), with gentler wobble, smooth
+  textures and only a faint dither, scanline and colour fringe.
+- FULL is the old, chunky PS1 look, unchanged. OFF is a clean, full
+  resolution picture.
+- Saved settings move to LIGHT.
+
+### Run cards
+- New: press P on the results screen (or click RUN CARD) to save a picture of your run: score, wave, bosses felled, builds, your best moment and the seed, in your run's neon colours.
+- Cards go in your Pictures folder, in KatanaShotgun. Press O (or click OPEN FOLDER) to open it with the card picked out, ready to drop into Discord or a text.
+
+### Perfect deflect (play-test)
+- Slash an enemy shot in the last moment before it hits you for a PERFECT DEFLECT: a ringing clang, a white flash, and the shot flies back white-hot for 12 times its damage instead of 8.
+- A perfect deflect gives 2 cells instead of 1 and adds a PERFECT DEFLECTS row (150 each) to the end-of-wave tally.
+- Every boss now fires one signature volley that glows white: Kurokage's shuriken fan, a big round at the end of Tetsugumo's gatling sweep, and Shuten's enraged fan volley. Perfect-deflect it and the boss loses 20% of its KAMAE bar.
+- A hurt boss now steadies itself more slowly: its KAMAE bar drains slower the less health it has left, down to under a third of the speed near death.
+- Deflecting early still works exactly as before. This is an experiment: it may be retuned or removed after play-testing.
+
+### The city is watching (new, to try out)
+- News drones gather around the roof as your combo climbs, keep their lights on you, flash their cameras at big combos and fly off once the combo breaks.
+- Big city screens show your score, kills and combo live, and the best initials and score saved for the seed you're playing.
+- Beat a seed's record and every screen says NEW BEST.
+- WEAK graphics sends fewer drones; none of it changes a fight.
+
+### Soda cans (developer test only)
+- A first version of soda cans to play-test: INARI FOODS drinks that turn up on the map from wave 2, glowing in their flavour's colour.
+- Walk into a can to carry it (up to 3), press E to drink and the mouse wheel to pick which one: the shotgun drops, the katana cuts the top off and you down it in one go.
+- Eight flavours, each a short, strong boost and then a milder sugar crash, from faster dashes and healing cuts to double score for double damage taken.
+- Switched off unless turned on in the hidden developer menu (F10), and runs with cans don't enter the top 10.
+
+### Developer menu for testing
+- A hidden DEV menu on F10 for testing and play tests: god mode, an autoplay
+  bot, game speed, start wave, forced bosses and mutators, and quick actions
+  like skipping a wave.
+- Runs that use its cheats are marked DEV RUN and never reach the top 10 or
+  give XP or unlocks.
+
 ## 0.1 Dev 1 (2026-10-18)
 
 ### Graphics presets: WEAK, MEDIOCRE and INSANE

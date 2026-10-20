@@ -24,7 +24,10 @@ style.
 - The hands you're dealt come from your [seed](Seeds): the same seed and the
   same picks give the same cards.
 
-Card colours: KATANA cyan, SHOTGUN blue, GLORY pink, DASH green, BODY gold.
+Each card has a ribbon along the top in its colour, with the card's tag and
+its key (1, 2 or 3), then its name, its rank, what it does in full, and its
+builds along the bottom. Card colours: KATANA cyan, SHOTGUN blue, GLORY
+pink, DASH green, BODY gold.
 
 ## Shotgun cards
 

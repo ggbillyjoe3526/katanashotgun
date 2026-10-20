@@ -92,9 +92,11 @@ on the basic one by itself and Settings tells you so.
 
 ## Comfort
 
-- **Screen shake:** how much the camera and HUD shake.
+- **Screen shake:** how much the camera and HUD shake. It also calms the
+  big moments' picture cuts and rolling glitches; at 0 they stay still.
 - **Flashes:** how strong the screen flashes are. Below 100%, impact frames
-  stop strobing.
+  stop strobing. At 0 the test-card colour bars, static and the FINISH
+  negative are switched off too.
 
 ## Quit game
 

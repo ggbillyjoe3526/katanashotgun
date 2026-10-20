@@ -110,7 +110,8 @@ This is new and being play-tested: it may change after testing.
 
 ## When a boss falls
 
-**Loud, then quiet:** a FINISH splash, the world slows, the music cuts to
+**Loud, then quiet:** a FINISH splash over the world turned into a
+red-and-black negative, the world slows, the music cuts to
 silence, every enemy left shorts out and explodes one by one, and the boss's
 felled line appears in gold. Then the tally pays a **BOSS BOUNTY** of 2000 ×
 the wave, and a reward card shows what you unlocked
