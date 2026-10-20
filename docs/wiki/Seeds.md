@@ -17,6 +17,11 @@ pause screen (bottom left) and the results screen (under your Player Level).
 same things happen. A friend on your seed faces exactly the same waves,
 mutators, bosses and card offers, so you can race each other on score.
 However a wave goes, fast or slow, it never changes the waves after it.
+Shotgun spread, enemy attack timing and health orb drops follow the seed
+too.
+
+Seeds from 0.1 Dev 1 play differently since 0.1 Dev 2, which made seeds
+reliable. To race a friend, play the same version of the game.
 
 Your Player Level and unlocked weapon looks don't change anything in a run,
 so seeded scores stay comparable.

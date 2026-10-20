@@ -32,8 +32,8 @@ Windows' *Apps* settings. Your saves are kept (see
 
 ## Your first run
 
-1. The game opens full screen at your screen's resolution. **Click** to
-   start.
+1. The game opens full screen at your screen's resolution. Click
+   **START RUN** (or press Enter).
 2. Wave 1 is gentle. Fight with both hands: **left mouse** swings the
    katana, **right mouse** fires the arc shotgun.
 3. Katana kills charge the shotgun's **cells** (the ammo). Blasts

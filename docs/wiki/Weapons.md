@@ -4,8 +4,10 @@ You carry two weapons at once, one in each hand, and use both all the time.
 
 ## DOJIGIRI katana
 
-**Left hand, left mouse button.** A thermal katana with a glowing edge,
-named after the legendary blade that slew the oni king Shuten-doji.
+**Left hand, left mouse button.** A thermal katana named after the
+legendary blade that slew the oni king Shuten-doji: a dark slab blade with a
+glowing edge (it faces right as you hold it), and a one-piece open-frame hilt
+with a glowing core, a finger spur, bolts and a textured grip.
 
 | | |
 | --- | --- |
@@ -77,6 +79,7 @@ back and leaves it crackling with electricity for a moment.
 
 ## Weapon looks
 
-Bosses unlock new colours for both weapons: glowing katana edges and shotgun
-coils. They change only the look. See
+Bosses unlock new colours for both weapons. A katana look colours the
+blade's glowing edge; a shotgun look colours its coils, cells and charge
+lights. They change only the look. See
 [Player Level and Rewards](Player-Level-and-Rewards#boss-rewards).
