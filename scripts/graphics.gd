@@ -41,7 +41,7 @@ static func renderer() -> String:
 	return _method
 
 
-## Whether the Forward+ features (GI, reflections, volumetric fog) exist now.
+## Whether the Forward+ features (GI, volumetric fog, shadows) exist now.
 static func advanced() -> bool:
 	return renderer() == FORWARD_PLUS
 

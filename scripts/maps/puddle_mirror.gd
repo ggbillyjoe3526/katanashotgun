@@ -74,7 +74,8 @@ func _process(_dt: float) -> void:
 		return
 	var p := main.global_position
 	var plane := arena.floor_height_at(p.x, p.z, p.y) + PLANE_OFFSET
-	if plane != _plane:
+	# a ramp moves the plane every frame: re-sort only on a real change
+	if absf(plane - _plane) > 0.05:
 		_plane = plane
 		# things under the water line would show through it: leave them out
 		for g in bright:

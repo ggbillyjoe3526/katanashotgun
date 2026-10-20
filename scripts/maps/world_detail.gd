@@ -328,12 +328,17 @@ static func _dist_rect(rect: Rect2, s: AABB) -> float:
 	return Vector2(dx, dz).length()
 
 
-## A box collider for a placed prop (the visible parts are drawn separately).
-func _solid(c: Vector3, half: Vector3) -> void:
-	a._solid(half * 2.0, c, null, 0.0, 0, false)
-	_solids.append(AABB(c - half, half * 2.0))
+## A box collider for a placed prop (the visible parts are drawn separately),
+## turned rot about the vertical; _solids keeps its upright bounds.
+func _solid(c: Vector3, half: Vector3, rot := 0.0, part := false) -> void:
+	a._solid(half * 2.0, c, null, rot, 0, false)
+	var co := absf(cos(rot))
+	var si := absf(sin(rot))
+	var b := Vector3(co * half.x + si * half.z, half.y, si * half.x + co * half.z)
+	_solids.append(AABB(c - b, b * 2.0))
 	prop_boxes.append(_solids[-1])
-	props += 1
+	if not part:
+		props += 1
 
 
 ## A post's collider: a thin cylinder.
@@ -482,7 +487,7 @@ func _roof() -> void:
 			for i in 10:
 				var t := -30.0 + i * 6.0 + 3.0
 				var c: Vector3 = Vector3(t, 0.0, sgn * 31.4) if axis == 0 else Vector3(sgn * 31.4, 0.0, t)
-				var half := Vector3(3.0, 0.45, 0.55) if axis == 0 else Vector3(0.55, 0.45, 3.0)
+				var half := Vector3(3.0, 0.45, 0.25) if axis == 0 else Vector3(0.25, 0.45, 3.0)
 				if not _free(c + Vector3(0, 0.45, 0), half, 0.0):
 					continue
 				_solid(c + Vector3(0, 0.45, 0), half)
@@ -502,14 +507,15 @@ func _roof() -> void:
 		match r.randi() % 3:
 			0:
 				if _free(p + Vector3(0, 0.7, 0), Vector3(0.62, 0.7, 0.62), p.y):
-					_solid(p + Vector3(0, 0.7, 0), Vector3(0.62, 0.7, 0.62))
+					_solid(p + Vector3(0, 0.55, 0), Vector3(0.32, 0.55, 0.32))
+					_solid(p + Vector3(0, 1.25, 0), Vector3(0.62, 0.18, 0.62), 0.0, true)
 					_cyl(0.32, 0.32, 1.1, Basis(), p + Vector3(0, 0.55, 0), m_pipe)
 					_cyl(0.05, 0.62, 0.35, Basis(), p + Vector3(0, 1.25, 0), m_steel)
 			1:
 				var ang := r.randf() * PI
 				var half := Vector3(absf(cos(ang)) * 0.8 + absf(sin(ang)) * 0.5, 0.5, absf(sin(ang)) * 0.8 + absf(cos(ang)) * 0.5)
 				if _free(p + Vector3(0, 0.5, 0), half, p.y):
-					_solid(p + Vector3(0, 0.5, 0), half)
+					_solid(p + Vector3(0, 0.5, 0), Vector3(0.8, 0.5, 0.5), ang)
 					_box(Vector3(1.6, 1.0, 1.0), p + Vector3(0, 0.5, 0), m_unit, ang)
 					_box(Vector3(0.1, 0.1, 0.1), p + Vector3(0, 0.95, 0) + Vector3(0.5, 0, 0.51).rotated(Vector3.UP, ang), m_led, ang, leds[r.randi() % leds.size()])
 			2:
