@@ -31,11 +31,13 @@ func _reach(from: Vector3, to: Vector3, layers: int) -> bool:
 
 
 func test_floor_height_picks_the_floor_under_the_caller() -> void:
-	# the torii bridge (+5) crosses the shaft above the metro platform (-10)
-	assert_almost_eq(arena.floor_height_at(0, 0), 5.0, 0.01)
-	assert_almost_eq(arena.floor_height_at(0, 0, 4.0), -10.0, 0.01)
-	assert_almost_eq(arena.floor_height_at(0, -10, 0.0), -5.0, 0.01, "north service block")
-	assert_almost_eq(arena.floor_height_at(0, 20), 0.0, 0.01, "roof ring")
+	# the torii bridge (+5) crosses the shaft above the metro platform (-10);
+	# the floors are plated (WorldDetail), so they report the plates' top
+	var lift := WorldDetail.LIFT
+	assert_almost_eq(arena.floor_height_at(0, 0), 5.0 + lift, 0.01)
+	assert_almost_eq(arena.floor_height_at(0, 0, 4.0), -10.0 + lift, 0.01)
+	assert_almost_eq(arena.floor_height_at(0, -10, 0.0), -5.0 + lift, 0.01, "north service block")
+	assert_almost_eq(arena.floor_height_at(0, 20), 0.0 + lift, 0.01, "roof ring")
 
 
 func test_falls_reset_below_the_metro_floor() -> void:

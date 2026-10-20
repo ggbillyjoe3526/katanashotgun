@@ -204,6 +204,13 @@ Pass after `--` on the command line:
 - `--citytour` The City Is Watching from six fixed views (drones fly in,
   the screens' pages, NEW BEST over a made-up seed record, drones leave),
   then quits; add `--quality=low` to see WEAK's drone count
+- `--worldshot --out=DIR` The Well's world detail from six fixed views
+  (`--views=roof,pit,service,deck,puddle,tower`), one PNG each plus the
+  puddle mirror's picture, then quits; needs a real display (xvfb in the cloud)
+- `--rain=0|1|2` forces the weather (none, light, heavy) without changing the
+  seed's other rolls
+- `--nodetail` builds The Well without its world detail (plates, props,
+  haze, puddles), to compare the look or the frame rate
 - `--cans` turns the soda cans play-test on for this launch (as the DEV
   menu's SODA CANS) · `--cantest` (with `--cans`) fills the hands with the
   next flavours every wave, drops a can 7 m ahead and drinks every 2.5 s

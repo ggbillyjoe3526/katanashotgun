@@ -9,6 +9,7 @@ extends RooftopMap
 ## design/vertical-map/heights.md: 1.2 m hop, 3 m mantle, 5 m grab ledge (amber
 ## lip), 7 m+ sheer (never climbable). The city around it is a CityBackdrop.
 ## Enemies path over a baked navmesh with leap links (Arena._build_navigation).
+## WorldDetail dresses it (plates, props, haze, light, puddles that reflect).
 
 const AMBER := Color("ffa21f") # grab-ledge lip: fixed so it reads the same in every palette
 const SHAFT := 12.0 # half-width of the shaft
@@ -19,6 +20,7 @@ const SERVICE := -5.0 # service blocks and balconies
 var m_wall: ShaderMaterial
 var m_under: ShaderMaterial
 var backdrop: CityBackdrop
+var detail: WorldDetail
 
 
 func _init() -> void:
@@ -33,6 +35,8 @@ func _init() -> void:
 
 
 func _build_layout() -> void:
+	if WorldDetail.enabled:
+		Psx.fog_color = WorldDetail.haze(pal) # the far city fades into coloured haze
 	_materials()
 	# bigger windows on the far skyline, to match the scale of the backdrop towers
 	m_skyline.set_shader_parameter("uv_scale", 0.05)
@@ -55,6 +59,14 @@ func _build_layout() -> void:
 	add_child(backdrop)
 	backdrop.build(self)
 	_spawn_list()
+	if WorldDetail.enabled:
+		detail = WorldDetail.new(self)
+		detail.build()
+
+
+func _after_weather() -> void:
+	if detail:
+		detail.build_weather()
 
 
 # ---------------------------------------------------------------- helpers

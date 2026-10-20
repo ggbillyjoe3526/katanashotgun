@@ -565,7 +565,7 @@ Notes:
 - **Renderer:** **Compatibility (OpenGL 3.3)**, for the widest hardware
   support (§14), on the WEAK and MEDIOCRE graphics presets. The INSANE
   preset runs on **Forward+** (Vulkan or Direct3D 12) for global
-  illumination, reflections and volumetric fog (owner, 2026-10-18; §14.1).
+  illumination and volumetric fog (owner, 2026-10-18; §14.1).
   Godot picks the renderer at start-up from `user://renderer.cfg`
   (`application/config/project_settings_override`), so switching to or from
   INSANE takes a restart; a PC that can't run Forward+ falls back to OpenGL.
@@ -1542,6 +1542,54 @@ the holographic cut-in (§9.8).
   - **Stacked floors:** `floor_height_at(x, z, below)` returns the floor under
     the caller, so gore, decals and missile rings land on the right level.
   - **Falls:** the player resets below −20, enemies below −18 (`kill_y`).
+- **World detail (`WorldDetail`, owner's pick 2026-10-19: concept look "B
+  Built Up" with "C Neon Haze"'s haze and light; renders in
+  `design/world-detail/` in the project's shared files).** Built at the end
+  of the layout, before the navmesh bake:
+  - **Shapes:** raised floor plates on the 2 m grid over every grid floor of
+    6 m² or more (top `LIFT` = 0.05 m; grates, hazard-painted and slightly
+    higher plates mixed in; about 7% of cells open; cells under hatches,
+    lifts, the pad, drains and floor neon stay bare). Plated floors report
+    the plates' top from `floor_height_at` (each platform's `lift`), so
+    blood, telegraphs, gibs and cans sit on them. Walls get a cornice and a
+    band (kept below the amber lips' glow), a foot plinth, ribs, copper
+    pipes, AC units with status lights, vending machines, lit shutters and
+    hanging blade signs; faces with a grab lip only get ribs. On the roof:
+    pipe benches along the parapet, vents, AC boxes and crates, drains,
+    skylights, a hokora shrine, antennas, and cables with paper lanterns.
+  - **Solid or overhead.** Anything a body would walk into is solid and taller
+    than the navmesh climb (0.5 m), so enemies path round it; everything on
+    walls hangs above 2.3 m. A solid prop is only placed if `_free` passes:
+    on one floor, inside nothing, 2.5 m from every spawn point and the
+    player spawn, 5 m from the boss spawn, 1.5 m from every leap-link end,
+    off every ramp and its landings, and never within 5 m of a wall whose
+    top is more than 6 m above the prop's floor but within the prop's height
+    + 6.3 m (the climb rule: a prop must not make a sheer wall reachable).
+  - **Air and light:** the run's fog colour becomes a haze
+    (`WorldDetail.haze`: the palette fog towards accent 3, lighter), set as
+    `Psx.fog_color` before anything is built; far materials fog from 25 to
+    260 m; ambient 0.7 (from 0.95) with a soft pre-lit glow (`self_light`)
+    on wall, steel and new surfaces; lamps 1.5× brighter with a light pool
+    under each; street lamps; glow strips under low neon; mist in the shaft,
+    a cloud deck below the roof edge, beams, steam, floating dust; baked
+    contact shadows at every wall foot.
+  - **Water (after the weather roll, `Arena._after_weather`):** puddles only
+    where rain collects: open cells, drains, the parapet foot, the foot of
+    tall walls, low spots, and the metro floor. Clear weather: metro floor
+    only; heavy rain: all wall feet and 1.25× sizes. Skylights have glass.
+    These are the **only reflective surfaces** (owner, 2026-10-19:
+    "Reflections should only be on surfaces that would actually have
+    reflections"). `PuddleMirror` mirrors a camera under the player's floor
+    that draws only bright things (unlit neon, signs, the lit city; render
+    layer 20) into a texture for `puddle.gdshader`; water on another level
+    shows a dark sky sheen. WEAK: mirror off (sheen only); MEDIOCRE: half
+    the 3D view's size; INSANE: full size (capped at 1280×720).
+  - **Cost** (cloud software renderer, seed 4242, roof view): WEAK +30 draw
+    calls and +34k triangles; MEDIOCRE +260 draw calls, mostly the mirror's
+    pass over the map's neon. Merged into one mesh per material; WEAK also
+    hides dust, steam and beams. Its own RNG: puddle shapes take the seed
+    without drawing from `rng_map`, so seeds play as before.
+  - Debug: `--nodetail` (bare map), `--rain=0|1|2`, `--worldshot`.
 - **Backdrop (`CityBackdrop`, presentation only):**
   - A ring of towers turned to face the roof: lit windows, neon corner and
     floor strips, setbacks, rooftop crowns (beacons, water tanks, helipads,
@@ -2670,13 +2718,15 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 | Lighting | the map as built | the map as built | + global illumination (SDFGI: neon bounces onto floors), indirect light (SSIL), ambient occlusion (SSAO), soft moon shadows |
 | Glow | the map's own | wider neon halos | HDR glow that only catches light brighter than white |
 | Atmosphere | — | a faint additive haze around each lamp | volumetric fog lit by the lamps and moon |
-| Floors | — | — | wet: screen-space reflections on flat floors |
+| Puddles and glass (the only reflective surfaces, §8) | dark sheen, no mirror | mirrored at half size | mirrored at full size |
+| Dust, steam, light beams (§8) | — | yes | yes |
 | Edges | no MSAA | MSAA 2x | MSAA 4x |
 
 - Forward+ shades the world with `psx_lit_hd` / `psx_cutout_hd`: the same
   surface, but fogged by the Environment's depth fog (the shader's own curve,
-  10 to 100 m) so volumetric fog reaches it, and with low roughness on
-  up-facing faces. Far backdrops with their own long fog range keep the
+  10 to 100 m) so volumetric fog reaches it. Surfaces stay matte (no
+  screen-space reflections: since 2026-10-19 only puddles and glass reflect,
+  through `PuddleMirror` on both renderers). Far backdrops with their own long fog range keep the
   shader's fog. Effect shaders have `fog_disabled`, so they look the same on
   both renderers.
 - Shadows and ambient occlusion are INSANE only. On Compatibility a

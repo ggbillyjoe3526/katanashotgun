@@ -15,6 +15,10 @@ uniform float emission_strength = 0.0;
 // When set, emission is masked by the albedo texture brightness (lit windows).
 uniform float emission_from_texture = 0.0;
 uniform vec3 emission_tint : source_color = vec3(1.0);
+// A soft "baked" glow in the surface's own colour (the PS1 pre-lit trick),
+// so detail still reads away from the lamps.
+uniform float self_light = 0.0;
+uniform vec3 self_tint : source_color = vec3(1.0);
 uniform float flash = 0.0;
 uniform vec3 flash_color : source_color = vec3(1.0);
 // 1.0 = default wobble, 0.0 = off, >1 = more jitter.
@@ -28,16 +32,8 @@ uniform float fog_end = 90.0;
 // snap grid as a share of the 3D view's own pixels (0 = no wobble).
 global uniform float psx_retro;
 global uniform float psx_snap;
-#ifdef PSX_HD
-// How wet flat floors look: low roughness feeds screen-space reflections.
-uniform float wet = 0.7;
-#endif
-
 varying vec3 v_uvw;
 varying float v_fog;
-#ifdef PSX_HD
-varying float v_up;
-#endif
 
 void vertex() {
 	vec2 uv = UV * uv_tiling;
@@ -63,9 +59,6 @@ void vertex() {
 	v_uvw = vec3(uv * w, w);
 	vec3 vpos = (MODELVIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	v_fog = clamp((length(vpos) - fog_start) / (fog_end - fog_start), 0.0, 1.0);
-#ifdef PSX_HD
-	v_up = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz).y;
-#endif
 }
 
 #if CURRENT_RENDERER != RENDERER_COMPATIBILITY
@@ -107,18 +100,20 @@ void fragment() {
 	vec3 em_col = psx_srgb(emission_color);
 	vec3 em_tex = psx_srgb(t.rgb);
 	vec3 em_tint = psx_srgb(emission_tint);
+	vec3 self_c = psx_srgb(c.rgb) * psx_srgb(self_tint);
 #else
 	vec3 em_col = emission_color;
 	vec3 em_tex = t.rgb;
 	vec3 em_tint = emission_tint;
+	vec3 self_c = c.rgb * self_tint;
 #endif
-	vec3 em = em_col * emission_strength;
+	vec3 em = em_col * emission_strength + self_c * self_light;
 	if (emission_from_texture > 0.0) {
 		float lum = max(em_tex.r, max(em_tex.g, em_tex.b));
 		em += em_tex * em_tint * smoothstep(0.45, 0.9, lum) * emission_from_texture;
 	}
 #if CURRENT_RENDERER != RENDERER_COMPATIBILITY
-	if (emission_strength > 0.0 || emission_from_texture > 0.0) {
+	if (emission_strength > 0.0 || emission_from_texture > 0.0 || self_light > 0.0) {
 		em = psx_linear(em);
 	}
 #endif
@@ -126,12 +121,10 @@ void fragment() {
 #ifdef PSX_HD
 	// the Environment's depth fog (the same curve, 10 to 100 m; surfaces
 	// with a longer range of their own keep the plain shader) stands in for
-	// FOG, so volumetric fog can reach this surface too
-	float puddle = wet * smoothstep(0.8, 0.98, v_up);
-	ROUGHNESS = mix(1.0, 0.12, puddle);
-	METALLIC = puddle * 0.6;
-	// only the puddles shine; dry faces stay matte like the plain shader
-	SPECULAR = puddle;
+	// FOG, so volumetric fog can reach this surface too. Dry surfaces stay
+	// matte: only real water and glass reflect (puddle.gdshader).
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.0;
 #else
 	FOG = vec4(fog_color, v_fog * v_fog * (3.0 - 2.0 * v_fog));
 #endif

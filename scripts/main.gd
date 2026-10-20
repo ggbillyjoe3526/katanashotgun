@@ -80,6 +80,9 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--palettetour"):
 		add_child(load("res://scripts/debug_palette.gd").new())
 		return
+	if OS.get_cmdline_user_args().has("--worldshot"):
+		add_child(load("res://scripts/debug_worldshot.gd").new())
+		return
 	if OS.get_cmdline_user_args().has("--citytour"):
 		add_child(load("res://scripts/debug_city.gd").new())
 		return

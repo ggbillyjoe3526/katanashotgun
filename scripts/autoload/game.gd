@@ -109,7 +109,7 @@ func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")
 	debug_god = args.has("--god")
-	_no_pause_args = args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard") or args.has("--menutour") or args.has("--cantest")
+	_no_pause_args = args.has("--showcase") or args.has("--juicetest") or args.has("--palettetour") or args.has("--citytour") or args.has("--cardtour") or args.has("--movetest") or args.has("--runcard") or args.has("--menutour") or args.has("--cantest") or args.has("--worldshot")
 	debug_no_pause = debug_autoplay or _no_pause_args
 	for a in args:
 		if a.begins_with("--seed="):
