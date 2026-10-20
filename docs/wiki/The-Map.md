@@ -22,6 +22,21 @@ From the bottom up:
 | +10 m | **The shrine tower** on the north deck |
 | +13 m | **The beacon cap** on top of the tower, the highest point on the map |
 
+## The look
+
+The rooftop is built up with detail: raised floor plates with lit seams
+between them (some cells are left open), copper pipes, air-con units, vending
+machines, lit shop shutters, hanging signs, roof vents, skylights, a small
+shrine, and cables strung with paper lanterns across the shaft. Coloured haze
+hangs over the city, mist pools in the shaft and drifts below the roof edge,
+and lamps throw light and beams onto the floor.
+
+Anything you'd walk into is solid: vending machines, vents, the pipe benches
+along the parapet, street lamps and skylight frames (you can hop over those).
+None of it stands on a spawn point, a ramp or an enemy's leap spot, and
+nothing gives you a step up to a wall that is meant to stay out of reach.
+Signs, pipes and air-con units on walls hang above your head.
+
 ## Getting around
 
 - **Every level has a ramp.** Ramps run from the metro platform to the
@@ -125,7 +140,12 @@ fades through at least two colours.
 ## Weather
 
 The seed also picks the weather: **clear** (35% of seeds), **light rain**
-(45%) or **heavy rain** (20%). The **RAIJIN'S STORM** mutator brings a
+(45%) or **heavy rain** (20%). Rain leaves **puddles** where water would
+collect: in open floor cells and round drains, along the foot of the parapet
+and of tall walls, and in low spots. Heavy rain makes more and bigger ones;
+a clear night leaves only the metro floor wet (it leaks). Puddles and the
+skylights' glass are the only things that reflect the neon (not on WEAK
+graphics; see [Graphics presets](Settings#graphics-presets)). The **RAIJIN'S STORM** mutator brings a
 thunderstorm for its wave, with lightning that strikes the roof (see
 [Waves and Mutators](Waves-and-Mutators)).
 

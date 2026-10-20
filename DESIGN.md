@@ -430,8 +430,8 @@ is never lost.
 ## Tech
 - Godot 4.7, Compatibility renderer (OpenGL 3.3 / GLES3), chosen because it
   runs on the widest range of old and weak hardware. The INSANE graphics
-  preset switches to Forward+ (after a restart) for global illumination,
-  reflections and volumetric fog. It exports to Windows, Mac and Linux.
+  preset switches to Forward+ (after a restart) for global illumination
+  and volumetric fog. Only puddles and glass reflect, on every renderer. It exports to Windows, Mac and Linux.
 - Procedural textures, meshes, SFX and music: `tools/gen_audio.py` and
   `tools/gen_music.py` regenerate the audio.
 

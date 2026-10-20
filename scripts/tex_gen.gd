@@ -39,6 +39,18 @@ static func get_tex(name: String) -> ImageTexture:
 		"ring": img = _ring(64)
 		"grid": img = _grid()
 		"chrome": img = _chrome()
+		# world detail (WorldDetail): masks and painted props
+		"ao": img = _ao()
+		"mist": img = _mist(false)
+		"mist_tile": img = _mist(true)
+		"beam": img = _beam()
+		"pool": img = _pool()
+		"vend": img = _vend()
+		"door": img = _door()
+		"puddle0": img = _puddle(70, false)
+		"puddle1": img = _puddle(71, false)
+		"puddle2": img = _puddle(72, false)
+		"puddle_cell": img = _puddle(90, true)
 		_:
 			if name.begins_with("sign_v"):
 				img = _sign(32, 128, 100 + int(name.substr(6)) * 13)
@@ -439,4 +451,125 @@ static func _jumppad() -> Image:
 			var d := Vector2(x - c, y - c).length()
 			if int(d) % 5 < 2 and d < c:
 				img.set_pixel(x, y, Color(1, 1, 1))
+	return img
+
+
+# ---------------------------------------------------------------- world detail
+## A soft fade, dark at the bottom: baked contact shadow at a wall's foot.
+static func _ao() -> Image:
+	var img := _img(8, 64, Color(0, 0, 0, 0))
+	for y in 64:
+		var a := pow(y / 63.0, 1.6)
+		for x in 8:
+			img.set_pixel(x, y, Color(0, 0, 0, a))
+	return img
+
+
+static func _noise_field(s: int, seed_v: int, tiled: bool) -> Image:
+	var n := FastNoiseLite.new()
+	n.seed = seed_v
+	n.noise_type = FastNoiseLite.TYPE_VALUE_CUBIC
+	n.frequency = 0.035
+	n.fractal_octaves = 4
+	var img := n.get_seamless_image(s, s, false, false, 0.1, true) if tiled else n.get_image(s, s, false, false, true)
+	return img
+
+
+## Wisps of mist: a soft round patch, or (tiled) a seamless sheet.
+static func _mist(tiled: bool) -> Image:
+	var s := 128
+	var n := _noise_field(s, 12 if tiled else 9, tiled)
+	var img := _img(s, s, Color(1, 1, 1, 0))
+	var c := (s - 1) / 2.0
+	for y in s:
+		for x in s:
+			var a := clampf(n.get_pixel(x, y).r * 1.5 - 0.35, 0.0, 1.0)
+			if not tiled:
+				a *= pow(clampf(1.0 - Vector2(x - c, y - c).length() / c, 0.0, 1.0), 0.7)
+			img.set_pixel(x, y, Color(1, 1, 1, a))
+	return img
+
+
+## A light beam: bright at the top edge and centre line, fading out.
+static func _beam() -> Image:
+	var img := _img(32, 128, Color(1, 1, 1, 0))
+	for y in 128:
+		var down := pow(1.0 - y / 127.0, 1.2)
+		for x in 32:
+			var across := pow(clampf(1.0 - absf(x / 15.5 - 1.0), 0.0, 1.0), 1.5)
+			img.set_pixel(x, y, Color(1, 1, 1, across * down))
+	return img
+
+
+## A pool of lamp light on the floor (additive: the colour is the light).
+static func _pool() -> Image:
+	var s := 64
+	var img := _img(s, s)
+	for y in s:
+		for x in s:
+			var d := Vector2(x - s * 0.5 + 0.5, y - s * 0.5 + 0.5).length() / (s * 0.5)
+			var a := pow(clampf(1.0 - d, 0.0, 1.0), 2.0)
+			img.set_pixel(x, y, Color(a, a, a, 1))
+	return img
+
+
+static func _fill(img: Image, x0: int, y0: int, x1: int, y1: int, c: Color) -> void:
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			img.set_pixel(x, y, c)
+
+
+## A vending machine front: lit header, rows of cans, a keypad.
+static func _vend() -> Image:
+	var r := _rng(5)
+	var img := _img(32, 64, Color(0.08, 0.08, 0.08))
+	_fill(img, 2, 2, 30, 14, Color(0.95, 0.95, 1.0))
+	_fill(img, 6, 6, 26, 9, Color(0.9, 0.2, 0.4))
+	var cans := [Color(1, 0.3, 0.3), Color(0.3, 0.8, 1), Color(1, 0.85, 0.3), Color(0.4, 1, 0.5), Color(1, 0.5, 0.9)]
+	for row in 4:
+		var y := 17 + row * 9
+		_fill(img, 2, y - 1, 22, y + 7, Color(0.75, 0.8, 0.9))
+		for k in 4:
+			_fill(img, 3 + k * 5, y + 1, 6 + k * 5, y + 6, cans[r.randi() % cans.size()])
+	_fill(img, 24, 17, 30, 52, Color(0.2, 0.2, 0.25))
+	for k in 3:
+		_fill(img, 25, 20 + k * 4, 29, 21 + k * 4, Color(0.3, 1.0, 0.4))
+	_fill(img, 4, 54, 20, 60, Color(0.02, 0.02, 0.02))
+	return img
+
+
+## A shop shutter, half open, with warm light spilling out below.
+static func _door() -> Image:
+	var img := _img(32, 64, Color(0.05, 0.05, 0.05))
+	for y in range(4, 34):
+		var k := 0.28 if y % 3 != 0 else 0.12
+		_fill(img, 2, y, 30, y + 1, Color(k, k, k))
+	for y in range(34, 62):
+		var g := (y - 34) / 28.0
+		_fill(img, 2, y, 30, y + 1, Color(1.0, 0.75, 0.45) * (0.55 + 0.45 * g))
+	_fill(img, 0, 0, 32, 3, Color(0.9, 0.3, 0.2))
+	return img
+
+
+## Alpha mask of a rain puddle: a few merged blobs with a ragged rim. `cell`
+## also fills a square recess (an open floor cell), with dry corners.
+static func _puddle(seed_v: int, cell: bool) -> Image:
+	var r := _rng(seed_v)
+	var s := 64
+	var n := _noise_field(s, seed_v + 50, false)
+	var blobs := []
+	for i in r.randi_range(3, 5):
+		blobs.append([Vector2(r.randf_range(-0.35, 0.35), r.randf_range(-0.35, 0.35)), Vector2(r.randf_range(0.3, 0.6), r.randf_range(0.3, 0.6))])
+	var img := _img(s, s, Color(1, 1, 1, 0))
+	for y in s:
+		for x in s:
+			var p := Vector2(x, y) / (s - 1) * 2.0 - Vector2.ONE
+			var f := 0.0
+			for b in blobs:
+				var d: Vector2 = (p - b[0]) / b[1]
+				f = maxf(f, 1.0 - d.length_squared())
+			if cell:
+				f = maxf(f, 1.0 - pow(maxf(absf(p.x), absf(p.y)), 8.0))
+			f += (n.get_pixel(x, y).r - 0.5) * 0.35
+			img.set_pixel(x, y, Color(1, 1, 1, clampf((f - 0.05) * 6.0, 0.0, 1.0)))
 	return img

@@ -56,12 +56,15 @@ Every preset keeps the same PS1/PS2 look (set its strength with
 
 ![The same spot on WEAK, MEDIOCRE and INSANE](images/graphics-presets.jpg)
 
+Only things that would really reflect do: rain puddles and skylight glass.
+Floors, walls and metal stay matte on every preset.
+
 | | WEAK | MEDIOCRE | INSANE |
 | --- | --- | --- | --- |
 | For | Old laptops and integrated graphics | Most PCs | A strong graphics card |
 | Light | The plain look | The plain look | Light that bounces (neon colours the floor), soft shadows from the moon, shading in every corner |
-| Glow and air | The plain glow | Wider neon glow, a soft haze around every lamp | Real fog that the lamps light up |
-| Floors | Dry | Dry | Wet: they reflect the neon |
+| Glow and air | The plain glow, no floating dust, steam or light beams | Wider neon glow, a soft haze around every lamp | Real fog that the lamps light up |
+| Puddles and glass | A dark sheen, no reflections | Reflect the neon and the city | Reflect it sharper |
 | Blood and chunks | Fewer | More | Even more per kill |
 | Flying cars in the city | Fewer | All of them | All of them |
 | Edges | Jagged | Smoother | Smoothest |

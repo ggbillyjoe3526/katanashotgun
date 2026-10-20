@@ -25,6 +25,8 @@ var env: Environment
 var moon: DirectionalLight3D
 var sky_mat: ShaderMaterial
 var rain_level := 1 # 0 none, 1 light, 2 heavy
+## Debug and tests: the weather every map gets (-1 = rolled from the seed).
+static var force_rain := -1
 var floor_base := 0.0 # what floor_height_at returns where no platform or ramp is
 var kill_y := -10.0 # the player falls back to the spawn below this; enemies 2 m higher
 var enemy_reset := Vector3(0, 6, -20) # where an enemy that fell off the map comes back
@@ -35,7 +37,7 @@ var nav_region: NavigationRegion3D
 const NAV_WALK := 1 # navigation layer: floors and ramps
 const NAV_LEAP := 2 # navigation layer: leap links (enemies only; the autoplay bot walks)
 
-var _platforms: Array = [] # {c: Vector2, hx, hz, rot, h}
+var _platforms: Array = [] # {c: Vector2, hx, hz, rot, h, mat, lift}
 var _ramps: Array = []     # {a: Vector3, b: Vector3, w}
 var _pickup_spots: Array[Vector3] = []
 var _pickup_spots_done := false
@@ -55,11 +57,19 @@ func build() -> void:
 	if use_navigation:
 		_build_navigation()
 	_build_rain()
+	_after_weather()
 	Graphics.attach(self) # the quality preset's lighting, now and on change
 
 
 ## Override in a map subclass.
 func _build_layout() -> void:
+	pass
+
+
+## Override in a map subclass: dressing that depends on the run's weather
+## (rain_level is rolled after the layout). Runs before Graphics attaches;
+## nothing here may collide, since the navmesh is already baked.
+func _after_weather() -> void:
 	pass
 
 
@@ -121,7 +131,7 @@ func _solid(size: Vector3, pos: Vector3, mat: Material, rot_y := 0.0, subdiv := 
 
 func _platform(size: Vector3, pos: Vector3, mat: Material, rot_y := 0.0) -> StaticBody3D:
 	var b := _solid(size, pos, mat, rot_y)
-	_platforms.append({"c": Vector2(pos.x, pos.z), "hx": size.x * 0.5, "hz": size.z * 0.5, "rot": rot_y, "h": pos.y + size.y * 0.5})
+	_platforms.append({"c": Vector2(pos.x, pos.z), "hx": size.x * 0.5, "hz": size.z * 0.5, "rot": rot_y, "h": pos.y + size.y * 0.5, "mat": mat, "lift": 0.0})
 	return b
 
 
@@ -234,7 +244,9 @@ func _accent(i: int) -> Color:
 
 
 ## Height of the floor at (x, z): the highest platform or ramp top at or
-## below `below`, so stacked floors give the one under the caller.
+## below `below`, so stacked floors give the one under the caller. A floor
+## dressed with plates (WorldDetail) reports the plates' top, so blood,
+## telegraphs and gibs sit on them.
 func floor_height_at(x: float, z: float, below := INF) -> float:
 	var h := floor_base
 	for p in _platforms:
@@ -244,7 +256,7 @@ func floor_height_at(x: float, z: float, below := INF) -> float:
 		if p.rot != 0.0:
 			d = d.rotated(p.rot)
 		if absf(d.x) <= p.hx and absf(d.y) <= p.hz:
-			h = maxf(h, p.h)
+			h = maxf(h, p.h + p.lift)
 	for r in _ramps:
 		var a: Vector3 = r.a
 		var b: Vector3 = r.b
@@ -291,7 +303,8 @@ func pickup_spots() -> Array[Vector3]:
 			if o.distance_to(c) < 2.0:
 				dup = true
 		if not dup:
-			_pickup_spots.append(Vector3(c.x, hit.position.y, c.z))
+			# on top of any floor plates
+			_pickup_spots.append(Vector3(c.x, floor_height_at(c.x, c.z, hit.position.y + 0.01), c.z))
 	return _pickup_spots
 
 
@@ -384,6 +397,11 @@ func _build_rain() -> void:
 	add_child(rain)
 	var roll := rng.randf()
 	rain_level = 0 if roll < 0.35 else (1 if roll < 0.8 else 2)
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--rain="): # debug: force the weather (the roll above still happens)
+			force_rain = clampi(int(arg.substr(7)), 0, 2)
+	if force_rain >= 0:
+		rain_level = force_rain
 	_apply_rain()
 
 

@@ -6,8 +6,7 @@ class_name Graphics
 ## - MEDIOCRE (`medium`): wider neon glow, a haze around every lamp and
 ##   smoother edges (2x MSAA).
 ## - INSANE (`high`): on the Forward+ renderer, global illumination (neon
-##   light bounces off the floors), screen-space reflections on wet floors,
-##   indirect light, ambient occlusion, volumetric fog the lamps light up, and
+##   light bounces off the floors), indirect light, ambient occlusion, volumetric fog the lamps light up, and
 ##   soft moon shadows; brighter glow and 4x MSAA.
 ## Shadows and ambient occlusion are INSANE only: on the OpenGL renderer a
 ## shadowed light drops out of the Gouraud (vertex-lit) materials or draws in
@@ -42,7 +41,7 @@ static func renderer() -> String:
 	return _method
 
 
-## Whether the Forward+ features (GI, reflections, volumetric fog) exist now.
+## Whether the Forward+ features (GI, volumetric fog, shadows) exist now.
 static func advanced() -> bool:
 	return renderer() == FORWARD_PLUS
 
@@ -265,12 +264,9 @@ static func _apply_forward_plus(env: Environment, top: bool, base: Dictionary) -
 	env.ssil_radius = 6.0
 	env.ssil_intensity = 1.2
 	env.ssil_sharpness = 0.98
-	# reflections on the wet floors (psx_lit_hd lowers their roughness)
-	env.ssr_enabled = top
-	env.ssr_max_steps = 96
-	env.ssr_fade_in = 0.1
-	env.ssr_fade_out = 2.0
-	env.ssr_depth_tolerance = 0.3
+	# no screen-space reflections: floors are matte, and only puddles and
+	# glass mirror the scene (PuddleMirror, on every preset but WEAK)
+	env.ssr_enabled = false
 	# volumetric fog: a thin haze the lamps and neon light up
 	env.volumetric_fog_enabled = top
 	env.volumetric_fog_density = 0.006
