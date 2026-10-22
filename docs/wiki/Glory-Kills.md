@@ -51,7 +51,7 @@ Which one you see depends on where you are:
 A glory kill from above, always with the katana.
 
 1. Get onto high ground at least **2 m** above an enemy's feet (or get
-   launched by the geyser pad). [The Map](The-Map#plunge-spots) lists the
+   launched by a geyser pad: there's one on every level). [The Map](The-Map#plunge-spots) lists the
    best spots.
 2. Drop or jump off toward it and look at it.
 3. A gold **F PLUNGE** prompt appears. Press **F** to dive down and drive the

@@ -16,9 +16,13 @@ const SHAFT := 12.0 # half-width of the shaft
 const DECK := 5.0 # catwalks, bridge and north deck
 const FLOOR := -10.0 # metro platform
 const SERVICE := -5.0 # service blocks and balconies
+## Launch speed of every geyser pad but the metro one: straight up, about
+## 9.3 m of air (owner, 2026-10-22: more chances to launch and plunge).
+const PAD_LIFT := 22.0
 
 var m_wall: ShaderMaterial
 var m_under: ShaderMaterial
+var m_pad: Array[ShaderMaterial] = [] # geyser pads: top, beam, floor glow
 var backdrop: CityBackdrop
 var detail: WorldDetail
 
@@ -48,6 +52,7 @@ func _build_layout() -> void:
 	_side_catwalks()
 	_bridge()
 	_ring()
+	_pads()
 	_spawn_sources()
 	_edge()
 	_skyline()
@@ -183,8 +188,6 @@ func _shaft() -> void:
 	_light(Vector3(-8, -8, -6), _accent(0), 2.0, 12.0)
 	_light(Vector3(8, -8, 6), _accent(1), 2.0, 12.0)
 	_light(Vector3(0, -2, 0), _accent(0), 1.6, 14.0)
-	# geyser pad: metro platform back up to the bridge
-	_pad(Vector3(0, FLOOR, 6), Vector3(0, 28.0, -2.5))
 	_crate(Vector3(-9.5, FLOOR, -3), 1.2, _accent(5))
 	_crate(Vector3(-2.5, FLOOR, -5), 3.0, _accent(4))
 
@@ -342,6 +345,21 @@ func _ring() -> void:
 		_neon_box_edges(Vector3(x, 0.6, 25), Vector3(5, 1.2, 2.4), 0.0, _accent(0 if x < 0 else 3), 2.2, true)
 
 
+## Geyser pads. The metro platform's throws you back up to the bridge; the
+## others, in pairs on the service blocks, the roof ring and the side
+## catwalks, launch straight up: look around, steer onto the level above or
+## plunge on the way down. Each stands clear of spawns, leap links, ramps
+## and props, with open sky over it for the whole launch.
+func _pads() -> void:
+	_pad(Vector3(0, FLOOR, 6), Vector3(0, 28.0, -2.5), true)
+	var up := Vector3(0, PAD_LIFT, 0)
+	for s in [-1.0, 1.0]:
+		_pad(Vector3(s * 9, SERVICE, s * 10), up) # service blocks, the corners without a lamp
+		_pad(Vector3(s * 8, 0, 17), up) # south roof, by the start
+		_pad(Vector3(s * 19, 0, -11.5), up) # roof ring, beside the shaft's north corners
+		_pad(Vector3(s * 24.5, DECK, -18), up) # side catwalks, north end
+
+
 ## Visible spawn sources: metro tunnels, freight lifts, roof hatches.
 func _spawn_sources() -> void:
 	for s in [-1.0, 1.0]:
@@ -387,8 +405,17 @@ func _hatch(p: Vector3) -> void:
 	_neon_box_edges(p + Vector3(0, 0.08, 0), Vector3(2.0, 0.05, 2.0), 0.0, col, 3.0, true)
 
 
-func _pad(p: Vector3, launch: Vector3) -> void:
+## One geyser pad. Only the metro pad has a real lamp (the pit is dark);
+## the rest throw a glow on the floor instead, so the map's light count stays
+## where it was (each lamp costs every surface it touches a pass).
+func _pad(p: Vector3, launch: Vector3, lamp := false) -> void:
 	var col: Color = pal.neon_c
+	if m_pad.is_empty():
+		m_pad = [
+			Psx.unlit(col, 2.2, TexGen.get_tex("jumppad"), {"fog_amount": 0.3}),
+			Psx.fx(Color(col.r, col.g, col.b, 0.25), TexGen.get_tex("glow"), true, false, false, 0.8),
+			Psx.fx(col, TexGen.get_tex("glow"), true, false, false, 0.45),
+		]
 	var base := MeshInstance3D.new()
 	var cm := CylinderMesh.new()
 	cm.top_radius = 1.35
@@ -403,14 +430,19 @@ func _pad(p: Vector3, launch: Vector3) -> void:
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(2.4, 2.4)
 	top.mesh = pm
-	top.material_override = Psx.unlit(col, 2.2, TexGen.get_tex("jumppad"), {"fog_amount": 0.3})
+	top.material_override = m_pad[0]
 	top.position = p + Vector3(0, 0.17, 0)
 	add_child(top)
 	for k in 2:
-		var beam := Psx.quad(Vector2(2.4, 5.0), Psx.fx(Color(col.r, col.g, col.b, 0.25), TexGen.get_tex("glow"), true, false, false, 0.8), p + Vector3(0, 2.5, 0))
+		var beam := Psx.quad(Vector2(2.4, 5.0), m_pad[1], p + Vector3(0, 2.5, 0))
 		beam.rotation.y = k * PI * 0.5
 		add_child(beam)
-	_light(p + Vector3(0, 1.0, 0), col, 1.4, 7.0)
+	if lamp:
+		_light(p + Vector3(0, 1.0, 0), col, 1.4, 7.0)
+	else:
+		var glow := Psx.quad(Vector2(6.0, 6.0), m_pad[2], p + Vector3(0, 0.12, 0))
+		glow.rotation.x = -PI * 0.5
+		add_child(glow)
 	jump_pads.append({"pos": p, "r": 1.35, "launch": launch})
 
 

@@ -24,6 +24,7 @@ var _taps := {} # action -> physics frame to let go of it
 var _double_sent := false
 var _finisher_sent := false
 var _pad: Dictionary = {}
+var _last_vy := 0.0
 
 
 func _ready() -> void:
@@ -50,7 +51,14 @@ func _ready() -> void:
 		{"name": "plunge onto a grunt at the foot of the wall lands clear of it", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -1.5), "want_plunge": true, "want_top": 0.0, "max_z": -1.4, "pitch": -1.3},
 		{"name": "plunge from a 4 m ledge onto a grunt", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.2), "want_plunge": true, "pitch": -0.9},
 		{"name": "plunge from a jump pad launch onto a grunt on the same floor", "blocks": [], "keys": [], "pad": Vector3(0, 17.0, -5.0), "enemy": Vector3(0, 0, -6.0), "want_plunge": true, "forward": false, "pitch": -1.1},
+		{"name": "a jump pad on the deck above never fires from the floor under it", "blocks": [], "keys": [], "pad": Vector3(0, 17.0, 0), "pad_y": 5.0, "forward": false, "max_peak": 0.3},
 	]
+	# every geyser pad on the map: nothing overhead cuts the launch short, and
+	# with no keys held the player comes back down onto the pad (which throws
+	# them up again)
+	for i in Game.arena.jump_pads.size():
+		var jp: Dictionary = Game.arena.jump_pads[i]
+		_checks.append({"name": "map pad %d at %s: a clear launch" % [i, jp.pos], "blocks": [], "keys": [], "map_pad": jp, "forward": false})
 	_next()
 
 
@@ -97,6 +105,7 @@ func _next() -> void:
 	_finisher_sent = false
 	_max_y = -INF
 	_max_h = 0.0
+	_last_vy = 0.0
 	for n in _course.get_children().slice(1):
 		_course.remove_child(n) # out of the world now, so the next start is clear
 		n.queue_free()
@@ -114,7 +123,7 @@ func _next() -> void:
 	for b in c.blocks:
 		_add_block(b)
 	if c.has("pad"):
-		_pad = {"pos": ORIGIN, "r": 1.35, "launch": c.pad}
+		_pad = {"pos": ORIGIN + Vector3(0, c.get("pad_y", 0.0), 0), "r": 1.35, "launch": c.pad}
 		Game.arena.jump_pads.append(_pad)
 	if c.has("enemy"):
 		_enemy = Enemy.new()
@@ -124,6 +133,8 @@ func _next() -> void:
 		Game.main.director.add_child(_enemy)
 	var p := Game.player
 	p.global_position = ORIGIN + Vector3(0, c.get("start_y", 0.0) + 0.02, 0)
+	if c.has("map_pad"):
+		p.global_position = c.map_pad.pos + Vector3(0, 0.02, 0)
 	p.velocity = Vector3.ZERO
 	p.reset_physics_interpolation()
 	p.yaw = 0.0
@@ -179,6 +190,9 @@ func _physics_process(_delta: float) -> void:
 			_finisher_sent = true
 			_tap("finisher")
 	var settled := _f > 30 and p.is_on_floor() and p.climb_t < 0.0 and p.gk_target == null
+	if c.has("map_pad") and _f > 30 and _last_vy < 0.0 and p.velocity.y > 0.0:
+		settled = true # the pad caught the player on the way down and threw them up again
+	_last_vy = p.velocity.y
 	if c.has("enemy"):
 		settled = settled and (_f > 150 or (_enemy_gone() and p.gk_target == null))
 	if not settled and _f < TIMEOUT:
@@ -207,6 +221,15 @@ func _finish(c: Dictionary, p: Player) -> void:
 		var hi := Player.WALK_SPEED * Player.DOUBLE_JUMP_PUSH_CAP + 0.05
 		if _max_h < lo or _max_h > hi:
 			errs.append("top speed %.2f m/s, wanted %.1f to %.1f" % [_max_h, lo, hi])
+	if c.has("max_peak") and _max_y - ORIGIN.y > float(c.max_peak):
+		errs.append("thrown up to y=%.2f" % _max_y)
+	if c.has("map_pad"):
+		var jp: Dictionary = c.map_pad
+		var rise: float = jp.launch.y * jp.launch.y / (2.0 * Player.GRAVITY)
+		if absf(_max_y - jp.pos.y - rise) > 0.4:
+			errs.append("peak %.2f m over the pad, wanted about %.2f" % [_max_y - jp.pos.y, rise])
+		if absf(y - jp.pos.y) > 1.0 or Vector2(p.global_position.x - jp.pos.x, p.global_position.z - jp.pos.z).length() > jp.r:
+			errs.append("came down at %s, off the pad" % p.global_position)
 	if c.get("measure", false):
 		var want := (Player.JUMP_VEL * Player.JUMP_VEL + Player.DOUBLE_JUMP_VEL * Player.DOUBLE_JUMP_VEL) / (2.0 * Player.GRAVITY)
 		if absf(_max_y - want) > 0.25:
