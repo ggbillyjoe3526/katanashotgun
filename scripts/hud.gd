@@ -215,7 +215,10 @@ var _death_counted := false
 var _scores_shown := false # the hi-score rows, once the score has counted up
 const HURT_TIME := 0.9 # seconds a hurt chevron shows
 const HURT_MAX := 4
-var _hurt_from: Array = [] # [world position the hit came from, seconds left]
+# a ring of the last HURT_MAX hits taken: where each came from, seconds left
+var _hurt_pos := PackedVector3Array()
+var _hurt_left := PackedFloat32Array()
+var _hurt_next := 0
 var _popup_plate: StyleBoxFlat
 
 
@@ -236,6 +239,7 @@ class Crosshair:
 	var hit_col := Color.WHITE
 	var hit_arm := 3 # pixels per stroke of the marker's X
 	var hurt_dir := PackedVector2Array() # per recent hit taken: its screen direction (up = ahead)...
+	var _tri := PackedVector2Array([Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]) # reused per chevron
 	var hurt_a := PackedFloat32Array() # ...and how strongly its chevron shows
 	const DIAG: Array[Vector2] = [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]
 	var frame := true
@@ -271,8 +275,14 @@ class Crosshair:
 			var tip := dir * (HURT_R + 6)
 			var back := dir * HURT_R
 			var a := hurt_a[i]
-			draw_colored_polygon(PackedVector2Array([tip + dir * 1.5, back + side * 6.5 - dir, back - side * 6.5 - dir]), Color(INK, INK.a * a))
-			draw_colored_polygon(PackedVector2Array([tip, back + side * 5, back - side * 5]), Color(Hud.RED, a))
+			_tri[0] = tip + dir * 1.5
+			_tri[1] = back + side * 6.5 - dir
+			_tri[2] = back - side * 6.5 - dir
+			draw_colored_polygon(_tri, Color(INK, INK.a * a))
+			_tri[0] = tip
+			_tri[1] = back + side * 5
+			_tri[2] = back - side * 5
+			draw_colored_polygon(_tri, Color(Hud.RED, a))
 		if not frame:
 			return
 		# corner brackets: the square is drawn by its corners only
@@ -320,6 +330,9 @@ class Crosshair:
 
 func _ready() -> void:
 	layer = 5
+	_hurt_pos.resize(HURT_MAX)
+	_hurt_left.resize(HURT_MAX)
+	_hurt_left.fill(0.0)
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	Ui.init()
 	_blood_rng.randomize()
@@ -966,6 +979,9 @@ func show_title() -> void:
 func hide_title() -> void:
 	title_root.visible = false
 	play_root.visible = true
+	# a new run starts clean: no marker or hurt chevron left from the last one
+	crosshair.hit_t = 0.0
+	_hurt_left.fill(0.0)
 
 
 func show_pause(on: bool) -> void:
@@ -1669,9 +1685,9 @@ func damage_flash(amount: float, from: Vector3) -> void:
 		post.hurt(clampf(amount / 30.0, 0.3, 1.0))
 	juice.add_shake(clampf(amount / 8.0, 1.0, 5.0))
 	# where it came from: a chevron round the crosshair that turns with you
-	while _hurt_from.size() >= HURT_MAX:
-		_hurt_from.pop_front()
-	_hurt_from.append([from, HURT_TIME])
+	_hurt_pos[_hurt_next] = from
+	_hurt_left[_hurt_next] = HURT_TIME
+	_hurt_next = (_hurt_next + 1) % HURT_MAX
 
 
 ## A hit landed (spec §9.8 Hit confirm): the X round the crosshair and its
@@ -1965,19 +1981,15 @@ func _update_play(delta: float) -> void:
 	crosshair.hurt_dir.clear()
 	crosshair.hurt_a.clear()
 	var look := Basis(Vector3.UP, -p.yaw)
-	var hi := 0
-	while hi < _hurt_from.size():
-		var h: Array = _hurt_from[hi]
-		h[1] -= delta
-		if h[1] <= 0.0:
-			_hurt_from.remove_at(hi)
+	for hi in HURT_MAX:
+		if _hurt_left[hi] <= 0.0:
 			continue
-		var to: Vector3 = look * (h[0] - p.global_position)
+		_hurt_left[hi] -= delta
+		var to: Vector3 = look * (_hurt_pos[hi] - p.global_position)
 		var d := Vector2(to.x, to.z)
-		if d.length() > 0.3:
+		if d.length() > 0.3 and _hurt_left[hi] > 0.0:
 			crosshair.hurt_dir.append(d.normalized())
-			crosshair.hurt_a.append(clampf(h[1] / HURT_TIME * 1.5, 0.0, 1.0))
-		hi += 1
+			crosshair.hurt_a.append(clampf(_hurt_left[hi] / HURT_TIME * 1.5, 0.0, 1.0))
 	crosshair.queue_redraw()
 	soda_hud.refresh(c, vitals, delta)
 	hp_label.visible = vitals

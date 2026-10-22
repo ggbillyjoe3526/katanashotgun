@@ -61,6 +61,23 @@ func test_the_edge_heats_through_the_windup() -> void:
 	assert_gt(c.b, 0.6, "white-hot, not just red")
 
 
+func test_the_red_arc_ends_where_the_blow_reaches() -> void:
+	# standing outside the arc must mean the blow missed (the owner's "close = hurt")
+	for kind in ["grunt", "brute"]:
+		var e := _built(kind)
+		var reach := e.strike_reach()
+		assert_almost_eq(e.radius * 0.4 + e.swing_radius(reach), reach, 0.001, kind)
+
+
+func test_a_cut_short_windup_cools_the_edge() -> void:
+	var e := _built("grunt")
+	e._set_state(Enemy.S.WINDUP)
+	e._set_weapon_heat(0.9)
+	e._set_state(Enemy.S.STAGGER)
+	var energy: float = e._weapon_glow.get_shader_parameter("energy")
+	assert_almost_eq(energy, 1.4, 0.01, "back to its idle glow")
+
+
 func test_lunge_picks_a_foe_just_out_of_reach() -> void:
 	var near := _stand_in(Vector3(0, 0, -4.6))
 	var origin := Vector3(0, 1.55, 0)

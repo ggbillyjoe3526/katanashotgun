@@ -980,10 +980,14 @@ Common to every enemy:
   hand guards); the brute lifts the club high over its head. On the strike
   the arms snap down to the follow-through (no easing, so the hit and the
   swing are one moment) and hold it 0.22 s while the edge cools, and a red
-  arc is drawn where the weapon cut (grunt 1.75 m from the shoulder, leaning
-  1 rad across the body; brute 2.9 m, leaning 0.55 rad; drawn on in 0.06 s,
-  gone in 0.2 s). The lean keeps the arc readable from the front, where a
-  straight overhead arc would be seen edge-on. The brute's blow also flashes
+  arc is drawn where the weapon cut. **The arc ends exactly at the blow's
+  reach** (the grunt's 2.7 m + radius, the brute's 3.6 m + radius, from the
+  centre; the blow also lunges the body forward), so standing outside the
+  red arc means it missed you. The grunt's arc leans 1 rad across the body,
+  the brute's 0.55 rad, so it reads from the front, where a straight
+  overhead arc would be seen edge-on. Drawn on in 0.06 s, gone in 0.2 s. A
+  windup cut short (a stagger, a leap) cools the edge at once, so a hot
+  edge always means a blow is coming. The brute's blow also flashes
   where the club meets the floor. The gunner's cannon glints at the windup
   and flashes when it fires.
 - **Taking a hit** shows where it came from: a red chevron on a ring round

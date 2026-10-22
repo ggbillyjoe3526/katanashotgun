@@ -33,6 +33,8 @@ const WINDUP_HOT := Color(1.0, 0.18, 0.08)
 const SWING_COLOR := Color(1.0, 0.28, 0.12)
 const WEAPON_NEONS: Array[Color] = [Color(0.2, 1.0, 1.0), Color(1.0, 0.25, 0.8), Color(0.6, 1.0, 0.25), Color(1.0, 0.55, 0.1)]
 const STRIKE_HOLD := 0.22 # seconds the strike pose is held before the recovery
+const GRUNT_REACH := 2.7 # a blow hits this far past the body's centre... (+ radius)
+const BRUTE_REACH := 3.6
 const GRUNT_STRIKE := [Vector3(0.3, 0, 0.1), Vector3(-0.45, 0, 0.3), 0.5] # see _strike_pose
 const BRUTE_STRIKE := [Vector3(-0.35, 0, -0.25), Vector3(-0.35, 0, 0.1), 0.6]
 
@@ -545,6 +547,8 @@ func get_head() -> Node3D:
 func _set_state(s: S) -> void:
 	state = s
 	state_t = 0.0
+	if s != S.WINDUP and s != S.RECOVER:
+		_set_weapon_heat(0.0) # a windup cut short (a stagger, a leap) must not stay red-hot
 
 
 func is_staggered() -> bool:
@@ -877,9 +881,9 @@ func _attack(dist: float, dir: Vector3) -> void:
 	match kind:
 		"grunt":
 			knock += fwd * 6.0
-			_strike(1.75, -1.0)
+			_strike(strike_reach(), -1.0)
 			Sfx.play_at("swing1", global_position, -4.0, 0.8)
-			if dist < 2.7 + radius and dy < 1.8 and fwd.dot(dir) > 0.3:
+			if dist < strike_reach() and dy < 1.8 and fwd.dot(dir) > 0.3:
 				p.take_damage(11.0 * damage_mult, global_position)
 			recover_time = 0.55
 			attack_cd = _rng.randf_range(0.9, 1.5)
@@ -898,10 +902,10 @@ func _attack(dist: float, dir: Vector3) -> void:
 			recover_time = 0.35
 			attack_cd = _rng.randf_range(2.2, 3.2)
 		"brute", "oni":
-			var reach := (3.6 if kind == "brute" else 4.6) + radius
+			var reach := strike_reach() if kind == "brute" else 4.6 + radius
 			knock += fwd * (5.0 if kind == "brute" else 8.0)
 			if kind == "brute":
-				_strike(2.9, -0.55)
+				_strike(reach, -0.55)
 				Game.fx.glint(global_position + fwd * reach * 0.8 + Vector3(0, 0.3, 0), Color(1.0, 0.6, 0.2), 1.8, 0.12)
 			Sfx.play_at("swing0", global_position, 0.0, 0.55)
 			Game.gore.sparks(global_position + fwd * reach * 0.8 + Vector3(0, 0.2, 0), Vector3.UP, 12)
@@ -917,12 +921,18 @@ func _attack(dist: float, dir: Vector3) -> void:
 	_set_state(S.RECOVER)
 
 
+## How far (flat, centre to centre) a grunt's or brute's blow reaches.
+func strike_reach() -> float:
+	return (BRUTE_REACH if kind == "brute" else GRUNT_REACH) + radius
+
+
 ## The blow lands: the arms snap to the strike pose, the edge burns
-## white-hot and a red arc shows where the weapon cut (spec §4). `size` is
-## the arc's radius from the shoulder; `tilt` leans it across the body
-## (negative: high on the weapon side), so the arc reads from the front too
+## white-hot and a red arc shows where the weapon cut (spec §4). `reach` is
+## how far past the body's centre the blow hits; the arc ends exactly there,
+## so standing outside it means you were missed. `tilt` leans it across the
+## body (negative: high on the weapon side), so it reads from the front too
 ## instead of edge-on.
-func _strike(size: float, tilt: float) -> void:
+func _strike(reach: float, tilt: float) -> void:
 	var sp := _strike_pose()
 	arm_l.rotation = sp[0]
 	arm_r.rotation = sp[1]
@@ -933,7 +943,13 @@ func _strike(size: float, tilt: float) -> void:
 	var shoulder := global_position + Vector3(0, height * 0.74, 0) + fwd * radius * 0.4
 	if kind == "grunt":
 		shoulder += side * 0.3 * height / 1.8
-	Game.fx.enemy_swing(shoulder, fwd, size, tilt, SWING_COLOR)
+	Game.fx.enemy_swing(shoulder, fwd, swing_radius(reach), tilt, SWING_COLOR)
+
+
+## The swing arc's radius from the shoulder (which sits radius × 0.4 ahead
+## of the centre) that makes its far edge land at `reach`.
+func swing_radius(reach: float) -> float:
+	return reach - radius * 0.4
 
 
 func _slam_land() -> void:
