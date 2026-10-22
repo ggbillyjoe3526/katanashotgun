@@ -44,9 +44,10 @@ A full bake takes several minutes. Then run `godot --headless --import`.
 | `_retro` (colour with light and shine painted in) | 256 | lossless, no mipmaps |
 
 `shaders/psx_model.gdshader` follows the RETRO LOOK setting (the globals
-`psx_retro` and `psx_snap`): FULL snaps vertices and reads `_retro` texel
-by texel with no live shine (like the PS1); LIGHT and OFF use the full maps
-with per-pixel light. The `_retro` light is drawn by `retro_shade()` in
+`psx_retro` and `psx_snap`): LIGHT and OFF use the full maps with per-pixel
+light. Above `psx_retro` 0.5 it reads `_retro` texel by texel with no live
+shine (like the PS1); that was the old RETRO LOOK FULL, removed on
+2026-10-22, so no setting reaches it now. The `_retro` light is drawn by `retro_shade()` in
 `surface_dojigiri.py` from an object-space normal bake.
 `scripts/katana_model.gd` loads the .glb and sets the materials.
 

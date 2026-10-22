@@ -46,6 +46,7 @@ second early still counts.
 | Results | Click | New run with a new seed (or click NEW RUN) |
 | Results | **P** | Save a [run card](Run-Cards), a picture of your run with its seed |
 | Results | **O** | Open the folder the run card went to |
+| Results | **Esc** | Back to the title screen (or click MAIN MENU, top left) |
 
 The game also pauses on its own if you switch away from it (Alt+Tab) and the mouse is released.
 

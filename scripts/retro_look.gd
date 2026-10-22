@@ -1,13 +1,8 @@
 class_name RetroLook
 ## How strong the PS1/PS2 look is: the player's RETRO LOOK setting (spec
-## §9.1, Settings.retro_look). Every level keeps the run's palette, the
+## §9.1, Settings.retro_look). Both levels keep the run's palette, the
 ## per-vertex lighting, glow and the pixel-font UI; what changes is how
 ## much of the old-console roughness sits on top.
-## - FULL: the original look. The whole window draws at 480x270 (the
-##   project's 960x540 at stretch scale 2) and scales up with sharp pixels,
-##   vertices snap to a coarse grid (wobble), textures warp (affine) and pick
-##   the nearest texel, colours band with a Bayer dither, faint scanlines and
-##   an edge fringe.
 ## - LIGHT (default): a hint of it. The 3D view draws at about 540 lines
 ##   (the window divided by a whole number, so pixels stay square and sharp:
 ##   960x540 on 1080p and 4K, about 853x480 on 1440p), with a gentle wobble, a
@@ -15,27 +10,27 @@ class_name RetroLook
 ##   the PS2. The UI draws at the window's size with its pixel font.
 ## - OFF: the plain look. Full window resolution, smooth textures, none of
 ##   the above.
-## The shaders read four globals declared in project.godot (their values
-## there are FULL's): `psx_retro` (the amount: scales warp, fringe and
-## scanlines; above 0.5 textures pick the nearest texel), `psx_snap`
-## (the vertex grid as a share of the 3D view's own pixels, 0 = no wobble), `psx_levels` (colour
-## levels per channel, 0 = no banding) and `psx_pixel_lines` (the post-process
-## cuts the picture into blocks of about this many lines, 0 = none).
+## A third level, FULL (the whole window at 480x270 with heavy wobble and
+## nearest texels), was removed at the owner's request (2026-10-22). The
+## shaders read four globals declared in project.godot (their values there
+## are FULL's old ones; apply() sets them at boot): `psx_retro` (the amount:
+## scales warp, fringe and scanlines; above 0.5 textures pick the nearest
+## texel), `psx_snap` (the vertex grid as a share of the 3D view's own
+## pixels, 0 = no wobble), `psx_levels` (colour levels per channel, 0 = no
+## banding) and `psx_pixel_lines` (the post-process cuts the picture into
+## blocks of about this many lines, 0 = none).
 
-const IDS: Array[String] = ["off", "light", "full"]
-const NAMES := {"off": "OFF", "light": "LIGHT", "full": "FULL"}
+const IDS: Array[String] = ["off", "light"]
+const NAMES := {"off": "OFF", "light": "LIGHT"}
 ## The default for new players and saves from before the setting existed
 ## (owner, 2026-10-19: the full look was too strong, the plain one too clean).
 const DEFAULT := "light"
 ## What each level puts on screen. `lines`: the 3D view's height in pixels
-## (0 = the window's own; FULL's 270 comes from the project's stretch).
+## (0 = the window's own).
 const LEVELS := {
 	"off": {"amount": 0.0, "snap": 0.0, "levels": 0.0, "lines": 0},
 	"light": {"amount": 0.35, "snap": 0.67, "levels": 64.0, "lines": 540},
-	"full": {"amount": 1.0, "snap": 0.6, "levels": 48.0, "lines": 270},
 }
-## FULL's 3D height: the project's 960x540 base at its stretch scale of 2.
-const FULL_LINES := 270
 
 static var current := DEFAULT
 
@@ -47,8 +42,7 @@ static func apply(id: String) -> void:
 	RenderingServer.global_shader_parameter_set(&"psx_retro", float(lv.amount))
 	RenderingServer.global_shader_parameter_set(&"psx_snap", float(lv.snap))
 	RenderingServer.global_shader_parameter_set(&"psx_levels", float(lv.levels))
-	var blocks: bool = lv.lines != 0 and lv.lines != FULL_LINES
-	RenderingServer.global_shader_parameter_set(&"psx_pixel_lines", float(lv.lines) if blocks else 0.0)
+	RenderingServer.global_shader_parameter_set(&"psx_pixel_lines", float(lv.lines))
 	var tree := Engine.get_main_loop() as SceneTree
 	if tree == null or tree.root == null:
 		return
@@ -66,11 +60,12 @@ static func fit() -> void:
 		return
 	var root := tree.root
 	var lines: int = LEVELS[current].lines
-	var mode := Window.CONTENT_SCALE_MODE_VIEWPORT if lines == FULL_LINES else Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
-	if root.content_scale_mode != mode:
-		root.content_scale_mode = mode
+	# the project's stretch mode (viewport) drew the old FULL look at 480x270;
+	# both levels draw the UI at the window's size instead
+	if root.content_scale_mode != Window.CONTENT_SCALE_MODE_CANVAS_ITEMS:
+		root.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
 	var scale := Settings.render_scale
-	if mode == Window.CONTENT_SCALE_MODE_CANVAS_ITEMS and lines > 0:
+	if lines > 0:
 		# draw the 3D at the block size; the post-process point-samples it
 		scale /= block(root.size.y, lines)
 	scale = maxf(scale, 0.25) # Godot's lowest 3D scale
