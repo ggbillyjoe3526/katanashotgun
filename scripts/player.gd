@@ -107,6 +107,7 @@ var _shake_t := 0.0
 var fov_kick := 0.0
 var exec_zoom := 0.0
 var tilt := 0.0
+var eye_height := EYE_HEIGHT
 var head_y := EYE_HEIGHT # the eye above the feet, with bob, dips and finisher lifts
 var _head_base := Vector3.ZERO # the feet spot the head was last drawn on
 var bob_t := 0.0
@@ -237,7 +238,7 @@ func _process(delta: float) -> void:
 	if is_on_floor() and hspeed > 1.0 and dash_t <= 0.0:
 		bob_t += delta * hspeed * 0.9
 	var bob_amt := clampf(hspeed / WALK_SPEED, 0.0, 1.0) if is_on_floor() else 0.0
-	head_y = (EYE_HEIGHT if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y - 0.12 * climb_env
+	head_y = (eye_height if not dead else 0.35) + sin(bob_t * 2.0) * 0.035 * bob_amt - land_dip + gk_cam_y - 0.12 * climb_env
 	_place_head()
 	vm.set_bob(bob_amt, bob_t)
 	vm.set_climb(climb if climb_t >= 0.0 else -1.0)
