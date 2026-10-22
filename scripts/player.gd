@@ -373,7 +373,8 @@ func _physics_process(delta: float) -> void:
 
 	for pad in Game.arena.jump_pads:
 		var d := Vector2(global_position.x - pad.pos.x, global_position.z - pad.pos.z).length()
-		if d < pad.r and global_position.y < pad.pos.y + 0.6 and velocity.y <= 0.5:
+		# on the pad's own floor: a pad on a catwalk never fires from the roof under it
+		if d < pad.r and absf(global_position.y - pad.pos.y) < 0.6 and velocity.y <= 0.5:
 			velocity = pad.launch
 			jumps_left = 1
 			_pad_launched = true

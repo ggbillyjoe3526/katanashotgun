@@ -1527,7 +1527,23 @@ the holographic cut-in (§9.8).
     in reach of a double jump, 7 m is not):
     1.2 m hop, 3 m mantle, 5 m grab ledge (amber lip, colour `ffa21f` in
     every palette), 7 m+ sheer. Every level also has a ramp route.
-  - **Geyser pad** on the metro floor throws the player up to the bridge.
+  - **Geyser pads (9, fixed, never seeded).** The metro floor's (launch
+    28 m/s up, 2.5 toward the bridge) throws the player up to the bridge.
+    Eight more, added at the owner's request (2026-10-22: "more chances to
+    jump into the air and do a plunge attack" on every level), launch
+    straight up at `WellMap.PAD_LIFT` = 22 m/s (about 9.3 m): two on the
+    service blocks' lamp-free corners (±9, −5, ±10), two on the south roof
+    (±8, 0, 17), two on the roof beside the shaft's north corners (±19, 0,
+    −11.5) and two at the catwalks' north ends (±24.5, +5, −18). Each stands
+    on one floor, at least 3 m from spawns, 2.5 m from leap-link ends, 5 m
+    from the boss spawn and 2.5 m from props (so the world detail is placed
+    as before), with open air over it for the whole launch
+    (`test_well_map.gd`, and `--movetest` launches the player off every
+    pad). Only the metro pad has a real lamp; the new ones lay a floor glow
+    instead, so the map's light count is unchanged. A pad fires only for a
+    body within 0.6 m of its own floor height, so a pad on a catwalk never
+    fires for someone on the roof below it. Layout board:
+    `design/geyser-pads/` in the project's shared files.
   - **Spawns (18):** metro tunnels and freight lifts below, a lift in the
     stairwell hut and roof hatches: enemies walk out of these
     (`ground_spawns`, `Arena.spawn_clearance`). The rest are sky drops on the
@@ -1549,7 +1565,7 @@ the holographic cut-in (§9.8).
   - **Shapes:** raised floor plates on the 2 m grid over every grid floor of
     6 m² or more (top `LIFT` = 0.05 m; grates, hazard-painted and slightly
     higher plates mixed in; about 7% of cells open; cells under hatches,
-    lifts, the pad, drains and floor neon stay bare). Plated floors report
+    lifts, the pads, drains and floor neon stay bare). Plated floors report
     the plates' top from `floor_height_at` (each platform's `lift`), so
     blood, telegraphs, gibs and cans sit on them. Walls get a cornice and a
     band (kept below the amber lips' glow), a foot plinth, ribs, copper
