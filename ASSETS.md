@@ -36,4 +36,9 @@ licence file goes in that script's `SHIPPED` list too.
   Marathon "ALPHA M5" replicas were used for mood only; no shapes, logos or
   text were copied. The game's shotgun since 2026-10-19 (owner approved);
   the code-built gun is the fallback.
+- The player's cyber hands (`assets/models/hands/`): built by our own Blender
+  script `assets/models/hands/source/build_hands.py` (no downloaded models,
+  generators or texture packs); in game they wear the code-made panel and
+  cloth textures. The game's hands since 2026-10-22 (owner approved); the
+  code-built gloves are the fallback.
 - The game icon (`icon.svg`, `installer/icon.ico` via `tools/make_icon.py`). **Placeholder.**

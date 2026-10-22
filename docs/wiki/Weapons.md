@@ -1,6 +1,9 @@
 # Weapons
 
 You carry two weapons at once, one in each hand, and use both all the time.
+Your armoured cyber hands hold them in view: the left grips the katana's
+handle, the right holds the shotgun with a finger on the trigger. The hands'
+light lines take the colour of your weapon looks.
 
 ## Feeling the hit
 
@@ -30,7 +33,8 @@ to your crosshair, and it never changes what a seed does.
 
 **Left hand, left mouse button.** A thermal katana named after the
 legendary blade that slew the oni king Shuten-doji: a dark slab blade with a
-glowing edge (it faces right as you hold it), and a one-piece open-frame hilt
+glowing edge (you hold it upright on the left, flat of the blade towards you,
+edge facing right), and a one-piece open-frame hilt
 with a glowing core, a finger spur, bolts and a textured grip.
 
 | | |

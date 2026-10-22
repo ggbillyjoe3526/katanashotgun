@@ -1828,14 +1828,26 @@ the holographic cut-in (§9.8).
 ### 9.3 Viewmodel (first-person hands)
 - **Katana in the LEFT hand, shotgun in the RIGHT hand.** This matches the
   mouse buttons. **FINAL.**
-- The root is scaled to 0.5 so the weapons sit inside the player's collision
-  radius and never clip into walls.
-- **Katana idle:** pos (−0.5, −0.44, −0.6), rot (−0.55, 0.3, −0.3).
+- The root is scaled to 0.42 so the weapons sit inside the player's collision
+  radius and never clip into walls (0.5 until 2026-10-22: the owner found the
+  view zoomed in, with the weapons filling the bottom of the screen and both
+  grips out of view).
+- **Hands:** armoured cyber hands modelled in Blender (`HandsModel`,
+  `assets/models/hands/`), each parented to the weapon model it holds: the
+  left wraps the katana's handle, the right holds the shotgun's grip with the
+  index finger on the trigger. Their light lines take the weapon's trim
+  material (so the looks tint them). Owner approved 2026-10-22; the
+  code-built gloves and forearms below are the fallback.
+- **Katana idle:** pos (−0.7, −0.42, −0.7), rot (−0.05, 0.2, 0.4): upright on
+  the left (owner's pick "A", 2026-10-22). The DOJIGIRI model is scaled 1.5
+  in the hand and rolled 1.9 rad about its blade, so the flat faces the
+  player and the edge faces right (at 0.9 it read as a thin line).
   - Three slash poses lerped with ease-out cubic: 0.13 s swing, 0.04 s hold,
     0.2 s return.
   - The edge glow flares on each swing. A slash trail mesh (arc, reveal
     animation).
-- **Shotgun idle:** pos (0.36, −0.3, −0.52), rot (0.04, 0.16, 0.05).
+- **Shotgun idle:** pos (0.52, −0.24, −0.66), rot (0.02, 0.12, 0.08): low in
+  the right corner with the grip and hand in view (2026-10-22).
   - Fire: 0.05 s kick back and up (z +0.13, pitch +0.45), return by 0.2 s.
     Then a roll (−0.32 rad z) while the drum turns, 0.16–0.52 s.
 - **Glory-kill poses** (katana pos/rot targets, lerped fast):
@@ -1857,8 +1869,9 @@ the holographic cut-in (§9.8).
   - point (0.12, −0.18, −0.62 / 0.05, 0.05, 0)
   - down (0.1, −0.12, −0.55 / −0.75, 0, 0)
 - Sway spring from mouse motion, and head-bob.
-- Cyber forearms (chrome, with neon stripes: magenta on the katana arm, cyan
-  on the shotgun arm).
+- Neon light lines on the hands: magenta on the katana hand, cyan on the
+  shotgun hand (the code-built fallback forearms are chrome with the same
+  stripes).
 
 ### 9.4 Gore (Sekiro / Bloodborne excess, Doom brutality)
 - **Droplets:**
