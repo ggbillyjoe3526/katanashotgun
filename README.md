@@ -108,7 +108,7 @@ gdlintrc                    gdlint settings
 ## Adding a map
 1. Create `scripts/maps/your_map.gd` with `class_name YourMap` and `extends Arena`.
 2. In `_init()` set `map_name`, `half` (arena half-size), `player_spawn` and
-   `boss_spawn`. In `_build_layout()` build the level with the helpers
+   `boss_spawn` (a fallback: bosses drop in where the player can see them). In `_build_layout()` build the level with the helpers
    (`_platform`, `_ramp`, `_solid`, `_neon`, `_neon_box_edges`, `_light`, …),
    fill `spawn_points` and `jump_pads`, and use `pal` for colours and `rng` for
    seeded variation.

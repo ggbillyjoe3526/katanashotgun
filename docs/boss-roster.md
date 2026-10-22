@@ -21,6 +21,8 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | Rule | Value | Status |
 | --- | --- | --- |
 | Arrival | "BOSS INCOMING" alarm, then an intro card with name and epithet, own music | LIVE |
+| Drop point | the boss drops in where you are looking, 6–20 m away: your own floor within 45° of your view first, then any floor in view, then the same all round; open sky, flat floor (body radius + 0.5 m), on the navmesh, in your line of sight. The map's fixed `boss_spawn` is only the fallback. Lands with a slam, a shake and a scorch mark | PR #48 |
+| Ledges | dashes, charges and NULL CROSS lines stop at a drop; sidesteps only go where there is floor (the other way, or not at all), so no boss falls into the pit out of the fight | PR #48 |
 | HP scale | 1 + 0.45 × (cycle − 1) + 0.03 × (wave − 3): ×1.00 at wave 3, ×1.18 at wave 9, ×1.72 at wave 12 | LIVE |
 | Damage scale | half the HP scale's increase: ×1.09 at wave 9, ×1.36 at wave 12 | LIVE |
 | Reinforcements | 1–2 grunts every 7 s (TETSUGUMO 10 s) while fewer than 4 adds are alive | LIVE |
@@ -52,7 +54,7 @@ The fast duelist: a neon-piped cyber-ninja who tests your eyes and footwork, not
 | Armour | 0.55 (katana deals 55% until broken) |
 | Speed | 5.2 m/s (6.2 enraged) |
 | Size | radius 0.5 m, height 2.1 m, head at 1.72 m |
-| Specials | every 3.2–4.6 s (2.2–3.2 enraged), only beyond 3 m |
+| Specials | every 3.2–4.6 s (2.2–3.2 enraged), only beyond 3 m; the dash-slash only within 16 m, on your level (1.5 m) and in sight, the shuriken fan only in sight; otherwise the special waits while he runs in (PR #48) |
 | Payout | 5000 points, 320 XP |
 
 | Attack | Telegraph | Damage | Range | Cooldown | Answer |
@@ -110,7 +112,7 @@ The heavyweight: a chrome oni that walks you down and hits like a truck. Most HP
 | Armour | 0.5 (katana deals 50% until broken) |
 | Speed | 4.4 m/s (5.6 enraged) |
 | Size | radius 1.05 m, height 3.4 m, head at 2.8 m, mass 9 |
-| Specials | every 5–7 s (3.5–5 enraged), only beyond 5 m |
+| Specials | every 5–7 s (3.5–5 enraged), only from 5 to 14 m (the leap's reach), on your level and in sight, like the brute's charge (PR #48) |
 | Payout | 8000 points, 500 XP |
 
 | Attack | Telegraph | Damage | Range | Cooldown | Answer |
@@ -211,3 +213,4 @@ A new boss is ready to build when every line below holds. Copy the list into the
 | 2026-10-18 | Movesets built (PR #19): sidesteps, delayed swings, punish windows, an area move and a RED SIGNAL per boss, seeded boss dice. |
 | 2026-10-18 | KAMAE (#17) and the movesets (#19) merged: every row is LIVE. |
 | 2026-10-19 | Perfect deflect (PR #31, play-test experiment): a signature volley per boss (Kurokage's shuriken fan, a new white round at the end of Tetsugumo's gatling sweep, Shuten's fan volley); a perfect deflect on it adds +20% KAMAE. KAMAE drains more slowly as the boss loses HP (30% of the drain near death). |
+| 2026-10-22 | Arrival fix (PR #48, William's playtest: he was left looking for KUROKAGE): every boss drops in where you are looking instead of at the fixed north-roof spot; no dash, charge, NULL CROSS line or sidestep carries a boss off a ledge; KUROKAGE's dash-slash and SHUTEN's specials wait until he is in reach, on your level and in sight. Big bosses also walk off drop links into the pit instead of stalling on the edge. |

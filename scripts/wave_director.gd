@@ -13,6 +13,9 @@ signal between_waves(next_wave: int)
 
 const BOSS_EVERY := 3
 const BOSS_KINDS := ["ninja", "mech", "oni"]
+## Flat floor a boss needs all round where it drops in: its body radius
+## (boss.gd, enemy.gd) plus half a metre.
+const BOSS_DROP_ROOM := {"ninja": 1.0, "mech": 2.2, "oni": 1.6}
 # Raijin's Storm: a telegraphed strike near the player every few seconds
 const STRIKE_FIRST := 3.0
 const STRIKE_GAP := Vector2(3.5, 6.0)
@@ -308,7 +311,11 @@ func spawn_adds(n: int, near: Vector3) -> void:
 
 func _spawn_boss() -> void:
 	var cycle_scale := 1.0 + 0.45 * (_cycle_count - 1) + 0.03 * (wave - 3)
-	boss = _spawn(boss_kind, cycle_scale, Game.arena.boss_spawn, func(b: Boss) -> void:
+	# it drops in where the player can watch it land, not at a fixed spot
+	# they may have their back to (spec §5.1)
+	var p := Game.player
+	var at := Game.arena.boss_drop_point(p.cam.global_position, p.global_position, -p.cam.global_basis.z, BOSS_DROP_ROOM[boss_kind])
+	boss = _spawn(boss_kind, cycle_scale, at, func(b: Boss) -> void:
 		b.cycle = _cycle_count
 		# the boss's own dice come from the seed without drawing from the
 		# wave stream, so the same seed gives the same fight
