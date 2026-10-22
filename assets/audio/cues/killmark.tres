@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_l18xg"]
+[ext_resource type="AudioStream" path="res://assets/audio/killmark.wav" id="2_t2vgk"]
+
+[resource]
+script = ExtResource("1_l18xg")
+streams = Array[AudioStream]([ExtResource("2_t2vgk")])
+vary_pitch = false
+max_voices = 2
+priority = 3

@@ -82,6 +82,9 @@ on the basic one by itself and Settings tells you so.
 ## Controls
 
 - **Mouse sensitivity** (the `[` and `]` keys change it in game too).
+- **Aim assist:** ON (default) or OFF. A slash pulls you onto an enemy just
+  out of reach, and a shotgun blast that only just misses bends onto the
+  body. See [Weapons](Weapons#aim-assist).
 - **Key bindings:** two keys or mouse buttons for each of Katana, Shotgun,
   Glory kill (F), Jump, Dash and the four move directions.
   - Click a slot, then press the new key (or click the slot with the mouse

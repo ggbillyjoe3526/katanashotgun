@@ -213,6 +213,9 @@ var _last_cells := 0
 var _cell_flash: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 var _death_counted := false
 var _scores_shown := false # the hi-score rows, once the score has counted up
+const HURT_TIME := 0.9 # seconds a hurt chevron shows
+const HURT_MAX := 4
+var _hurt_from: Array = [] # [world position the hit came from, seconds left]
 var _popup_plate: StyleBoxFlat
 
 
@@ -227,7 +230,14 @@ class Crosshair:
 	const INSET := 8 # the health and cell columns stop this far short of the corners
 	const INK := Color(0.02, 0.0, 0.05, 0.85)
 	const LIME := Color(0.55, 1.0, 0.35)
-	var hit_t := 0.0
+	const HURT_R := H + 9 # the hurt chevrons sit on a ring just outside the frame
+	var hit_t := 0.0 # seconds left on the hit marker (Hud.hit_confirm)
+	var hit_len := 0.14
+	var hit_col := Color.WHITE
+	var hit_arm := 3 # pixels per stroke of the marker's X
+	var hurt_dir := PackedVector2Array() # per recent hit taken: its screen direction (up = ahead)...
+	var hurt_a := PackedFloat32Array() # ...and how strongly its chevron shows
+	const DIAG: Array[Vector2] = [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]
 	var frame := true
 	var hp_k := 1.0
 	var ghost_k := 1.0
@@ -246,8 +256,23 @@ class Crosshair:
 		draw_rect(Rect2(0, 3, 1, 3), col)
 		draw_rect(Rect2(0, -5, 1, 3), col)
 		if hit_t > 0.0:
-			for d in [Vector2(1, 1), Vector2(-1, 1), Vector2(1, -1), Vector2(-1, -1)]:
-				draw_line(d * 5, d * 8, Color(1, 0.3, 0.3), 1.0)
+			# the hit marker: an X round the dot that eases out as it fades
+			var k := hit_t / hit_len
+			var r0 := 4.0 + (1.0 - k) * 2.0
+			var c := Color(hit_col, minf(1.0, k * 2.5))
+			for d in DIAG:
+				draw_line(d * r0, d * (r0 + hit_arm), Color(INK, INK.a * c.a), 3.0)
+			for d in DIAG:
+				draw_line(d * r0, d * (r0 + hit_arm), c, 1.0)
+		for i in hurt_dir.size():
+			# a red chevron on the ring, pointing at whoever hit you
+			var dir := hurt_dir[i]
+			var side := Vector2(-dir.y, dir.x)
+			var tip := dir * (HURT_R + 6)
+			var back := dir * HURT_R
+			var a := hurt_a[i]
+			draw_colored_polygon(PackedVector2Array([tip + dir * 1.5, back + side * 6.5 - dir, back - side * 6.5 - dir]), Color(INK, INK.a * a))
+			draw_colored_polygon(PackedVector2Array([tip, back + side * 5, back - side * 5]), Color(Hud.RED, a))
 		if not frame:
 			return
 		# corner brackets: the square is drawn by its corners only
@@ -1639,10 +1664,39 @@ func _free_popup(l: Label) -> void:
 	_popup_free.append(l)
 
 
-func damage_flash(amount: float, _from: Vector3) -> void:
+func damage_flash(amount: float, from: Vector3) -> void:
 	if post:
 		post.hurt(clampf(amount / 30.0, 0.3, 1.0))
 	juice.add_shake(clampf(amount / 8.0, 1.0, 5.0))
+	# where it came from: a chevron round the crosshair that turns with you
+	while _hurt_from.size() >= HURT_MAX:
+		_hurt_from.pop_front()
+	_hurt_from.append([from, HURT_TIME])
+
+
+## A hit landed (spec §9.8 Hit confirm): the X round the crosshair and its
+## tick. "hit", "head" (gold, a headshot) or "kill" (red, bigger, a deeper
+## sound). A plain hit never cuts a kill or headshot marker short.
+func hit_confirm(kind: String) -> void:
+	var big := crosshair.hit_t > 0.0 and crosshair.hit_arm > 3
+	match kind:
+		"kill":
+			_set_hit_marker(Color(1.0, 0.25, 0.25), 6, 0.26)
+			Sfx.play("killmark", -3.0)
+		"head":
+			_set_hit_marker(GOLD, 5, 0.2)
+			Sfx.play("hitmark", -4.0, 1.25)
+		_:
+			if not big:
+				_set_hit_marker(Color.WHITE, 3, 0.14)
+			Sfx.play("hitmark", -6.0)
+
+
+func _set_hit_marker(col: Color, arm: int, length: float) -> void:
+	crosshair.hit_col = col
+	crosshair.hit_arm = arm
+	crosshair.hit_len = length
+	crosshair.hit_t = length
 
 
 func execution_flash() -> void:
@@ -1907,6 +1961,23 @@ func _update_play(delta: float) -> void:
 	crosshair.cell_flash = _cell_flash
 	crosshair.dash = p.dash_charges
 	crosshair.max_dash = p.max_dash
+	crosshair.hit_t = maxf(0.0, crosshair.hit_t - delta)
+	crosshair.hurt_dir.clear()
+	crosshair.hurt_a.clear()
+	var look := Basis(Vector3.UP, -p.yaw)
+	var hi := 0
+	while hi < _hurt_from.size():
+		var h: Array = _hurt_from[hi]
+		h[1] -= delta
+		if h[1] <= 0.0:
+			_hurt_from.remove_at(hi)
+			continue
+		var to: Vector3 = look * (h[0] - p.global_position)
+		var d := Vector2(to.x, to.z)
+		if d.length() > 0.3:
+			crosshair.hurt_dir.append(d.normalized())
+			crosshair.hurt_a.append(clampf(h[1] / HURT_TIME * 1.5, 0.0, 1.0))
+		hi += 1
 	crosshair.queue_redraw()
 	soda_hud.refresh(c, vitals, delta)
 	hp_label.visible = vitals

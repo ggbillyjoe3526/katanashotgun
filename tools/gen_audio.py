@@ -4,6 +4,7 @@ Run:  python3 tools/gen_audio.py        (from the project root; everything)
       python3 tools/gen_audio.py rain   (only the rain beds)
       python3 tools/gen_audio.py deflect_perfect   (only that sound)
       python3 tools/gen_audio.py cans   (only the soda can sounds)
+      python3 tools/gen_audio.py marks  (only the hit and kill confirm ticks)
 Writes .wav SFX and .ogg loops into assets/audio/. Requires numpy, scipy, ffmpeg.
 Everything is synthesized so the prototype has no third-party audio.
 """
@@ -297,6 +298,31 @@ def sfx_deflect_perfect():
     thud = sweep_sine(170, 55, 0.25) * env_exp(0.25, 14) * 0.9
     shing = sweep_sine(2400, 5200, 0.18, 0.5) * env_exp(0.18, 16) * 0.25
     return np.tanh(mix(ring * 0.45, strike, thud, shing) * 1.3)
+
+
+def sfx_hitmark():
+    """Hit confirm: a dry, bright tick over a short body knock, so every hit
+    that lands is heard over the fight. Uses its own noise generator."""
+    local = np.random.default_rng(5150)
+    d = 0.09
+    t = t_axis(d)
+    tick = (np.sin(2 * np.pi * 2900 * t) + 0.5 * np.sin(2 * np.pi * 4350 * t)) * np.exp(-t * 85)
+    snap = bp(local.uniform(-1, 1, int(SR * 0.012)), 2500, 9000) * env_exp(0.012, 200) * 0.8
+    knock = sweep_sine(210, 90, 0.06) * env_exp(0.06, 45) * 0.9
+    return np.tanh(mix(tick * 0.6, snap, knock) * 1.4)
+
+
+def sfx_killmark():
+    """Kill confirm: a heavier double knock with a ring on top, deeper than
+    the hit tick so a kill is told apart by ear. Own noise generator."""
+    local = np.random.default_rng(5151)
+    d = 0.32
+    t = t_axis(d)
+    ring = sum(a * np.sin(2 * np.pi * f * t) * np.exp(-t * k) for f, k, a in [(1980, 14, 1.0), (2970, 18, 0.6), (3960, 24, 0.35)])
+    snap = bp(local.uniform(-1, 1, int(SR * 0.015)), 2000, 8000) * env_exp(0.015, 160)
+    thunk = sweep_sine(150, 55, 0.14) * env_exp(0.14, 22) * 1.3
+    second = sweep_sine(120, 50, 0.1) * env_exp(0.1, 30) * 0.8
+    return np.tanh(mix(ring * 0.35, snap, thunk, at(second, 0.05, d)) * 1.5)
 
 
 def sfx_headshot():
@@ -824,6 +850,11 @@ def soda_sounds():
     save("can_crash", sfx_can_crash(), 0.5)
 
 
+def hit_marks():
+    save("hitmark", sfx_hitmark(), 0.7)
+    save("killmark", sfx_killmark(), 0.8)
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     if sys.argv[1:] == ["rain"]:
@@ -834,6 +865,9 @@ def main():
         return
     if sys.argv[1:] == ["cans"]:
         soda_sounds()
+        return
+    if sys.argv[1:] == ["marks"]:
+        hit_marks()
         return
     save("shotgun", sfx_shotgun())
     save("recharge", sfx_recharge(), 0.6)
@@ -896,6 +930,7 @@ def main():
     save("deflect_perfect", sfx_deflect_perfect(), 0.85)
     rain_ogg()
     soda_sounds()
+    hit_marks()
     print("audio written to", os.path.abspath(OUT))
 
 

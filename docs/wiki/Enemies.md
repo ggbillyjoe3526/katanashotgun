@@ -7,6 +7,19 @@ between levels, taking the ramps and leaping up ledges after a short crouch
 ([where they come from](The-Map#where-enemies-come-from)). Every attack is **telegraphed** with a windup, glowing eyes
 and a sound, so you always get a chance to react.
 
+## Weapons and telegraphs
+
+Every enemy carries its weapon where you can see it, and you can read each
+attack off it:
+
+1. **Glint:** as the windup starts, a star of light pops at the weapon's tip.
+2. **Heat:** through the windup the weapon's glowing edge heats up to red.
+3. **Blow:** it lands white-hot, the arms snap down, and a **red arc** shows
+   where the weapon cut. If it got you, a **red arrow** round your
+   crosshair points at whoever hit you.
+
+Step out of the arc, or kill them first.
+
 ## The horde
 
 | Enemy | HP | Speed | Stagger | Armour | Points | XP |
@@ -19,17 +32,20 @@ Damage below is against your 100 HP on the first waves.
 
 ### Grunt (Ashigaru)
 
-The foot soldiers. They rush straight at you and swing.
+The foot soldiers. They rush straight at you and swing a **nata**, a long
+cleaver with a neon edge.
 
-- **Swing:** a 0.5 s windup, then 11 damage in front of them (2.7 m).
+- **Swing:** a 0.5 s windup with the blade raised over the shoulder, then a
+  chop for 11 damage in front of them (2.7 m).
 - **Answer:** the katana cleaves through a pack of them. A grunt kill is your
   easiest cell.
 
 ### Gunner (Teppo)
 
-Riflemen who strafe and keep 8 to 17 m away.
+Riflemen who strafe and keep 8 to 17 m away, with a cannon for a right arm.
 
-- **Shot:** with a clear line to you, a 0.72 s windup, then a glowing bolt
+- **Shot:** with a clear line to you, a 0.72 s windup while the cannon's tip
+  glows brighter, then a glowing bolt
   (12 damage) that you can **deflect** back. **From wave 6** they fire a fan
   of 3 bolts.
 - **Answer:** slash the bolts back for 8× damage and a cell, or close in and
@@ -38,9 +54,11 @@ Riflemen who strafe and keep 8 to 17 m away.
 
 ### Brute (Kanabo)
 
-Armoured heavies with a club, and the main reason to carry cells.
+Armoured heavies with a **kanabo**, a long studded iron club, and the main
+reason to carry cells.
 
-- **Swing:** a 0.82 s windup, then 26 damage (3.6 m).
+- **Swing:** a 0.82 s windup with the club lifted high in both hands, then a
+  smash for 26 damage (3.6 m).
 - **Charge:** a roar and a 0.8 s windup, then a dash at 13.5 m/s for 30
   damage and a big knockback. They slam into walls. Every 6 to 8.5 s.
 - **Answer:** the katana does only 35% until they stagger. **Shotgun them to

@@ -171,6 +171,9 @@ func _build_rows(t: String) -> Array:
 			out.append(_slider("MOUSE SENSITIVITY", Settings.SENS_MIN, Settings.SENS_MAX, 0.1,
 				func(): return Settings.sensitivity, _set_sensitivity,
 				func(v: float): return "%.1f" % v, "HOW FAST THE VIEW TURNS"))
+			out.append(_option("AIM ASSIST", [true, false], ["ON", "OFF"],
+				func(): return Settings.aim_assist, _set_aim_assist,
+				"SLASHES PULL YOU ONTO CLOSE FOES. NEAR MISSES HIT"))
 			for r in Settings.rebindable_actions():
 				out.append({"type": "key", "label": r[1], "action": r[0], "help": "CLICK A SLOT, THEN PRESS THE NEW KEY. RIGHT-CLICK CLEARS"})
 		"COMFORT":
@@ -255,6 +258,10 @@ func _set_fov(v: float) -> void:
 func _set_sensitivity(v: float) -> void:
 	Settings.sensitivity = v
 	Settings.apply_controls()
+
+
+func _set_aim_assist(v: Variant) -> void:
+	Settings.aim_assist = v
 
 
 func _set_shake(v: float) -> void:
