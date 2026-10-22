@@ -36,7 +36,7 @@ Every third wave is a boss wave (3, 6, 9...), with no mutator. The first cycle s
 | Sidestep | aimed at from beyond 7 m (+ radius) for 0.35 s, it steps out of the line; cooldown 4 s (6 s for the run's first boss); never up close, never mid-attack | LIVE |
 | RED SIGNAL | one heavy move per boss: spinning red diamond, alarm, a beep 0.2 s before it lands, 0.9–1.0 s warning; can't be deflected or traded with. Dashing as its hit connects = PERFECT: slow motion and +15% KAMAE. Cooldown 14 s | LIVE |
 | Delayed swings | 30% of melee windups hold 1.7× as long; eyes stay dim, then flare with a hiss 0.22 s before the hit | LIVE |
-| Hit feel and aim assist | bosses answer hits like the horde: hit and kill markers, cut flashes, and a flinch scaled down by their mass (SHUTEN a third of a grunt's). AIM ASSIST's katana pull-in and shotgun near-miss bend (spec §3.9) work on bosses too; neither fills KAMAE beyond the hit itself | PR_NUMBER |
+| Hit feel and aim assist | bosses answer hits like the horde: hit and kill markers, cut flashes, and a flinch scaled down by their mass (SHUTEN a third of a grunt's). AIM ASSIST's katana pull-in and shotgun near-miss bend (spec §3.9) work on bosses too; neither fills KAMAE beyond the hit itself | PR #47 |
 | Punish windows | every recovery of 0.8 s or more (Tetsugumo's summon included): armour off, eyes dim, KAMAE fills ×1.5 | LIVE |
 | Pacing | first cycle (waves 3, 6, 9): area move and RED SIGNAL only once enraged; the run's first boss telegraphs them 25% longer. From wave 12: everything from the start. Area moves cooldown 8 s | LIVE |
 | Seeded dice | a boss rolls from hash(run seed × 13 + wave): same seed, same fight | LIVE |
