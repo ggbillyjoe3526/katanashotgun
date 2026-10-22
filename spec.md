@@ -2769,7 +2769,7 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 
 ### 15.1 Game flow
 `title` → `playing` ⇄ `paused` / `levelup` → `dead` → results → (R: same
-seed | click: new seed).
+seed | click: new seed | Esc or MAIN MENU: title).
 - **Title:** shows the map built from the next run's seed, with the camera
   drifting and the title music playing. PLAY A SEED starts a run on a typed
   or pasted seed instead (§7.5).
