@@ -371,10 +371,7 @@ func _boss_drop_at(space: PhysicsDirectSpaceState3D, xz: Vector3, eye: Vector3, 
 	var hit := _floor_hit(space, Vector3(xz.x, sky, xz.z), sky - floor_base + 1.0)
 	if hit.is_empty():
 		return Vector3.INF
-	var c: Vector3 = hit.position
-	# open air above the landing for the whole 7-9 m drop
-	if sky - c.y > BOSS_DROP_SKY + 0.5 and not _floor_hit(space, c + Vector3(0, BOSS_DROP_SKY, 0), BOSS_DROP_SKY - 0.2).is_empty():
-		return Vector3.INF
+	var c: Vector3 = hit.position # the topmost surface there, so open air above for the drop
 	for o in [Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK]:
 		var h := _floor_hit(space, c + o * room + Vector3(0, 2.5, 0), 3.0)
 		if h.is_empty() or absf(h.position.y - c.y) > 0.3:
