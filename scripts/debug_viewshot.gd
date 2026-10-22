@@ -5,7 +5,8 @@ extends Node
 ## `--viewshot --out=DIR [--views=roof,street,deck] [--eye=1.72] [--fov=88]
 ## [--vm=0.42] [--kpos=x,y,z] [--krot=x,y,z] [--kscale=1.5] [--kroll=1.9]
 ## [--spos=x,y,z] [--srot=x,y,z] [--slash=0|1|2 --at=0.06] [--pose=NAME]`.
-## `--slash` holds a katana swing `--at` seconds in; `--pose` holds a glory
+## (`--vm` scales the weapons' root: it moves them nearer the lens without
+## changing the picture, so a clipping check, not a size one.) `--slash` holds a katana swing `--at` seconds in; `--pose` holds a glory
 ## kill pose (Viewmodel K_POSES / S_POSES). Quits when done.
 
 const VIEWS := {

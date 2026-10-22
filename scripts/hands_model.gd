@@ -9,7 +9,7 @@ class_name HandsModel
 ## so the equipped look tints them).
 
 const SCENE := "res://assets/models/hands/hands.glb"
-const ARMOR := Color(0.5, 0.53, 0.6)
+const ARMOR := Color(0.85, 0.88, 0.98)
 const ARMOR_GLOW := Color(0.55, 0.6, 0.75)
 const JOINT := Color(0.1, 0.1, 0.12)
 
@@ -28,7 +28,7 @@ static func build(hand: String, glow: Material) -> MeshInstance3D:
 		scene.free()
 		return null
 	var p := {"snap": 0.35, "affine": 0.0, "fog_start": 50.0}
-	var armor := Psx.lit(ARMOR, TexGen.get_tex("panel"), false, 1.0, p.merged({"emission_color": ARMOR_GLOW, "emission_strength": 0.12}))
+	var armor := Psx.lit(ARMOR, TexGen.get_tex("panel"), false, 1.0, p.merged({"emission_color": ARMOR_GLOW, "emission_strength": 0.18}))
 	var joint := Psx.lit(JOINT, TexGen.get_tex("cloth"), false, 1.0, p)
 	for i in mi.mesh.get_surface_count():
 		var src := mi.mesh.surface_get_material(i)

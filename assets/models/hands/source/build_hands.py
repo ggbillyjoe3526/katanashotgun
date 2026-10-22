@@ -35,6 +35,11 @@ ARM_LEN = 0.36
 ARM_W0 = (0.056, 0.05)  # forearm (across, deep) at the wrist
 ARM_W1 = (0.078, 0.07)  # at the far end
 UV_TILE = 0.08
+# the game holds the DOJIGIRI at this size (KATANA_MODEL_SCALE in
+# scripts/viewmodel.gd) and the left hand is a child of the katana model, so
+# the hand is built around the handle at that size and then shrunk by it:
+# fingers and forearm come out the same size as the right hand's
+KATANA_IN_HAND = 1.5
 
 
 def _box(bm, a, b, out, w, t, mat, grow=0.0):
@@ -202,9 +207,10 @@ def build():
         bpy.context.scene.collection.children.link(col)
     # left hand on the katana handle: the knuckles face the edge (-Y), the
     # forearm leaves from the spine side towards the pommel
+    k = KATANA_IN_HAND
     bm = bmesh.new()
-    fist(bm, 0.0105, 0.021, 0.128, arm_dir=(0.0, -1.0, -0.75))
-    _object(col, "hand_katana", bm, Matrix.Identity(4), mirror_y=True)
+    fist(bm, 0.0105 * k, 0.021 * k, 0.128 * k, arm_dir=(0.0, -1.0, -0.75))
+    _object(col, "hand_katana", bm, Matrix.Scale(1.0 / k, 4), mirror_y=True)
     # right hand on the shotgun's raked grip, index finger on the trigger
     rake = math.radians(15.5)
     m = Matrix.Translation((0.0, -0.021, -0.085)) @ Matrix.Rotation(-rake, 4, "X")

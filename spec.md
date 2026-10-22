@@ -649,7 +649,7 @@ charges the gun; the gun sets up the blade.**
 | Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
 | Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
-| Capsule | radius 0.4, height 1.8, eye height 1.72 (was 1.55; owner 2026-10-22: the low eye made the view feel zoomed in) |
+| Capsule | radius 0.4, height 1.8, eye height 1.72 (was 1.55; owner 2026-10-22: the low eye made the view feel zoomed in). The katana's height band and line of sight are measured from the eye, so they sit 0.17 m higher with it |
 | Hit invulnerability | 0.12 s |
 | Fall reset | below the map's `kill_y` (−20 on Shin-Kagura, under the metro floor), respawn at the map spawn |
 
@@ -1829,9 +1829,11 @@ the holographic cut-in (§9.8).
 - **Katana in the LEFT hand, shotgun in the RIGHT hand.** This matches the
   mouse buttons. **FINAL.**
 - The root is scaled to 0.42 so the weapons sit inside the player's collision
-  radius and never clip into walls (0.5 until 2026-10-22: the owner found the
-  view zoomed in, with the weapons filling the bottom of the screen and both
-  grips out of view).
+  radius and never clip into walls (the root sits on the camera, so its scale
+  does not change the picture; the idle poses' depth sets how big the weapons
+  look). On 2026-10-22 the owner found the view zoomed in, with the weapons
+  filling the bottom of the screen and both grips out of view, so both idle
+  poses moved deeper (below).
 - **Hands:** armoured cyber hands modelled in Blender (`HandsModel`,
   `assets/models/hands/`), each parented to the weapon model it holds: the
   left wraps the katana's handle, the right holds the shotgun's grip with the

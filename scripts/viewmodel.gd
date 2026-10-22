@@ -8,11 +8,14 @@ extends Node3D
 ## which means they never clip into walls. Both are held by the Blender cyber
 ## hands (HandsModel); the code-built gloves only show if those fail to load.
 
-## How big the weapons sit in the view (owner, 2026-10-22: the old 0.5 filled
-## the bottom of the screen and hid both grips)
+## The root's scale. It only keeps the weapons inside the player's collision
+## radius (the root sits on the camera, so scaling it slides every vertex
+## along its own ray and the picture stays the same): how big the weapons look
+## is set by how deep the idle poses sit.
 const SCALE := 0.42
 ## The DOJIGIRI model's size in the hand, so the blade reads as a real sword
-## next to the shotgun (owner, 2026-10-22)
+## next to the shotgun (owner, 2026-10-22). The left hand is built for it
+## (KATANA_IN_HAND in assets/models/hands/source/build_hands.py).
 const KATANA_MODEL_SCALE := 1.5
 
 const SLASH_DUR := 0.13
@@ -96,7 +99,8 @@ var _spos_cur := Vector3.ZERO
 var _srot_cur := Vector3.ZERO
 
 # held upright on the left (owner's pick "A", 2026-10-22); the shotgun sits
-# low in the right corner with its grip and hand in view
+# low in the right corner with its grip and hand in view. Both sit deeper than
+# before (the old poses filled the bottom of the screen and hid both grips).
 var katana_idle_pos := Vector3(-0.7, -0.42, -0.7)
 var katana_idle_rot := Vector3(-0.05, 0.2, 0.4)
 var shotgun_idle_pos := Vector3(0.52, -0.24, -0.66)
