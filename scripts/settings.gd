@@ -8,7 +8,7 @@ class_name Settings
 ## Saved as plain data (to_dict / from_dict) inside the player's profile
 ## (Profile, spec §11.3), which writes it atomically with a backup.
 
-const VERSION := 4 # 2: full screen, VSync off and no frame cap by default; 3: WEAK/MEDIOCRE/INSANE; 4: RETRO LOOK
+const VERSION := 5 # 2: full screen, VSync off and no frame cap by default; 3: WEAK/MEDIOCRE/INSANE; 4: RETRO LOOK; 5: no FULL retro look
 const BUSES: Array[String] = ["Master", "Music", "SFX", "Ambience", "UI"]
 const SENS_BASE := 0.0024 # radians per mouse pixel at sensitivity 1.0
 const SENS_MIN := 0.1
@@ -18,7 +18,7 @@ const FOV_MAX := 110.0
 const RENDER_SCALE_MIN := 0.5
 const WINDOW_MODES: Array[String] = ["windowed", "fullscreen", "exclusive"]
 const FPS_CAPS: Array[int] = [0, 60, 75, 120, 144, 165, 240, 360] # 0 = unlimited
-## The project's base size (spec §2): RETRO LOOK FULL draws at it over the
+## The project's base size (spec §2): the UI is laid out at it over the
 ## stretch scale (480x270); windowed mode scales it by a whole number so
 ## every retro pixel stays square and sharp.
 const BASE_SIZE := Vector2i(960, 540)
@@ -433,6 +433,8 @@ static func from_dict(d: Dictionary) -> void:
 		d = _migrate_v2(d)
 	if _is_num(d.get("v")) and int(d.v) < 4:
 		d = _migrate_v3(d)
+	if _is_num(d.get("v")) and int(d.v) < 5:
+		d = _migrate_v4(d)
 	var vol: Variant = d.get("volume")
 	if vol is Dictionary:
 		for b in BUSES:
@@ -521,6 +523,17 @@ static func _migrate_v3(d: Dictionary) -> Dictionary:
 		out["retro_look"] = "off"
 	out.erase("dev")
 	out["v"] = 4
+	return out
+
+
+## Version 4 to 5: RETRO LOOK FULL is gone (owner, 2026-10-22). A player who
+## had it keeps a retro look: LIGHT, the one that remains.
+static func _migrate_v4(d: Dictionary) -> Dictionary:
+	var out := d.duplicate(true)
+	var rl: Variant = out.get("retro_look")
+	if rl is String and rl == "full":
+		out["retro_look"] = "light"
+	out["v"] = 5
 	return out
 
 

@@ -104,6 +104,7 @@ var death_rows: Array = [] # hi-score rows: [highlight, rank, name, score, wave]
 var death_level_plate: Shard
 var death_seed: Label
 var death_menu: MenuList
+var death_exit: MenuList # MAIN MENU, top left: the bottom row has no room for a fifth item
 var entering := false
 var initials := ""
 var run_card: RunCardPanel # results: save a postcard of the run (spec §19.1 #10)
@@ -742,6 +743,11 @@ func _build_death() -> void:
 			run_card.make(), "P")
 	death_menu.add("COPY SEED", copy_seed, "C")
 	death_root.add_child(death_menu)
+	death_exit = MenuList.new()
+	death_exit.horizontal = true
+	death_exit.current = -1
+	death_exit.add("MAIN MENU", func(): Game.main.to_title(), "ESC")
+	death_root.add_child(death_exit)
 
 
 ## A small solid chip behind a word ("NEW BEST", "RECOMMENDED").
@@ -779,6 +785,8 @@ func _layout_death() -> void:
 	run_card.set_process_unhandled_input(death_ready())
 	death_menu.visible = death_ready()
 	death_menu.position = Vector2(roundf((vs.x - death_menu.size.x) * 0.5), vs.y - 22.0)
+	death_exit.visible = death_menu.visible
+	death_exit.position = Vector2(6, 4) # mirrors the run card's note, top right
 	var card_item := "OPEN FOLDER" if run_card.state == RunCardPanel.State.SAVED else ("SAVING..." if run_card.state == RunCardPanel.State.BUSY else "RUN CARD")
 	death_menu.set_text(D_CARD, card_item)
 	death_menu.set_key(D_CARD, "O" if run_card.state == RunCardPanel.State.SAVED else "P")
@@ -1046,6 +1054,7 @@ func show_death() -> void:
 	death_vals.text = ""
 	death_score.text = "%07d" % 0
 	death_menu.disarm()
+	death_exit.disarm()
 	run_card.reset()
 
 

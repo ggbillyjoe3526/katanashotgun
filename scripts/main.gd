@@ -349,6 +349,17 @@ func restart(same_seed := false, launch := "") -> void:
 	get_tree().reload_current_scene()
 
 
+## The results' MAIN MENU (or Esc): reloads the scene onto the title, on a
+## fresh seed, as if the game had just started.
+func to_title() -> void:
+	Game.next_seed = -1
+	Game.dev_launch = ""
+	Game.autostart = false
+	Engine.time_scale = 1.0
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+
+
 func add_entity(n: Node) -> void:
 	director.add_child(n)
 
@@ -397,6 +408,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif Game.state in ["title", "paused"] and event.physical_keycode in [KEY_1, KEY_2]:
 			Profile.cycle_equipped("katana" if event.physical_keycode == KEY_1 else "shotgun")
 			Sfx.play("ui_click", -4.0)
+		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode == KEY_ESCAPE:
+			to_title()
 		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode == KEY_R:
 			restart(true)
 		elif Game.state == "dead" and hud.death_ready() and event.physical_keycode in [KEY_ENTER, KEY_SPACE]:

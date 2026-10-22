@@ -47,7 +47,7 @@ Windows' *Apps* settings. Your saves are kept (see
    [builds](Builds).
 6. When you fall, the results screen counts XP into your
    [Player Level](Player-Level-and-Rewards). Press **R** to retry the same
-   [seed](Seeds), or click for a new one.
+   [seed](Seeds), click for a new one, or press **Esc** for the title screen.
 
 Next: the full [Controls](Controls) and [How to Play](How-to-Play).
 

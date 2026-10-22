@@ -32,7 +32,7 @@ and Linux).
 | Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
 | S (title) | **Play a seed**: type or paste a friend's seed, Enter plays it |
 | C (pause or results) | **Copy the seed** to share it; also a COPY button |
-| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **P** save a run card (a picture of the run with its seed) |
+| After a run | Type initials if you made the table · **R** retry the same seed · click for a new run · **P** save a run card (a picture of the run with its seed) · **Esc** back to the title |
 
 ## How a run works
 Each run gets a seed (shown on the pause and results screens, as `XXXX-XXXX`). The seed decides the
@@ -84,7 +84,7 @@ scripts/ui/                 cyberpunk UI pieces: tech panels, glitch text, cut-i
                             data streaks, kill bursts, the settings screen
 scripts/tex_gen.gd          procedural pixel textures
 scripts/psx.gd              material factory for the retro look
-scripts/retro_look.gd       RETRO LOOK levels (OFF / LIGHT / FULL): shader globals, stretch, 3D scale
+scripts/retro_look.gd       RETRO LOOK levels (OFF / LIGHT): shader globals, stretch, 3D scale
 shaders/                    PSX lit/unlit/cutout, effects, synthwave sky, post
 scripts/audio/              sound cue, music track and voice pool classes
 assets/audio/               SFX and rain beds (tools/gen_audio.py); cues/ holds one
@@ -159,12 +159,11 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
 - **Video:** window mode (full screen at your screen's resolution by
   default, windowed, or exclusive full screen), VSync (off by default), frame
   cap (unlimited by default, or 60 to 360), graphics preset (WEAK, MEDIOCRE,
-  INSANE), RETRO LOOK (OFF, LIGHT by default, FULL: how strong the PS1/PS2
+  INSANE), RETRO LOOK (LIGHT by default, or OFF: how strong the PS1/PS2
   look is), render scale (50 to 100% of the 3D view), field of view (70 to
   110, default 88). Pixels are upscaled without smoothing at any
   resolution: LIGHT draws the 3D at about 540 lines (4x4 blocks on 4K, 2x2
-  on 1080p), FULL draws everything at 480x270 (8x8 on 4K), OFF draws at the
-  screen's own resolution.
+  on 1080p), OFF draws at the screen's own resolution.
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
 - **Comfort:** screen shake and flash strength. Below 100% flashes, impact
@@ -236,7 +235,7 @@ Pass after `--` on the command line:
   score says so. A run with SODA CANS on alone still pays XP but writes no
   top 10 entry or best score (tag: CANS RUN: NO TOP 10). F10 cannot be bound
   to an action
-- `--look=off|light|full` starts on that RETRO LOOK level (`--plain` = off) · `--dev=look|run|actions` opens the DEV
+- `--look=off|light` starts on that RETRO LOOK level (`--plain` = off) · `--dev=look|run|actions` opens the DEV
   menu on the title at that tab
 - `--uiaudit` runs alongside anything above and prints a `[uiaudit]` line for
   any text that leaves the screen, spills out of or across a panel, or

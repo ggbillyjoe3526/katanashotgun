@@ -239,8 +239,7 @@ func _set_retro_look(v: Variant) -> void:
 ## What the RETRO LOOK row's help line says for the chosen level.
 func _retro_help() -> String:
 	return {"off": "CLEAN, SHARP 3D. NO PS1 EFFECTS",
-		"light": "A HINT OF PS1: SHARPER, LESS WOBBLE",
-		"full": "THE FULL PS1 LOOK: BIG PIXELS, WOBBLE, DITHER"}.get(Settings.retro_look, "")
+		"light": "A HINT OF PS1: A LITTLE WOBBLE AND DITHER"}.get(Settings.retro_look, "")
 
 
 func _set_render_scale(v: float) -> void:
