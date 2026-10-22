@@ -55,6 +55,7 @@ static var quality := "medium"
 static var retro_look := RetroLook.DEFAULT # how strong the PS1/PS2 look is (RetroLook.IDS)
 static var fov := DEFAULT_FOV
 static var sensitivity := 1.0
+static var aim_assist := true # a slash pulls onto a foe just out of reach, a near-miss blast bends onto it
 static var shake := 1.0 # comfort: 0 = no screen shake, 1 = full
 static var flash := 1.0 # comfort: 0 = no white flashes or impact frames, 1 = full
 ## action -> Array of event dicts ({"k": physical keycode} or {"m": mouse button})
@@ -101,6 +102,7 @@ static func reset_video() -> void:
 
 static func reset_controls() -> void:
 	sensitivity = 1.0
+	aim_assist = true
 	bindings = {}
 	for action in _default_events:
 		if InputMap.has_action(action):
@@ -416,6 +418,7 @@ static func to_dict() -> Dictionary:
 		"retro_look": retro_look,
 		"fov": fov,
 		"sensitivity": sensitivity,
+		"aim_assist": aim_assist,
 		"shake": shake,
 		"flash": flash,
 		"bindings": bindings.duplicate(true),
@@ -459,6 +462,8 @@ static func from_dict(d: Dictionary) -> void:
 		fov = clampf(roundf(float(d.fov)), FOV_MIN, FOV_MAX)
 	if _is_num(d.get("sensitivity")):
 		sensitivity = clampf(snappedf(float(d.sensitivity), 0.1), SENS_MIN, SENS_MAX)
+	if d.get("aim_assist") is bool:
+		aim_assist = d.aim_assist
 	if _is_num(d.get("shake")):
 		shake = clampf(float(d.shake), 0.0, 1.0)
 	if _is_num(d.get("flash")):

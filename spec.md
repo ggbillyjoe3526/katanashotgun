@@ -535,6 +535,7 @@ Notes:
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
+| Enemy attacks and hit feel | Every wave enemy visibly holds its weapon and swings it with a heating, glinting telegraph and a red arc (§4); hits answer with a hit marker and tick, a cut flash, a body flinch, a view jolt and a little more hitstop (§3.2, §3.3, §9.8); a soft AIM ASSIST, on by default, that the player can turn off (§3.9) (owner asked 2026-10-22) |
 | Dev menu | A hidden developer menu on F10 with a switch for a plain, non-retro look, plus play-test tools; runs that use its cheats are never recorded (owner asked 2026-10-19; §16) |
 | Retro look strength | The full PS1 look was too strong and the plain look too clean: a RETRO LOOK setting with LIGHT as the default, a sharper, gentler middle (owner asked 2026-10-19; §9.1). FULL was then removed, leaving LIGHT and OFF (owner, 2026-10-22 play-test) |
 | Leaving a run | The results screen offers MAIN MENU (Esc) back to the title as well as retry and new run (owner, 2026-10-22 play-test; §9.8) |
@@ -706,8 +707,14 @@ charges the gun; the gun sets up the blade.**
   - Yata Mirror copies of a perfect bolt carry its damage but no KAMAE
     bonus. Values live in `scripts/bolt.gd` (`PERFECT_*`, `SIGNATURE_*`).
   - KAMAE drains more slowly as the boss loses HP (owner, 2026-10-19; §5.5).
-- **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
-  0.22, slash trail, slice sound.
+- **Hit feel:** hitstop 0.06 s + 0.012 per enemy hit (up to 4), +0.02 s
+  if the cut kills, trauma 0.22, slash trail, slice sound, the hit
+  confirm (§9.8), a bright cut flash across each body hit (flat for the
+  side cuts, upright for the chop) and the view jolting 0.016 rad along the
+  cut (right, left, down; follows the shake slider). Each body hit flinches:
+  its torso snaps back and turns with the blow (heavy bodies less), looks
+  only. (Was 0.045 s with no confirm; raised because the owner found hits
+  had no feedback, 2026-10-22.)
 - **A slash just hits a staggered enemy** (full damage, armour ignored, so it
   can kill it outright). The GLORY KILL is its own key, F (§3.4).
 - **Look:** see §9.6. The glowing edge flares on each swing.
@@ -730,8 +737,10 @@ charges the gun; the gun sets up the blade.**
   mutator turns this off).
 - **Empty:** a 0.3 s cooldown, the "empty" fizzle sound and a "NO CHARGE – USE
   THE BLADE" flash.
-- **Cooldown** 0.72 s. Trauma 0.32, recoil, FOV kick 4, hitstop 0.035 on hit,
-  muzzle light (cyan-white).
+- **Cooldown** 0.72 s. Trauma 0.32, recoil, FOV kick 4, hitstop 0.05 on hit
+  (+0.02 on a kill; was 0.035, raised with the katana's, 2026-10-22), the hit
+  confirm (§9.8), a white-blue spark on each body hit, muzzle light
+  (cyan-white).
 - **Visuals:**
   - Every second pellet is a **jagged, forking lightning arc** from the muzzle
     to its impact point. Arcs live about 0.1 s and re-randomise their shape
@@ -933,6 +942,27 @@ green, BODY pale gold; links and RECOMMENDED in gold.
 Debug: `--augments=id,id:2|all` starts a run with cards picked; `--cardtour`
 deals every card for a layout check.
 
+### 3.9 Aim assist (owner, 2026-10-22)
+The owner asked for "a soft auto aim when close to an enemy", as a setting
+that can be turned off: **AIM ASSIST** (CONTROLS tab, ON / OFF, **ON** by
+default). It never turns the view on its own between attacks and never
+touches the seeded dice, so seeds still give the same run. Values in
+`scripts/player.gd` (`ASSIST_*`).
+- **Katana pull-in:** a slash that would hit nobody takes the foe just out
+  of reach instead: its body 3.4–5.4 m away, within 30° of the crosshair
+  (flat), at a height the katana could cut, with nothing solid in between.
+  Nearest the crosshair wins (a metre counts as 0.05 rad). The cut lands on
+  it as normal, and the slash pulls you in: a 0.09 s move (at most 26 m/s)
+  that stops 1.3 m from its body, a small FOV kick, and the view eases up to
+  8° toward it (1.8 rad/s). Not invulnerable, unlike a dash; a dash or a
+  glory kill cancels it.
+- **Shotgun near miss:** if the crosshair passes a foe's body by less than
+  0.6 m (and less than 4°, within 30 m), the blast's centre bends to half a
+  body-width inside it. The bend keeps the height you aimed at (between the
+  hips and the top of the head), so a headshot still means aiming at the
+  head. Only when the bent blast would reach that foe first (no wall, no
+  other body in front). Never when the crosshair is already on someone.
+
 ---
 
 ## 4. Enemies
@@ -941,6 +971,30 @@ Common to every enemy:
 - They spawn with a vertical beam, drop in from about 7–9 m up, land with
   sparks, then chase.
 - Attacks are always **telegraphed**: a windup, glowing eyes and a sound.
+- **Every enemy visibly carries its weapon** (owner, 2026-10-22: grunts
+  seemed to hurt just by coming close). The grunt holds a **NATA** (a long
+  cleaver, about 0.95 m, its edge a neon strip in one of four colours); the
+  brute a **KANABO** (a long studded iron club with glowing hazard strips,
+  swung two-handed); the gunner its arm cannon. The weapon's glowing edge is
+  the telegraph: at the windup's start a glint pops at its tip, through the
+  windup it heats from its own colour to red, and it is white-hot when the
+  blow lands. The grunt raises the blade over its right shoulder (the free
+  hand guards); the brute lifts the club high over its head. On the strike
+  the arms snap down to the follow-through (no easing, so the hit and the
+  swing are one moment) and hold it 0.22 s while the edge cools, and a red
+  arc is drawn where the weapon cut. **The arc ends exactly at the blow's
+  reach** (the grunt's 2.7 m + radius, the brute's 3.6 m + radius, from the
+  centre; the blow also lunges the body forward), so standing outside the
+  red arc means it missed you. The grunt's arc leans 1 rad across the body,
+  the brute's 0.55 rad, so it reads from the front, where a straight
+  overhead arc would be seen edge-on. Drawn on in 0.06 s, gone in 0.2 s. A
+  windup cut short (a stagger, a leap) cools the edge at once, so a hot
+  edge always means a blow is coming. The brute's blow also flashes
+  where the club meets the floor. The gunner's cannon glints at the windup
+  and flashes when it fires.
+- **Taking a hit** shows where it came from: a red chevron on a ring round
+  the crosshair frame, pointing at the attacker and turning with the view,
+  for 0.9 s (up to 4 at once).
 - Steering keeps them apart and slides them along walls when stuck.
 - `damage_mult = 1 + (hp_scale − 1) × 0.5`.
 
@@ -2252,6 +2306,13 @@ under 0.1 s; while held it is level and still on a solid plate).
   deeper (8, 8) and its ribbon white. Taking a card: one frame of negative,
   gold and lime sparks, the taken card punches, the others collapse into a
   line and are shoved aside, and the title block collapses.
+- **Hit confirm** (owner, 2026-10-22: hits had no feedback): every hit the
+  katana, the shotgun or Kage Step lands draws an X round the crosshair dot,
+  with an ink outline so it reads over anything, easing out as it fades.
+  White and small for a hit (0.14 s, the `hitmark` tick); gold for a
+  shotgun headshot (0.2 s, the tick pitched up); red and bigger for a kill
+  (0.26 s, the deeper `killmark` knock). A plain hit never cuts a kill or
+  headshot marker short.
 - **Other:**
   - Cells flash when charged.
   - Dash adds data streaks. Executions flash white at 0.4 alpha. Damage
@@ -2426,7 +2487,9 @@ about 10 LU over the music, and heavy rain louder than the music.
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
   empty (fizzle), zap (arc on a body), swing0–2, slice, deflect,
-  deflect_perfect (a ringing clang), headshot (ding), wave_blade.
+  deflect_perfect (a ringing clang), headshot (ding), wave_blade,
+  hitmark (the hit confirm's dry tick), killmark (the kill confirm's deeper
+  knock).
 - **Gore:** gore0–2, gore_big, execution.
 - **Movement:** dash, jump, land, jumppad.
 - **Enemies:** enemy_shot, windup, roar, slam, spawn, blink, shuriken,
