@@ -53,10 +53,28 @@ Signs, pipes and air-con units on walls hang above your head.
   Low 1.2 m crates are a simple hop.
 - **The vent tower** on the east side is 7.5 m of sheer wall. Nothing climbs
   it, you included.
-- **The geyser pad** on the metro platform is the quick way out of the pit:
-  it launches you up past the service ledges and onto the bridge.
+- **Geyser pads** on every level throw you into the air: see
+  [Geyser pads](#geyser-pads) below.
 - You can drop off any edge. The walls around the roof stop you from falling
   off the map.
+
+## Geyser pads
+
+Nine glowing pads, in the same places on every seed. Walk onto one and it
+throws you into the air. Hold a direction to steer while you fly, and your
+double jump still works. Hold nothing and you come back down onto the pad,
+which throws you up again.
+
+| Where | Height | How far up | Where to land |
+| --- | --- | --- | --- |
+| Metro platform, south of the bridge | −10 m | about 15 m | the bridge |
+| Service ledges, north-west and south-east corners | −5 m | about 9 m | the roof, or the bridge with a double jump |
+| South roof, either side of where you start | 0 m | about 9 m | the stairwell hut (west), the billboard gantry (east) |
+| Roof beside the shaft's north corners | 0 m | about 9 m | the side catwalks |
+| North end of each side catwalk | +5 m | about 9 m | the water-tank platform (west), the antenna terrace (east), the north deck |
+
+Every pad is a good start for a [plunge](Glory-Kills#plunge): look down for
+an enemy on the way.
 
 ## Plunge spots
 
@@ -68,7 +86,8 @@ Height means [plunges](Glory-Kills#plunge). The best spots:
 - **The north deck edge**, over the open strip of roof in front of it.
 - **The service ledges**, over the metro platform.
 - **The billboard gantry** and the top of the container stack.
-- **The geyser pad's launch** counts too: plunge on the way down.
+- **Any geyser pad's launch** counts too: plunge on the way down, even onto
+  an enemy on the floor you launched from.
 
 ## Where enemies come from
 

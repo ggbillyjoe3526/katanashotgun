@@ -535,8 +535,10 @@ Notes:
 | Display defaults | Full screen at the display's resolution, VSync off, unlimited frame rate; the pixel look is kept at 4K (owner, 2026-10-18) |
 | Level-up augments | Rule-changing cards that combine into named builds, with a RECOMMENDED tag on linking cards, like Balatro's Jokers (owner, 2026-10-18; §3.8) |
 | Online | None: the game is fully offline, with no online leaderboards, accounts or servers. Players share seeds with each other (codes, and later small files) to race scores and more; that sharing is to be expanded (owner, 2026-10-18; §7.5) |
+| Enemy attacks and hit feel | Every wave enemy visibly holds its weapon and swings it with a heating, glinting telegraph and a red arc (§4); hits answer with a hit marker and tick, a cut flash, a body flinch, a view jolt and a little more hitstop (§3.2, §3.3, §9.8); a soft AIM ASSIST, on by default, that the player can turn off (§3.9) (owner asked 2026-10-22) |
 | Dev menu | A hidden developer menu on F10 with a switch for a plain, non-retro look, plus play-test tools; runs that use its cheats are never recorded (owner asked 2026-10-19; §16) |
-| Retro look strength | The full PS1 look was too strong and the plain look too clean: a RETRO LOOK setting (OFF / LIGHT / FULL) with LIGHT as the default, a sharper, gentler middle; FULL stays as it was (owner asked 2026-10-19; §9.1) |
+| Retro look strength | The full PS1 look was too strong and the plain look too clean: a RETRO LOOK setting with LIGHT as the default, a sharper, gentler middle (owner asked 2026-10-19; §9.1). FULL was then removed, leaving LIGHT and OFF (owner, 2026-10-22 play-test) |
+| Leaving a run | The results screen offers MAIN MENU (Esc) back to the title as well as retry and new run (owner, 2026-10-22 play-test; §9.8) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
@@ -577,11 +579,12 @@ Notes:
     canvas units. Measured 2026-10-19: in `viewport` mode the stretch scale
     divides the drawn size, so this draws the whole window, 3D included, at
     **480×270** (8×8 screen pixels per game pixel on 4K), not 960×540 as
-    this section used to say. That is RETRO LOOK FULL.
+    this section used to say. That was the old RETRO LOOK FULL (removed
+    2026-10-22); the stretch mode is only in effect until boot.
   - The **RETRO LOOK** setting (§9.1, `RetroLook`) picks how strong the
-    look is; its default, LIGHT, draws the 3D view at about 540 lines
-    (960×540 on 1080p and 4K) and the UI at the window's size, with the
-    stretch mode `canvas_items`.
+    look is. Both levels switch the stretch mode to `canvas_items`, so the
+    UI draws at the window's size; LIGHT (the default) draws the 3D view at
+    about 540 lines (960×540 on 1080p and 4K).
   - `default_texture_filter = Nearest`, MSAA off.
   - Add a render-scale setting for the 3D view.
 - **Fonts:** rasterised at the 480×270 canvas size with **no antialiasing**,
@@ -597,8 +600,7 @@ Notes:
   the biggest whole multiple of 960×540 that fits the screen (2880×1620 on
   4K), so the retro pixels stay square and sharp. The 3D view keeps its
   RETRO LOOK resolution at any screen size and is upscaled with nearest
-  filtering, never smoothed: FULL's 480×270 exactly 8× on 4K and 4× on
-  1080p (1440p gets slightly uneven pixel widths); LIGHT picks the whole
+  filtering, never smoothed: LIGHT picks the whole
   number of screen pixels per game pixel that comes closest to 540 lines
   (4 on 4K, 3 on 1440p, 2 on 1080p). Higher resolution never smooths away
   the PS1/PS2 look. Pause
@@ -622,6 +624,7 @@ Notes:
 | quit game | Q twice (title) | Also QUIT on the title, QUIT GAME on pause and in Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
+| back to the title | Esc (results screen) | Also MAIN MENU, top left (owner, 2026-10-22) |
 | play a seed | S (title) | PLAY A SEED box (§7.5) |
 | copy seed | C (pause, results) | Also COPY / COPY SEED to click (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
@@ -704,8 +707,14 @@ charges the gun; the gun sets up the blade.**
   - Yata Mirror copies of a perfect bolt carry its damage but no KAMAE
     bonus. Values live in `scripts/bolt.gd` (`PERFECT_*`, `SIGNATURE_*`).
   - KAMAE drains more slowly as the boss loses HP (owner, 2026-10-19; §5.5).
-- **Hit feel:** hitstop 0.045 s + 0.012 per enemy hit (up to 4), trauma
-  0.22, slash trail, slice sound.
+- **Hit feel:** hitstop 0.06 s + 0.012 per enemy hit (up to 4), +0.02 s
+  if the cut kills, trauma 0.22, slash trail, slice sound, the hit
+  confirm (§9.8), a bright cut flash across each body hit (flat for the
+  side cuts, upright for the chop) and the view jolting 0.016 rad along the
+  cut (right, left, down; follows the shake slider). Each body hit flinches:
+  its torso snaps back and turns with the blow (heavy bodies less), looks
+  only. (Was 0.045 s with no confirm; raised because the owner found hits
+  had no feedback, 2026-10-22.)
 - **A slash just hits a staggered enemy** (full damage, armour ignored, so it
   can kill it outright). The GLORY KILL is its own key, F (§3.4).
 - **Look:** see §9.6. The glowing edge flares on each swing.
@@ -728,8 +737,10 @@ charges the gun; the gun sets up the blade.**
   mutator turns this off).
 - **Empty:** a 0.3 s cooldown, the "empty" fizzle sound and a "NO CHARGE – USE
   THE BLADE" flash.
-- **Cooldown** 0.72 s. Trauma 0.32, recoil, FOV kick 4, hitstop 0.035 on hit,
-  muzzle light (cyan-white).
+- **Cooldown** 0.72 s. Trauma 0.32, recoil, FOV kick 4, hitstop 0.05 on hit
+  (+0.02 on a kill; was 0.035, raised with the katana's, 2026-10-22), the hit
+  confirm (§9.8), a white-blue spark on each body hit, muzzle light
+  (cyan-white).
 - **Visuals:**
   - Every second pellet is a **jagged, forking lightning arc** from the muzzle
     to its impact point. Arcs live about 0.1 s and re-randomise their shape
@@ -931,6 +942,27 @@ green, BODY pale gold; links and RECOMMENDED in gold.
 Debug: `--augments=id,id:2|all` starts a run with cards picked; `--cardtour`
 deals every card for a layout check.
 
+### 3.9 Aim assist (owner, 2026-10-22)
+The owner asked for "a soft auto aim when close to an enemy", as a setting
+that can be turned off: **AIM ASSIST** (CONTROLS tab, ON / OFF, **ON** by
+default). It never turns the view on its own between attacks and never
+touches the seeded dice, so seeds still give the same run. Values in
+`scripts/player.gd` (`ASSIST_*`).
+- **Katana pull-in:** a slash that would hit nobody takes the foe just out
+  of reach instead: its body 3.4–5.4 m away, within 30° of the crosshair
+  (flat), at a height the katana could cut, with nothing solid in between.
+  Nearest the crosshair wins (a metre counts as 0.05 rad). The cut lands on
+  it as normal, and the slash pulls you in: a 0.09 s move (at most 26 m/s)
+  that stops 1.3 m from its body, a small FOV kick, and the view eases up to
+  8° toward it (1.8 rad/s). Not invulnerable, unlike a dash; a dash or a
+  glory kill cancels it.
+- **Shotgun near miss:** if the crosshair passes a foe's body by less than
+  0.6 m (and less than 4°, within 30 m), the blast's centre bends to half a
+  body-width inside it. The bend keeps the height you aimed at (between the
+  hips and the top of the head), so a headshot still means aiming at the
+  head. Only when the bent blast would reach that foe first (no wall, no
+  other body in front). Never when the crosshair is already on someone.
+
 ---
 
 ## 4. Enemies
@@ -939,6 +971,30 @@ Common to every enemy:
 - They spawn with a vertical beam, drop in from about 7–9 m up, land with
   sparks, then chase.
 - Attacks are always **telegraphed**: a windup, glowing eyes and a sound.
+- **Every enemy visibly carries its weapon** (owner, 2026-10-22: grunts
+  seemed to hurt just by coming close). The grunt holds a **NATA** (a long
+  cleaver, about 0.95 m, its edge a neon strip in one of four colours); the
+  brute a **KANABO** (a long studded iron club with glowing hazard strips,
+  swung two-handed); the gunner its arm cannon. The weapon's glowing edge is
+  the telegraph: at the windup's start a glint pops at its tip, through the
+  windup it heats from its own colour to red, and it is white-hot when the
+  blow lands. The grunt raises the blade over its right shoulder (the free
+  hand guards); the brute lifts the club high over its head. On the strike
+  the arms snap down to the follow-through (no easing, so the hit and the
+  swing are one moment) and hold it 0.22 s while the edge cools, and a red
+  arc is drawn where the weapon cut. **The arc ends exactly at the blow's
+  reach** (the grunt's 2.7 m + radius, the brute's 3.6 m + radius, from the
+  centre; the blow also lunges the body forward), so standing outside the
+  red arc means it missed you. The grunt's arc leans 1 rad across the body,
+  the brute's 0.55 rad, so it reads from the front, where a straight
+  overhead arc would be seen edge-on. Drawn on in 0.06 s, gone in 0.2 s. A
+  windup cut short (a stagger, a leap) cools the edge at once, so a hot
+  edge always means a blow is coming. The brute's blow also flashes
+  where the club meets the floor. The gunner's cannon glints at the windup
+  and flashes when it fires.
+- **Taking a hit** shows where it came from: a red chevron on a ring round
+  the crosshair frame, pointing at the attacker and turning with the view,
+  for 0.9 s (up to 4 at once).
 - Steering keeps them apart and slides them along walls when stuck.
 - `damage_mult = 1 + (hp_scale − 1) × 0.5`.
 
@@ -966,6 +1022,19 @@ windups, staggers.
   Its intro reads "BOSS INCOMING" with an alarm, then the **boss intro card**:
   the name and epithet slide in on a band, with the boss_intro sound and the
   boss's own music.
+- **Arrival in plain sight** (owner playtest, 2026-10-22: he was left looking
+  around for Kurokage): the boss drops in where the player is looking, never
+  at a fixed spot behind them. `Arena.boss_drop_point` tries 6–20 m away, on
+  the player's own floor within 45° of the view first, then any floor in
+  view, then the same all the way round; each spot needs open sky above,
+  flat floor all round (body radius + 0.5 m), the navmesh, and a clear line
+  to the player's eye. The map's `boss_spawn` is only the fallback. It lands
+  with a slam, a screen shake by distance and a scorch mark.
+- **Bosses never leave the fight off a ledge:** dashes, charges and NULL
+  CROSS lines stop at a drop, sidesteps only go where there is floor, and
+  the moves that cross the arena (Kurokage's dash-slash, all of Shuten's
+  specials) wait until the boss is within reach, on the player's level
+  (1.5 m) and in sight, as the brute's charge does.
 - **Cycle order:** cycle 1 is Kurokage and Tetsugumo in seeded order, then
   Shuten last. Later cycles are a seeded shuffle of all three.
 - **Boss HP scale:** `1 + 0.45 × (cycle − 1) + 0.03 × (wave − 3)`.
@@ -986,9 +1055,11 @@ windups, staggers.
   2.6 s, armour 0.55, XP 320, points 5000.
 - **Dash-slash chain:** 2 dashes (3 when enraged). Each has a floor
   telegraph line 16 m long (neon). Windup 0.62 s (0.42 enraged), shortened on
-  follow-ups. Each dash hits 20 with knockback.
+  follow-ups. Each dash hits 20 with knockback. Starts only within 16 m (the
+  line), on the player's level and in sight; further off he runs in.
 - **Shuriken fan:** deflectable, 13 m/s, 10 damage, spread 0.16 rad. His
-  signature volley: the whole fan is white-hot (§3.2 Perfect deflect).
+  signature volley: the whole fan is white-hot (§3.2 Perfect deflect). Only
+  thrown in sight.
 - **Blink:** vanishes in smoke and reappears behind you.
 - **Melee combo:** 2 hits (3 enraged), 16 damage each.
 - Strafes at mid range. Specials every 3.2–4.6 s (2.2–3.2 enraged).
@@ -1021,7 +1092,8 @@ windups, staggers.
 - **Charge:** like the brute's.
 - **9-bolt fan volley:** enraged only. 14 damage, spread 0.13 rad. His
   signature volley: every bolt is white-hot (§3.2 Perfect deflect).
-- Specials every 5–7 s (3.5–5 enraged).
+- Specials every 5–7 s (3.5–5 enraged), from 5 to 14 m (the leap's reach),
+  on the player's level and in sight.
 
 ### 5.3 Boss death sequence ("loud, then quiet")
 1. The boss dies with huge gore (Tetsugumo explodes). Slow motion ×0.12 for
@@ -1527,7 +1599,23 @@ the holographic cut-in (§9.8).
     in reach of a double jump, 7 m is not):
     1.2 m hop, 3 m mantle, 5 m grab ledge (amber lip, colour `ffa21f` in
     every palette), 7 m+ sheer. Every level also has a ramp route.
-  - **Geyser pad** on the metro floor throws the player up to the bridge.
+  - **Geyser pads (9, fixed, never seeded).** The metro floor's (launch
+    28 m/s up, 2.5 toward the bridge) throws the player up to the bridge.
+    Eight more, added at the owner's request (2026-10-22: "more chances to
+    jump into the air and do a plunge attack" on every level), launch
+    straight up at `WellMap.PAD_LIFT` = 22 m/s (about 9.3 m): two on the
+    service blocks' lamp-free corners (±9, −5, ±10), two on the south roof
+    (±8, 0, 17), two on the roof beside the shaft's north corners (±19, 0,
+    −11.5) and two at the catwalks' north ends (±24.5, +5, −18). Each stands
+    on one floor, at least 3 m from spawns, 2.5 m from leap-link ends, 5 m
+    from the boss spawn and 2.5 m from props (so the world detail is placed
+    as before), with open air over it for the whole launch
+    (`test_well_map.gd`, and `--movetest` launches the player off every
+    pad). Only the metro pad has a real lamp; the new ones lay a floor glow
+    instead, so the map's light count is unchanged. A pad fires only for a
+    body within 0.6 m of its own floor height, so a pad on a catwalk never
+    fires for someone on the roof below it. Layout board:
+    `design/geyser-pads/` in the project's shared files.
   - **Spawns (18):** metro tunnels and freight lifts below, a lift in the
     stairwell hut and roof hatches: enemies walk out of these
     (`ground_spawns`, `Arena.spawn_clearance`). The rest are sky drops on the
@@ -1549,7 +1637,7 @@ the holographic cut-in (§9.8).
   - **Shapes:** raised floor plates on the 2 m grid over every grid floor of
     6 m² or more (top `LIFT` = 0.05 m; grates, hazard-painted and slightly
     higher plates mixed in; about 7% of cells open; cells under hatches,
-    lifts, the pad, drains and floor neon stay bare). Plated floors report
+    lifts, the pads, drains and floor neon stay bare). Plated floors report
     the plates' top from `floor_height_at` (each platform's `lift`), so
     blood, telegraphs, gibs and cans sit on them. Walls get a cornice and a
     band (kept below the amber lips' glow), a foot plinth, ribs, copper
@@ -1621,7 +1709,8 @@ the holographic cut-in (§9.8).
     `_neon`, `_neon_box_edges`, `_light`, `_halo`, `floor_height_at`, plus
     weather and storm.
   - Maps register in `MapRegistry` (`create_for_seed(rng)`).
-  - Each map sets `map_name`, `half`, `player_spawn`, `boss_spawn`,
+  - Each map sets `map_name`, `half`, `player_spawn`, `boss_spawn` (only
+    the fallback: bosses drop in where the player can see them, §5.1),
     `spawn_points` and `jump_pads`, and uses `pal` (palette) and `rng`
     (seeded). Multi-level maps also set `floor_base`, `kill_y`,
     `enemy_reset`, `ground_spawns`, `use_navigation` and `nav_links`.
@@ -1633,25 +1722,31 @@ the holographic cut-in (§9.8).
 ### 9.1 World look: retro PS1/PS2
 - **RETRO LOOK setting** (Settings → Video; `scripts/retro_look.gd`;
   owner, 2026-10-19: the full look was too strong, the plain look kept the
-  game good-looking but lost the PS1/PS2 feel). Three levels; the tuning
-  lives in `RetroLook.LEVELS` and reaches the shaders as four globals:
+  game good-looking but lost the PS1/PS2 feel). Two levels, LIGHT and OFF
+  (owner, 2026-10-22: "make the light retro look the only retro option";
+  the third level, FULL, which drew everything at 480×270 with heavy
+  wobble and nearest texels, was removed). The tuning lives in
+  `RetroLook.LEVELS` and reaches the shaders as four globals:
 
-  | | FULL | LIGHT (default) | OFF |
-  |---|---|---|---|
-  | 3D drawn at | 480×270 (`viewport` stretch) | about 540 lines: window ÷ whole number (`canvas_items`, 3D scale 1/n, post-process blocks of n×n) | window size |
-  | `psx_retro` (affine × 0.55 lit / 0.4 unlit, fringe, scanlines) | 1.0 | 0.35 | 0 |
-  | Nearest texels | yes | no (smooth, PS2-like) | no |
-  | `psx_snap` (vertex grid, share of the 3D view's own pixels) | 0.6 (as before: 162 lines) | 0.67 (360 lines at 540) | 0 (no wobble) |
-  | `psx_levels` (colour levels, Bayer 4×4 dither) | 48 | 64 | 0 (none) |
-  | `psx_pixel_lines` (post-process blocks) | 0 | 540 | 0 |
+  | | LIGHT (default) | OFF |
+  |---|---|---|
+  | 3D drawn at | about 540 lines: window ÷ whole number (`canvas_items`, 3D scale 1/n, post-process blocks of n×n) | window size |
+  | `psx_retro` (affine × 0.55 lit / 0.4 unlit, fringe, scanlines) | 0.35 | 0 |
+  | Nearest texels | no (smooth, PS2-like) | no |
+  | `psx_snap` (vertex grid, share of the 3D view's own pixels) | 0.67 (360 lines at 540) | 0 (no wobble) |
+  | `psx_levels` (colour levels, Bayer 4×4 dither) | 64 | 0 (none) |
+  | `psx_pixel_lines` (post-process blocks) | 540 | 0 |
 
   Why LIGHT is the default: the owner liked the plain look but wanted a bit
-  of PS1/PS2 kept, so LIGHT keeps sharp square pixels at twice FULL's
-  resolution (the 960×540 §2 always intended), a wobble under half the size
-  of FULL's and faint dither and fringe, and drops the blocky
-  warping textures that made the full look noisy. FULL is unchanged, for
-  players who want it. Old saves move to LIGHT; a player who had the dev
-  menu's plain look on gets OFF (settings v4). Gameplay never reads it.
+  of PS1/PS2 kept, so LIGHT keeps sharp square pixels at 960×540 (the size
+  §2 always intended), a gentle wobble and faint dither and fringe, and
+  drops the blocky warping textures that made the old full look noisy. Old
+  saves move to LIGHT; a player who had the dev menu's plain look on gets
+  OFF (settings v4); a saved FULL becomes LIGHT (settings v5). Gameplay
+  never reads it. project.godot still holds FULL's old values for the
+  globals and the `viewport` stretch; `RetroLook.apply()` replaces them at
+  boot. The shaders' nearest-texel and `_retro` texture paths (above
+  `psx_retro` 0.5) are no longer reached.
   Limits: Godot's 3D scale stops at 25%, so on a 4K screen LIGHT already
   draws at that floor (960×540) and RENDER SCALE below 100% changes nothing
   there; elsewhere a render scale below 100% softens LIGHT's blocks a
@@ -1673,7 +1768,7 @@ the holographic cut-in (§9.8).
     vertex colour.
 - **Post-process** (a full-screen canvas shader on a layer below the HUD, so
   the UI isn't dithered):
-  - colour levels `psx_levels` (48 on FULL) + Bayer 4×4 dither 0.6;
+  - colour levels `psx_levels` (64 on LIGHT) + Bayer 4×4 dither 0.6;
     saturation 1.22; contrast 1.08
   - vignette 0.5; scanlines 0.07 and resting edge chromatic aberration 1.2,
     both × `psx_retro`
@@ -1682,8 +1777,8 @@ the holographic cut-in (§9.8).
   - **combo heat:** extra aberration and saturation, and accent-coloured dots
     creeping in from the edges as the combo climbs:
     `heat = clamp((combo − 4)/40, 0, 1)`
-- **Textures:** procedural, small, nearest-filtered on FULL (the shaders
-  pick the nearest texel; LIGHT and OFF filter smoothly). Floor, panels, concrete,
+- **Textures:** procedural, small, filtered smoothly on LIGHT and OFF (the
+  nearest-texel path was the old FULL look's). Floor, panels, concrete,
   windows, containers, hazard, grate, signs and ads (seeded variants),
   splats, glow, star, noise, cloth, skin, lacquer, jump pad, ring, grid,
   chrome.
@@ -1824,13 +1919,14 @@ the holographic cut-in (§9.8).
     detailed** Blender model that also looks good with the retro look off: ~13k
     triangles (ceiling 30k), fine detail baked into 2048 px colour,
     roughness/metal (ORM) and normal maps, plus a 256 px texture with the
-    light painted in for RETRO LOOK FULL. Own shapes, no traditional katana
+    light painted in for the old RETRO LOOK FULL (no longer used). Own shapes, no traditional katana
     look; the pommel, handle, collar and finger spur are one piece.
   - The glowing edge is one colour-neutral material ("edge") with UVs along
     the blade, so player colours and effects (Rewards looks) can drive it.
   - Pipeline: `assets/models/README.md`. Script-built in Blender, exported
     as glTF (.glb), drawn in Godot with `shaders/psx_model.gdshader` (PS1
-    treatment on RETRO LOOK FULL, the full maps on LIGHT and OFF).
+    treatment above `psx_retro` 0.5, which no level reaches since FULL was
+    removed; the full maps on LIGHT and OFF).
   - The owner approved it as the game's katana (2026-10-19). The code-built
     blade remains only as the fallback if the model fails to load.
   - The shotgun's model follows the same rules (above).
@@ -2200,7 +2296,10 @@ under 0.1 s; while held it is level and still on a solid plate).
       the gain counts into (§11.1), the XP numbers, and the run's seed.
     - Once ready, a row of words along the bottom: [R] RETRY SEED,
       [CLICK] NEW RUN, [P] RUN CARD (then [O] OPEN FOLDER, §19.1 #10) and
-      [C] COPY SEED.
+      [C] COPY SEED. In the top-left corner, mirroring the run card's
+      note on the right, [ESC] MAIN MENU goes back to the title on a fresh
+      seed (owner, 2026-10-22; the bottom row has no room for a fifth
+      word).
   - The title music returns at −14 dB. Input is accepted after 2.4 s. The
     world desaturates and keeps running in slow motion (×0.35).
 - **Hi-score:** passing the best score mid-run: one message, a "NEW
@@ -2224,6 +2323,13 @@ under 0.1 s; while held it is level and still on a solid plate).
   deeper (8, 8) and its ribbon white. Taking a card: one frame of negative,
   gold and lime sparks, the taken card punches, the others collapse into a
   line and are shoved aside, and the title block collapses.
+- **Hit confirm** (owner, 2026-10-22: hits had no feedback): every hit the
+  katana, the shotgun or Kage Step lands draws an X round the crosshair dot,
+  with an ink outline so it reads over anything, easing out as it fades.
+  White and small for a hit (0.14 s, the `hitmark` tick); gold for a
+  shotgun headshot (0.2 s, the tick pitched up); red and bigger for a kill
+  (0.26 s, the deeper `killmark` knock). A plain hit never cuts a kill or
+  headshot marker short.
 - **Other:**
   - Cells flash when charged.
   - Dash adds data streaks. Executions flash white at 0.4 alpha. Damage
@@ -2398,7 +2504,9 @@ about 10 LU over the music, and heavy rain louder than the music.
 ### 10.4 SFX (all PLACEHOLDER, generated; replace with professional sound design)
 - **Weapons:** shotgun (electric blast), recharge (capacitor whine + clack),
   empty (fizzle), zap (arc on a body), swing0–2, slice, deflect,
-  deflect_perfect (a ringing clang), headshot (ding), wave_blade.
+  deflect_perfect (a ringing clang), headshot (ding), wave_blade,
+  hitmark (the hit confirm's dry tick), killmark (the kill confirm's deeper
+  knock).
 - **Gore:** gore0–2, gore_big, execution.
 - **Movement:** dash, jump, land, jumppad.
 - **Enemies:** enemy_shot, windup, roar, slam, spawn, blink, shuriken,
@@ -2757,7 +2865,7 @@ lamps (live on a preset change); `scripts/quality.gd` holds the caps above.
 
 ### 15.1 Game flow
 `title` → `playing` ⇄ `paused` / `levelup` → `dead` → results → (R: same
-seed | click: new seed).
+seed | click: new seed | Esc or MAIN MENU: title).
 - **Title:** shows the map built from the next run's seed, with the camera
   drifting and the title music playing. PLAY A SEED starts a run on a typed
   or pasted seed instead (§7.5).
@@ -2896,7 +3004,7 @@ seed | click: new seed).
     unlocks. A DEV tag under the score lists what is on; the menu says the
     same. Restarting from the menu pays the run on screen into the profile
     like an abandoned run first (unless it is a dev run), so no progress is
-    lost. Debug flags: `--look=off|light|full` (`--plain` = off), `--dev=look|run|actions`.
+    lost. Debug flags: `--look=off|light` (`--plain` = off), `--dev=look|run|actions`.
 - **Perf probe:** `tools/perf_bench.sh headless|render [wave] [frames]
   [quality]` runs the autoplay bot on a fixed seed with `--perf`. Draw calls
   and node counts are the same on any machine; frame times only mean

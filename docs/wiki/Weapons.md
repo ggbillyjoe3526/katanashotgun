@@ -2,6 +2,30 @@
 
 You carry two weapons at once, one in each hand, and use both all the time.
 
+## Feeling the hit
+
+Every hit you land answers you:
+
+- An **X** flashes round the crosshair with a sharp tick: white for a hit,
+  gold for a shotgun headshot, red and bigger with a deeper knock for a kill.
+- The game freezes for a split second on impact (longer on a kill), the
+  enemy flinches back from the blow, and the view jolts along your cut.
+- A katana cut leaves a bright streak across the body; a blast leaves a
+  white-blue spark where it struck.
+
+## Aim assist
+
+**AIM ASSIST** is on by default; you can turn it off in
+[Settings](Settings#controls). It only helps when an enemy is really close
+to your crosshair, and it never changes what a seed does.
+
+- **Katana:** a slash that would hit nobody still cuts an enemy just out of
+  reach (up to 5.4 m, within 30° of where you look), and pulls you onto it
+  with a short lunge and a slight turn of the view.
+- **Shotgun:** a blast that just misses a body (by less than about 0.6 m)
+  bends onto it. It keeps the height you aimed at, so headshots still need
+  you to aim at the head.
+
 ## DOJIGIRI katana
 
 **Left hand, left mouse button.** A thermal katana named after the

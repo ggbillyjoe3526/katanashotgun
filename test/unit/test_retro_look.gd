@@ -1,7 +1,8 @@
 extends GutTest
-## The RETRO LOOK setting (OFF / LIGHT / FULL): what each level puts on the
+## The RETRO LOOK setting (OFF / LIGHT): what each level puts on the
 ## shaders and the window, that LIGHT is the default, that old saves move
-## over, and that the settings screen switches it with a click.
+## over (FULL ones to LIGHT), and that the settings screen switches it with
+## a click.
 
 const PROFILE_DIR := "user://test-retro-look"
 
@@ -33,33 +34,22 @@ func test_light_is_the_default() -> void:
 	assert_eq(Settings.retro_look, "light")
 
 
-func test_full_is_the_original_look() -> void:
-	RetroLook.apply("full")
-	var root := get_tree().root
-	assert_eq(root.content_scale_mode, Window.CONTENT_SCALE_MODE_VIEWPORT)
-	assert_eq(root.content_scale_size, Vector2i(960, 540))
-	assert_eq(root.content_scale_factor, 2.0)
-	assert_eq(root.scaling_3d_scale, Settings.render_scale)
-	# the shader globals (headless can't read them back): FULL's values are
-	# project.godot's, and match the shaders before the setting existed
-	# (snap grid 0.6 of the view's pixels, 48 colour levels, no blocks)
-	assert_eq_deep(RetroLook.LEVELS.full, {"amount": 1.0, "snap": 0.6, "levels": 48.0, "lines": 270})
-	var keys := {"psx_retro": "amount", "psx_snap": "snap", "psx_levels": "levels"}
-	for n in keys:
-		assert_eq(float(ProjectSettings.get_setting("shader_globals/" + n).value), float(RetroLook.LEVELS.full[keys[n]]), n)
-	assert_eq(float(ProjectSettings.get_setting("shader_globals/psx_pixel_lines").value), 0.0)
+func test_only_off_and_light_remain() -> void:
+	assert_eq_deep(RetroLook.IDS, ["off", "light"])
+	assert_eq_deep(RetroLook.LEVELS.keys(), ["off", "light"])
+	RetroLook.apply("full") # the removed level is unknown now
+	assert_eq(RetroLook.current, RetroLook.DEFAULT)
 
 
-func test_light_is_milder_than_full() -> void:
+func test_light_is_a_hint_of_the_old_look() -> void:
 	RetroLook.apply("light")
 	var lv: Dictionary = RetroLook.LEVELS.light
-	var full: Dictionary = RetroLook.LEVELS.full
 	assert_eq(get_tree().root.content_scale_mode, Window.CONTENT_SCALE_MODE_CANVAS_ITEMS)
 	assert_gt(lv.amount, 0.0) # still some warp and fringe
-	assert_lt(lv.amount, 0.5) # smooth textures (FULL alone picks the nearest texel)
-	assert_gt(lv.snap * lv.lines, full.snap * full.lines) # a finer grid: less wobble
-	assert_gt(lv.levels, full.levels) # more colour levels: fainter banding
-	assert_gt(lv.lines, full.lines) # a sharper 3D view
+	assert_lt(lv.amount, 0.5) # smooth textures (only above 0.5 the nearest texel)
+	assert_gt(lv.snap, 0.0) # a little wobble
+	assert_gt(lv.levels, 0.0) # a faint dither
+	assert_eq(lv.lines, 540)
 
 
 func test_light_draws_the_3d_at_the_block_size() -> void:
@@ -80,8 +70,8 @@ func test_off_is_the_plain_look() -> void:
 
 func test_the_ui_keeps_its_size_at_every_level() -> void:
 	# 480x270 canvas units on a 16:9 screen (an xvfb run at 3840x2160 gave
-	# 480x270 for all three); headless the window differs, so compare
-	RetroLook.apply("full")
+	# 480x270 for every level); headless the window differs, so compare
+	RetroLook.apply("off")
 	var want := get_tree().root.get_visible_rect().size
 	for id in RetroLook.IDS:
 		RetroLook.apply(id)
@@ -112,14 +102,27 @@ func test_unknown_level_falls_back_to_the_default() -> void:
 
 
 func test_saved_and_loaded() -> void:
-	Settings.retro_look = "full"
+	Settings.retro_look = "off"
 	var d := Settings.to_dict()
 	Settings.reset_all()
 	assert_eq(Settings.retro_look, "light")
 	Settings.from_dict(d)
-	assert_eq(Settings.retro_look, "full")
+	assert_eq(Settings.retro_look, "off")
 	Settings.from_dict({"v": Settings.VERSION, "retro_look": "neon"})
-	assert_eq(Settings.retro_look, "full") # a bad value keeps the current one
+	assert_eq(Settings.retro_look, "off") # a bad value keeps the current one
+
+
+func test_version_4_full_moves_to_light() -> void:
+	Settings.retro_look = "off"
+	Settings.from_dict({"v": 4, "retro_look": "full"})
+	assert_eq(Settings.retro_look, "light")
+
+
+func test_version_4_off_and_light_are_kept() -> void:
+	Settings.from_dict({"v": 4, "retro_look": "off"})
+	assert_eq(Settings.retro_look, "off")
+	Settings.from_dict({"v": 4, "retro_look": "light"})
+	assert_eq(Settings.retro_look, "light")
 
 
 func test_version_3_saves_move_to_light() -> void:
@@ -143,7 +146,7 @@ func test_the_settings_screen_switches_it() -> void:
 		if menu.rows[i].label == "RETRO LOOK":
 			row = i
 	assert_true(row >= 0)
-	assert_eq_deep(menu.rows[row].names, ["OFF", "LIGHT", "FULL"])
+	assert_eq_deep(menu.rows[row].names, ["OFF", "LIGHT"])
 	menu._process(0.0) # places the panel
 	var vr: Rect2 = menu._value_rect(row)
 	for down in [true, false]:
@@ -152,6 +155,6 @@ func test_the_settings_screen_switches_it() -> void:
 		ev.pressed = down
 		ev.position = menu._origin + vr.end - Vector2(4, 4) # right side: next level
 		menu._gui_input(ev)
-	assert_eq(Settings.retro_look, "full")
-	assert_eq(RetroLook.current, "full")
-	assert_eq(get_tree().root.content_scale_size, Vector2i(960, 540))
+	assert_eq(Settings.retro_look, "off") # LIGHT is last, so it wraps round
+	assert_eq(RetroLook.current, "off")
+	assert_eq(get_tree().root.scaling_3d_scale, Settings.render_scale)

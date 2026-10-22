@@ -16,6 +16,10 @@ enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VO
 ## A boss's armour drops for this long after its big moves (spec §5.6), and
 ## KAMAE fills this much faster meanwhile: the punish window.
 const EXPOSED_KAMAE := 1.5
+## A boss saves its leaps, dashes and charges for when it stands within this
+## many metres of the player's height (the brute's charge rule too).
+const SAME_LEVEL := 1.5
+const SLAM_REACH := 14.0 # Shuten's leap slam carries this far (metres)
 
 # Onryo's Grudge mutator: a dead enemy bursts this long after, this big
 const GRUDGE_DELAY := 1.1
@@ -25,6 +29,18 @@ const GRUDGE_DAMAGE := 14.0
 const WRATH_AT := 0.5
 const WRATH_SPEED := 1.4
 const WRATH_DAMAGE := 1.3
+
+## Enemy attacks (spec §4): the weapon edge heats from its idle colour to
+## WINDUP_HOT through the windup and is white-hot when the blow lands; the
+## swing leaves a red arc where it cut.
+const WINDUP_HOT := Color(1.0, 0.18, 0.08)
+const SWING_COLOR := Color(1.0, 0.28, 0.12)
+const WEAPON_NEONS: Array[Color] = [Color(0.2, 1.0, 1.0), Color(1.0, 0.25, 0.8), Color(0.6, 1.0, 0.25), Color(1.0, 0.55, 0.1)]
+const STRIKE_HOLD := 0.22 # seconds the strike pose is held before the recovery
+const GRUNT_REACH := 2.7 # a blow hits this far past the body's centre... (+ radius)
+const BRUTE_REACH := 3.6
+const GRUNT_STRIKE := [Vector3(0.3, 0, 0.1), Vector3(-0.45, 0, 0.3), 0.5] # see _strike_pose
+const BRUTE_STRIKE := [Vector3(-0.35, 0, -0.25), Vector3(-0.35, 0, 0.1), 0.6]
 
 var kind := "grunt"
 var hp := 45.0
@@ -90,6 +106,7 @@ var _path := PackedVector3Array() # navmesh corners to the player (maps with use
 var _path_types := PackedInt32Array() # region or link, per corner
 var _path_i := 0
 var _query: NavigationPathQueryParameters3D
+var _floor_q: PhysicsRayQueryParameters3D # _floor_below's ray, reused
 var _query_result: NavigationPathQueryResult3D
 var _repath_t := 0.0
 
@@ -114,7 +131,15 @@ var _exec_tag := "GLORY KILL" # the kill tag a finisher's kill shows
 var _rng := RandomNumberGenerator.new()
 var _jacket_mat: ShaderMaterial
 var _mohawk: Node3D
-var _pipe: Node3D
+## The weapon in the right hand (spec §4): the grunt's NATA blade, the
+## brute's KANABO club, the gunner's arm cannon. Its glowing edge is the
+## telegraph: it heats up through the windup and flares on the strike.
+var _weapon: Node3D
+var _weapon_glow: ShaderMaterial
+var _weapon_tip: Node3D
+var _weapon_color := Color(1.0, 0.35, 0.1) # its idle glow; every windup runs to WINDUP_HOT
+var _flinch := 0.0 # a hit's recoil through the body: 1 just hit, eases back to 0
+var _flinch_twist := 0.0 # which way the torso turns from the hit (-1..1)
 ## The pool that takes this enemy back when it dies (null: freed instead).
 var pool: WaveDirector = null
 ## Built ahead of time for a pool: no spawn beam or sound, parked at once.
@@ -136,7 +161,7 @@ static var _defaults := {}
 const _KEEP := [
 	"kind", "visual", "hips", "torso_pivot", "leg_l", "leg_r", "arm_l", "arm_r", "head_mesh", "muzzle",
 	"_leg_len", "_parts", "_mats", "_eye_mat", "_eye_color", "_glow_mat", "marker", "_rng",
-	"_jacket_mat", "_mohawk", "_pipe", "pool", "prewarm", "_defaults",
+	"_jacket_mat", "_mohawk", "_weapon", "_weapon_glow", "_weapon_tip", "_weapon_color", "pool", "prewarm", "_defaults",
 ]
 
 
@@ -271,6 +296,7 @@ func _park() -> void:
 ## Grunts vary: jacket colour, mohawk, and a pipe in the hand.
 func _roll_look() -> void:
 	if kind != "grunt" or _jacket_mat == null:
+		_set_weapon_heat(0.0)
 		return
 	var jackets := [Color(0.45, 0.08, 0.12), Color(0.3, 0.1, 0.4), Color(0.08, 0.3, 0.32), Color(0.4, 0.25, 0.08)]
 	var r := Game.rng_fx # looks only: the gameplay dice stay untouched
@@ -278,7 +304,9 @@ func _roll_look() -> void:
 	_jacket_mat.set_shader_parameter("albedo_color", jacket)
 	_jacket_mat.set_shader_parameter("emission_color", jacket)
 	_mohawk.visible = r.randf() < 0.7
-	_pipe.visible = r.randf() < 0.5
+	# every grunt is armed; only the edge's neon varies
+	_weapon_color = WEAPON_NEONS[r.randi() % WEAPON_NEONS.size()]
+	_set_weapon_heat(0.0)
 
 
 # ---------------------------------------------------------------- body
@@ -409,18 +437,21 @@ func _build_body() -> void:
 		muzzle = Node3D.new()
 		muzzle.position = Vector3(0, -0.72 * s, 0)
 		arm_r.add_child(muzzle)
+		_weapon = cannon
+		_weapon_glow = _glow_mat
+		_weapon_tip = muzzle
+		_weapon_color = _eye_color
 	else:
 		var ar := _part(arm_r, "ArmR", arm_size, arm_mat, Vector3(0, -0.31 * s, 0))
 		if kind == "grunt":
-			# a pipe/blade
-			_pipe = Psx.box(Vector3(0.05, 0.05, 0.6) * s, _mat(Color(0.6, 0.6, 0.65), "noise"), Vector3(0, -0.3 * s, 0.25 * s))
-			ar.add_child(_pipe)
+			_build_nata(ar, s)
 		elif kind == "oni":
 			var blade := Psx.box(Vector3(0.06, 0.5, 1.5) * s, _mat(Color(0.7, 0.7, 0.75), "panel"), Vector3(0, -0.33 * s, 0.75 * s))
 			blade.add_child(Psx.box(Vector3(0.07, 0.04, 1.5) * s, Psx.unlit(Color(1.0, 0.15, 0.1), 3.0), Vector3(0, -0.24 * s, 0)))
 			ar.add_child(blade)
 		elif kind == "brute":
 			ar.add_child(Psx.box(Vector3(0.26, 0.26, 0.26) * s, _mat(Color(0.2, 0.2, 0.22), "panel"), Vector3(0, -0.36 * s, 0)))
+			_build_kanabo(ar, s)
 
 	leg_l = Node3D.new()
 	leg_l.position = Vector3(-0.11 * bw * s, _leg_len, 0)
@@ -439,6 +470,76 @@ func _build_body() -> void:
 	_roll_look()
 
 
+## The grunt's NATA: a long cleaver held forward from the fist, its lower
+## edge a neon strip (the telegraph). About 0.95 m from the hand.
+func _build_nata(arm: Node3D, s: float) -> void:
+	_weapon = Node3D.new()
+	_weapon.name = "Nata"
+	_weapon.position = Vector3(0, -0.29 * s, 0.03 * s)
+	_weapon.rotation.x = 0.52 # forward and a little down while the arm hangs
+	arm.add_child(_weapon)
+	var steel := _mat(Color(0.62, 0.64, 0.7), "chrome")
+	var grip := _mat(Color(0.08, 0.07, 0.09), "noise")
+	_weapon_glow = Psx.unlit(_weapon_color, 1.4)
+	_weapon.add_child(Psx.box(Vector3(0.05, 0.05, 0.24) * s, grip, Vector3(0, 0, 0.02 * s)))
+	_weapon.add_child(Psx.box(Vector3(0.04, 0.13, 0.04) * s, steel, Vector3(0, -0.01 * s, 0.15 * s)))
+	_weapon.add_child(Psx.box(Vector3(0.025, 0.12, 0.76) * s, steel, Vector3(0, 0.01 * s, 0.55 * s)))
+	_weapon.add_child(Psx.box(Vector3(0.032, 0.03, 0.78) * s, _weapon_glow, Vector3(0, -0.055 * s, 0.56 * s)))
+	_weapon_tip = Node3D.new()
+	_weapon_tip.position = Vector3(0, 0, 0.95 * s)
+	_weapon.add_child(_weapon_tip)
+
+
+## The brute's KANABO: a long iron club, studded, with glowing hazard
+## strips down its head. Held in the right fist, swung with both hands.
+func _build_kanabo(arm: Node3D, s: float) -> void:
+	_weapon = Node3D.new()
+	_weapon.name = "Kanabo"
+	_weapon.position = Vector3(0, -0.36 * s, 0.05 * s)
+	_weapon.rotation.x = 0.52
+	arm.add_child(_weapon)
+	var iron := _mat(Color(0.2, 0.2, 0.23), "panel")
+	var stud := _mat(Color(0.55, 0.56, 0.6), "chrome")
+	_weapon_color = Color(1.0, 0.6, 0.1)
+	_weapon_glow = Psx.unlit(_weapon_color, 1.4)
+	_weapon.add_child(Psx.box(Vector3(0.07, 0.07, 0.42) * s, iron, Vector3(0, 0, 0.1 * s)))
+	_weapon.add_child(Psx.box(Vector3(0.17, 0.17, 0.95) * s, iron, Vector3(0, 0, 0.78 * s)))
+	for k in 4:
+		var z := (0.42 + k * 0.24) * s
+		for side in [-1.0, 1.0]:
+			_weapon.add_child(Psx.box(Vector3(0.06, 0.06, 0.06) * s, stud, Vector3(side * 0.1 * s, 0, z)))
+			_weapon.add_child(Psx.box(Vector3(0.06, 0.06, 0.06) * s, stud, Vector3(0, side * 0.1 * s, z + 0.12 * s)))
+	for side in [-1.0, 1.0]:
+		_weapon.add_child(Psx.box(Vector3(0.18, 0.03, 0.8) * s, _weapon_glow, Vector3(0, side * 0.075 * s, 0.8 * s)))
+	_weapon_tip = Node3D.new()
+	_weapon_tip.position = Vector3(0, 0, 1.25 * s)
+	_weapon.add_child(_weapon_tip)
+
+
+## How hot the weapon's edge glows: 0 idle, 1 white-hot (the blow lands).
+func _set_weapon_heat(h: float) -> void:
+	if _weapon_glow == null:
+		return
+	var c := _weapon_color.lerp(WINDUP_HOT, clampf(h * 1.6, 0.0, 1.0))
+	if h > 0.75:
+		c = c.lerp(Color(1.0, 0.9, 0.8), (h - 0.75) * 4.0)
+	_weapon_glow.set_shader_parameter("albedo_color", c)
+	_weapon_glow.set_shader_parameter("energy", 1.4 + h * 4.6)
+
+
+## Where the weapon's point is now (the telegraph glint starts there).
+func weapon_tip() -> Vector3:
+	if _weapon_tip and _weapon_tip.is_inside_tree():
+		return _weapon_tip.global_position
+	return global_position + Vector3(0, height * 0.7, 0)
+
+
+## The pose the blow lands in: [left arm, right arm, torso lean]. The arms
+## snap to it on the strike (no easing), so the hit and the swing are one.
+func _strike_pose() -> Array:
+	return BRUTE_STRIKE if kind == "brute" else GRUNT_STRIKE
+
+
 func get_gib_parts() -> Array[Node3D]:
 	return _parts
 
@@ -451,6 +552,8 @@ func get_head() -> Node3D:
 func _set_state(s: S) -> void:
 	state = s
 	state_t = 0.0
+	if s != S.WINDUP and s != S.RECOVER:
+		_set_weapon_heat(0.0) # a windup cut short (a stagger, a leap) must not stay red-hot
 
 
 func is_staggered() -> bool:
@@ -520,8 +623,7 @@ func _physics_process(delta: float) -> void:
 				if is_on_floor():
 					if not landed:
 						landed = true
-						Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 10, Color(1.5, 0.3, 0.4))
-						Sfx.play_at("land", global_position, -6.0)
+						_land_fx()
 					if state_t > 0.3:
 						_set_state(S.CHASE)
 			S.CHASE:
@@ -567,7 +669,7 @@ func _physics_process(delta: float) -> void:
 					charge_hit = true
 					p.take_damage(30.0 * damage_mult, global_position)
 					p.knockback(charge_dir * 16.0 + Vector3.UP * 7.0)
-				if state_t > 1.15 or (state_t > 0.2 and is_on_wall()):
+				if state_t > 1.15 or (state_t > 0.2 and is_on_wall()) or (is_boss and _ledge_ahead(charge_dir)):
 					if is_on_wall():
 						p.add_trauma(clampf(1.0 - dist / 25.0, 0.0, 0.5))
 						Game.gore.sparks(global_position + charge_dir * radius + Vector3(0, 1, 0), -charge_dir, 16)
@@ -630,6 +732,32 @@ func _physics_process(delta: float) -> void:
 		reset_physics_interpolation()
 
 
+## True when the floor ends just ahead along `d`: a boss's dash or charge
+## stops at the edge rather than carrying it off a roof into the pit, out
+## of the fight.
+func _ledge_ahead(d: Vector3) -> bool:
+	if not is_on_floor():
+		return false
+	return not _floor_below(global_position + d * (radius + 0.6))
+
+
+## Floor within a step (1.2 m) below `p`, at about the body's own height.
+## One query object, reused: dashes and charges ask every frame.
+func _floor_below(p: Vector3) -> bool:
+	if _floor_q == null:
+		_floor_q = PhysicsRayQueryParameters3D.new()
+		_floor_q.collision_mask = 1
+	_floor_q.from = p + Vector3(0, 0.5, 0)
+	_floor_q.to = p - Vector3(0, 1.2, 0)
+	return not get_world_3d().direct_space_state.intersect_ray(_floor_q).is_empty()
+
+
+## Touching down after the spawn drop.
+func _land_fx() -> void:
+	Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 10, Color(1.5, 0.3, 0.4))
+	Sfx.play_at("land", global_position, -6.0)
+
+
 ## Which way to walk toward the player. Straight at them on maps without a
 ## navmesh or when close on the same level; otherwise toward the next corner
 ## of a navmesh path, which uses ramps and leap links between levels. At a
@@ -661,12 +789,22 @@ func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
 	var pos := global_position
 	while _path_i < _path.size():
 		var c: Vector3 = _path[_path_i]
+		# a drop link close by: head for its foot at once, so a wide body (a
+		# boss) walks off the ledge instead of lining up on its top corner
+		# and turning back to it on every repath
+		var drop_top := _path_i + 1 < _path.size() and _path_types.size() > _path_i and _path_types[_path_i] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK and pos.y - _path[_path_i + 1].y > 0.9
+		if drop_top and Vector2(c.x - pos.x, c.z - pos.z).length() < radius + 1.0:
+			_path_i += 1
+			continue
 		if Vector2(c.x - pos.x, c.z - pos.z).length() > 0.6:
 			break
 		# right above or below a corner (on a bridge over it, say): skip it unless
 		# it's the top of a leap still to make
 		var leap_top := c.y - pos.y > 0.9 and _path_types.size() >= _path_i and _path_types[_path_i - 1] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK
-		if leap_top:
+		# ...or the bottom of a drop it still stands above (a wide body is
+		# still on the ledge with its middle past the corner)
+		var drop_foot := pos.y - c.y > 0.9 and is_on_floor()
+		if leap_top or drop_foot:
 			break
 		_path_i += 1
 	if _path_i >= _path.size():
@@ -679,6 +817,13 @@ func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
 	if on_link and rise > 0.9 and is_on_floor():
 		_leap(next)
 		return Vector3.ZERO
+	if rise < -0.9 and is_on_floor() and flat.length() < 1.5:
+		# stepping off a ledge: keep walking the way down until the floor
+		# gives, instead of turning back to a corner it is already over
+		var way := next - _path[_path_i - 1]
+		way.y = 0.0
+		if way.length() > 0.01:
+			return way.normalized()
 	if flat.length() < 0.01:
 		return dir
 	return flat.normalized()
@@ -710,6 +855,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				_set_state(S.WINDUP)
 				_eye_mat.set_shader_parameter("energy", 6.0)
 				Sfx.play_at("windup", global_position, -8.0, 1.2)
+				Game.fx.glint(weapon_tip(), WINDUP_HOT, 0.7)
 				return Vector3.ZERO
 			return dir * speed
 		"gunner":
@@ -726,6 +872,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 			if attack_cd <= 0.0 and dist < 34.0 and _has_los():
 				_set_state(S.WINDUP)
 				Sfx.play_at("windup", global_position, -4.0, 1.6)
+				Game.fx.glint(weapon_tip(), _eye_color, 0.8)
 				return Vector3.ZERO
 			return m
 		"brute":
@@ -738,6 +885,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 			if dist < 2.8 + radius and attack_cd <= 0.0:
 				_set_state(S.WINDUP)
 				Sfx.play_at("windup", global_position, -2.0, 0.7)
+				Game.fx.glint(weapon_tip(), WINDUP_HOT, 1.1)
 				return Vector3.ZERO
 			return dir * speed
 		"oni":
@@ -747,7 +895,10 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				Sfx.play("roar", 3.0, 0.6)
 				Game.hud_message.emit("%s IS ENRAGED" % display_name, Color(1, 0.2, 0.1), false)
 				_eye_mat.set_shader_parameter("albedo_color", Color(1, 0.2, 0.1))
-			if special_cd <= 0.0 and dist > 5.0:
+			# his leap, charge and volley wait until he is on your level, within
+			# a leap and with a clear line, as the brute's charge does: never
+			# across the pit
+			if special_cd <= 0.0 and dist > 5.0 and dist < SLAM_REACH and dy < SAME_LEVEL and _has_los():
 				special_cd = _rng.randf_range(3.5, 5.0) if enraged else _rng.randf_range(5.0, 7.0)
 				special_seq += 1
 				var pick := special_seq % 3
@@ -757,7 +908,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				elif pick == 1 or (pick == 0 and not enraged):
 					_set_state(S.SLAM)
 					velocity.y = 14.0
-					leap_vel = _to_player * minf(dist, 14.0) / 1.0 # aimed at the player, not the path
+					leap_vel = _to_player * minf(dist, SLAM_REACH) / 1.0 # aimed at the player, not the path
 					Sfx.play("roar", 0.0, 0.8)
 				else:
 					_set_state(S.CHARGE_WINDUP)
@@ -780,8 +931,9 @@ func _attack(dist: float, dir: Vector3) -> void:
 	match kind:
 		"grunt":
 			knock += fwd * 6.0
+			_strike(strike_reach(), -1.0)
 			Sfx.play_at("swing1", global_position, -4.0, 0.8)
-			if dist < 2.7 + radius and dy < 1.8 and fwd.dot(dir) > 0.3:
+			if dist < strike_reach() and dy < 1.8 and fwd.dot(dir) > 0.3:
 				p.take_damage(11.0 * damage_mult, global_position)
 			recover_time = 0.55
 			attack_cd = _rng.randf_range(0.9, 1.5)
@@ -794,13 +946,17 @@ func _attack(dist: float, dir: Vector3) -> void:
 				if shots > 1:
 					aim = aim.rotated(Vector3.UP, (i - 1) * 0.12)
 				Game.main.director.fire_bolt(true, origin, aim * 11.0, 12.0 * damage_mult, "bolt", self)
+			Game.fx.glint(weapon_tip(), Color(1.0, 0.85, 0.5), 1.0, 0.08)
 			Sfx.play_at("enemy_shot", global_position, 0.0)
 			Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
 			recover_time = 0.35
 			attack_cd = _rng.randf_range(2.2, 3.2)
 		"brute", "oni":
-			var reach := (3.6 if kind == "brute" else 4.6) + radius
+			var reach := strike_reach() if kind == "brute" else 4.6 + radius
 			knock += fwd * (5.0 if kind == "brute" else 8.0)
+			if kind == "brute":
+				_strike(reach, -0.55)
+				Game.fx.glint(global_position + fwd * reach * 0.8 + Vector3(0, 0.3, 0), Color(1.0, 0.6, 0.2), 1.8, 0.12)
 			Sfx.play_at("swing0", global_position, 0.0, 0.55)
 			Game.gore.sparks(global_position + fwd * reach * 0.8 + Vector3(0, 0.2, 0), Vector3.UP, 12)
 			if dist < reach and dy < 2.5 and fwd.dot(dir) > 0.2:
@@ -813,6 +969,37 @@ func _attack(dist: float, dir: Vector3) -> void:
 			recover_time = 0.85 if kind == "brute" else 0.7
 			attack_cd = _rng.randf_range(1.3, 2.0)
 	_set_state(S.RECOVER)
+
+
+## How far (flat, centre to centre) a grunt's or brute's blow reaches.
+func strike_reach() -> float:
+	return (BRUTE_REACH if kind == "brute" else GRUNT_REACH) + radius
+
+
+## The blow lands: the arms snap to the strike pose, the edge burns
+## white-hot and a red arc shows where the weapon cut (spec §4). `reach` is
+## how far past the body's centre the blow hits; the arc ends exactly there,
+## so standing outside it means you were missed. `tilt` leans it across the
+## body (negative: high on the weapon side), so it reads from the front too
+## instead of edge-on.
+func _strike(reach: float, tilt: float) -> void:
+	var sp := _strike_pose()
+	arm_l.rotation = sp[0]
+	arm_r.rotation = sp[1]
+	torso_pivot.rotation.x = sp[2]
+	_set_weapon_heat(1.0)
+	var fwd := Vector3(sin(face_yaw), 0, cos(face_yaw))
+	var side := Vector3(cos(face_yaw), 0, -sin(face_yaw)) # toward the weapon arm
+	var shoulder := global_position + Vector3(0, height * 0.74, 0) + fwd * radius * 0.4
+	if kind == "grunt":
+		shoulder += side * 0.3 * height / 1.8
+	Game.fx.enemy_swing(shoulder, fwd, swing_radius(reach), tilt, SWING_COLOR)
+
+
+## The swing arc's radius from the shoulder (which sits radius × 0.4 ahead
+## of the centre) that makes its far edge land at `reach`.
+func swing_radius(reach: float) -> float:
+	return reach - radius * 0.4
 
 
 func _slam_land() -> void:
@@ -878,6 +1065,10 @@ func take_hit(dmg: float, source: String, dir: Vector3, headshot := false, poise
 	var flat := Vector3(dir.x, 0, dir.z)
 	flat = flat.normalized() if flat.length() > 0.01 else Vector3.ZERO
 	knock += flat * knockback / mass
+	if source != "burn":
+		# the body recoils from the blow (looks only); heavy bodies rock less
+		_flinch = maxf(_flinch, clampf(final / 40.0, 0.35, 1.0) / sqrt(mass))
+		_flinch_twist = clampf(flat.dot(Vector3(cos(face_yaw), 0, -sin(face_yaw))), -1.0, 1.0)
 	var hit_pos := global_position + Vector3(0, head_y + 0.05 if headshot else height * 0.6, 0)
 	Game.fx.damage_number(global_position + Vector3(0, height + 0.25, 0), final, headshot, armored)
 	if armored:
@@ -1275,21 +1466,38 @@ func _animate(delta: float, spd: float) -> void:
 	match state:
 		S.WINDUP:
 			var w := clampf(state_t / _windup_time(), 0.0, 1.0)
-			if kind == "gunner":
-				t_arm_r = Vector3(-PI * 0.5, 0, 0)
-				if _glow_mat:
-					_glow_mat.set_shader_parameter("energy", 1.0 + w * 5.0)
-			else:
-				t_arm_l = Vector3(-2.6 * w, 0, 0.3 * w)
-				t_arm_r = Vector3(-2.6 * w, 0, -0.3 * w)
-				t_torso = -0.25 * w
+			_set_weapon_heat(w)
+			match kind:
+				"gunner":
+					t_arm_r = Vector3(-PI * 0.5, 0, 0)
+				"grunt":
+					# the blade goes up over the right shoulder, the free hand guards
+					t_arm_r = Vector3(-2.75 * w, 0, -0.35 * w)
+					t_arm_l = Vector3(-0.9 * w, 0, 0.25 * w)
+					t_torso = -0.3 * w
+				"brute":
+					# the club comes up two-handed, high over the head
+					t_arm_l = Vector3(-2.9 * w, 0, -0.35 * w)
+					t_arm_r = Vector3(-2.9 * w, 0, -0.1 * w)
+					t_torso = -0.35 * w
+				_:
+					t_arm_l = Vector3(-2.6 * w, 0, 0.3 * w)
+					t_arm_r = Vector3(-2.6 * w, 0, -0.3 * w)
+					t_torso = -0.25 * w
 		S.RECOVER:
-			if state_t < 0.2 and kind != "gunner":
+			if state_t < STRIKE_HOLD and kind in ["grunt", "brute"]:
+				# the follow-through: held where the blow landed (_strike_pose)
+				var sp := _strike_pose()
+				t_arm_l = sp[0]
+				t_arm_r = sp[1]
+				t_torso = sp[2]
+				_set_weapon_heat(1.0 - state_t / STRIKE_HOLD)
+			elif state_t < 0.2 and kind != "gunner":
 				t_arm_l = Vector3(-1.1, 0, 0)
 				t_arm_r = Vector3(-1.1, 0, 0)
 				t_torso = 0.45
-			elif kind == "gunner" and _glow_mat:
-				_glow_mat.set_shader_parameter("energy", 1.0)
+			elif state_t < 0.1:
+				_set_weapon_heat(0.0)
 		S.STAGGER:
 			t_hips = _leg_len * 0.55
 			t_leg_l = -1.3
@@ -1322,5 +1530,7 @@ func _animate(delta: float, spd: float) -> void:
 	leg_r.rotation.x = lerpf(leg_r.rotation.x, t_leg_r, k)
 	arm_l.rotation = arm_l.rotation.lerp(t_arm_l, k)
 	arm_r.rotation = arm_r.rotation.lerp(t_arm_r, k)
-	torso_pivot.rotation.x = lerpf(torso_pivot.rotation.x, t_torso, k)
+	torso_pivot.rotation.x = lerpf(torso_pivot.rotation.x, t_torso - 0.55 * _flinch, k)
+	torso_pivot.rotation.y = 0.45 * _flinch_twist * _flinch
 	hips.position.y = lerpf(hips.position.y, t_hips, k)
+	_flinch = maxf(0.0, _flinch - delta * 6.0)

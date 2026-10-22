@@ -9,7 +9,7 @@ extends Node3D
 
 const ORB_POOL := 64
 ## Pools whose size doesn't depend on the quality preset.
-const FIXED := {"beam": 16, "trail": 8, "boom": 12, "light": 4}
+const FIXED := {"beam": 16, "trail": 8, "boom": 12, "light": 4, "swing": 12, "glint": 12, "cut": 12}
 
 var _numbers: Array = [] # live damage numbers, oldest first
 var _number_free: Array = []
@@ -31,6 +31,7 @@ var _hit_flash_mat: ShaderMaterial
 var _boom_mat: ShaderMaterial
 var _quad: QuadMesh # 1x1, scaled per node
 var _trail_mesh: ArrayMesh
+var _swing_mesh: ArrayMesh # an enemy's blow: a unit arc from overhead to forward-down
 var _rng := RandomNumberGenerator.new()
 
 
@@ -53,6 +54,7 @@ func _ready() -> void:
 	_quad = QuadMesh.new()
 	_quad.size = Vector2.ONE
 	_trail_mesh = arc_mesh(1.25, 0.6, 0.28, -2.75, -0.4)
+	_swing_mesh = arc_mesh(1.0, 1.0, 0.3, 1.9, -0.5)
 	_build_pools()
 
 
@@ -135,6 +137,20 @@ func _new_temp(kind: String) -> Dictionary:
 			n.add_child(ring)
 			tp.m = mat
 			tp.ring = ring_mat
+		"swing":
+			var mat := Psx.fx(Color.WHITE, null, true, false, false, 2.4)
+			mat.set_shader_parameter("use_vertex_color", true)
+			mat.set_shader_parameter("reveal", 0.0)
+			var mi := MeshInstance3D.new()
+			mi.material_override = mat
+			mi.mesh = _swing_mesh
+			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			n = mi
+			tp.m = mat
+		"glint", "cut":
+			var mat := Psx.fx(Color.WHITE, TexGen.get_tex("star" if kind == "glint" else "glow"), true, true, false, 2.5)
+			n = _pooled_quad(mat)
+			tp.m = mat
 		"trail":
 			var mat := Psx.fx(Color.WHITE, null, true, false, true, 2.0)
 			mat.set_shader_parameter("use_vertex_color", true)
@@ -462,6 +478,45 @@ func slash_trail(parent: Node3D, variant: int, color := Color(0.8, 1.0, 1.0)) ->
 	tp.life = 0.17
 
 
+## An enemy's blow: a red arc in the swing's plane, from over the shoulder
+## at `origin` down to forward-low, `radius` metres out, drawn on in 0.06 s
+## and gone in 0.2 s. `tilt` leans the plane across the body (radians).
+func enemy_swing(origin: Vector3, fwd: Vector3, radius: float, tilt: float, color: Color) -> void:
+	var tp := _take("swing")
+	var mi: MeshInstance3D = tp.n
+	var f := Vector3(fwd.x, 0, fwd.z).normalized()
+	var b := Basis(f, Vector3.UP, f.cross(Vector3.UP)).rotated(f, tilt)
+	mi.global_transform = Transform3D(b.scaled(Vector3.ONE * radius), origin)
+	var mat: ShaderMaterial = tp.m
+	mat.set_shader_parameter("color", color)
+	mat.set_shader_parameter("reveal", 0.0)
+	mat.set_shader_parameter("intensity", 2.6)
+	tp.life = 0.2
+
+
+## A telegraph glint: a star that pops at `pos` and shrinks away (an enemy's
+## weapon catching the light as the windup starts, a muzzle flash).
+func glint(pos: Vector3, color: Color, size := 0.8, life := 0.22) -> void:
+	var tp := _take("glint")
+	tp.n.position = pos
+	tp.s = Vector2(size, size)
+	tp.n.scale = Vector3(size, size, 1.0)
+	tp.m.set_shader_parameter("color", color)
+	tp.life = life
+
+
+## The katana biting in: a bright streak across the cut at `pos`, flat for
+## a side cut, upright for the overhead chop (it always faces the camera).
+func cut_flash(pos: Vector3, upright: bool, color := Color(1.0, 0.95, 0.85)) -> void:
+	var tp := _take("cut")
+	tp.n.position = pos
+	tp.s = Vector2(0.22, 1.7) if upright else Vector2(1.7, 0.22)
+	tp.n.scale = Vector3(tp.s.x, tp.s.y, 1.0)
+	tp.m.set_shader_parameter("color", color)
+	tp.m.set_shader_parameter("intensity", 3.0)
+	tp.life = 0.12
+
+
 ## Glowing line on the floor showing where a dash will go. Returns the node so
 ## the caller can steer or remove it.
 func telegraph_line(from: Vector3, dir: Vector3, length: float, duration: float, color: Color) -> Node3D:
@@ -597,6 +652,15 @@ func _process(delta: float) -> void:
 			"trail":
 				tp.m.set_shader_parameter("reveal", minf(1.0, k * 3.0))
 				tp.m.set_shader_parameter("intensity", 2.0 * (1.0 - k * k))
+			"swing":
+				tp.m.set_shader_parameter("reveal", minf(1.0, k * 3.5))
+				tp.m.set_shader_parameter("intensity", 2.6 * (1.0 - k * k))
+			"glint":
+				var g := (k / 0.2 if k < 0.2 else 1.0 - (k - 0.2) / 0.8) * 1.3
+				tp.n.scale = Vector3(tp.s.x * g, tp.s.y * g, 1.0)
+			"cut":
+				tp.n.scale = Vector3(tp.s.x * (0.7 + 0.5 * k), tp.s.y * (1.0 - 0.7 * k), 1.0)
+				tp.m.set_shader_parameter("intensity", 3.0 * (1.0 - k))
 			"beam":
 				tp.m.set_shader_parameter("intensity", 2.0 * (1.0 - k))
 				tp.n.scale = Vector3(1.0 - k * 0.8, 1.0, 1.0 - k * 0.8)

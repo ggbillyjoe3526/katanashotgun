@@ -11,6 +11,12 @@ extends Node3D
 const GROUND_SPAWN_REACH := 3.0
 const PICKUP_TOP := 12.0 # soda cans sit no higher than this (metres)
 const PICKUP_CLEAR := 2.2 # ...with this much open air above them
+## A boss drops in this far from the player (metres, preferred first)...
+const BOSS_DROP_DIST: Array[float] = [14.0, 11.0, 17.0, 8.0, 20.0, 6.0]
+## ...at these bearings off the player's view (degrees, in sight first)...
+const BOSS_DROP_BEARINGS: Array[float] = [0, 15, -15, 30, -30, 45, -45, 60, -60, 80, -80, 100, -100, 120, -120, 150, -150, 180]
+const BOSS_DROP_SKY := 9.5 # ...with open air above for the 7-9 m drop
+const BOSS_DROP_VIEW := 45.0 # bearings this close to the view count as in sight
 
 var map_name := "UNNAMED"
 var half := 32.0
@@ -318,6 +324,68 @@ func spawn_clearance(p: Vector3) -> float:
 		if absf(g.y - p.y) < 0.5 and Vector2(g.x - p.x, g.z - p.z).length() <= GROUND_SPAWN_REACH:
 			return 0.3
 	return 9.0
+
+
+## Where a boss drops in (spec §5.1): 6-20 m from the player with open sky
+## above and nothing between it and their eye, so the arrival is something
+## they watch, never something they hunt for. In order: their own floor in
+## view (it can walk straight at them), any floor in view (the north deck
+## seen from the pit), then the same two all the way round, and the map's
+## `boss_spawn` only when nothing fits. Bearings nearest the middle of the
+## view win. `room` is the flat floor the body needs all round. Uses the
+## player's pose only, no dice.
+func boss_drop_point(eye: Vector3, feet: Vector3, facing: Vector3, room: float) -> Vector3:
+	var space := get_world_3d().direct_space_state
+	var under := _floor_hit(space, feet + Vector3(0, 0.5, 0), 12.0)
+	var fwd := Vector3(facing.x, 0, facing.z)
+	fwd = fwd.normalized() if fwd.length() > 0.01 else Vector3.FORWARD
+	for pass_i in 4:
+		var in_view := pass_i < 2
+		var own_floor := pass_i % 2 == 0
+		if own_floor and under.is_empty():
+			continue # mid-air: no floor of their own to match
+		for b in BOSS_DROP_BEARINGS:
+			if (absf(b) <= BOSS_DROP_VIEW) != in_view:
+				continue
+			var d := fwd.rotated(Vector3.UP, deg_to_rad(b))
+			for r in BOSS_DROP_DIST:
+				var c := _boss_drop_at(space, Vector3(feet.x, 0, feet.z) + d * r, eye, room)
+				if c != Vector3.INF and (not own_floor or absf(c.y - under.position.y) < 0.5):
+					return c
+	return boss_spawn
+
+
+## The first floor straight below `from`, within `depth` metres.
+func _floor_hit(space: PhysicsDirectSpaceState3D, from: Vector3, depth: float) -> Dictionary:
+	return space.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - Vector3(0, depth, 0), 1))
+
+
+## Where a boss dropped over `xz` would land, or Vector3.INF if it can't:
+## outside the map, no floor, a ledge, wall or prop within `room`, off the
+## navmesh, or out of the player's line of sight.
+func _boss_drop_at(space: PhysicsDirectSpaceState3D, xz: Vector3, eye: Vector3, room: float) -> Vector3:
+	var lim := half - 2.0 - room
+	if absf(xz.x) > lim or absf(xz.z) > lim:
+		return Vector3.INF
+	var sky := maxf(eye.y, 0.0) + BOSS_DROP_SKY
+	var hit := _floor_hit(space, Vector3(xz.x, sky, xz.z), sky - floor_base + 1.0)
+	if hit.is_empty():
+		return Vector3.INF
+	var c: Vector3 = hit.position # the topmost surface there, so open air above for the drop
+	for o in [Vector3.RIGHT, Vector3.LEFT, Vector3.FORWARD, Vector3.BACK]:
+		var h := _floor_hit(space, c + o * room + Vector3(0, 2.5, 0), 3.0)
+		if h.is_empty() or absf(h.position.y - c.y) > 0.3:
+			return Vector3.INF
+	if nav_region != null:
+		var map := get_world_3d().navigation_map
+		if NavigationServer3D.map_get_iteration_id(map) != 0:
+			var q := NavigationServer3D.map_get_closest_point(map, c)
+			if Vector2(q.x - c.x, q.z - c.z).length() > 0.5 or absf(q.y - c.y) > 1.0:
+				return Vector3.INF
+	var chest := c + Vector3(0, 1.2, 0)
+	if not space.intersect_ray(PhysicsRayQueryParameters3D.create(eye, chest, 1)).is_empty():
+		return Vector3.INF
+	return c
 
 
 # ---------------------------------------------------------------- navigation

@@ -73,6 +73,26 @@ const PLUNGE_TAG := "SAKAHOKO DROP"
 const FINISHER_HEIGHT_REACH := 1.7 # above/below the enemy's middle, as the katana
 const FINISHER_DIST_WEIGHT := 0.05 # radians of aim one metre of distance is worth
 const FINISHER_SIGHT_HEIGHT := 0.8 # the wall check aims this high up the body
+# hit feel (spec §3.2, §3.3, §9.8): hitstop per weapon, more on a kill, and
+# the view jolting along the cut as it bites
+const KATANA_HITSTOP := 0.06
+const KATANA_HITSTOP_PER_ENEMY := 0.012 # up to 4 enemies
+const SHOTGUN_HITSTOP := 0.05
+const KILL_HITSTOP := 0.02
+const HIT_KICK := 0.016 # radians
+# aim assist (Settings.aim_assist, spec §3.9): a slash pulls you onto a foe
+# just out of reach near the crosshair, and a blast that just misses a body
+# bends onto it. Neither touches the seeded dice.
+const ASSIST_REACH := 5.4 # metres past the foe's body (the katana reaches 3.4)
+const ASSIST_CONE := PI * 30.0 / 180.0
+const ASSIST_STANDOFF := 1.3 # the lunge stops this far from the foe's body
+const ASSIST_LUNGE_TIME := 0.09
+const ASSIST_LUNGE_MAX_SPEED := 26.0
+const ASSIST_TURN := PI * 8.0 / 180.0 # most the view turns toward the foe
+const ASSIST_TURN_SPEED := 1.8 # radians per second
+const ASSIST_SHOT_RANGE := 30.0
+const ASSIST_SHOT_MARGIN := 0.6 # metres off the body a blast still bends onto it
+const ASSIST_SHOT_MAX := PI * 4.0 / 180.0 # ...but never more than this far off the crosshair
 
 var head: Node3D
 var cam: Camera3D
@@ -117,6 +137,10 @@ var land_dip := 0.0
 var _was_on_floor := true
 var _prev_vy := 0.0
 var _knock := Vector3.ZERO
+var _hit_kick := Vector2.ZERO # yaw, pitch: the view's jolt from a landed cut
+var _lunge_t := 0.0 # aim assist: seconds left of the pull onto a foe
+var _lunge_vel := Vector3.ZERO
+var _assist_turn := 0.0 # aim assist: yaw still to turn toward that foe
 var _hurt_t := 0.0
 var _input_dir := Vector2.ZERO
 var _attract_t := 0.0
@@ -157,10 +181,12 @@ var _gk_perch := Vector3.ZERO # plunge: where the blade goes in, on the foe
 var _gk_dive := 0.2 # plunge: seconds of the dive
 var _room_q: PhysicsShapeQueryParameters3D # "does the body fit here?", reused
 var _los_q: PhysicsRayQueryParameters3D # plunge line of sight, reused
+var _assist_q := PhysicsRayQueryParameters3D.new() # aim assist: what the bent blast meets first, reused
 
 
 func _ready() -> void:
 	_sight_query.collision_mask = 1 # world only
+	_assist_q.collision_mask = 1 | 4 # world and enemies
 	collision_layer = 2
 	collision_mask = 1
 	floor_max_angle = deg_to_rad(50)
@@ -226,8 +252,13 @@ func _process(delta: float) -> void:
 	# a climb dips the view toward the ledge and rolls it a touch
 	var climb := clampf(climb_t / climb_len, 0.0, 1.0) if climb_t >= 0.0 else 0.0
 	var climb_env := sin(climb * PI)
-	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh - 0.14 * climb_env + 0.1 * vm.drink_tilt()
-	cam.rotation.y = sin(_shake_t * 1.7 + 2.0) * 0.04 * sh
+	_hit_kick = _hit_kick.lerp(Vector2.ZERO, 1.0 - exp(-18.0 * Game.real_dt))
+	if _assist_turn != 0.0:
+		var step := signf(_assist_turn) * minf(absf(_assist_turn), ASSIST_TURN_SPEED * Game.real_dt)
+		yaw += step
+		_assist_turn -= step
+	cam.rotation.x = sin(_shake_t * 1.3) * 0.04 * sh - 0.14 * climb_env + 0.1 * vm.drink_tilt() + _hit_kick.y * Settings.shake
+	cam.rotation.y = sin(_shake_t * 1.7 + 2.0) * 0.04 * sh + _hit_kick.x * Settings.shake
 	tilt = lerpf(tilt, -_input_dir.x * 0.035, 1.0 - exp(-8.0 * delta))
 	cam.rotation.z = tilt + sin(_shake_t * 1.1 + 4.0) * 0.06 * sh + 0.045 * climb_env
 	cam.h_offset = sin(_shake_t * 2.1) * 0.08 * sh
@@ -330,6 +361,14 @@ func _physics_process(delta: float) -> void:
 			_dash_cut()
 		if dash_t <= 0.0:
 			velocity = dash_dir * WALK_SPEED * 1.15
+	elif _lunge_t > 0.0:
+		# aim assist: the slash's short pull onto its foe, then walking pace
+		_lunge_t -= delta
+		if not is_on_floor():
+			velocity.y -= GRAVITY * delta
+		var lv := _lunge_vel if _lunge_t > 0.0 else _lunge_vel.normalized() * WALK_SPEED
+		velocity.x = lv.x
+		velocity.z = lv.z
 	else:
 		if not is_on_floor():
 			velocity.y -= GRAVITY * delta
@@ -376,7 +415,8 @@ func _physics_process(delta: float) -> void:
 
 	for pad in Game.arena.jump_pads:
 		var d := Vector2(global_position.x - pad.pos.x, global_position.z - pad.pos.z).length()
-		if d < pad.r and global_position.y < pad.pos.y + 0.6 and velocity.y <= 0.5:
+		# on the pad's own floor: a pad on a catwalk never fires from the roof under it
+		if d < pad.r and absf(global_position.y - pad.pos.y) < 0.6 and velocity.y <= 0.5:
 			velocity = pad.launch
 			jumps_left = 1
 			_pad_launched = true
@@ -421,6 +461,7 @@ func _physics_process(delta: float) -> void:
 # ---------------------------------------------------------------- movement
 func _start_dash(wish: Vector3) -> void:
 	dash_charges -= 1.0
+	_lunge_t = 0.0
 	var d := wish
 	if d.length() < 0.1:
 		d = -global_basis.z
@@ -503,6 +544,7 @@ func _dash_cut() -> void:
 			var killed: bool = e.take_hit(dmg, "dashcut", dash_dir, false, 30.0, 5.0)
 			Sfx.play("slice", -4.0, 1.2)
 			Game.hitstop(0.03)
+			Game.hud.hit_confirm("kill" if killed else "hit")
 			if killed:
 				add_cells(1)
 
@@ -559,6 +601,13 @@ func _slash() -> void:
 		if flat.length() > 0.4 and fwd_flat.angle_to(flat.normalized()) > half:
 			continue
 		hits.append(e)
+	if hits.is_empty() and Settings.aim_assist:
+		# aim assist: a foe just out of reach near the crosshair is still cut,
+		# and the slash pulls you onto it
+		var pick := assist_lunge_pick(origin, fwd_flat, Game.enemy_list, reach)
+		if pick != null and _clear_line(origin, pick.global_position + Vector3(0, pick.height * 0.55, 0)):
+			hits.append(pick)
+			_lunge_onto(pick)
 	hits.sort_custom(func(a, b): return a.global_position.distance_squared_to(global_position) < b.global_position.distance_squared_to(global_position))
 
 	var killed := 0
@@ -573,14 +622,19 @@ func _slash() -> void:
 			e.ignite(1)
 		elif blaze:
 			e.ignite(1)
+		var at := _cut_point(e, origin)
 		if e.take_hit(d, source, hit_dir, false, poise, 4.0):
 			killed += 1
+		Game.fx.cut_flash(at, combo_step == 2)
 	if hits.size() > 0:
 		Sfx.play("slice", -1.0)
 		if heavy:
 			Sfx.play("slam", -6.0, 1.4)
-		Game.hitstop(0.045 + 0.012 * mini(hits.size(), 4) + (0.02 if heavy else 0.0))
+		Game.hitstop(KATANA_HITSTOP + KATANA_HITSTOP_PER_ENEMY * mini(hits.size(), 4) + (0.02 if heavy else 0.0) + (KILL_HITSTOP if killed > 0 else 0.0))
 		add_trauma(0.32 if heavy else 0.22)
+		# the view jolts along the cut: right, left, then down for the chop
+		_hit_kick = Vector2(-HIT_KICK if combo_step == 0 else (HIT_KICK if combo_step == 1 else 0.0), -HIT_KICK * 1.4 if combo_step == 2 else 0.0)
+		Game.hud.hit_confirm("kill" if killed > 0 else "hit")
 		if Game.rank("chimatsuri") > 0:
 			_blood_heal(float(Game.rank("chimatsuri") * hits.size()))
 		if Game.boost_flag("katana_heal"): # Akaname Red (a soda can)
@@ -608,6 +662,102 @@ func _slash() -> void:
 		if slash_count % maxi(1, every) == 0 or heavy:
 			Game.main.director.fire_bolt(false, origin + fwd * 0.8, fwd * 26.0, 40.0 + 15.0 * Game.rank("wave"), "wave")
 			Sfx.play("wave_blade", -4.0)
+
+
+## Where the blade meets a body: its middle, on the side facing the cut.
+func _cut_point(e: Enemy, from: Vector3) -> Vector3:
+	var mid := e.global_position + Vector3(0, e.height * 0.6, 0)
+	var back := Vector3(from.x - mid.x, 0, from.z - mid.z)
+	return mid + back.normalized() * e.radius if back.length() > 0.01 else mid
+
+
+## Aim assist: the foe a slash that hit nobody pulls you onto. It must be
+## past the katana's reach but within ASSIST_REACH of its body, within
+## ASSIST_CONE of where you look (flat), at a height the katana could cut,
+## and not a boss mid-teleport. Nearest to the crosshair wins, a metre of
+## distance weighing like FINISHER_DIST_WEIGHT radians. No wall check here.
+static func assist_lunge_pick(origin: Vector3, fwd_flat: Vector3, enemies: Array, reach: float) -> Enemy:
+	var best: Enemy = null
+	var best_score := INF
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead or not e.visible:
+			continue
+		var center: Vector3 = e.global_position + Vector3(0, e.height * 0.5, 0)
+		var to := center - origin
+		var flat := Vector3(to.x, 0, to.z)
+		var d: float = flat.length() - e.radius
+		if d <= reach or d > ASSIST_REACH or flat.length() < 0.01:
+			continue
+		if absf(to.y) > e.height * 0.5 + 1.7:
+			continue
+		var ang := fwd_flat.angle_to(flat.normalized())
+		if ang > ASSIST_CONE:
+			continue
+		var score := ang + d * FINISHER_DIST_WEIGHT
+		if score < best_score:
+			best_score = score
+			best = e
+	return best
+
+
+## The slash's pull onto `e`: a quick dash-like move that stops just short
+## of its body, and the view eased a few degrees toward it.
+func _lunge_onto(e: Enemy) -> void:
+	var to := e.global_position - global_position
+	to.y = 0.0
+	var gap := to.length() - e.radius - ASSIST_STANDOFF
+	if gap > 0.05:
+		_lunge_vel = to.normalized() * minf(gap / ASSIST_LUNGE_TIME, ASSIST_LUNGE_MAX_SPEED)
+		_lunge_t = ASSIST_LUNGE_TIME
+		fov_kick = maxf(fov_kick, 5.0)
+	var want := atan2(-to.x, -to.z) # the yaw that looks straight at it
+	_assist_turn = clampf(wrapf(want - yaw, -PI, PI), -ASSIST_TURN, ASSIST_TURN)
+
+
+## Aim assist for the shotgun: if the crosshair just misses a foe's body
+## (by less than ASSIST_SHOT_MARGIN metres, at most ASSIST_SHOT_MAX), the
+## direction that puts the blast's centre half a body-width inside it, at
+## the height you aimed (clamped between hips and head), so a headshot still
+## means aiming at the head. Returns `fwd` unchanged when nothing is near,
+## or when the crosshair is already on someone. No wall check here.
+static func assist_shot_dir(origin: Vector3, fwd: Vector3, enemies: Array) -> Vector3:
+	var best_off := INF
+	var best := fwd
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead or not e.visible:
+			continue
+		var base: Vector3 = e.global_position
+		var flat := Vector3(base.x - origin.x, 0, base.z - origin.z)
+		var fd := flat.length()
+		if fd > ASSIST_SHOT_RANGE or fd < 0.5:
+			continue
+		var fwd_flat := Vector2(fwd.x, fwd.z).length()
+		if fwd_flat < 0.05 or fwd.dot(flat) <= 0.0:
+			continue
+		# the aim ray's height where it passes the foe, kept on the body
+		var y := origin.y + fwd.y / fwd_flat * fd
+		y = clampf(y, base.y + 0.3, base.y + e.head_y + 0.05)
+		var to := Vector3(base.x, y, base.z) - origin
+		var dist := to.length()
+		var ang := fwd.angle_to(to)
+		var body := atan(e.radius / dist)
+		var off := ang - body
+		if off <= 0.0:
+			return fwd # already on a body: no bend at all
+		if off > minf(atan(ASSIST_SHOT_MARGIN / dist), ASSIST_SHOT_MAX):
+			continue
+		if off < best_off:
+			best_off = off
+			var t := (off + body * 0.5) / ang
+			best = fwd.slerp(to.normalized(), clampf(t, 0.0, 1.0))
+	return best
+
+
+## Nothing solid (world only) between two points.
+func _clear_line(a: Vector3, b: Vector3) -> bool:
+	_sight_query.from = a
+	_sight_query.to = b
+	return get_world_3d().direct_space_state.intersect_ray(_sight_query).is_empty()
 
 
 ## Chimatsuri Steel: katana healing; past full HP it banks toward cells.
@@ -727,6 +877,8 @@ func _find_plunge_target() -> Enemy:
 ## Picks a finisher from the situation and starts it.
 func _start_glory(e: Enemy, plunge := false) -> void:
 	_set_finisher_target(null)
+	_lunge_t = 0.0
+	_assist_turn = 0.0
 	dash_t = 0.0 # a dash cut short by the finisher doesn't resume after it
 	if not e.is_boss:
 		Game.executions += 1 # the ONIKIRI on a broken boss is not a glory kill
@@ -1062,6 +1214,16 @@ func _fire() -> void:
 	var space := get_world_3d().direct_space_state
 	var origin := cam.global_position
 	var basis := cam.global_basis
+	if Settings.aim_assist:
+		var fwd0 := -basis.z
+		var bent := assist_shot_dir(origin, fwd0, Game.enemy_list)
+		if not bent.is_equal_approx(fwd0):
+			# only onto a foe the bent blast would really reach first
+			_assist_q.from = origin
+			_assist_q.to = origin + bent * ASSIST_SHOT_RANGE
+			var res := space.intersect_ray(_assist_q)
+			if not res.is_empty() and res.collider is Enemy:
+				basis = Basis(Quaternion(fwd0, bent)) * basis
 	var pellets := 10 * (2 if overload else 1)
 	# Hachiman Focus: a tight choke that keeps full strength further out
 	var focus := Game.rank("hachiman") > 0
@@ -1140,8 +1302,11 @@ func _fire() -> void:
 		if t.take_hit(f.dmg, "shotgun", (t.global_position - f.from).normalized(), false, f.dmg * stagger_mult, kb * 0.5):
 			kills += 1
 	if per.size() > 0:
-		Game.hitstop(0.035)
-	if per.size() > 0:
+		Game.hitstop(SHOTGUN_HITSTOP + (KILL_HITSTOP if kills > 0 else 0.0))
+		Game.hud.hit_confirm("kill" if kills > 0 else ("head" if any_head else "hit"))
+		for e in per:
+			# a white-hot spark where the blast struck each body
+			Game.fx.glint(_cut_point(e, origin), Color(0.75, 0.9, 1.0), 0.9, 0.1)
 		var first: Enemy = per.keys()[0]
 		Sfx.play_at("zap", first.global_position + Vector3(0, first.height * 0.6, 0), -2.0)
 	if any_head:

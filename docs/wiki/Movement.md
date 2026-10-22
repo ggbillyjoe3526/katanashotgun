@@ -6,10 +6,10 @@ You're fast. Stand still and the horde catches you.
 | --- | --- | --- |
 | Run | W A S D | 8.8 m/s, quick to start and stop |
 | Jump | Space | your feet rise about 1.75 m |
-| Double jump | Space in the air | about 4 m at its top, with a small push toward the keys you're holding (none held: straight up). It comes back when you land, use the geyser pad or climb |
+| Double jump | Space in the air | about 4 m at its top, with a small push toward the keys you're holding (none held: straight up). It comes back when you land, use a geyser pad or climb |
 | Dash | Shift | a 0.2 s burst at 21 m/s. **You can't be hurt** for 0.3 s |
 | Ledge climb | jump at a ledge and hold forward | grab and pull yourself up |
-| Geyser pad | walk onto it (on the metro platform at the bottom of the shaft) | launches you up onto the bridge |
+| Geyser pad | walk onto it (there are 9, on every level of [the map](The-Map#geyser-pads)) | launches you straight up, about 9 m (the metro one about 15 m, up to the bridge). Steer with the movement keys; hold nothing and you land back on the pad |
 
 ## Dashing
 

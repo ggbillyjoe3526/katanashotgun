@@ -92,6 +92,49 @@ func test_ground_spawns_walk_out() -> void:
 		assert_lt(arena.spawn_clearance(g), 1.0)
 
 
+func test_geyser_pads_on_every_level() -> void:
+	# owner, 2026-10-22: pads on every level, not only the metro platform
+	var levels := {}
+	for jp in arena.jump_pads:
+		levels[snappedf(jp.pos.y, 0.1)] = true
+	for y in [WellMap.FLOOR, WellMap.SERVICE, 0.0, WellMap.DECK]:
+		assert_true(levels.has(y), "a geyser pad at %s m" % y)
+
+
+func test_geyser_pads_stand_clear() -> void:
+	var space := arena.get_world_3d().direct_space_state
+	var shape := CylinderShape3D.new()
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = shape
+	q.collision_mask = 1
+	for jp in arena.jump_pads:
+		var p: Vector3 = jp.pos
+		var r: float = jp.r
+		# the whole pad stands on its own floor (plates aside: its cell is bare)
+		for k in 8:
+			var e := p + Vector3(r, 0, 0).rotated(Vector3.UP, k * TAU / 8.0)
+			assert_almost_eq(arena.floor_height_at(e.x, e.z, p.y + 0.5), p.y, 0.1, "pad %s is on one floor" % p)
+		# open air over its middle for the whole launch and a body's height
+		# above that (the metro pad's edge is under the bridge it throws you to)
+		var rise: float = jp.launch.y * jp.launch.y / (2.0 * Player.GRAVITY)
+		shape.radius = r * 0.5
+		shape.height = rise + 2.0
+		q.transform = Transform3D(Basis.IDENTITY, p + Vector3(0, 0.3 + shape.height * 0.5, 0))
+		assert_eq(space.intersect_shape(q, 1).size(), 0, "nothing over the pad at %s" % p)
+		# never under the roof of the edge walls: the launch can't carry anyone off the map
+		assert_lt(p.y + rise + Player.DOUBLE_JUMP_VEL * Player.DOUBLE_JUMP_VEL / (2.0 * Player.GRAVITY), 26.0, "pad %s stays under the edge walls" % p)
+		# enemies arrive and leap clear of it
+		for sp in arena.spawn_points:
+			if absf(sp.y - p.y) < 2.5:
+				assert_gt(Vector2(sp.x - p.x, sp.z - p.z).length(), 3.0, "pad %s is clear of spawn %s" % [p, sp])
+		for l in arena.nav_links:
+			for end in l:
+				if absf(end.y - p.y) < 2.5:
+					assert_gt(Vector2(end.x - p.x, end.z - p.z).length(), 2.5, "pad %s is clear of leap spot %s" % [p, end])
+		assert_gt(Vector2(arena.boss_spawn.x - p.x, arena.boss_spawn.z - p.z).length(), 5.0, "pad %s is clear of the boss" % p)
+		assert_gt(Vector2(arena.player_spawn.x - p.x, arena.player_spawn.z - p.z).length(), 4.0, "pad %s is clear of the start" % p)
+
+
 func test_traffic_follows_the_quality_preset() -> void:
 	Quality.apply("low")
 	assert_eq(arena.backdrop._cars.visible_instance_count, Quality.cap("traffic"))
@@ -118,3 +161,44 @@ func test_backdrop_traffic_stays_out_of_global_illumination() -> void:
 		func(m): return (m as MultiMeshInstance3D).multimesh.instance_count > 0 and m.custom_aabb.size.x > 300.0)
 	assert_eq(movers.size(), 1, "the traffic MultiMesh")
 	assert_eq(movers[0].gi_mode, GeometryInstance3D.GI_MODE_DISABLED)
+
+
+## Where a boss would drop in for a player standing at `feet` facing `facing`
+## (spec §5.1), with the eye where the camera sits.
+func _drop(feet: Vector3, facing: Vector3, room := 1.0) -> Vector3:
+	return arena.boss_drop_point(feet + Vector3(0, 1.6, 0), feet, facing, room)
+
+
+func _in_sight(feet: Vector3, at: Vector3) -> bool:
+	var q := PhysicsRayQueryParameters3D.create(feet + Vector3(0, 1.6, 0), at + Vector3(0, 1.2, 0), 1)
+	return arena.get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+
+
+func test_a_boss_drops_in_where_you_are_looking() -> void:
+	# William waited and looked around for KUROKAGE: it always dropped on the
+	# north roof, often behind him
+	for facing in [Vector3(0, 0, -1), Vector3(1, 0, -1).normalized(), Vector3(-1, 0, 0)]:
+		var feet := arena.player_spawn
+		var at := _drop(feet, facing)
+		var flat := Vector3(at.x - feet.x, 0, at.z - feet.z)
+		assert_ne(at, arena.boss_spawn, "not the fixed spot, facing %s" % facing)
+		assert_between(flat.length(), 6.0, 20.0, "near, facing %s" % facing)
+		assert_lt(rad_to_deg(flat.angle_to(facing)), Arena.BOSS_DROP_VIEW + 0.1, "in view, facing %s" % facing)
+		assert_almost_eq(at.y, arena.floor_height_at(feet.x, feet.z, feet.y + 0.5), 0.3, "on your floor, facing %s" % facing)
+		assert_true(_in_sight(feet, at), "in sight, facing %s" % facing)
+
+
+func test_with_your_back_to_the_wall_it_still_lands_near_you() -> void:
+	var feet := arena.player_spawn
+	var at := _drop(feet, Vector3(0, 0, 1), 2.2) # facing the south edge, Tetsugumo's room
+	assert_ne(at, arena.boss_spawn)
+	assert_lt(Vector2(at.x - feet.x, at.z - feet.z).length(), 20.5)
+	assert_true(_in_sight(feet, at))
+
+
+func test_from_the_pit_it_lands_where_you_can_see_it() -> void:
+	for facing in [Vector3(0, 0, -1), Vector3(0, 0, 1), Vector3(1, 0, 0)]:
+		var feet := Vector3(0, WellMap.FLOOR + WorldDetail.LIFT, 0)
+		var at := _drop(feet, facing, 1.6)
+		assert_ne(at, arena.boss_spawn, "facing %s" % facing)
+		assert_true(_in_sight(feet, at), "in sight, facing %s" % facing)
