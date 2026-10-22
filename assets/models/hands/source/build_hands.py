@@ -1,4 +1,4 @@
-# Builds the player's two cyber hands (blockout) in Blender (5.2 LTS), each
+# Builds the player's two armoured cyber hands in Blender (5.2 LTS), each
 # holding its weapon: the left hand on the DOJIGIRI's handle, the right on the
 # RAIJIN-12's grip with the index finger on the trigger. Run it in Blender's
 # Scripting tab or headless; it rebuilds the "HANDS" collection every time.
@@ -34,6 +34,7 @@ WRIST_Y = -0.072  # how far behind the bar the wrist starts
 ARM_LEN = 0.36
 ARM_W0 = (0.056, 0.05)  # forearm (across, deep) at the wrist
 ARM_W1 = (0.078, 0.07)  # at the far end
+UV_TILE = 0.08
 
 
 def _box(bm, a, b, out, w, t, mat, grow=0.0):
@@ -157,12 +158,26 @@ def _mats():
     return out
 
 
+def _box_uv(bm):
+    """Box-projected UVs, UV_TILE metres per texture repeat: the game lays its
+    panel texture over the plates with them."""
+    uv = bm.loops.layers.uv.verify()
+    for f in bm.faces:
+        n = f.normal
+        ax = max(range(3), key=lambda i: abs(n[i]))
+        u, v = [i for i in range(3) if i != ax]
+        for lp in f.loops:
+            co = lp.vert.co
+            lp[uv].uv = (co[u] / UV_TILE, co[v] / UV_TILE)
+
+
 def _object(col, name, bm, mat, mirror_y=False):
     if mirror_y:
         bmesh.ops.transform(bm, matrix=Matrix.Scale(-1, 4, Vector((0, 1, 0))), verts=bm.verts)
         bmesh.ops.reverse_faces(bm, faces=bm.faces)
     bmesh.ops.transform(bm, matrix=mat, verts=bm.verts)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    _box_uv(bm)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me)
     bm.free()

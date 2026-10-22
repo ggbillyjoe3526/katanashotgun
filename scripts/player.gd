@@ -31,7 +31,9 @@ const DASH_RECHARGE := 1.4 # seconds per charge
 const BASE_FOV := 88.0 # the default; the live value is Settings.fov
 const CAPSULE_RADIUS := 0.4
 const CAPSULE_HEIGHT := 1.8
-const EYE_HEIGHT := 1.55
+# the eye sits at head height on the 1.8 m body, level with a grunt's eyes
+# (owner, 2026-10-22: at 1.55 the view felt low and zoomed in)
+const EYE_HEIGHT := 1.72
 # ledge climb: how long the pull-up takes (the reach rules are in LedgeClimb)
 const CLIMB_BASE_TIME := 0.2
 const CLIMB_TIME_PER_M := 0.09
@@ -107,7 +109,7 @@ var _shake_t := 0.0
 var fov_kick := 0.0
 var exec_zoom := 0.0
 var tilt := 0.0
-var eye_height := EYE_HEIGHT
+var eye_height := EYE_HEIGHT # the debug --viewshot tool tries other heights
 var head_y := EYE_HEIGHT # the eye above the feet, with bob, dips and finisher lifts
 var _head_base := Vector3.ZERO # the feet spot the head was last drawn on
 var bob_t := 0.0

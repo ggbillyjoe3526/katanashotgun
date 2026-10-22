@@ -3,9 +3,17 @@ extends Node3D
 ## First-person hands: the DOJIGIRI katana in the left hand, the RAIJIN-12 arc shotgun in
 ## the right. The shotgun is a "shotgun taser": an electrode muzzle, glowing
 ## capacitor coils and a drum of power cells that turns after every blast.
-## Everything is modelled at "full" scale and the root is scaled to 0.5 so the
-## weapons sit closer to the lens than the player's collision radius, which
-## means they never clip into walls.
+## Everything is modelled at "full" scale and the root is scaled down (SCALE)
+## so the weapons sit closer to the lens than the player's collision radius,
+## which means they never clip into walls. Both are held by the Blender cyber
+## hands (HandsModel); the code-built gloves only show if those fail to load.
+
+## How big the weapons sit in the view (owner, 2026-10-22: the old 0.5 filled
+## the bottom of the screen and hid both grips)
+const SCALE := 0.42
+## The DOJIGIRI model's size in the hand, so the blade reads as a real sword
+## next to the shotgun (owner, 2026-10-22)
+const KATANA_MODEL_SCALE := 1.5
 
 const SLASH_DUR := 0.13
 const RETURN_DUR := 0.2
@@ -38,6 +46,9 @@ var idle_arc: MeshInstance3D
 # parts), and the code-built gun kept as its fallback
 var _code_gun: Node3D
 var _model_gun: Node3D
+# the code-built right glove and forearm, hidden once the Blender hand loads
+var _code_glove: Node3D
+var _code_arm: Node3D
 # one blast turns the drum one cell: six on the code-built drum, four on
 # the model's square one
 var _drum_step := TAU / 6.0
@@ -51,9 +62,10 @@ var _drum_to := 0.0
 var _rng := RandomNumberGenerator.new()
 var can: ViewmodelCan # a soda can being drunk (spec §19.1 #11)
 
-# how far the Blender katana turns in the hand (radians, around its blade);
-# positive puts the glowing edge on the right, where the owner wants it
-const KATANA_MODEL_ROLL := 0.9
+# how far the Blender katana turns in the hand (radians, around its blade):
+# the flat of the blade faces the player and the glowing edge stays on the
+# right, where the owner wants it (at 0.9 it showed almost edge-on, a thin line)
+const KATANA_MODEL_ROLL := 1.9
 # glory kill poses (weapon targets the hands snap to between beats)
 const K_POSES := {
 	"ready": [Vector3(-0.4, -0.3, -0.42), Vector3(-1.0, 0.5, -0.4)],
@@ -83,10 +95,12 @@ var _spose: Array = []
 var _spos_cur := Vector3.ZERO
 var _srot_cur := Vector3.ZERO
 
-var katana_idle_pos := Vector3(-0.5, -0.44, -0.6)
-var katana_idle_rot := Vector3(-0.55, 0.3, -0.3)
-var shotgun_idle_pos := Vector3(0.48, -0.3, -0.52)
-var shotgun_idle_rot := Vector3(0.04, 0.0, 0.05)
+# held upright on the left (owner's pick "A", 2026-10-22); the shotgun sits
+# low in the right corner with its grip and hand in view
+var katana_idle_pos := Vector3(-0.7, -0.42, -0.7)
+var katana_idle_rot := Vector3(-0.05, 0.2, 0.4)
+var shotgun_idle_pos := Vector3(0.52, -0.24, -0.66)
+var shotgun_idle_rot := Vector3(0.02, 0.12, 0.08)
 
 var _slash_t := -1.0
 var _slash_from_pos := Vector3.ZERO
@@ -109,7 +123,7 @@ var _press := 0.0
 
 
 func _ready() -> void:
-	scale = Vector3.ONE * 0.5
+	scale = Vector3.ONE * SCALE
 	_build_katana()
 	_build_shotgun()
 	# the weapons float in front of the camera: a shadow of them (INSANE's
@@ -159,11 +173,13 @@ func _build_katana() -> void:
 	tip.position = Vector3(0, 1.075, 0)
 	tip.rotation.y = PI * 0.5
 	_code_blade.add_child(tip)
-	# hand + cyber forearm
-	katana.add_child(Psx.box(Vector3(0.1, 0.11, 0.11), glove, Vector3(0, 0.02, 0)))
+	# code-built hand + cyber forearm, the fallback for the Blender hand
+	var code_hand := Node3D.new()
+	katana.add_child(code_hand)
+	code_hand.add_child(Psx.box(Vector3(0.1, 0.11, 0.11), glove, Vector3(0, 0.02, 0)))
 	var arm := Node3D.new()
 	arm.rotation = Vector3(0.9, 0, 0.35)
-	katana.add_child(arm)
+	code_hand.add_child(arm)
 	arm.add_child(Psx.box(Vector3(0.085, 0.42, 0.085), chrome, Vector3(0, -0.26, 0)))
 	trim_mat = Psx.unlit(Color(1.0, 0.2, 0.6), 2.2, null, {"snap": 0.35, "fog_amount": 0.0})
 	arm.add_child(Psx.box(Vector3(0.09, 0.3, 0.012), trim_mat, Vector3(0, -0.28, 0.046)))
@@ -171,9 +187,16 @@ func _build_katana() -> void:
 	# turned on its long axis so the flat and the hilt's windows face the
 	# player; the code-built blade showed its edge strip instead
 	_model_blade.rotation.y = KATANA_MODEL_ROLL
+	_model_blade.scale = Vector3.ONE * KATANA_MODEL_SCALE
 	katana.add_child(_model_blade)
 	# the code-built blade only shows if the model failed to load
 	_code_blade.visible = _model_blade.get_child_count() == 0
+	# the left hand is modelled on the DOJIGIRI's handle, so it needs the model
+	if not _code_blade.visible:
+		var hand := HandsModel.build("hand_katana", trim_mat)
+		if hand:
+			_model_blade.add_child(hand)
+			code_hand.visible = false
 
 
 func _build_shotgun() -> void:
@@ -272,10 +295,12 @@ func _build_shotgun() -> void:
 		var led := Psx.box(Vector3(0.012, 0.014, 0.02), led_on, Vector3(-0.047, 0.065 - (i / 5) * 0.025, -0.24 + (i % 5) * 0.03))
 		_code_gun.add_child(led)
 		cell_leds.append(led)
-	# hand + forearm
-	spin_pivot.add_child(Psx.box(Vector3(0.1, 0.1, 0.11), glove, Vector3(0, -0.07, 0.0)))
+	# code-built hand + forearm, the fallback for the Blender hand
+	_code_glove = Psx.box(Vector3(0.1, 0.1, 0.11), glove, Vector3(0, -0.07, 0.0))
+	spin_pivot.add_child(_code_glove)
 	var arm := Node3D.new()
 	arm.rotation = Vector3(1.0, 0, -0.3)
+	_code_arm = arm
 	shotgun.add_child(arm)
 	arm.add_child(Psx.box(Vector3(0.09, 0.44, 0.09), chrome, Vector3(0, -0.3, 0.02)))
 	strip_mats.append(Psx.unlit(Color(0.2, 0.9, 1.0), 2.2, null, fx_p))
@@ -322,6 +347,12 @@ func _use_shotgun_model() -> void:
 		cell_leds.append(ShotgunModel.part(_model_gun, "led_%d" % i) as MeshInstance3D)
 	muzzle.position = _in_gun(ShotgunModel.part(_model_gun, "muzzle"))
 	_drum_step = TAU / 4.0
+	# the right hand is modelled on the RAIJIN-12's grip
+	var hand := HandsModel.build("hand_shotgun", strip_mats[1])
+	if hand:
+		_model_gun.add_child(hand)
+		_code_glove.visible = false
+		_code_arm.visible = false
 
 
 ## True if the model has every node the viewmodel drives (a bad export
