@@ -17,6 +17,7 @@ const SIDESTEP_AIM := 0.35
 const SIDESTEP_RANGE := 7.0
 const SIDESTEP_CONE := 0.1 # radians around the body
 const SIDESTEP_CD := 4.0
+const SIDESTEP_LAND := 6.0 # metres of floor a sidestep needs (the mech's leap carries about that far)
 const GENTLE_SIDESTEP_CD := 6.0
 # delayed swings: some windups hold longer; the eyes flare just before the hit
 const DELAY_CHANCE := 0.3
@@ -42,6 +43,11 @@ const CROSS_GAP := 0.25
 const SIGNATURE_ROUND_SPEED := 12.0
 const SIGNATURE_ROUND_DAMAGE := 14.0
 # DAEMON GRAB
+## Kurokage's dash-slash only starts this close (its telegraph line's length),
+## on the player's level and in sight: out of reach he runs in instead of
+## dashing off a ledge from across the map.
+const DASH_REACH := 16.0
+
 const GRAB_TIME := 0.45
 const GRAB_SPEED := 17.0
 
@@ -360,7 +366,7 @@ func _enrage_check() -> void:
 
 func _chase_ninja(dist: float, dir: Vector3, delta: float) -> Vector3:
 	_enrage_check()
-	if special_cd <= 0.0 and dist > 3.0:
+	if special_cd <= 0.0 and dist > 3.0 and _ninja_special_fits(special_seq + 1, dist):
 		special_cd = _rng.randf_range(2.2, 3.2) if enraged else _rng.randf_range(3.2, 4.6)
 		special_seq += 1
 		match special_seq % 3:
@@ -389,6 +395,18 @@ func _chase_ninja(dist: float, dir: Vector3, delta: float) -> Vector3:
 	if dist > 7.0:
 		return dir * speed
 	return (Vector3(-dir.z, 0, dir.x) * strafe * 0.85 + dir * 0.35).normalized() * speed
+
+
+## Whether special number `seq` can land from here; until it can, it waits
+## and he keeps closing in. The dash-slash wants DASH_REACH, the player's
+## level and a clear line; the shuriken fan a clear line. The blink goes anywhere.
+func _ninja_special_fits(seq: int, dist: float) -> bool:
+	match seq % 3:
+		1:
+			return dist <= DASH_REACH and absf(Game.player.global_position.y - global_position.y) < SAME_LEVEL and _has_los()
+		0:
+			return _has_los()
+	return true
 
 
 func _begin_dash_windup(dir: Vector3) -> void:
@@ -465,7 +483,7 @@ func _custom_state(_dist: float, dir: Vector3, delta: float) -> Array:
 				p.take_damage(20.0 * damage_mult, global_position)
 				p.knockback(dash_dir * 8.0 + Vector3.UP * 3.0)
 				Sfx.play("slice", 0.0, 0.8)
-			if state_t > 0.42 or (state_t > 0.1 and is_on_wall()):
+			if state_t > 0.42 or (state_t > 0.1 and is_on_wall()) or _ledge_ahead(dash_dir):
 				dash_count -= 1
 				if dash_count > 0:
 					_begin_dash_windup(dir)
@@ -579,14 +597,18 @@ func _try_sidestep(dir: Vector3) -> bool:
 	_aim_t = 0.0
 	_sidestep_cd = GENTLE_SIDESTEP_CD if _gentle() else SIDESTEP_CD
 	var side := 1.0 if _rng.randf() < 0.5 else -1.0
-	_side_dir = Vector3(-dir.z, 0, dir.x) * side
+	# never off a ledge (into the pit, out of the fight): the other way, or stand
+	if not _step_lands(_step_dir(dir, side)):
+		side = -side
+		if not _step_lands(_step_dir(dir, side)):
+			return false
+	_side_dir = _step_dir(dir, side)
 	var chest := global_position + Vector3(0, height * 0.5, 0)
 	match kind:
 		"ninja": # an afterimage of smoke where he stood
 			Game.fx.smoke(chest, 1.4)
 			Sfx.play_at("blink", global_position, -2.0, 1.5)
 		"mech": # jumps back and lands with a small shockwave
-			_side_dir = (-dir + _side_dir * 0.4).normalized()
 			velocity.y = 9.0
 			Sfx.play_at("windup", global_position, 2.0, 0.6)
 		_: # a shoulder barge to the side
@@ -594,6 +616,19 @@ func _try_sidestep(dir: Vector3) -> bool:
 	_set_state(S.SIDESTEP)
 	_log_move("sidestep")
 	return true
+
+
+## Which way a sidestep to `side` goes: square to the player, or back and
+## to the side for the mech's leap.
+func _step_dir(dir: Vector3, side: float) -> Vector3:
+	var d := Vector3(-dir.z, 0, dir.x) * side
+	return (-dir + d * 0.4).normalized() if kind == "mech" else d
+
+
+## True when floor at his own height runs SIDESTEP_LAND metres along `d`
+## (checked halfway and at the end).
+func _step_lands(d: Vector3) -> bool:
+	return _floor_below(global_position + d * SIDESTEP_LAND * 0.5) and _floor_below(global_position + d * SIDESTEP_LAND)
 
 
 func _sidestep_state(dir: Vector3) -> Array:
@@ -704,7 +739,8 @@ func _red_act_state(_dir: Vector3) -> Array:
 			if int(state_t * 40.0) % 2 == 0:
 				Game.gore.sparks(global_position + Vector3(0, 1.0, 0), -d, 2, RED_COLOR * 1.6)
 			_red_contact(radius + 1.3, 26.0, d * 9.0 + Vector3.UP * 3.0)
-			return [d * CROSS_SPEED, d]
+			# a line running off a ledge: he holds at the edge till the next one
+			return [Vector3.ZERO if _ledge_ahead(d) else d * CROSS_SPEED, d]
 		if _step >= _lines.size() - 1:
 			recover_time = 1.2
 			_set_state(S.RECOVER)
@@ -893,6 +929,18 @@ func _volley(dir: Vector3) -> void:
 		b.mark_signature(sig)
 	Sfx.play_at("shuriken", global_position, 2.0)
 	Game.show_hint_once("bolt", "SLASH INCOMING BOLTS TO DEFLECT THEM")
+
+
+## A boss lands hard where the player can see it (WaveDirector picks a drop
+## point in their view): a slam, a shake and a scorch mark.
+func _land_fx() -> void:
+	super._land_fx()
+	var p := Game.player
+	var near := clampf(1.0 - global_position.distance_to(p.global_position) / 30.0, 0.0, 1.0)
+	p.add_trauma(0.25 + 0.35 * near)
+	Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 24, Color(Game.palette.neon_a) * 1.6)
+	Game.gore.scorch(global_position, radius * 2.0 + 1.0)
+	Sfx.play_at("slam", global_position, 4.0, 0.8)
 
 
 func die(source: String, dir: Vector3, headshot := false) -> void:

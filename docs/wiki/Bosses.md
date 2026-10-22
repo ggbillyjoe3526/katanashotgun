@@ -2,7 +2,9 @@
 
 **Every third wave is a boss wave** (3, 6, 9 and on). An alarm sounds, the
 boss hijacks the screen with test-card colour bars, **BOSS INCOMING** scrolls
-across it, and the boss's name card lands with its own music.
+across it, and the boss's name card lands with its own music. The boss drops
+in **right where you are looking**, usually on your own floor, and lands with
+a slam that shakes the screen, so you never have to hunt for it.
 Boss waves never have a mutator.
 
 Bosses fight like duelists: they read you, step out of lazy shots, mix quick
@@ -76,6 +78,9 @@ This is new and being play-tested: it may change after testing.
 
 - **Sidesteps:** hang back and aim at a boss from more than about 7 m and it
   steps out of the line. Get closer, or catch it mid-attack.
+- **Edges:** bosses don't throw themselves off ledges. Dashes and charges
+  stop at the edge and sidesteps only go where there is floor, so a boss
+  never drops into the pit and leaves you waiting.
 - **Held swings:** some swings hold a beat longer before they land. The eyes
   stay dim, then flare with a hiss just before the hit. Don't dodge too early.
 - **Punish windows:** after every big attack the boss is left open for about
@@ -135,7 +140,8 @@ from behind.
 | Smoke ring (area, when you're within 5 m) | Smoke at his feet | 18, a full circle 5 m wide, 0.7 s later | Step out or jump |
 | **NULL CROSS** (RED SIGNAL) | Red diamond and alarm; he vanishes and three red lines cross where you stand | 26 per dash, along each line in turn | Get off the lines, or dash through a dash at the last moment |
 
-- Sprints in from far away, then circles you, switching direction.
+- Sprints in from far away, then circles you, switching direction. He only
+  starts a dash-slash within the line's 16 m, on your level and in sight.
 - **Sidestep:** leaves an afterimage in smoke and darts aside.
 - **Enrage:** a third dash, a third combo hit and 7 shuriken, all faster.
 - **Rewards:** KAGEROU EDGE, then KITSUNEBI COIL.
@@ -181,7 +187,8 @@ namesake of your katana.
 | Fissures (area, within 14 m) | His fist hits the floor; five fire lines crack out in a star | 24 | Jump them, or stand between the lines |
 | **DAEMON GRAB** (RED SIGNAL, from 9.5 m or closer) | Red diamond and alarm; he aims, then lunges | 34: he grabs you and hurls you | Dash through the lunge at the last moment. A missed grab leaves him open for almost 2 s |
 
-- Always walks straight at you. No strafing, no retreat.
+- Always walks straight at you. No strafing, no retreat. He saves his leap,
+  charge and fan volley for when he's within 14 m, on your level and in sight.
 - **Sidestep:** a quick shoulder barge to the side.
 - **Enrage:** his eyes turn red, he speeds up to 5.6 m/s and the fan volley
   replaces every third leap.

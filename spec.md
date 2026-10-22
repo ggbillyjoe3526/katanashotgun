@@ -966,6 +966,19 @@ windups, staggers.
   Its intro reads "BOSS INCOMING" with an alarm, then the **boss intro card**:
   the name and epithet slide in on a band, with the boss_intro sound and the
   boss's own music.
+- **Arrival in plain sight** (owner playtest, 2026-10-22: he was left looking
+  around for Kurokage): the boss drops in where the player is looking, never
+  at a fixed spot behind them. `Arena.boss_drop_point` tries 6–20 m away, on
+  the player's own floor within 45° of the view first, then any floor in
+  view, then the same all the way round; each spot needs open sky above,
+  flat floor all round (body radius + 0.5 m), the navmesh, and a clear line
+  to the player's eye. The map's `boss_spawn` is only the fallback. It lands
+  with a slam, a screen shake by distance and a scorch mark.
+- **Bosses never leave the fight off a ledge:** dashes, charges and NULL
+  CROSS lines stop at a drop, sidesteps only go where there is floor, and
+  the moves that cross the arena (Kurokage's dash-slash, all of Shuten's
+  specials) wait until the boss is within reach, on the player's level
+  (1.5 m) and in sight, as the brute's charge does.
 - **Cycle order:** cycle 1 is Kurokage and Tetsugumo in seeded order, then
   Shuten last. Later cycles are a seeded shuffle of all three.
 - **Boss HP scale:** `1 + 0.45 × (cycle − 1) + 0.03 × (wave − 3)`.
@@ -986,9 +999,11 @@ windups, staggers.
   2.6 s, armour 0.55, XP 320, points 5000.
 - **Dash-slash chain:** 2 dashes (3 when enraged). Each has a floor
   telegraph line 16 m long (neon). Windup 0.62 s (0.42 enraged), shortened on
-  follow-ups. Each dash hits 20 with knockback.
+  follow-ups. Each dash hits 20 with knockback. Starts only within 16 m (the
+  line), on the player's level and in sight; further off he runs in.
 - **Shuriken fan:** deflectable, 13 m/s, 10 damage, spread 0.16 rad. His
-  signature volley: the whole fan is white-hot (§3.2 Perfect deflect).
+  signature volley: the whole fan is white-hot (§3.2 Perfect deflect). Only
+  thrown in sight.
 - **Blink:** vanishes in smoke and reappears behind you.
 - **Melee combo:** 2 hits (3 enraged), 16 damage each.
 - Strafes at mid range. Specials every 3.2–4.6 s (2.2–3.2 enraged).
@@ -1021,7 +1036,8 @@ windups, staggers.
 - **Charge:** like the brute's.
 - **9-bolt fan volley:** enraged only. 14 damage, spread 0.13 rad. His
   signature volley: every bolt is white-hot (§3.2 Perfect deflect).
-- Specials every 5–7 s (3.5–5 enraged).
+- Specials every 5–7 s (3.5–5 enraged), from 5 to 14 m (the leap's reach),
+  on the player's level and in sight.
 
 ### 5.3 Boss death sequence ("loud, then quiet")
 1. The boss dies with huge gore (Tetsugumo explodes). Slow motion ×0.12 for
@@ -1621,7 +1637,8 @@ the holographic cut-in (§9.8).
     `_neon`, `_neon_box_edges`, `_light`, `_halo`, `floor_height_at`, plus
     weather and storm.
   - Maps register in `MapRegistry` (`create_for_seed(rng)`).
-  - Each map sets `map_name`, `half`, `player_spawn`, `boss_spawn`,
+  - Each map sets `map_name`, `half`, `player_spawn`, `boss_spawn` (only
+    the fallback: bosses drop in where the player can see them, §5.1),
     `spawn_points` and `jump_pads`, and uses `pal` (palette) and `rng`
     (seeded). Multi-level maps also set `floor_base`, `kill_y`,
     `enemy_reset`, `ground_spawns`, `use_navigation` and `nav_links`.

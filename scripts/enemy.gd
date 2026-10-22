@@ -16,6 +16,10 @@ enum S { SPAWN, CHASE, WINDUP, RECOVER, STAGGER, CHARGE_WINDUP, CHARGE, SLAM, VO
 ## A boss's armour drops for this long after its big moves (spec §5.6), and
 ## KAMAE fills this much faster meanwhile: the punish window.
 const EXPOSED_KAMAE := 1.5
+## A boss saves its leaps, dashes and charges for when it stands within this
+## many metres of the player's height (the brute's charge rule too).
+const SAME_LEVEL := 1.5
+const SLAM_REACH := 14.0 # Shuten's leap slam carries this far (metres)
 
 # Onryo's Grudge mutator: a dead enemy bursts this long after, this big
 const GRUDGE_DELAY := 1.1
@@ -90,6 +94,7 @@ var _path := PackedVector3Array() # navmesh corners to the player (maps with use
 var _path_types := PackedInt32Array() # region or link, per corner
 var _path_i := 0
 var _query: NavigationPathQueryParameters3D
+var _floor_q: PhysicsRayQueryParameters3D # _floor_below's ray, reused
 var _query_result: NavigationPathQueryResult3D
 var _repath_t := 0.0
 
@@ -520,8 +525,7 @@ func _physics_process(delta: float) -> void:
 				if is_on_floor():
 					if not landed:
 						landed = true
-						Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 10, Color(1.5, 0.3, 0.4))
-						Sfx.play_at("land", global_position, -6.0)
+						_land_fx()
 					if state_t > 0.3:
 						_set_state(S.CHASE)
 			S.CHASE:
@@ -567,7 +571,7 @@ func _physics_process(delta: float) -> void:
 					charge_hit = true
 					p.take_damage(30.0 * damage_mult, global_position)
 					p.knockback(charge_dir * 16.0 + Vector3.UP * 7.0)
-				if state_t > 1.15 or (state_t > 0.2 and is_on_wall()):
+				if state_t > 1.15 or (state_t > 0.2 and is_on_wall()) or (is_boss and _ledge_ahead(charge_dir)):
 					if is_on_wall():
 						p.add_trauma(clampf(1.0 - dist / 25.0, 0.0, 0.5))
 						Game.gore.sparks(global_position + charge_dir * radius + Vector3(0, 1, 0), -charge_dir, 16)
@@ -630,6 +634,32 @@ func _physics_process(delta: float) -> void:
 		reset_physics_interpolation()
 
 
+## True when the floor ends just ahead along `d`: a boss's dash or charge
+## stops at the edge rather than carrying it off a roof into the pit, out
+## of the fight.
+func _ledge_ahead(d: Vector3) -> bool:
+	if not is_on_floor():
+		return false
+	return not _floor_below(global_position + d * (radius + 0.6))
+
+
+## Floor within a step (1.2 m) below `p`, at about the body's own height.
+## One query object, reused: dashes and charges ask every frame.
+func _floor_below(p: Vector3) -> bool:
+	if _floor_q == null:
+		_floor_q = PhysicsRayQueryParameters3D.new()
+		_floor_q.collision_mask = 1
+	_floor_q.from = p + Vector3(0, 0.5, 0)
+	_floor_q.to = p - Vector3(0, 1.2, 0)
+	return not get_world_3d().direct_space_state.intersect_ray(_floor_q).is_empty()
+
+
+## Touching down after the spawn drop.
+func _land_fx() -> void:
+	Game.gore.sparks(global_position + Vector3(0, 0.1, 0), Vector3.UP, 10, Color(1.5, 0.3, 0.4))
+	Sfx.play_at("land", global_position, -6.0)
+
+
 ## Which way to walk toward the player. Straight at them on maps without a
 ## navmesh or when close on the same level; otherwise toward the next corner
 ## of a navmesh path, which uses ramps and leap links between levels. At a
@@ -661,12 +691,22 @@ func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
 	var pos := global_position
 	while _path_i < _path.size():
 		var c: Vector3 = _path[_path_i]
+		# a drop link close by: head for its foot at once, so a wide body (a
+		# boss) walks off the ledge instead of lining up on its top corner
+		# and turning back to it on every repath
+		var drop_top := _path_i + 1 < _path.size() and _path_types.size() > _path_i and _path_types[_path_i] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK and pos.y - _path[_path_i + 1].y > 0.9
+		if drop_top and Vector2(c.x - pos.x, c.z - pos.z).length() < radius + 1.0:
+			_path_i += 1
+			continue
 		if Vector2(c.x - pos.x, c.z - pos.z).length() > 0.6:
 			break
 		# right above or below a corner (on a bridge over it, say): skip it unless
 		# it's the top of a leap still to make
 		var leap_top := c.y - pos.y > 0.9 and _path_types.size() >= _path_i and _path_types[_path_i - 1] == NavigationPathQueryResult3D.PATH_SEGMENT_TYPE_LINK
-		if leap_top:
+		# ...or the bottom of a drop it still stands above (a wide body is
+		# still on the ledge with its middle past the corner)
+		var drop_foot := pos.y - c.y > 0.9 and is_on_floor()
+		if leap_top or drop_foot:
 			break
 		_path_i += 1
 	if _path_i >= _path.size():
@@ -679,6 +719,13 @@ func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
 	if on_link and rise > 0.9 and is_on_floor():
 		_leap(next)
 		return Vector3.ZERO
+	if rise < -0.9 and is_on_floor() and flat.length() < 1.5:
+		# stepping off a ledge: keep walking the way down until the floor
+		# gives, instead of turning back to a corner it is already over
+		var way := next - _path[_path_i - 1]
+		way.y = 0.0
+		if way.length() > 0.01:
+			return way.normalized()
 	if flat.length() < 0.01:
 		return dir
 	return flat.normalized()
@@ -747,7 +794,10 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				Sfx.play("roar", 3.0, 0.6)
 				Game.hud_message.emit("%s IS ENRAGED" % display_name, Color(1, 0.2, 0.1), false)
 				_eye_mat.set_shader_parameter("albedo_color", Color(1, 0.2, 0.1))
-			if special_cd <= 0.0 and dist > 5.0:
+			# his leap, charge and volley wait until he is on your level, within
+			# a leap and with a clear line, as the brute's charge does: never
+			# across the pit
+			if special_cd <= 0.0 and dist > 5.0 and dist < SLAM_REACH and dy < SAME_LEVEL and _has_los():
 				special_cd = _rng.randf_range(3.5, 5.0) if enraged else _rng.randf_range(5.0, 7.0)
 				special_seq += 1
 				var pick := special_seq % 3
@@ -757,7 +807,7 @@ func _chase(dist: float, dir: Vector3, delta: float) -> Vector3:
 				elif pick == 1 or (pick == 0 and not enraged):
 					_set_state(S.SLAM)
 					velocity.y = 14.0
-					leap_vel = _to_player * minf(dist, 14.0) / 1.0 # aimed at the player, not the path
+					leap_vel = _to_player * minf(dist, SLAM_REACH) / 1.0 # aimed at the player, not the path
 					Sfx.play("roar", 0.0, 0.8)
 				else:
 					_set_state(S.CHARGE_WINDUP)
