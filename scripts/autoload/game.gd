@@ -98,13 +98,11 @@ var last_rank := -1
 var _hitstop := 0.0
 var _slowmo_left := 0.0
 var _slowmo_scale := 1.0
-var _last_ticks := 0
 var _applied_ts := 1.0
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_last_ticks = Time.get_ticks_usec()
 	rng_fx.randomize()
 	var args := OS.get_cmdline_user_args()
 	debug_autoplay = args.has("--autoplay")

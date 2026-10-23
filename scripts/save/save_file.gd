@@ -72,8 +72,9 @@ static func write(path: String, kind: String, version: int, data: Dictionary) ->
 				DirAccess.remove_absolute(path + BAK)
 			DirAccess.rename_absolute(path, path + BAK)
 		else:
-			# a damaged file never replaces a good backup
-			DirAccess.remove_absolute(path)
+			# a damaged file never replaces a good backup, and is moved aside,
+			# never deleted (spec §11.3)
+			DirAccess.rename_absolute(path, "%s.corrupt-%s" % [path, _stamp()])
 	if DirAccess.rename_absolute(tmp, path) != OK:
 		# the verified .tmp stays on disk and read() still finds it
 		push_warning("save: can't rename %s" % tmp)
@@ -103,7 +104,7 @@ static func read(path: String, kind: String) -> Dictionary:
 ## Moves every copy aside as <path>.corrupt-<n> so a fresh file can be written
 ## without destroying anything a player might want recovered.
 static func quarantine(path: String) -> void:
-	var stamp := str(Time.get_unix_time_from_system()).replace(".", "")
+	var stamp := _stamp()
 	for suffix in ["", TMP, BAK]:
 		if FileAccess.file_exists(path + suffix):
 			DirAccess.rename_absolute(path + suffix, "%s%s.corrupt-%s" % [path, suffix, stamp])
@@ -113,3 +114,8 @@ static func remove(path: String) -> void:
 	for suffix in ["", TMP, BAK]:
 		if FileAccess.file_exists(path + suffix):
 			DirAccess.remove_absolute(path + suffix)
+
+
+## A file-name stamp for moved-aside copies.
+static func _stamp() -> String:
+	return str(Time.get_unix_time_from_system()).replace(".", "")

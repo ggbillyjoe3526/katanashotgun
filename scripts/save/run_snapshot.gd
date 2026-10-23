@@ -8,7 +8,7 @@ class_name RunSnapshot
 ## 64-bit, so they are stored as strings (JSON numbers lose precision past
 ## 2^53). Older snapshots also carry a "waves" state, which is ignored.
 
-const GAME_INTS := ["score", "best_combo", "kills", "executions", "headshots", "deflects", "perfect_deflects", "bosses_killed", "level", "pending_levelups", "best_tally", "best_tally_wave"]
+const GAME_INTS := ["score", "combo", "best_combo", "kills", "executions", "headshots", "deflects", "perfect_deflects", "bosses_killed", "level", "pending_levelups", "best_tally", "best_tally_wave"]
 
 
 ## `next_wave` is the wave the run resumes on.
@@ -19,6 +19,7 @@ static func capture(next_wave: int, director: WaveDirector, player: Player) -> D
 	g["xp"] = Game.xp
 	g["xp_next"] = Game.xp_next
 	g["run_time"] = Game.run_time
+	g["combo_timer"] = Game.combo_timer # the combo state (spec §11.3) resumes with its window
 	return {
 		"seed": Game.run_seed,
 		"next_wave": next_wave,
@@ -48,6 +49,7 @@ static func apply(snap: Dictionary, director: WaveDirector, player: Player) -> i
 	Game.xp = float(g.get("xp", Game.xp))
 	Game.xp_next = float(g.get("xp_next", Game.xp_next))
 	Game.run_time = float(g.get("run_time", 0.0))
+	Game.combo_timer = float(g.get("combo_timer", 0.0))
 	Game.upgrades = {}
 	var ups: Dictionary = snap.get("upgrades", {})
 	for id in ups:

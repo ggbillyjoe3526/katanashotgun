@@ -643,6 +643,9 @@ func _sidestep_state(dir: Vector3) -> Array:
 				Sfx.play_at("slam", global_position, 0.0, 1.0)
 				recover_time = 0.5
 				_set_state(S.RECOVER)
+			elif state_t > 1.2:
+				# still airborne (caught on a ledge or a prop): stop sliding sideways
+				_set_state(S.CHASE)
 			return [_side_dir * 10.0, dir]
 	if int(state_t * 30.0) % 2 == 0:
 		Game.gore.sparks(global_position + Vector3(0, 0.2, 0), -_side_dir + Vector3.UP * 0.4, 2)

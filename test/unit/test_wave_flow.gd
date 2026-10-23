@@ -1,0 +1,78 @@
+extends GutTest
+## The wave director's flow (spec §6): a wave is clear only when its line-up
+## is spent and nobody from it is still standing.
+
+
+## A director whose spawns are bare stand-ins in the "enemies" group: the
+## flow test needs who is in the fight, not bodies, a map or a HUD.
+class FlowDirector:
+	extends WaveDirector
+
+	func _ready() -> void:
+		_spawn_rng = RandomNumberGenerator.new()
+		_spawn_rng.seed = 7
+
+	func _pick_spawn() -> Vector3:
+		return Vector3.ZERO
+
+	func _spawn(_kind: String, _scale: float, _pos: Vector3, _before_ready := Callable()) -> Enemy:
+		var n := Node3D.new()
+		n.add_to_group("enemies")
+		add_child(n)
+		Enemy.list_dirty = true
+		return null
+
+
+var _state := ""
+
+
+func before_each() -> void:
+	_state = Game.state
+	Game.state = "playing"
+	Game.mutator = {}
+	Game.enemy_list = []
+	Enemy.list_dirty = false
+
+
+func after_each() -> void:
+	Game.state = _state
+	Game.enemy_list = []
+	Enemy.list_dirty = true
+
+
+func test_the_last_group_onto_an_empty_field_does_not_clear_the_wave() -> void:
+	var d := FlowDirector.new()
+	add_child_autofree(d)
+	d.wave = 1
+	d.phase = "spawning"
+	d.spawn_t = 0.0
+	d.queue = [["grunt", 1.0]]
+	d._physics_process(1.0 / 60.0)
+	assert_true(d.queue.is_empty(), "the last group spawned")
+	assert_eq(Game.enemy_list.size(), 1, "and it is counted at once")
+	assert_eq(d.phase, "spawning", "so the wave is not over while it stands")
+
+
+func test_a_cleared_wave_defuses_shockwaves_still_rolling_out() -> void:
+	var fx := Fx.new()
+	add_child_autofree(fx)
+	fx.shockwave(Vector3.ZERO, 24.0, 15.0, 26.0)
+	fx.clear_strikes()
+	assert_eq(fx._waves.size(), 1, "the ring finishes its roll")
+	assert_true(fx._waves[0].hit, "but can no longer hurt the player")
+
+
+func test_a_suspended_run_keeps_its_combo() -> void:
+	# spec §11.3: the snapshot between waves holds the combo state
+	var d := WaveDirector.new()
+	var p := Player.new()
+	var keep := [Game.combo, Game.combo_timer]
+	Game.combo = 23
+	Game.combo_timer = 2.5
+	var snap := RunSnapshot.capture(4, d, p)
+	Game.combo = keep[0]
+	Game.combo_timer = keep[1]
+	assert_eq(int(snap.game.combo), 23)
+	assert_almost_eq(float(snap.game.combo_timer), 2.5, 0.001)
+	d.free()
+	p.free()

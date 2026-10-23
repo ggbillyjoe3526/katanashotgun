@@ -121,6 +121,8 @@ func test_a_damaged_file_never_replaces_a_good_backup() -> void:
 	_corrupt(_path())
 	SaveFile.write(_path(), "thing", 1, {"n": 3})
 	assert_eq(int(SaveFile.decode(SaveFile.read_text(_path() + ".bak"), "thing").data.n), 1)
+	var kept := Array(DirAccess.get_files_at(dir)).filter(func(f): return f.begins_with("thing.json.corrupt-"))
+	assert_eq(kept.size(), 1, "the damaged copy is moved aside, never deleted")
 
 
 func test_wrong_kind_is_rejected() -> void:
@@ -261,6 +263,19 @@ func test_top_ten_keeps_the_best_and_names_them() -> void:
 	Profile.rename_score(0, "WIL")
 	Profile.use_dir(dir)
 	assert_eq(Profile.high_scores[0].name, "WIL")
+
+
+func test_a_replayed_score_gets_its_own_row() -> void:
+	# a seed replayed to the same score: the new row is the one named
+	Profile.use_dir(dir)
+	var old := {"name": "---", "score": 500, "wave": 4, "seed": "1234-ABCD"}
+	Profile.add_score(old)
+	Profile.rename_score(0, "OLD")
+	Profile.add_score({"name": "---", "score": 900, "wave": 6, "seed": "1234-ABCD"})
+	Profile.rename_score(0, "TOP")
+	var again := {"name": "OLD", "score": 500, "wave": 4, "seed": "1234-ABCD"}
+	var rank := Profile.add_score(again)
+	assert_true(is_same(Profile.high_scores[rank], again), "the rank is the new row's")
 
 
 # ---------------------------------------------------------------- rewards

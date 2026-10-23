@@ -88,7 +88,7 @@ func negative(dur: float) -> void:
 
 func _process(delta: float) -> void:
 	_t += delta
-	var rd := delta / maxf(Engine.time_scale, 0.05)
+	var rd := Game.real_dt # real time: hitstop must not eat an impact frame
 	_hurt = move_toward(_hurt, 0.0, rd * 1.8)
 	_flash = move_toward(_flash, 0.0, rd * 3.0)
 	_impact -= rd

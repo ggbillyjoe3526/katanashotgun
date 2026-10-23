@@ -307,7 +307,22 @@ func _gib_from(src: Node3D) -> Node3D:
 				break
 			kids.append(cm)
 	if not simple:
-		return src.duplicate()
+		# the copy must not keep the enemy's own materials either (a grunt's
+		# arm holds its blade): they flash and re-colour with the next spawn.
+		# Own copies, not the shared cache: a blade's glow is caught mid-heat.
+		var d: Node3D = src.duplicate()
+		var parts: Array[Node] = d.find_children("*", "GeometryInstance3D", true, false)
+		if d is GeometryInstance3D:
+			parts.append(d)
+		for n in parts:
+			var gi: GeometryInstance3D = n
+			var sm := gi.material_override as ShaderMaterial
+			if sm != null:
+				var own: ShaderMaterial = sm.duplicate()
+				if own.get_shader_parameter("flash") != null:
+					own.set_shader_parameter("flash", 0.0)
+				gi.material_override = own
+		return d
 	var g := _take_gib()
 	g.mesh = mi.mesh
 	g.material_override = _frozen_mat(mi.material_override)

@@ -32,6 +32,7 @@ func setup(a: WellMap, water: Array[ShaderMaterial]) -> void:
 	add_child(vp)
 	cam = Camera3D.new()
 	cam.cull_mask = LAYER
+	cam.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # placed every frame, not per tick
 	# the night sky is dark in water: only lit things show in a puddle
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR

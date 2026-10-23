@@ -364,7 +364,8 @@ func _pads() -> void:
 func _spawn_sources() -> void:
 	for s in [-1.0, 1.0]:
 		_tunnel(Vector3(s * (SHAFT - 0.3), FLOOR, 0), Vector3(-s, 0, 0))
-		_lift(Vector3(s * -4, SERVICE, s * (SHAFT - 0.2)), Vector3(0, 0, -s))
+		# each behind its service-block spawn point in _spawn_list()
+		_lift(Vector3(s * 4, SERVICE, s * (SHAFT - 0.2)), Vector3(0, 0, -s))
 	_lift(Vector3(-18, 0, 21.8), Vector3(0, 0, -1))
 	for p in [Vector3(-24.5, 0, -11), Vector3(24.5, 0, 9), Vector3(-11, DECK, -23.5)]:
 		_hatch(p)

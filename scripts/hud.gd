@@ -1395,7 +1395,12 @@ func _input(event: InputEvent) -> void:
 				Sfx.play("type", -6.0, 0.8)
 			elif initials.length() < 3:
 				var ch := ""
-				if kc >= KEY_A and kc <= KEY_Z:
+				# letters as printed on the player's keyboard (AZERTY's A is
+				# QWERTY's Q key); digits by position, unshifted on every layout
+				var lk: int = event.keycode
+				if lk >= KEY_A and lk <= KEY_Z:
+					ch = char(lk)
+				elif lk == KEY_NONE and kc >= KEY_A and kc <= KEY_Z:
 					ch = char(kc)
 				elif kc >= KEY_0 and kc <= KEY_9:
 					ch = char(kc)
@@ -1795,6 +1800,9 @@ func _process(_delta: float) -> void:
 		_layout_levelup()
 	if play_root.visible:
 		_update_play(delta)
+	elif post and post.heat > 0.0:
+		# the combo's heat cools off the results screen too
+		post.heat = move_toward(post.heat, 0.0, delta * 2.0)
 
 
 func _layout_title() -> void:

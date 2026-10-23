@@ -484,6 +484,7 @@ func _try_climb(wish: Vector3) -> bool:
 		return false
 	_set_finisher_target(null)
 	dash_t = 0.0 # the climb takes over from a dash into the ledge
+	_lunge_t = 0.0 # and from an aim-assist lunge, which would fling you off the top
 	climb_t = 0.0
 	climb_len = CLIMB_BASE_TIME + CLIMB_TIME_PER_M * float(found.rise)
 	_climb_from = global_position

@@ -306,7 +306,12 @@ func add_score(entry: Dictionary) -> int:
 	_sort_scores()
 	save_now()
 	changed.emit()
-	return high_scores.find(entry)
+	# this very entry, not the first equal one: a replayed seed can score the
+	# same, and the initials must go on the new row
+	for i in high_scores.size():
+		if is_same(high_scores[i], entry):
+			return i
+	return -1
 
 
 func rename_score(rank: int, initials: String) -> void:
