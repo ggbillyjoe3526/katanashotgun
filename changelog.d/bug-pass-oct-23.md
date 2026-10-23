@@ -22,3 +22,4 @@
 - A save file that another program is holding open is no longer mistaken for a damaged one: the game waits a moment for it, and if it is still busy the title says so and that session saves nothing instead of starting your profile over.
 - Saving keeps the old backup safe even if the backup step fails, and a profile from a newer version of the game stays safely copied aside.
 - A puddle no longer sits inside the solid block at the bottom of The Well.
+- The weather on each seed is now locked in for good: future changes to the map can no longer change a seed's rain. This was a one-time change, so a seed from 0.1 Dev 2 may now have different rain, and the city towers around The Well are arranged differently.

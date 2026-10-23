@@ -56,58 +56,8 @@ here; see Resolved.)
 
 ## Needs a decision (William)
 
-### KI-020 Idaten Drive refills every dash charge
-- **Severity:** low
-- **Symptom:** taking Idaten Drive gives +1 maximum dash charge and also
-  refills all charges at once. The spec says "+1 dash charge"; Fujin adds
-  exactly one.
-- **Where:** `scripts/player.gd` `on_upgrade("idaten")`.
-- **Decision:** keep the refill as a small treat (then the spec says so), or
-  match the spec.
-
-### KI-021 A mutator can't come back two waves later
-- **Severity:** low
-- **Symptom:** the spec says a wave never repeats the previous wave's
-  mutator. The code also blocks X, (no mutator), X, because it remembers
-  the last mutator rolled rather than the last wave's.
-- **Where:** `scripts/wave_director.gd` with `scripts/mutators.gd`.
-- **Decision:** changing it changes the mutators of shared seeds, so it is
-  William's call (or the spec adopts the stricter rule).
-
-### KI-022 NEW HI-SCORE never flashes on the very first run
-- **Severity:** low
-- **Symptom:** with an empty top 10, the run's NEW HI-SCORE cut-in never
-  plays, though the results screen still says NEW BEST.
-- **Where:** `scripts/hud.gd` (`best > 0` in the cut-in check).
-- **Decision:** probably deliberate (no score to beat yet); confirm.
-
-### KI-023 The Well's cover is the same on every seed
-- **Severity:** low
-- **Symptom:** props and cover on The Well (vending machines, lamps, crates,
-  shrines, planters) are placed the same way for every seed; only palette,
-  weather, signs, skyline and puddles change. The goal doc says the seed
-  decides cover.
-- **Where:** `scripts/maps/world_detail.gd` (fixed-seed local RNG; the code
-  says the layout is meant to stay the same).
-- **Decision:** a fixed hand-made layout (as built) or seeded cover.
-
-### KI-024 Pasted text like "2024 1225" is read as a seed
-- **Severity:** low
-- **Symptom:** the seed box accepts any two groups of four hex digits, so a
-  pasted date fills it. The player sees the digits before pressing PLAY.
-- **Where:** `scripts/ui/seed_entry.gd` loose pattern.
-- **Decision:** probably fine as is (friends type seeds with spaces).
-
-### KI-025 The skyline draw sits in front of the weather roll
-- **Severity:** low (latent)
-- **Symptom:** none today. `scripts/maps/city_backdrop.gd` seeds itself
-  with one draw from the map stream, and the weather roll comes after the
-  backdrop build. A later backdrop change that drew more would shift every
-  seed's weather.
-- **Where:** `scripts/maps/city_backdrop.gd` and the map build order.
-- **Decision:** give the backdrop its own stream now (every existing seed's
-  weather changes once, on purpose) or leave it and keep the backdrop to
-  its one draw.
+Nothing waiting. (William decided KI-020 to KI-025 on 2026-10-23; see
+Resolved.)
 
 ---
 
@@ -149,3 +99,9 @@ here; see Resolved.)
 | KI-016 | The autoplay bot steered by the wall clock (now run time). Its dice stay unseeded on purpose: `seed_check.sh` plays two different bot runs to prove the wave plan doesn't depend on play | bug pass second try, 2026-10-23 |
 | KI-017 | Dev-only: a resumed run took the session's SODA CANS switch, an abandoned cans run could set a best score, PALETTE showed "?" after `--palette=NAME`, KILL ALL inside a wave intro left its timers driving the next intro, a finished can's lid and fizz vanished mid-air | bug pass second try, 2026-10-23 |
 | KI-018 | Latent: a button's label set after it was built was undone on disarm, the run card read a viewport that might be gone, only the first shotgun cell light was checked, a dead `heal_kill` branch in enemies, an orphan node in a boss unit test (the backdrop stream became KI-025) | bug pass second try, 2026-10-23 |
+| KI-020 | Idaten Drive refills every dash charge when you take it: kept as a small treat, now written into the spec and the Level-Up Cards wiki page | William's call, 2026-10-23 |
+| KI-021 | A mutator can't come back two waves later (X, none, X): kept; the spec now says "never repeats the last mutator rolled", so shared seeds don't change | William's call, 2026-10-23 |
+| KI-022 | NEW HI-SCORE doesn't flash on the very first run: kept (nothing to beat yet); the spec and wiki say so, and the results screen still says NEW BEST | William's call, 2026-10-23 |
+| KI-023 | The Well's cover is the same on every seed: kept, a hand-made layout tuned around the leap links, pads and spawns; the spec and the Seeds wiki page no longer say the seed moves cover | William's call, 2026-10-23 |
+| KI-024 | Pasted text like "2024 1225" is read as a seed: kept loose on purpose (you see the digits before PLAY); written into the spec | William's call, 2026-10-23 |
+| KI-025 | The weather was rolled from the map's stream after the whole map build, so a change to the skyline (or anything built before it) would shift seeds' weather: the weather and the backdrop towers now each have their own stream from the seed; many seeds' weather and every seed's backdrop towers changed once (0.1 Dev 3) | William's call, 2026-10-23 |

@@ -3,8 +3,8 @@ extends Node3D
 ## The living city around a rooftop map: towers with lit windows, neon trim,
 ## signs, billboards and corporation logos, plus things that move (flying-car
 ## traffic, a monorail, a blimp, sweeping searchlights and a slowly drifting
-## sun). Presentation only: it draws one number from the map stream and keeps
-## its own RNG, so it can never shift gameplay. Cheap to draw: tower bodies,
+## sun). Presentation only: its RNG is seeded from the run seed on its own,
+## never from the map stream, so it can never shift gameplay. Cheap to draw: tower bodies,
 ## neon trim and traffic are MultiMeshes; nothing here casts light. Its
 ## CityWatch makes the city react to the run (news drones, live screens).
 
@@ -44,7 +44,9 @@ func build(a: Arena) -> void:
 	arena = a
 	pal = a.pal
 	accents = pal.accents
-	rng.seed = a.rng.randi()
+	# its own stream from the seed, so the skyline drawing more or less never
+	# shifts anything the map rolls after it (KI-025)
+	rng.seed = hash([Game.run_seed, "skyline"])
 	m_tower = Psx.lit(Color(0.85, 0.85, 1.0), TexGen.windows_for(pal, rng.randi() % 1000), true, 0.045, {"emission_from_texture": 1.9, "fog_start": 60.0, "fog_end": 300.0})
 	_sun_base = float(a.sky_mat.get_shader_parameter("sun_azimuth"))
 	_ring_towers()

@@ -6,7 +6,8 @@ pause screen (bottom left) and the results screen (under your Player Level).
 ## What the seed decides
 
 - The map, its colour palette and the weather
-- Where the cover (crates and obelisks) sits on the roof
+- The signs and adverts around The Well (its cover is the same on every
+  seed: it is laid out by hand around the ledges and geyser pads)
 - Every wave's line-up and where enemies drop in
 - Which [mutators](Waves-and-Mutators) come up
 - The order the [bosses](Bosses) arrive in
@@ -21,7 +22,11 @@ Shotgun spread, enemy attack timing and health orb drops follow the seed
 too.
 
 Seeds from 0.1 Dev 1 play differently since 0.1 Dev 2, which made seeds
-reliable. To race a friend, play the same version of the game.
+reliable. In 0.1 Dev 3 many seeds' weather changed once (the weather now
+has its own random numbers, so later changes to the map can never shift
+it), the city towers around The Well moved, and where
+enemies appear in a crowded wave can differ. To race a friend, play the
+same version of the game.
 
 Your Player Level and unlocked weapon looks don't change anything in a run,
 so seeded scores stay comparable.

@@ -922,7 +922,7 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 | chain | HYAKUNIN-GIRI | GLORY | 1 | Glory kills stagger every enemy within 9 m |
 | kamaitachi | KAMAITACHI RING | GLORY | 1 | A glory kill fires 8 blood blades flat out from the body (60 damage each) |
 | taiko | TAIKO FRENZY | GLORY | 1 | A glory kill adds +5 combo and freezes the combo timer for 3 s |
-| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge; every dash charges 1 cell |
+| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge, and every charge refills when you take it (owner, 2026-10-23, KI-020); every dash charges 1 cell |
 | fujin | FUJIN'S RETURN | DASH | 1 | Shotgun kills (including Raijin's Fork leaps) refund one dash charge |
 | dashcut | KAGE STEP | DASH | 2 | Dashing through enemies slices them (40 × rank) |
 | utsusemi | UTSUSEMI SHELL | DASH | 1 | A hit that would hurt you spends a dash charge instead (0.4 s invulnerable); once every 3 s |
@@ -1282,7 +1282,9 @@ All damage × the boss's `damage_mult`.
 
 ### 6.3 Mutators (seeded, from wave 2, 35% skip chance, never on boss waves)
 In-game names drop macrons (§13). A roll always makes two draws from the
-wave stream (chance, pick), never repeats the previous wave's mutator, and
+wave stream (chance, pick), never repeats the last mutator rolled (so a
+wave with no mutator in between doesn't free it: X, none, X can't happen;
+owner, 2026-10-23, KI-021), and
 only picks mutators whose `min_wave` has come (the harsher ones wait so
 waves 1 to 3 stay easy). The pool grew from 9 to 15 on 2026-10-18 at the
 owner's request for more variety.
@@ -1521,7 +1523,9 @@ the holographic cut-in (§9.8).
     so quitting before typing initials doesn't lose it.
 - The live HUD does not show the best score (the Focus layout, §9.7); the
   title (BEST, and the HI-SCORES panel) and the results screen do. Passing the best score triggers the
-  "NEW HI-SCORE" cut-in once per run.
+  "NEW HI-SCORE" cut-in once per run. With no score on the table yet (the
+  very first run) there is nothing to beat, so it doesn't play; the
+  results screen still says NEW BEST (owner, 2026-10-23, KI-022).
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
   confirms; blanks become "-"), then the table appears with the new entry
   highlighted. **R** retries the same seed; a click or Enter starts a new
@@ -1534,7 +1538,10 @@ the holographic cut-in (§9.8).
 - **PLAY A SEED** (built 2026-10-19): a title menu item (or **S**) opens
   a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
   itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
-  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
+  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). The
+  match is loose on purpose: any two groups of four hex digits count, so a
+  pasted date can fill the box, but the player sees the digits before
+  PLAY (owner, 2026-10-23, KI-024). PLAY or
   Enter starts a run on it at once; BACK or Esc closes; CLEAR empties.
   Left alone, runs keep random seeds. With a suspended run waiting, PLAY
   asks twice and then ends that run the way N does (its XP counts). The box
@@ -1542,8 +1549,15 @@ the holographic cut-in (§9.8).
 - **COPY** puts the run's seed on the clipboard: COPY beside the seed on
   the pause screen, COPY SEED in the results row, or **C** there.
 - Separate RNG streams:
-  - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
-    signs.
+  - `rng_map = hash(seed × 3 + 1)`: map pick, palette, signs.
+    The Well's cover layout is fixed, the same on every seed (owner,
+    2026-10-23, KI-023): the hand-made cover is tuned around the leap links,
+    geyser pads and spawns.
+  - The weather has its own stream, `hash([seed, "weather"])`, and so do
+    the near backdrop towers (`hash([seed, "skyline"])`): a change to how
+    much the map build draws can never shift a seed's weather (owner,
+    2026-10-23, KI-025). This changed many seeds' weather, and every
+    seed's backdrop towers, once in 0.1 Dev 3.
   - `rng_upgrades = hash(seed × 7 + 3)`: augment offers (one shuffle per
     offer, so the same picks give the same offers).
   - **Per-wave streams**, reseeded from the seed and the wave number at every
@@ -1691,8 +1705,10 @@ the holographic cut-in (§9.8).
     preset, §14), a monorail passing south of the roof, an ad blimp,
     searchlights, and a sun that drifts slowly (a 10-minute sweep, kept in
     the skyline's gap to the north).
-  - Draws **one** number from `rng_map` and keeps its own RNG after that, so
-    it can never shift gameplay (§7.5). Tower bodies, strips and traffic are
+  - Draws nothing from `rng_map`: its own RNG is seeded from
+    `hash([seed, "skyline"])`, so it can never shift gameplay or anything
+    the map rolls after it (§7.5; until 2026-10-23 it drew one number from
+    `rng_map`, KI-025). Tower bodies, strips and traffic are
     MultiMeshes; nothing in it casts light.
   - **The City Is Watching** (`CityWatch`, §19.1 #9, on trial): news
     drones that gather with the combo and city screens with the live score

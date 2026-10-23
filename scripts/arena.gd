@@ -464,7 +464,11 @@ func _build_rain() -> void:
 	rain.material_override = Psx.fx(Color(rc.r, rc.g, rc.b, 0.3), null, false)
 	rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(rain)
-	var roll := rng.randf()
+	# its own stream from the seed: nothing the map builds before it (signs,
+	# skyline, props) can shift a seed's weather (KI-025)
+	var weather := RandomNumberGenerator.new()
+	weather.seed = hash([Game.run_seed, "weather"])
+	var roll := weather.randf()
 	rain_level = 0 if roll < 0.35 else (1 if roll < 0.8 else 2)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--rain="): # debug: force the weather (the roll above still happens)

@@ -77,6 +77,27 @@ func test_no_prop_is_a_step_to_a_sheer_wall() -> void:
 				assert_gte(Vector2(dx, dz).length(), WorldDetail.REACH_RANGE, "prop %s is far from %s" % [box, s])
 
 
+func test_the_weather_has_its_own_stream() -> void:
+	# KI-025: however much the map draws from its stream before the weather
+	# roll, a seed keeps its weather
+	var a := _build()
+	var level := a.rain_level
+	a.free()
+	Game.next_seed = SEED
+	Game.reset_run()
+	for i in 7:
+		Game.rng_map.randi() # as if the map had drawn more
+	var b := WellMap.new()
+	add_child(b)
+	b.build()
+	assert_eq(b.rain_level, level)
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([SEED, "weather"])
+	var roll := r.randf()
+	assert_eq(level, 0 if roll < 0.35 else (1 if roll < 0.8 else 2), "rolled from the seed's weather stream")
+	b.free()
+
+
 func test_puddles_follow_the_rain() -> void:
 	var dry := _build(0)
 	var wet := _build(2)
