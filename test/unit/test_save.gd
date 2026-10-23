@@ -266,14 +266,12 @@ func test_top_ten_keeps_the_best_and_names_them() -> void:
 
 
 func test_a_replayed_score_gets_its_own_row() -> void:
-	# a seed replayed to the same score: the new row is the one named
+	# a seed replayed to the same score: both rows wait for initials as "---",
+	# and the rank returned must be the new row, not the first equal one
 	Profile.use_dir(dir)
-	var old := {"name": "---", "score": 500, "wave": 4, "seed": "1234-ABCD"}
-	Profile.add_score(old)
-	Profile.rename_score(0, "OLD")
-	Profile.add_score({"name": "---", "score": 900, "wave": 6, "seed": "1234-ABCD"})
-	Profile.rename_score(0, "TOP")
-	var again := {"name": "OLD", "score": 500, "wave": 4, "seed": "1234-ABCD"}
+	for i in 3:
+		Profile.add_score({"name": "---", "score": 500, "wave": 4, "seed": "1234-ABCD"})
+	var again := {"name": "---", "score": 500, "wave": 4, "seed": "1234-ABCD"}
 	var rank := Profile.add_score(again)
 	assert_true(is_same(Profile.high_scores[rank], again), "the rank is the new row's")
 

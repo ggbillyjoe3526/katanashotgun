@@ -97,6 +97,7 @@ var _bars_t := 99.0
 var _bars_len := 0.85
 var _fin: FinishBG
 var _fin_t := 99.0
+var _verbose := Game.has_flag("--verbose-juice") # read once, not every splash frame
 
 # KIRI (spec §9.8): the top-lane card and the full-screen slashes
 var _kiri: KiriCard
@@ -1385,7 +1386,7 @@ func _update_finish(rd: float) -> void:
 	_fin_t += rd
 	_fin.t = _fin_t
 	_fin.queue_redraw()
-	if OS.get_cmdline_user_args().has("--verbose-juice"):
+	if _verbose:
 		print("fin t=%.2f vis=%s size=%s pos=%s" % [_fin_t, _fin.visible, _fin.size, _fin.position])
 	if _fin_t > 0.92:
 		_fin.visible = false

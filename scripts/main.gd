@@ -238,9 +238,10 @@ func pause_game() -> void:
 
 
 ## Alt-tab or any other window taking focus pauses the run (spec §2): the
-## mouse lock check alone misses a window that keeps the captured mode.
+## mouse lock check alone misses a window that keeps the captured mode. Not
+## in the moment after a full-screen switch, while the window settles.
 func _notification(what: int) -> void:
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and Game.state == "playing" and not Game.debug_no_pause:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and Game.state == "playing" and not Game.debug_no_pause and _capture_grace <= 0.0:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		pause_game()
 
@@ -356,9 +357,8 @@ func on_boss_killed(b: Enemy) -> void:
 func _boss_already_paid() -> bool:
 	if _snap.is_empty() or not Profile.has_suspended_run():
 		return false
-	if int(_snap.get("boss_paid", 0)) == Game.wave:
+	if RunSnapshot.boss_paid(_snap, Game.wave):
 		return true
-	_snap["boss_paid"] = Game.wave
 	Profile.suspend_run(_snap)
 	return false
 
@@ -418,6 +418,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
 			Settings.toggle_fullscreen()
+			_capture_grace = 0.6 # the window settling into its new mode is not the player leaving
 		elif event.physical_keycode == KEY_BRACKETLEFT:
 			Settings.nudge_sensitivity(-0.1)
 		elif event.physical_keycode == KEY_BRACKETRIGHT:

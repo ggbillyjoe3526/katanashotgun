@@ -1,0 +1,15 @@
+### Bug fixes
+- A wave no longer ends while its last enemies are still dropping in. If you cleared the field just before the final group arrived, the tally used to start with them still alive.
+- The white impact frames in glory kills now last their intended time instead of being cut to a single frame by the hit freeze, and screen flashes no longer jump ahead when a hit freeze starts.
+- A boss or brute shockwave still rolling outward can no longer hurt you once the wave is clear.
+- Continuing a saved run after a boss fell (if you quit before the next wave) no longer pays that boss's reward a second time.
+- Switching to another window (Alt+Tab) now always pauses the game.
+- Dying within a few seconds of a boss kill no longer brings the fight music and the boss's farewell card back over the death screen.
+- A continued run now keeps its combo.
+- The Well no longer stays brighter for the rest of a storm after the first lightning strike.
+- High-score initials now type the letters printed on your keyboard (AZERTY and other layouts).
+- Climbing a ledge right after a slash lunge no longer flings you off the top.
+- Cut-off grunt arms no longer flash or change colour along with the next grunt.
+- Enemies on The Well's service blocks now walk out of the freight lifts drawn for them.
+- Puddle reflections no longer trail a frame behind the camera.
+- A damaged save file is now always kept aside, never deleted, and a replayed seed with the same score puts your initials on the right row.

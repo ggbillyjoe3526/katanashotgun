@@ -18,6 +18,7 @@ const SIDESTEP_RANGE := 7.0
 const SIDESTEP_CONE := 0.1 # radians around the body
 const SIDESTEP_CD := 4.0
 const SIDESTEP_LAND := 6.0 # metres of floor a sidestep needs (the mech's leap carries about that far)
+const BACK_LEAP_MAX := 1.2 # seconds: a mech back-leap still airborne by then (caught on a prop) gives up
 const GENTLE_SIDESTEP_CD := 6.0
 # delayed swings: some windups hold longer; the eyes flare just before the hit
 const DELAY_CHANCE := 0.3
@@ -643,7 +644,7 @@ func _sidestep_state(dir: Vector3) -> Array:
 				Sfx.play_at("slam", global_position, 0.0, 1.0)
 				recover_time = 0.5
 				_set_state(S.RECOVER)
-			elif state_t > 1.2:
+			elif state_t > BACK_LEAP_MAX:
 				# still airborne (caught on a ledge or a prop): stop sliding sideways
 				_set_state(S.CHASE)
 			return [_side_dir * 10.0, dir]

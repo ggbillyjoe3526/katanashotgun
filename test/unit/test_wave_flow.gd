@@ -72,7 +72,20 @@ func test_a_suspended_run_keeps_its_combo() -> void:
 	var snap := RunSnapshot.capture(4, d, p)
 	Game.combo = keep[0]
 	Game.combo_timer = keep[1]
-	assert_eq(int(snap.game.combo), 23)
-	assert_almost_eq(float(snap.game.combo_timer), 2.5, 0.001)
+	# through the file and back, as CONTINUE reads it
+	var back: Dictionary = JSON.parse_string(JSON.stringify(snap))
+	assert_eq(int(back.game.combo), 23)
+	assert_almost_eq(float(back.game.combo_timer), 2.5, 0.001)
 	d.free()
 	p.free()
+
+
+func test_a_boss_reward_is_paid_once_per_snapshot() -> void:
+	# quit after the wave 3 boss fell, CONTINUE (the snapshot from before the
+	# boss wave, saved again with its mark), fell it again: no second reward
+	var snap := {"next_wave": 3}
+	assert_false(RunSnapshot.boss_paid(snap, 3), "first kill pays")
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(snap))
+	assert_true(RunSnapshot.boss_paid(saved, 3), "the continued run's kill does not")
+	assert_false(RunSnapshot.boss_paid(saved, 6), "a later boss still pays")
+	assert_false(RunSnapshot.boss_paid({"next_wave": 3}, 3), "an older snapshot without the mark pays")

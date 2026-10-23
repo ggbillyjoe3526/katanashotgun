@@ -48,6 +48,6 @@ second early still counts.
 | Results | **O** | Open the folder the run card went to |
 | Results | **Esc** | Back to the title screen (or click MAIN MENU, top left) |
 
-The game also pauses on its own if you switch away from it (Alt+Tab) and the mouse is released.
+The game also pauses on its own whenever you switch away from it (Alt+Tab) or the mouse is released.
 
 Controllers aren't supported yet.

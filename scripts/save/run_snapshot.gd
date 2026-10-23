@@ -40,6 +40,16 @@ static func capture(next_wave: int, director: WaveDirector, player: Player) -> D
 	}
 
 
+## Whether `wave`'s boss reward was already paid from this snapshot (a run
+## continued after the boss fell, before the next snapshot). If not, marks
+## it paid; the caller saves the snapshot again.
+static func boss_paid(snap: Dictionary, wave: int) -> bool:
+	if int(snap.get("boss_paid", 0)) == wave:
+		return true
+	snap["boss_paid"] = wave
+	return false
+
+
 ## Restores a snapshot onto a freshly built run (same seed, map already
 ## built). Returns the wave to start on.
 static func apply(snap: Dictionary, director: WaveDirector, player: Player) -> int:

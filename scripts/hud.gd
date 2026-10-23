@@ -1800,8 +1800,9 @@ func _process(_delta: float) -> void:
 		_layout_levelup()
 	if play_root.visible:
 		_update_play(delta)
-	elif post and post.heat > 0.0:
-		# the combo's heat cools off the results screen too
+	elif death_root.visible and post and post.heat > 0.0:
+		# the combo's heat cools off the death and results screens too (the
+		# pause screen keeps its frozen frame)
 		post.heat = move_toward(post.heat, 0.0, delta * 2.0)
 
 
