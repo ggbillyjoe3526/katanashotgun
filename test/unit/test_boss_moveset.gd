@@ -53,7 +53,10 @@ func test_a_cut_short_red_signal_never_leaves_the_boss_hidden() -> void:
 	b.add_child(b.visual)
 	b._red_mark = MeshInstance3D.new()
 	b.add_child(b._red_mark)
-	b._line_marks.append(Node3D.new())
+	# a child of the boss, so freeing the boss takes it too (no orphan)
+	var mark := Node3D.new()
+	b.add_child(mark)
+	b._line_marks.append(mark)
 	b.visual.visible = false
 	b.collision_layer = 0
 	b.state = Enemy.S.RED_ACT

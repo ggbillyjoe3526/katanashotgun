@@ -25,6 +25,8 @@ var _double_sent := false
 var _finisher_sent := false
 var _pad: Dictionary = {}
 var _last_vy := 0.0
+var _buffer_sent := false
+var _after_buffer := -INF # highest point rising after the early press
 
 
 func _ready() -> void:
@@ -45,10 +47,12 @@ func _ready() -> void:
 		{"name": "double jump plus climb onto a 5.6 m tower", "blocks": [[5.6, 1.2]], "keys": ["jump", "double"], "want_climb": true, "want_top": 5.6},
 		{"name": "a 7 m wall can never be climbed", "blocks": [[7.0, 1.2]], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0},
 		{"name": "double jump height on open floor", "blocks": [], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0, "measure": true, "forward": false},
+		{"name": "jump pressed just before landing (no jump left) still jumps", "blocks": [], "keys": ["jump", "double"], "forward": false, "buffer_jump": true},
 		{"name": "double jump pushes a little toward the keys held", "blocks": [], "keys": ["jump", "double"], "push": true},
 		{"name": "no plunge from a jump on the same level", "blocks": [], "keys": ["jump", "double"], "enemy": Vector3(0, 0, -2.0), "want_plunge": false, "forward": false, "pitch": -0.9},
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
 		{"name": "plunge onto a grunt at the foot of the wall lands clear of it", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -1.5), "want_plunge": true, "want_top": 0.0, "max_z": -1.4, "pitch": -1.3},
+		{"name": "glory kill from a 1.5 m ledge onto a grunt at its foot ends beside it, not inside the ledge", "blocks": [[1.5, 0.0, 6.0]], "start_y": 1.5, "keys": [], "enemy": Vector3(0, 0, -1.5), "stagger": true, "want_glory": true, "want_top": 0.0, "max_z": -1.4, "forward": false, "pitch": -0.5},
 		{"name": "plunge from a 4 m ledge onto a grunt", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.2), "want_plunge": true, "pitch": -0.9},
 		{"name": "plunge from a jump pad launch onto a grunt on the same floor", "blocks": [], "keys": [], "pad": Vector3(0, 17.0, -5.0), "enemy": Vector3(0, 0, -6.0), "want_plunge": true, "forward": false, "pitch": -1.1},
 		{"name": "a jump pad on the deck above never fires from the floor under it", "blocks": [], "keys": [], "pad": Vector3(0, 17.0, 0), "pad_y": 5.0, "forward": false, "max_peak": 0.3},
@@ -103,6 +107,8 @@ func _next() -> void:
 	_plunge_seen = false
 	_double_sent = false
 	_finisher_sent = false
+	_buffer_sent = false
+	_after_buffer = -INF
 	_max_y = -INF
 	_max_h = 0.0
 	_last_vy = 0.0
@@ -131,6 +137,9 @@ func _next() -> void:
 		_enemy.frozen = true
 		_enemy.position = ORIGIN + c.enemy
 		Game.main.director.add_child(_enemy)
+		if c.get("stagger", false):
+			_enemy.state = Enemy.S.CHASE
+			_enemy.stagger_now()
 	var p := Game.player
 	p.global_position = ORIGIN + Vector3(0, c.get("start_y", 0.0) + 0.02, 0)
 	if c.has("map_pad"):
@@ -178,6 +187,13 @@ func _physics_process(_delta: float) -> void:
 		_tap("jump")
 		if c.get("forward_at_double", false):
 			Input.action_press("move_forward")
+	# about five frames from the floor on the way down from the double jump
+	if c.get("buffer_jump", false) and _double_sent and not _buffer_sent and _f > 30 and not p.is_on_floor() and p.velocity.y < 0.0 and p.global_position.y - ORIGIN.y < 1.2:
+		_buffer_sent = true
+		_tap("jump")
+	if _buffer_sent and p.velocity.y > 0.0:
+		# rising again with no jump left: only the early press can do that
+		_after_buffer = maxf(_after_buffer, p.global_position.y - ORIGIN.y)
 	if p.climb_t >= 0.0:
 		_climbed = true
 	_max_y = maxf(_max_y, p.global_position.y)
@@ -189,7 +205,10 @@ func _physics_process(_delta: float) -> void:
 		if c.get("want_plunge", false) and not _finisher_sent:
 			_finisher_sent = true
 			_tap("finisher")
-	var settled := _f > 30 and p.is_on_floor() and p.climb_t < 0.0 and p.gk_target == null
+	if c.get("want_glory", false) and p.gk_ready != null and not p.gk_ready_plunge and not _finisher_sent:
+		_finisher_sent = true
+		_tap("finisher")
+	var settled: bool = _f > 30 and p.is_on_floor() and (_after_buffer > 1.0 or not c.get("buffer_jump", false)) and p.climb_t < 0.0 and p.gk_target == null
 	if c.has("map_pad") and _f > 30 and _last_vy < 0.0 and p.velocity.y > 0.0:
 		settled = true # the pad caught the player on the way down and threw them up again
 	_last_vy = p.velocity.y
@@ -234,6 +253,10 @@ func _finish(c: Dictionary, p: Player) -> void:
 		var want := (Player.JUMP_VEL * Player.JUMP_VEL + Player.DOUBLE_JUMP_VEL * Player.DOUBLE_JUMP_VEL) / (2.0 * Player.GRAVITY)
 		if absf(_max_y - want) > 0.25:
 			errs.append("peak %.2f m, wanted about %.2f" % [_max_y, want])
+	if c.get("buffer_jump", false) and _after_buffer < 1.0:
+		errs.append("the early press was lost (rose %.2f m after it)" % _after_buffer)
+	if c.get("want_glory", false) and not (_enemy_gone() and Game.executions == _executions0 + 1):
+		errs.append("glory kill did not happen (executions +%d)" % (Game.executions - _executions0))
 	if c.has("want_plunge"):
 		if _plunge_seen != c.want_plunge:
 			errs.append("plunge prompt=%s" % _plunge_seen)

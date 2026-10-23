@@ -512,3 +512,6 @@ func _links() -> void:
 	nav_links.append([Vector3(4.2, 10, -28.5), Vector3(1.2, 13, -28.5)]) # tower to beacon cap
 	nav_links.append([Vector3(21.5, DECK, -25 + o), Vector3(21.5, 6.2, -25 - o)]) # deck to antenna terrace
 	nav_links.append([Vector3(16, 0, 23 - o), Vector3(16, DECK, 23 + o)]) # roof to billboard gantry
+	nav_links.append([Vector3(22 + o, 0, 26), Vector3(21 - o, DECK, 26)]) # roof to the gantry's east edge
+	nav_links.append([Vector3(-22.5, DECK, -25 + o), Vector3(-22.5, 8, -25 - o)]) # deck to water tanks, between the tanks
+	nav_links.append([Vector3(-16.5, 0, 22 - o), Vector3(-16.5, 3, 22 + o)]) # roof to stairwell hut

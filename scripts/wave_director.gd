@@ -378,7 +378,8 @@ func _physics_process(delta: float) -> void:
 			var alive := Game.enemy_list.size()
 			if not queue.is_empty() and spawn_t <= 0.0 and alive < _max_alive():
 				var sp := _pick_spawn()
-				var group := mini(_spawn_rng.randi_range(1, 3), queue.size())
+				# never past the cap: a group of three arriving one under it brings one
+				var group := mini(mini(_spawn_rng.randi_range(1, 3), queue.size()), _max_alive() - alive)
 				for i in group:
 					var item: Array = queue.pop_front()
 					var off := Vector3(_spawn_rng.randf_range(-2.0, 2.0), 0, _spawn_rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO

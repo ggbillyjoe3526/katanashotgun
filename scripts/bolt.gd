@@ -21,6 +21,7 @@ var _halo_mat: ShaderMaterial
 var _core_mat: ShaderMaterial
 var _hit := {}
 var _trail_t := 0.0
+var _ray := PhysicsRayQueryParameters3D.new() # this tick's flight against the world (mask 1), reused
 ## The pool that takes this bolt back when it is spent (null: freed instead).
 var pool: WaveDirector = null
 ## Built ahead of time for a pool: hidden at once.
@@ -143,6 +144,7 @@ func _finish() -> void:
 
 
 func _ready() -> void:
+	_ray.collision_mask = 1 # the world only, as the per-tick query always was
 	if kind == "wave":
 		_build_wave()
 	elif kind == "shuriken":
@@ -342,10 +344,12 @@ func _physics_process(delta: float) -> void:
 		_steer()
 	var from := global_position
 	var to := from + vel * delta
-	var space := get_world_3d().direct_space_state
-	var q := PhysicsRayQueryParameters3D.create(from, to, 1)
 	# a bolt on its way back to its shooter is never stopped by cover
-	var res: Dictionary = _NO_HIT if _returning else space.intersect_ray(q)
+	var res: Dictionary = _NO_HIT
+	if not _returning:
+		_ray.from = from
+		_ray.to = to
+		res = get_world_3d().direct_space_state.intersect_ray(_ray)
 	if not res.is_empty() and kind != "wave":
 		Game.gore.sparks(res.position, res.normal, 10, Color(1.8, 0.8, 0.3) if hostile else Color(0.6, 1.8, 2.0))
 		Sfx.play_at("bolt_hit", res.position, -6.0)
@@ -361,7 +365,7 @@ func _physics_process(delta: float) -> void:
 		if kind == "shuriken":
 			_core.rotate_y(delta * 25.0)
 		_trail_t -= delta
-		if _trail_t <= 0.0:
+		if _trail_t <= 0.0 and not Game.gore.drops_full():
 			_trail_t = 0.03
 			var trail := Color(1.8, 0.7, 0.2) if hostile else (Color(1.8, 2.0, 2.0) if perfect else Color(0.5, 1.6, 2.0))
 			Game.gore.spawn_drop(global_position, Vector3.ZERO, 0.15, 0.08, 1, trail)

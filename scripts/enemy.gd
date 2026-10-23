@@ -1415,9 +1415,6 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		Game.fx.missile_strike(global_position, GRUDGE_DELAY, GRUDGE_RADIUS, GRUDGE_DAMAGE, "grudge")
 	if burn_t > 0.0 and Game.rank("hitodama") > 0:
 		_hitodama_burst()
-	var hk := float(Game.mut("heal_kill", 0.0))
-	if hk > 0.0:
-		Game.player.heal(hk)
 	if is_boss:
 		Game.main.on_boss_killed(self)
 	if pool:

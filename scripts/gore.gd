@@ -145,6 +145,12 @@ func _blood_color() -> Color:
 	return Color(0.7 * k, 0.015 * k, 0.035 * k)
 
 
+## True when every droplet slot is taken (a new one would replace a live one).
+## Bolt trails check it, so they never thin out blood and sparks.
+func drops_full() -> bool:
+	return _n >= mini(Quality.cap("drops"), _max_drops)
+
+
 func spawn_drop(p: Vector3, v: Vector3, life: float, size: float, kind := 0, color := Color(0, 0, 0, 0)) -> void:
 	var i := _n
 	var cap := mini(Quality.cap("drops"), _max_drops)

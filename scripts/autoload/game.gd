@@ -114,7 +114,11 @@ func _ready() -> void:
 			var hex := a.substr(7).replace("-", "")
 			next_seed = hex.hex_to_int() if hex.length() > 0 else -1
 		elif a.begins_with("--palette="):
+			# kept as the palette's index, the form the dev menu's PALETTE row lists
 			debug_palette = a.substr(10)
+			for k in Palette.LIST.size():
+				if debug_palette.to_upper() == Palette.LIST[k].name:
+					debug_palette = str(k)
 	Settings.boot()
 	for a in args: # debug: start on a RETRO LOOK level (--plain = off)
 		var look := "off" if a == "--plain" else (a.substr(7) if a.begins_with("--look=") else "")

@@ -46,6 +46,27 @@ func _corrupt(path: String) -> void:
 	_write_raw(path, text.substr(0, text.length() - 7) + "garbage")
 
 
+## Leaves a file at `path` that exists but can't be opened, like one an
+## antivirus holds on Windows. False where chmod 000 can't do that (root).
+func _make_unopenable(path: String) -> bool:
+	var abs_path := ProjectSettings.globalize_path(path)
+	if not FileAccess.file_exists(path):
+		_write_raw(path, "x")
+	# root ignores it, so those tests are pending in cloud sessions; CI is not root
+	OS.execute("chmod", ["000", abs_path])
+	return SaveFile.is_locked(path)
+
+
+## How many files in the test folder are profiles at this Player Level.
+func _copies_at_level(level: int) -> int:
+	var n := 0
+	for f in DirAccess.get_files_at(dir):
+		var r := SaveFile.decode(SaveFile.read_text(dir.path_join(f)), "profile")
+		if r.ok and int(Profile._dict(r.data.get("player")).get("level", 0)) == level:
+			n += 1
+	return n
+
+
 # ---------------------------------------------------------------- SaveFile
 func test_round_trip() -> void:
 	assert_true(SaveFile.write(_path(), "thing", 3, {"a": 1, "b": "two"}))
@@ -125,6 +146,37 @@ func test_a_damaged_file_never_replaces_a_good_backup() -> void:
 	assert_eq(kept.size(), 1, "the damaged copy is moved aside, never deleted")
 
 
+func test_a_failed_backup_rotation_loses_nothing() -> void:
+	# KI-011: the file can't become the backup (here a folder is in the way)
+	SaveFile.write(_path(), "thing", 1, {"n": 1})
+	DirAccess.make_dir_recursive_absolute(_path() + ".bak/in-the-way")
+	assert_false(SaveFile.write(_path(), "thing", 1, {"n": 2}), "the save reports the failure")
+	assert_eq(int(SaveFile.decode(SaveFile.read_text(_path()), "thing").data.n), 1, "the old file is untouched")
+	assert_eq(int(SaveFile.read(_path(), "thing").data.n), 2, "the new copy waits in .tmp")
+	# once the way is clear, rotation works and leaves nothing behind
+	_wipe(_path() + ".bak")
+	assert_true(SaveFile.write(_path(), "thing", 1, {"n": 3}))
+	assert_true(SaveFile.write(_path(), "thing", 1, {"n": 4}))
+	assert_eq(int(SaveFile.decode(SaveFile.read_text(_path() + ".bak"), "thing").data.n), 3)
+	assert_false(FileAccess.file_exists(_path() + SaveFile.BAK_OLD))
+
+
+func test_a_file_that_cant_be_opened_is_locked_not_damaged() -> void:
+	# KI-010: the newest copy is held by another program; the older backup
+	# must not be loaded in its place, and nothing may replace it
+	SaveFile.write(_path(), "thing", 1, {"n": 1})
+	SaveFile.write(_path(), "thing", 1, {"n": 2})
+	if not _make_unopenable(_path()):
+		pending("can't make a file that won't open on this system")
+		return
+	var r := SaveFile.read(_path(), "thing")
+	assert_false(r.ok)
+	assert_true(r.get("locked", false), "reported as locked, not damaged")
+	assert_false(SaveFile.write(_path(), "thing", 1, {"n": 3}), "a locked file is not written over")
+	assert_true(SaveFile.is_locked(_path()), "and is left where it was")
+	assert_false(FileAccess.file_exists(_path() + ".tmp"))
+
+
 func test_wrong_kind_is_rejected() -> void:
 	SaveFile.write(_path(), "run", 1, {"n": 1})
 	assert_false(SaveFile.read(_path(), "profile").ok)
@@ -169,6 +221,18 @@ func test_progress_survives_a_reload() -> void:
 	assert_eq(int(Profile.lifetime.runs), 1)
 
 
+func test_a_cans_run_pays_xp_but_sets_no_best_score() -> void:
+	Profile.use_dir(dir)
+	var cans := Game.cans_run
+	Game.cans_run = false # the live switch must not decide; the caller does
+	var res := Profile.finish_run({"score": 70000, "wave": 4, "kills": 50}, false)
+	Game.cans_run = cans
+	assert_gt(res.xp_gained, 0)
+	assert_eq(int(Profile.lifetime.best_score), 0)
+	Profile.finish_run({"score": 900, "wave": 1})
+	assert_eq(int(Profile.lifetime.best_score), 900)
+
+
 func test_corrupt_profile_loads_the_backup() -> void:
 	Profile.use_dir(dir)
 	Profile.finish_run({"wave": 10, "kills": 100})
@@ -189,6 +253,25 @@ func test_unreadable_profile_is_kept_aside_not_deleted() -> void:
 	assert_eq(Profile.loaded_from, "new")
 	var kept := Array(DirAccess.get_files_at(dir)).filter(func(f): return f.contains(".corrupt-"))
 	assert_eq(kept.size(), 1, "the damaged file is kept for recovery")
+
+
+func test_a_profile_that_cant_be_opened_is_kept_read_only() -> void:
+	# KI-010: no quarantine, no fresh profile saved over it, no backup loaded
+	Profile.use_dir(dir)
+	Profile.finish_run({"wave": 10, "kills": 100})
+	Profile.finish_run({"wave": 2})
+	if not _make_unopenable(Profile.profile_path()):
+		pending("can't make a file that won't open on this system")
+		return
+	Profile.use_dir(dir)
+	assert_eq(Profile.loaded_from, "locked")
+	assert_true(Profile.read_only)
+	assert_false(Profile.save_now(), "nothing is saved this session")
+	Profile.finish_run({"wave": 3})
+	assert_true(SaveFile.is_locked(Profile.profile_path()), "the held file is left alone")
+	assert_false(FileAccess.file_exists(Profile.profile_path() + ".tmp"))
+	var moved := Array(DirAccess.get_files_at(dir)).filter(func(f): return f.contains(".corrupt-"))
+	assert_eq(moved.size(), 0, "nothing is moved aside")
 
 
 func test_settings_save_is_debounced_and_flushed() -> void:
@@ -249,6 +332,30 @@ func test_newer_profile_loads_and_is_kept() -> void:
 	Profile.use_dir(dir)
 	assert_eq(Profile.player_level, 12)
 	assert_true(FileAccess.file_exists(Profile.profile_path() + ".v%d" % (Profile.VERSION + 1)))
+
+
+func test_newer_profile_copy_is_kept_up_to_date() -> void:
+	# KI-012: the newer build played again since the first copy was kept
+	var newer := Profile.VERSION + 1
+	SaveFile.write(dir.path_join(Profile.PROFILE_FILE), "profile", newer, {"player": {"level": 12, "xp": 5}})
+	Profile.use_dir(dir)
+	SaveFile.write(dir.path_join(Profile.PROFILE_FILE), "profile", newer, {"player": {"level": 20, "xp": 5}})
+	Profile.use_dir(dir)
+	var copy := SaveFile.decode(SaveFile.read_text(Profile.profile_path() + ".v%d" % newer), "profile")
+	assert_eq(int(copy.data.player.level), 20, "the copy is the latest newer file")
+
+
+func test_profile_that_cant_migrate_is_moved_aside() -> void:
+	# KI-013: the next save must not rotate it into the backup and drop the
+	# older (good) backup
+	SaveFile.write(dir.path_join(Profile.PROFILE_FILE), "profile", Profile.VERSION, {"player": {"level": 5}})
+	SaveFile.write(dir.path_join(Profile.PROFILE_FILE), "profile", -1, {"player": {"level": 9}})
+	Profile.use_dir(dir)
+	assert_eq(Profile.player_level, 1, "starts fresh")
+	assert_gt(_copies_at_level(5), 0, "the older backup is kept")
+	assert_gt(_copies_at_level(9), 0, "the unmigratable file is kept")
+	var moved := Array(DirAccess.get_files_at(dir)).filter(func(f): return f.contains(".corrupt-"))
+	assert_eq(moved.size(), 2, "both copies are moved aside, never deleted")
 
 
 # ---------------------------------------------------------------- high scores

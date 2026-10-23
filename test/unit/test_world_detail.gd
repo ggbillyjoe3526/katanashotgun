@@ -89,6 +89,17 @@ func test_puddles_follow_the_rain() -> void:
 	wet.free()
 
 
+func test_no_puddle_lies_inside_a_block() -> void:
+	var dry := _build(0)
+	assert_gt(dry.detail.puddle_spots.size(), 0)
+	for c in dry.detail.puddle_spots:
+		# the south service block is solid from the metro floor up (KI-004)
+		assert_false(absf(c.x) < 12.0 and c.z > 8.0 and c.y < -9.0, "puddle %s is not under the south service block" % c)
+		for b in dry.detail._solids:
+			assert_false((b as AABB).has_point(c + Vector3(0, 0.3, 0)), "puddle %s is not inside %s" % [c, b])
+	dry.free()
+
+
 func test_only_water_and_glass_reflect() -> void:
 	var water := 0
 	for n in arena.find_children("*", "GeometryInstance3D", true, false):

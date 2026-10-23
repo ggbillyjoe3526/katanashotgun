@@ -132,9 +132,13 @@ func start_run() -> void:
 		_snap = resume
 		first = RunSnapshot.apply(resume, director, player)
 		Game.dev_run = Game.dev_run or bool(resume.get("dev", false))
-		if resume.has("cans"):
-			Game.cans_run = true
+		# a run keeps the soda-can switch it started with, whatever the dev
+		# menu says now
+		Game.cans_run = resume.has("cans")
+		if Game.cans_run:
 			Game.cans.restore(resume.cans)
+		else:
+			Game.cans.switch_off()
 		hud.on_run_resumed()
 		resume = {}
 	director.start(first)
@@ -167,7 +171,7 @@ func _end_suspended_run() -> void:
 
 ## A run with soda cans on (`top10` false) keeps its XP but makes no entry.
 func _pay_run(stats: Dictionary, run_seed: int, top10 := true) -> void:
-	Profile.finish_run(stats)
+	Profile.finish_run(stats, top10)
 	if top10 and Profile.qualifies(int(stats.get("score", 0))):
 		Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(run_seed)})
 
@@ -312,7 +316,7 @@ func on_player_died() -> void:
 	# the run is over: drop its snapshot first, so quitting now can't undo the
 	# death, then pay it into the profile and keep its score
 	Profile.clear_suspended_run()
-	results = _dev_results() if Game.dev_run else Profile.finish_run(Game.run_stats())
+	results = _dev_results() if Game.dev_run else Profile.finish_run(Game.run_stats(), not Game.cans_run)
 	Game.record_score()
 	Sfx.music_cut()
 	await get_tree().create_timer(0.6, true, false, true).timeout

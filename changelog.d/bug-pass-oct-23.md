@@ -13,3 +13,12 @@
 - Enemies on The Well's service blocks now walk out of the freight lifts drawn for them.
 - Puddle reflections no longer trail a frame behind the camera.
 - A damaged save file is now always kept aside, never deleted, and a replayed seed with the same score puts your initials on the right row.
+- A slash or dash pressed during a glory kill, or right as a ledge climb starts, now fires the moment it ends instead of being lost.
+- Jump pressed just before you land, and dash pressed just before a charge comes back, now still go off (a short input buffer).
+- A glory kill from a ledge or mid-jump can no longer leave you stuck inside the ledge or wall below; you finish beside the enemy where there is room.
+- Enemies can now follow you onto the water tanks, the stairwell hut and the east end of the billboard gantry on The Well.
+- The enemy count no longer goes over the wave's limit.
+- The score no longer flashes as if you'd scored when you continue a saved run.
+- A save file that another program is holding open is no longer mistaken for a damaged one: the game waits a moment for it, and if it is still busy the title says so and that session saves nothing instead of starting your profile over.
+- Saving keeps the old backup safe even if the backup step fails, and a profile from a newer version of the game stays safely copied aside.
+- A puddle no longer sits inside the solid block at the bottom of The Well.

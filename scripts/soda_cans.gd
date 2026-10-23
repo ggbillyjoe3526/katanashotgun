@@ -71,6 +71,12 @@ func restore(ids: Array) -> void:
 	selected = 0
 
 
+## The run is resuming a snapshot made without cans: none for this run.
+func switch_off() -> void:
+	enabled = false
+	held.clear()
+
+
 ## The multiplier the active can puts on `key` (1.0 for none).
 func boost(key: String) -> float:
 	return float(_boosts.get(key, 1.0))

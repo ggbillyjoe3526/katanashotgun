@@ -53,6 +53,28 @@ func test_the_last_group_onto_an_empty_field_does_not_clear_the_wave() -> void:
 	assert_eq(d.phase, "spawning", "so the wave is not over while it stands")
 
 
+func test_a_group_never_takes_the_field_past_the_cap() -> void:
+	# spec §6: max alive min(8 + 2w, 22); a group arriving one under it brings one
+	var d := FlowDirector.new()
+	add_child_autofree(d)
+	d.wave = 1
+	var cap := d._max_alive()
+	for i in cap - 1:
+		d._spawn("grunt", 1.0, Vector3.ZERO)
+	d._sync_enemy_list()
+	for n in 20:
+		d.phase = "spawning"
+		d.spawn_t = 0.0
+		d.queue = [["grunt", 1.0], ["grunt", 1.0], ["grunt", 1.0]]
+		d._physics_process(1.0 / 60.0)
+		assert_lte(Game.enemy_list.size(), cap, "never past the cap (try %d)" % n)
+		# back to one under the cap for the next roll of the group size
+		while Game.enemy_list.size() > cap - 1:
+			var e: Node = Game.enemy_list.pop_back()
+			e.remove_from_group("enemies")
+			e.queue_free()
+
+
 func test_a_cleared_wave_defuses_shockwaves_still_rolling_out() -> void:
 	var fx := Fx.new()
 	add_child_autofree(fx)

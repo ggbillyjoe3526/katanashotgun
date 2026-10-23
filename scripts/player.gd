@@ -19,6 +19,10 @@ const WALK_SPEED := 8.8
 const GROUND_ACCEL := 70.0
 const AIR_ACCEL := 28.0
 const GRAVITY := 26.0
+# fall speed limit: past every real drop on the map (about 44 m/s from the top
+# of a metro pad launch), so it only stops a body caught on an edge building
+# up a fall speed that would throw it through the floor once it slides free
+const MAX_FALL := 50.0
 const JUMP_VEL := 9.4
 const DOUBLE_JUMP_VEL := 10.6
 # the double jump also pushes toward the keys held (none held: straight up),
@@ -57,6 +61,9 @@ const GLORY_LUNGE_MAX := 0.26
 const FINISHER_CONE := PI / 3.0 # 60 degrees
 const FINISHER_KEEP_CONE := PI * 4.0 / 9.0 # 80 degrees
 const FINISHER_BUFFER := 0.18
+const KATANA_BUFFER := 0.18 # seconds a slash press waits for the blade to be ready
+const JUMP_BUFFER := 0.12 # a jump pressed this long before landing still jumps
+const DASH_BUFFER := 0.12 # a dash pressed this long before a charge (or the dash ending) still dashes
 # plunge: the floor you left must be this far above the foe's feet (a jump
 # pad launch counts too), you must
 # still be this far above them, and they must be within a reach that grows
@@ -119,6 +126,8 @@ var _dash_queued := false # a dash pressed mid-climb fires as the climb ends
 var katana_cd := 0.0
 var shotgun_cd := 0.0
 var katana_buffer := 0.0
+var _jump_buffer := 0.0
+var _dash_buffer := 0.0
 var combo_step := 0
 var combo_reset := 0.0
 var slash_count := 0
@@ -158,7 +167,7 @@ var climb_len := 0.3
 var _climb_from := Vector3.ZERO
 var _climb_rise := 0.0
 var _climb_fwd := Vector3.ZERO
-var _climb_katana := false
+var _queued_katana := false
 
 # glory kill
 var gk_ready: Enemy = null # the enemy F would finish right now
@@ -182,11 +191,13 @@ var _gk_dive := 0.2 # plunge: seconds of the dive
 var _room_q: PhysicsShapeQueryParameters3D # "does the body fit here?", reused
 var _los_q: PhysicsRayQueryParameters3D # plunge line of sight, reused
 var _assist_q := PhysicsRayQueryParameters3D.new() # aim assist: what the bent blast meets first, reused
+var _pellet_q := PhysicsRayQueryParameters3D.new() # every pellet's ray, reused
 
 
 func _ready() -> void:
 	_sight_query.collision_mask = 1 # world only
 	_assist_q.collision_mask = 1 | 4 # world and enemies
+	_pellet_q.collision_mask = 1 | 4
 	collision_layer = 2
 	collision_mask = 1
 	floor_max_angle = deg_to_rad(50)
@@ -296,6 +307,8 @@ func _physics_process(delta: float) -> void:
 	katana_cd -= delta
 	shotgun_cd -= delta
 	katana_buffer -= delta
+	_jump_buffer -= delta
+	_dash_buffer -= delta
 	finisher_buffer -= delta
 	combo_reset -= delta
 	invuln -= delta
@@ -309,7 +322,9 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 	if gk_target != null:
-		# the finisher drives the body; nothing else happens meanwhile
+		# the finisher drives the body; nothing else happens meanwhile, but a
+		# slash or dash pressed during it fires the moment it ends
+		_hold_presses()
 		velocity = Vector3.ZERO
 		return
 	if climb_t >= 0.0:
@@ -332,6 +347,7 @@ func _physics_process(delta: float) -> void:
 	if finisher_buffer > 0.0 and gk_ready != null and not drinking:
 		finisher_buffer = 0.0
 		_start_glory(gk_ready, gk_ready_plunge)
+		_hold_presses() # a slash or dash pressed with F fires when the finisher ends
 		return
 
 	var input := Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -348,9 +364,11 @@ func _physics_process(delta: float) -> void:
 		return
 
 	# dash
-	var dash_pressed := Input.is_action_just_pressed("dash") or _dash_queued
+	if Input.is_action_just_pressed("dash") or _dash_queued:
+		_dash_buffer = DASH_BUFFER
 	_dash_queued = false
-	if dash_pressed and dash_charges >= 1.0 and dash_t <= 0.0:
+	if _dash_buffer > 0.0 and dash_charges >= 1.0 and dash_t <= 0.0:
+		_dash_buffer = 0.0
 		_start_dash(wish)
 	dash_charges = minf(float(max_dash), dash_charges + delta / (DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0)) * Game.boost("dash_recharge")))
 
@@ -381,12 +399,16 @@ func _physics_process(delta: float) -> void:
 		velocity.x = hv.x
 		velocity.z = hv.z
 
-	if Input.is_action_just_pressed("jump") or _auto_jump:
-		_auto_jump = false
+	var jump_pressed := Input.is_action_just_pressed("jump") or _auto_jump
+	_auto_jump = false
+	if jump_pressed or (_jump_buffer > 0.0 and is_on_floor()):
 		if is_on_floor():
+			_jump_buffer = 0.0
 			velocity.y = JUMP_VEL
 			Sfx.play("jump", -8.0)
-		elif jumps_left > 0:
+		elif jumps_left <= 0:
+			_jump_buffer = JUMP_BUFFER # out of jumps: this one waits for the landing
+		else:
 			jumps_left -= 1
 			velocity.y = DOUBLE_JUMP_VEL
 			if wish.length() > 0.1:
@@ -401,6 +423,7 @@ func _physics_process(delta: float) -> void:
 
 	velocity += _knock
 	_knock = Vector3.ZERO
+	velocity.y = maxf(velocity.y, -MAX_FALL)
 	_prev_vy = velocity.y
 	move_and_slide()
 
@@ -443,7 +466,7 @@ func _physics_process(delta: float) -> void:
 		katana_held = katana_pressed
 		shotgun_held = auto.y > 0.5
 	if katana_pressed:
-		katana_buffer = 0.18
+		katana_buffer = KATANA_BUFFER
 	# a soda can in both hands: the weapons wait (a click buffers as usual)
 	if (katana_buffer > 0.0 or katana_held) and katana_cd <= 0.0 and not drinking:
 		_slash()
@@ -490,8 +513,9 @@ func _try_climb(wish: Vector3) -> bool:
 	_climb_from = global_position
 	_climb_rise = float(found.rise) + LedgeClimb.LIFT
 	_climb_fwd = found.forward
-	_climb_katana = false
+	_queued_katana = false
 	velocity = Vector3.ZERO
+	_hold_presses() # a press on the very frame the climb starts
 	# the chrome hands bite into the edge
 	Sfx.play("land", -6.0, 1.3)
 	add_trauma(0.12)
@@ -505,10 +529,7 @@ func _try_climb(wish: Vector3) -> bool:
 ## Lifts the body straight up the wall, then over the edge. Presses made
 ## meanwhile (katana, dash) are kept and fire the moment it ends.
 func _update_climb(delta: float) -> void:
-	if Input.is_action_just_pressed("katana"):
-		_climb_katana = true
-	if Input.is_action_just_pressed("dash"):
-		_dash_queued = true
+	_hold_presses()
 	climb_t += delta
 	var k := clampf(climb_t / climb_len, 0.0, 1.0)
 	var up_k := clampf(k / CLIMB_RISE_SHARE, 0.0, 1.0)
@@ -529,8 +550,22 @@ func _end_climb() -> void:
 	_pad_launched = false
 	land_dip = 0.08
 	Sfx.play("land", -12.0, 0.9)
-	if _climb_katana:
-		katana_buffer = 0.18
+	_release_presses()
+
+
+## While a climb or a glory kill holds the body, a katana or dash press is
+## kept (not dropped) and fires the moment the move ends.
+func _hold_presses() -> void:
+	if Input.is_action_just_pressed("katana"):
+		_queued_katana = true
+	if Input.is_action_just_pressed("dash"):
+		_dash_queued = true
+
+
+func _release_presses() -> void:
+	if _queued_katana:
+		katana_buffer = KATANA_BUFFER
+	_queued_katana = false
 
 
 func _dash_cut() -> void:
@@ -907,9 +942,10 @@ func _start_glory(e: Enemy, plunge := false) -> void:
 	gk_t = 0.0
 	gk_from = _head_base # where the camera is drawn now (a tick behind the body), so it doesn't pop
 	var stand := e.radius + (1.25 if gk_kind in ["brute", "boss"] else 0.85)
-	gk_to = e.global_position + to_me * stand
-	gk_to.y = e.global_position.y
-	_gk_dir = -to_me
+	# you end at the foe's feet, on its side facing you; from a ledge above
+	# a foe at the foot of the wall that side is inside the ledge, so another
+	# side with room for the whole body is used
+	_place_glory(e, to_me, stand)
 	# a Kurama Leap from further away takes a little longer to land (a plunge
 	# times its own dive instead)
 	gk_lunge = clampf(GLORY_LUNGE * gk_from.distance_to(gk_to) / FINISHER_REACH, GLORY_LUNGE, GLORY_LUNGE_MAX)
@@ -1012,8 +1048,7 @@ func _update_glory(rd: float) -> void:
 func _place_plunge(e: Enemy, to_me: Vector3) -> void:
 	var base := e.global_position
 	for i in 8:
-		var turn := ceilf(i * 0.5) * PI * 0.25 * (1.0 if i % 2 == 1 else -1.0)
-		var side := to_me.rotated(Vector3.UP, turn)
+		var side := _glory_side(to_me, i)
 		var stand := base + side * (e.radius + 0.85)
 		var perch := base + side * (e.radius + 0.5) + Vector3(0, e.height * 0.5, 0)
 		if _has_room(stand) and _has_room(perch):
@@ -1023,6 +1058,28 @@ func _place_plunge(e: Enemy, to_me: Vector3) -> void:
 			return
 	gk_to = base
 	_gk_perch = base + Vector3(0, e.height * 0.5, 0)
+
+
+## Where any other glory kill puts you: `stand` metres from the foe on the
+## side facing you, or the next side round with room (as a plunge does);
+## failing all of them, the foe's own spot.
+func _place_glory(e: Enemy, to_me: Vector3, stand: float) -> void:
+	var base := e.global_position
+	for i in 8:
+		var side := _glory_side(to_me, i)
+		if _has_room(base + side * stand):
+			gk_to = base + side * stand
+			_gk_dir = -side
+			return
+	gk_to = base
+	_gk_dir = -to_me
+
+
+## The `i`th side to try round a foe: the one facing you, then 45 degrees
+## either way, then 90, and so on.
+static func _glory_side(to_me: Vector3, i: int) -> Vector3:
+	var turn := ceilf(i * 0.5) * PI * 0.25 * (1.0 if i % 2 == 1 else -1.0)
+	return to_me.rotated(Vector3.UP, turn)
 
 
 ## True when the player's capsule fits with its feet at `feet`.
@@ -1186,6 +1243,7 @@ func _end_glory() -> void:
 	# a little hop back out of the gore
 	velocity = -_gk_dir * 3.0 + Vector3.UP * 2.0
 	katana_cd = 0.12
+	_release_presses()
 
 
 # ---------------------------------------------------------------- shotgun
@@ -1238,8 +1296,9 @@ func _fire() -> void:
 		var r := sqrt(dice.randf()) * spread
 		var dir := (basis * Vector3(cos(a) * r, sin(a) * r, -1.0)).normalized()
 		var to := origin + dir * 48.0
-		var q := PhysicsRayQueryParameters3D.create(origin, to, 1 | 4)
-		var res := space.intersect_ray(q)
+		_pellet_q.from = origin
+		_pellet_q.to = to
+		var res := space.intersect_ray(_pellet_q)
 		var end := to
 		if not res.is_empty():
 			end = res.position
@@ -1456,7 +1515,7 @@ func _autoplay(delta: float) -> Vector2:
 	_auto_target = best
 	_auto_weapons = Vector2.ZERO
 	if best == null:
-		return Vector2(sin(Time.get_ticks_msec() * 0.001), -0.3)
+		return Vector2(sin(Game.run_time), -0.3) # run time, not the wall clock
 	var aim := best.global_position + Vector3(0, best.height * 0.6, 0) - cam.global_position
 	var want_yaw := atan2(-aim.x, -aim.z)
 	var corner := _autoplay_corner(best, best_d, delta)

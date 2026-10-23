@@ -40,6 +40,7 @@ var r := RandomNumberGenerator.new()
 ## Counts, for tests and the debug log.
 var props := 0
 var puddles := 0
+var puddle_spots: Array[Vector3] = [] # each puddle's centre, for tests
 var glass := 0
 var mirror: PuddleMirror
 var prop_boxes: Array[AABB] = [] # every solid prop, for tests
@@ -256,6 +257,26 @@ func _cyl(r_top: float, r_bot: float, h: float, basis: Basis, pos: Vector3, mat:
 func _quad(c: Vector3, right: Vector3, up: Vector3, mat: Material, col := Color.WHITE) -> void:
 	var nrm := right.normalized().cross(up.normalized()).normalized()
 	_add("quad", Transform3D(Basis(right, up, nrm), c), mat, col)
+
+
+## True if a puddle at `c` would lie mostly inside a solid block (the fixed
+## metro spots are placed by floor height alone): its centre, or half its
+## corners, at ankle height inside any collider.
+func _under_solid(c: Vector3, hx: float, hz: float, ang: float) -> bool:
+	var pts: Array[Vector3] = [c]
+	for q in [Vector2(-hx, -hz), Vector2(hx, -hz), Vector2(-hx, hz), Vector2(hx, hz)]:
+		var o: Vector2 = (q as Vector2).rotated(-ang) * 0.7
+		pts.append(c + Vector3(o.x, 0, o.y))
+	var inside := 0
+	for i in pts.size():
+		var p := pts[i] + Vector3(0, 0.3, 0)
+		for b in _solids:
+			if (b as AABB).has_point(p):
+				if i == 0:
+					return true
+				inside += 1
+				break
+	return inside >= 2
 
 
 ## A flat quad lying on the floor.
@@ -908,8 +929,11 @@ func _puddles() -> void:
 			if not ok:
 				continue
 			c.y = fy + 0.015
+		if _under_solid(c, hx, hz, ang):
+			continue
 		_decal(c, hx, hz, mats[sp[3]], Color.WHITE, ang)
 		puddles += 1
+		puddle_spots.append(c)
 	for g in _panes:
 		_decal(g[0], (g[1] as Vector2).x, (g[1] as Vector2).y, pane)
 		glass += 1

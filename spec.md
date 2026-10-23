@@ -614,8 +614,8 @@ Notes:
 | `katana` | **LMB**, J | Left hand. Hold to keep slashing (input buffer 0.18 s) |
 | `shotgun` | **RMB**, K | Right hand. Hold to keep firing at the cooldown rate |
 | `move_*` | WASD + arrows | |
-| `jump` | Space | Double jump |
-| `dash` | Shift, Q | |
+| `jump` | Space | Double jump. A press with no jump left waits 0.12 s for the landing (input buffer) |
+| `dash` | Shift, Q | Input buffer 0.12 s (a press just before a charge is back, or as a dash ends, still dashes). A slash or dash pressed during a glory kill or a ledge climb fires the moment it ends |
 | `finisher` | **F** | Glory kill the staggered enemy near the crosshair, or plunge onto a foe below from high ground (§3.4) |
 | `drink`, `can_next`, `can_prev` | **E**, mouse wheel | Soda cans, DEV-ONLY play-test (§19.1 #11): drink the selected can, pick another. Not in the rebind list yet |
 | pause | Esc | |
@@ -645,6 +645,7 @@ charges the gun; the gun sets up the blade.**
 | Max HP | 100 (Kongo Heart augment +25 per rank) |
 | Walk speed | 8.8 m/s, ground accel 70, air accel 28 (×0.3 above walk speed, to keep jump-pad and dash momentum) |
 | Gravity | 26 m/s² |
+| Fall speed cap | 50 m/s. Above every real drop on the map (the top of a metro pad launch lands at about 44 m/s); it only stops a body caught on an edge from building up a fall speed that would throw it through the floor once it slides free (KI-006) |
 | Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable. The double jump also adds 3 m/s toward the movement keys held (relative to the look direction), capped at 1.35× walk speed, so it never builds speed past that; with no keys held there is no push, so it can't carry the player off a ledge they didn't aim for (owner, 2026-10-18) |
 | Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
 | Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
@@ -809,7 +810,11 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
   runs in **real time**.
 - **Camera:** lunge 0.13 s (ease-out cubic) to a stand point
   `enemy + dir_to_player × (radius + 0.85)` (or +1.25 for brutes and
-  bosses). Then lock yaw and pitch on the enemy over 0.1 s.
+  bosses), at the enemy's floor. If the body doesn't fit there (from a
+  ledge above a foe at its foot, that point is inside the ledge), the next
+  side round the foe with room is used, 45° at a time, as the plunge does;
+  failing all, the foe's own spot (KI-006). Then lock yaw and pitch on the
+  enemy over 0.1 s.
 - The enemy is pinned (frozen AI, facing the player), and its stagger marker
   is hidden.
 - **Presentation:** the KIRI glory-kill look (§9.8: cross cuts, the picture
@@ -2641,8 +2646,15 @@ is never lost.
 - **As built:** `profile.json` and `run.json`, each with a `.bak`. Every file
   is a header line (`KSAVE <kind> <version> <sha256>`) then JSON; a file
   that fails its checksum is skipped. Load order: a finished `.tmp`, the
-  file, the backup. If every copy is bad they are renamed
-  `*.corrupt-<time>` (never deleted) and a new profile starts. Debug runs
+  file, the backup (and the old backup, if a crash cut a rotation short).
+  If every copy is bad they are renamed `*.corrupt-<time>` (never deleted)
+  and a new profile starts; so does a profile that can't be migrated. A
+  file that exists but can't be opened (another program holding it) is not
+  bad: the profile is tried again for about a second, then that session
+  plays on defaults, saves nothing, never moves the file, and the title says
+  PROFILE FILE BUSY. A save writes and checks the temp file, sets the old
+  backup aside, turns the file into the backup and only then drops the old
+  one. Debug runs
   (`--autoplay`, `--juicetest`, `--showcase`) use `user://debug/`. The run
   snapshot is taken after each wave's tally (and boss reward card), deleted
   the moment the player dies. Starting a NEW RUN over a suspended run pays
