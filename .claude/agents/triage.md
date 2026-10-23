@@ -1,6 +1,6 @@
 ---
 name: triage
-description: Sorts one KATANA / SHOTGUN bug report or play-test note into a clear ticket: what the player saw, how to reproduce it (seed, wave, flags), the likely system and files, severity, and whether it is a bug, a tuning call, a feature ask or a question for the owner. Reads only; never edits code. Use it on each new report before anyone starts fixing.
+description: Sorts one KATANA / SHOTGUN bug report or play-test note into a clear ticket with what the player saw, how to reproduce it (seed, wave, flags), the likely system and files, severity, and whether it is a bug, a tuning call, a feature ask or a question for the owner. Reads only; never edits code. Use it on each new report before anyone starts fixing.
 tools: Read, Glob, Grep, Bash
 model: claude-haiku-5-5
 autoCompactWindow: 100000

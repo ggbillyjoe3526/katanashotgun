@@ -1,6 +1,6 @@
 ---
 name: perf-review
-description: Performance review of a finished KATANA / SHOTGUN change against spec §14 and the project's performance rules: per-frame allocation in combat, pooling, hard caps scaled by preset, draw calls, shader warm-up, physics and AI cost. Compares node churn and draw calls with main where it can; never reports frame rates from the cloud. Never edits code. Run it on PRs that touch combat, effects, enemies, rendering, maps or UI that updates every frame.
+description: Performance review of a finished KATANA / SHOTGUN change against spec §14 and the project's performance rules (per-frame allocation in combat, pooling, hard caps scaled by preset, draw calls, shader warm-up, physics and AI cost). Compares node churn and draw calls with main where it can; never reports frame rates from the cloud. Never edits code. Run it on PRs that touch combat, effects, enemies, rendering, maps or UI that updates every frame.
 tools: Read, Glob, Grep, Bash
 model: claude-sonnet-5-5
 ---
