@@ -69,7 +69,7 @@ a boss's add still fills the boss's [KAMAE](Bosses#kamae-and-the-onikiri).
 
 | Card | Max | What it does | Builds |
 | --- | --- | --- | --- |
-| **IDATEN DRIVE** | 1 | +1 dash charge, and every dash charges a cell | STORM RUNNER, GHOST |
+| **IDATEN DRIVE** | 1 | +1 dash charge (all charges refill when you take it), and every dash charges a cell | STORM RUNNER, GHOST |
 | **FUJIN'S RETURN** | 1 | Shotgun kills (Raijin's Fork leaps too) give a dash charge back | STORM RUNNER |
 | **KAGE STEP** | 2 | Dashing through enemies slices them, 40 damage per rank | GHOST |
 | **UTSUSEMI SHELL** | 1 | A hit that would hurt you spends a dash charge instead. Once every 3 s | GHOST |

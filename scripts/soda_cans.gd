@@ -47,6 +47,7 @@ var _mats := {} # flavour id -> [body, band]
 var _t := 0.0
 var _auto_t := 0.0
 var _test_at := 0
+var _cantest := Game.has_flag("--cantest") # read once: the command line never changes
 
 
 func _ready() -> void:
@@ -68,6 +69,12 @@ func restore(ids: Array) -> void:
 		if not Soda.get_def(str(id)).is_empty() and held.size() < Soda.MAX_HELD:
 			held.append(str(id))
 	selected = 0
+
+
+## The run is resuming a snapshot made without cans: none for this run.
+func switch_off() -> void:
+	enabled = false
+	held.clear()
 
 
 ## The multiplier the active can puts on `key` (1.0 for none).
@@ -350,7 +357,7 @@ func _test_fill() -> void:
 ## The bot (autoplay testing, or --cantest) drinks a held can every few
 ## seconds.
 func _auto_drink(delta: float) -> bool:
-	if not (Game.debug_autoplay or Game.has_flag("--cantest")) or held.is_empty():
+	if not (Game.debug_autoplay or _cantest) or held.is_empty():
 		return false
 	_auto_t += delta
 	if _auto_t < 2.5:

@@ -13,6 +13,10 @@ const PROFILE_FILE := "profile.json"
 const RUN_FILE := "run.json"
 const MAX_SCORES := 10
 const SETTINGS_DELAY := 0.5 # seconds: a burst of slider moves writes once
+# a profile another program holds at launch is tried again this often, this
+# far apart (about a second in all) before the session goes read-only
+const LOCK_RETRIES := 4
+const LOCK_WAIT_MS := 250
 const LIFETIME_KEYS := ["runs", "kills", "glory_kills", "headshots", "deflects", "bosses", "best_wave", "best_combo", "best_score"]
 
 var dir := "user://"
@@ -25,8 +29,11 @@ var lifetime := {}
 var boss_kills := {} # boss kind -> times felled, lifetime
 var play_time := 0.0
 var settings := {}
-var loaded_from := "" # main | tmp | backup | new | legacy (for tests and logs)
+var loaded_from := "" # main | tmp | backup | new | legacy | locked (for tests and logs)
 var last_save_ok := true
+## The profile file exists but couldn't be opened (another program holds it):
+## this session plays on defaults and never saves over it.
+var read_only := false
 
 var _save_in := -1.0
 var _has_run := false
@@ -69,31 +76,49 @@ func run_path() -> String:
 func load_profile() -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	_save_in = -1.0
+	read_only = false
 	var path := profile_path()
 	var r := SaveFile.read(path, "profile")
+	# a sync tool or antivirus often holds the file only for a moment
+	for i in LOCK_RETRIES:
+		if r.ok or not r.get("locked", false):
+			break
+		OS.delay_msec(LOCK_WAIT_MS)
+		r = SaveFile.read(path, "profile")
 	var data := {}
+	var fresh: bool = not r.ok
 	if r.ok:
 		data = r.data
 		loaded_from = r.source
 		var v: int = r.version
 		if v < VERSION:
 			# keep the old file as it was, in case a migration ever goes wrong
-			_keep_copy(path, ".v%d" % v)
+			_keep_copy(r.file, path + ".v%d" % v)
 			data = ProfileMigrations.migrate(data, v, VERSION)
 			if data.is_empty():
-				# no way up from this version: start fresh, the .v copy keeps it
-				push_warning("save: can't migrate profile version %d" % v)
-				loaded_from = "new"
+				# no way up from this version: move every copy aside (never
+				# delete) and start over, so no save rotates it away
+				push_warning("save: can't migrate profile version %d; starting a new one" % v)
+				SaveFile.quarantine(path)
+				fresh = true
 		elif v > VERSION:
 			# written by a newer build: read what we understand, and keep the
 			# original so going back to the newer build loses nothing
-			_keep_copy(path, ".v%d" % v)
+			_keep_copy(r.file, path + ".v%d" % v)
 			push_warning("save: profile is version %d, this build knows %d" % [v, VERSION])
-	else:
-		if r.found:
-			# every copy is damaged: move them aside (never delete) and start over
-			push_warning("save: no readable profile copy; starting a new one")
-			SaveFile.quarantine(path)
+	elif r.locked:
+		# it may be fine, just held by another program: play on defaults and
+		# never write over it or move it this session
+		push_warning("save: can't open the profile; nothing will be saved this session")
+		read_only = true
+		fresh = false
+		loaded_from = "locked"
+		data = ProfileMigrations.migrate({}, 0, VERSION)
+	elif r.found:
+		# every copy is damaged: move them aside (never delete) and start over
+		push_warning("save: no readable profile copy; starting a new one")
+		SaveFile.quarantine(path)
+	if fresh:
 		data = _legacy_or_empty()
 	_from_dict(data)
 	_has_run = not load_suspended_run().is_empty()
@@ -112,13 +137,19 @@ func _legacy_or_empty() -> Dictionary:
 	return ProfileMigrations.migrate({}, 0, VERSION)
 
 
-func _keep_copy(path: String, suffix: String) -> void:
-	if not FileAccess.file_exists(path + suffix) and FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + suffix)
+## Copies the loaded file to `copy`, refreshing it whenever the loaded file
+## differs, so the copy is always the latest file of that version.
+func _keep_copy(from: String, copy: String) -> void:
+	var text := SaveFile.read_text(from)
+	if text != "" and SaveFile.read_text(copy) != text:
+		DirAccess.copy_absolute(from, copy)
 
 
 func save_now() -> bool:
 	_save_in = -1.0
+	if read_only:
+		last_save_ok = false
+		return false
 	last_save_ok = SaveFile.write(profile_path(), "profile", VERSION, to_dict())
 	return last_save_ok
 
@@ -216,8 +247,10 @@ func xp_to_next() -> int:
 
 ## Pays a finished run into the profile and saves. `stats` holds score,
 ## wave, bosses, kills, glory_kills, headshots, deflects, best_combo, time and
-## boss_kinds (the bosses felled). Returns what the results screen counts up.
-func finish_run(stats: Dictionary) -> Dictionary:
+## boss_kinds (the bosses felled). `best_counts` false (a soda-cans play-test
+## run: GAKI doubles score) keeps the XP but sets no best score. Returns what
+## the results screen counts up.
+func finish_run(stats: Dictionary, best_counts := true) -> Dictionary:
 	var rows := Progression.run_xp(stats)
 	var gained := Progression.total(rows)
 	var before := [player_level, player_xp]
@@ -229,7 +262,7 @@ func finish_run(stats: Dictionary) -> Dictionary:
 		lifetime[k[0]] += int(stats.get(k[1], 0))
 	lifetime.best_wave = maxi(lifetime.best_wave, int(stats.get("wave", 0)))
 	lifetime.best_combo = maxi(lifetime.best_combo, int(stats.get("best_combo", 0)))
-	if not Game.cans_run: # a soda-cans play-test run (GAKI doubles score) sets no best score
+	if best_counts:
 		lifetime.best_score = maxi(lifetime.best_score, int(stats.get("score", 0)))
 	play_time += float(stats.get("time", 0.0))
 	save_now()
@@ -306,7 +339,12 @@ func add_score(entry: Dictionary) -> int:
 	_sort_scores()
 	save_now()
 	changed.emit()
-	return high_scores.find(entry)
+	# this very entry, not the first equal one: a replayed seed can score the
+	# same, and the initials must go on the new row
+	for i in high_scores.size():
+		if is_same(high_scores[i], entry):
+			return i
+	return -1
 
 
 func rename_score(rank: int, initials: String) -> void:
@@ -333,7 +371,7 @@ func suspend_run(snapshot: Dictionary) -> bool:
 func load_suspended_run() -> Dictionary:
 	var r := SaveFile.read(run_path(), "run")
 	if not r.ok:
-		if r.found:
+		if r.found and not r.locked:
 			SaveFile.quarantine(run_path())
 		_has_run = false
 		return {}

@@ -371,7 +371,12 @@ func _has_parts(model: Node3D) -> bool:
 		if ShotgunModel.part(model, n) == null:
 			push_warning("ShotgunModel: no '%s' node, keeping the code-built gun" % n)
 			return false
-	return ShotgunModel.part(model, "led_0") is MeshInstance3D
+	# set_cells recolours every cell light, so each must be a mesh
+	for i in ShotgunModel.LED_COUNT:
+		if not ShotgunModel.part(model, "led_%d" % i) is MeshInstance3D:
+			push_warning("ShotgunModel: 'led_%d' is not a mesh, keeping the code-built gun" % i)
+			return false
+	return true
 
 
 ## Where `node` (inside the model) sits in spin_pivot's space.

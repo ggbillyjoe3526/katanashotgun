@@ -165,6 +165,9 @@ static func render(host: Node, f: Dictionary) -> Image:
 	# one frame to draw it, one more so the read-back sees the finished frame
 	await RenderingServer.frame_post_draw
 	await RenderingServer.frame_post_draw
+	# the screen that asked may have been torn down while we waited
+	if not is_instance_valid(vp) or not vp.is_inside_tree():
+		return null
 	var img := vp.get_texture().get_image()
 	vp.queue_free()
 	if img == null or img.is_empty():

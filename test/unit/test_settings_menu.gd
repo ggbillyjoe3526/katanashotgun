@@ -284,6 +284,19 @@ func test_quit_button_arms_first() -> void:
 	assert_signal_not_emitted(b, "pressed", "disarmed: arms again, still no quit")
 
 
+func test_a_new_label_survives_disarm() -> void:
+	var b := TechButton.make("PLAY  [ENTER]", Color.WHITE)
+	add_child_autofree(b)
+	b.text = "PLAY AGAIN  [ENTER]"
+	b.disarm()
+	assert_eq(b.text, "PLAY AGAIN  [ENTER]", "a label set after _ready is the label")
+	b.confirm_text = "SURE?"
+	b.press()
+	assert_eq(b.text, "SURE?")
+	b.disarm()
+	assert_eq(b.text, "PLAY AGAIN  [ENTER]")
+
+
 func test_escape_still_backs_out() -> void:
 	menu.open()
 	_press(KEY_ESCAPE)

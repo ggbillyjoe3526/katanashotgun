@@ -77,6 +77,27 @@ func test_no_prop_is_a_step_to_a_sheer_wall() -> void:
 				assert_gte(Vector2(dx, dz).length(), WorldDetail.REACH_RANGE, "prop %s is far from %s" % [box, s])
 
 
+func test_the_weather_has_its_own_stream() -> void:
+	# KI-025: however much the map draws from its stream before the weather
+	# roll, a seed keeps its weather
+	var a := _build()
+	var level := a.rain_level
+	a.free()
+	Game.next_seed = SEED
+	Game.reset_run()
+	for i in 7:
+		Game.rng_map.randi() # as if the map had drawn more
+	var b := WellMap.new()
+	add_child(b)
+	b.build()
+	assert_eq(b.rain_level, level)
+	var r := RandomNumberGenerator.new()
+	r.seed = hash([SEED, "weather"])
+	var roll := r.randf()
+	assert_eq(level, 0 if roll < 0.35 else (1 if roll < 0.8 else 2), "rolled from the seed's weather stream")
+	b.free()
+
+
 func test_puddles_follow_the_rain() -> void:
 	var dry := _build(0)
 	var wet := _build(2)
@@ -87,6 +108,17 @@ func test_puddles_follow_the_rain() -> void:
 	assert_eq(dry.detail.glass, arena.detail.glass, "glass is there in any weather")
 	dry.free()
 	wet.free()
+
+
+func test_no_puddle_lies_inside_a_block() -> void:
+	var dry := _build(0)
+	assert_gt(dry.detail.puddle_spots.size(), 0)
+	for c in dry.detail.puddle_spots:
+		# the south service block is solid from the metro floor up (KI-004)
+		assert_false(absf(c.x) < 12.0 and c.z > 8.0 and c.y < -9.0, "puddle %s is not under the south service block" % c)
+		for b in dry.detail._solids:
+			assert_false((b as AABB).has_point(c + Vector3(0, 0.3, 0)), "puddle %s is not inside %s" % [c, b])
+	dry.free()
 
 
 func test_only_water_and_glass_reflect() -> void:

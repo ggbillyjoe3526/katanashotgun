@@ -364,7 +364,8 @@ func _pads() -> void:
 func _spawn_sources() -> void:
 	for s in [-1.0, 1.0]:
 		_tunnel(Vector3(s * (SHAFT - 0.3), FLOOR, 0), Vector3(-s, 0, 0))
-		_lift(Vector3(s * -4, SERVICE, s * (SHAFT - 0.2)), Vector3(0, 0, -s))
+		# each behind its service-block spawn point in _spawn_list()
+		_lift(Vector3(s * 4, SERVICE, s * (SHAFT - 0.2)), Vector3(0, 0, -s))
 	_lift(Vector3(-18, 0, 21.8), Vector3(0, 0, -1))
 	for p in [Vector3(-24.5, 0, -11), Vector3(24.5, 0, 9), Vector3(-11, DECK, -23.5)]:
 		_hatch(p)
@@ -511,3 +512,6 @@ func _links() -> void:
 	nav_links.append([Vector3(4.2, 10, -28.5), Vector3(1.2, 13, -28.5)]) # tower to beacon cap
 	nav_links.append([Vector3(21.5, DECK, -25 + o), Vector3(21.5, 6.2, -25 - o)]) # deck to antenna terrace
 	nav_links.append([Vector3(16, 0, 23 - o), Vector3(16, DECK, 23 + o)]) # roof to billboard gantry
+	nav_links.append([Vector3(22 + o, 0, 26), Vector3(21 - o, DECK, 26)]) # roof to the gantry's east edge
+	nav_links.append([Vector3(-22.5, DECK, -25 + o), Vector3(-22.5, 8, -25 - o)]) # deck to water tanks, between the tanks
+	nav_links.append([Vector3(-16.5, 0, 22 - o), Vector3(-16.5, 3, 22 + o)]) # roof to stairwell hut

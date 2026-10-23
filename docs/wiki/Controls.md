@@ -23,8 +23,9 @@ rebound in [Settings](Settings) (two keys or mouse buttons each).
 | F11 (or Alt+Enter) | Switch between full screen and a window |
 | F3 | Show the performance overlay (frame rate, frame time) |
 
-Presses are buffered for a moment: a slash or F pressed a fraction of a
-second early still counts.
+Presses are buffered for a moment: a slash, F, jump or dash pressed a
+fraction of a second early still counts, and a slash or dash pressed during
+a glory kill or a ledge climb fires the moment it ends.
 
 ## Menus
 
@@ -48,6 +49,6 @@ second early still counts.
 | Results | **O** | Open the folder the run card went to |
 | Results | **Esc** | Back to the title screen (or click MAIN MENU, top left) |
 
-The game also pauses on its own if you switch away from it (Alt+Tab) and the mouse is released.
+The game also pauses on its own whenever you switch away from it (Alt+Tab) or the mouse is released.
 
 Controllers aren't supported yet.

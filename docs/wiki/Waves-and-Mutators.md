@@ -39,7 +39,8 @@ twist that makes the wave harder (or stranger) and multiplies its tally. The
 mutator shows under the wave label with its multiplier.
 
 - Boss waves never have one.
-- The same mutator never comes up twice in a row.
+- A mutator can't come back right after itself, even if a wave with none
+  comes between.
 - The harshest ones wait until wave 3 or 4.
 - Your seed decides which mutators come up.
 

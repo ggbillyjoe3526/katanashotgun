@@ -29,6 +29,11 @@ setting and when you quit.
   progress: the game loads the backup instead.
 - Every save is checked when it loads. A damaged file is never deleted; it's
   set aside and the backup is used.
+- If another program (a cloud sync tool or an antivirus) is holding your
+  profile when the game starts, the game waits a moment for it. If it's
+  still busy, the title screen says **PROFILE FILE BUSY**: that session plays
+  on default settings and saves nothing, and your profile is left untouched.
+  Close the other program (or wait for it) and restart the game.
 - Your high score is kept the moment a run ends, even if you quit before
   typing your initials.
 

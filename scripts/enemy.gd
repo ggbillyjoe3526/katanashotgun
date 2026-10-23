@@ -770,7 +770,9 @@ func _steer(ppos: Vector3, dist: float, dir: Vector3, delta: float) -> Vector3:
 		return dir
 	_repath_t -= delta
 	if _repath_t <= 0.0:
-		_repath_t = 0.3 + float(spawn_id % 5) * 0.04 # spread the queries over frames
+		# spread the queries over frames, by the spawn's own dice: the session-wide
+		# spawn_id would make a seed path differently after an earlier run
+		_repath_t = 0.3 + float(absi(dice_seed) % 5) * 0.04
 		var map := get_world_3d().navigation_map
 		if NavigationServer3D.map_get_iteration_id(map) == 0:
 			return dir
@@ -1312,6 +1314,9 @@ func _update_flash(delta: float) -> void:
 	visual.rotation.x = lerpf(visual.rotation.x, 0.0, 1.0 - exp(-7.0 * delta))
 	if shock_t > 0.0:
 		_update_shock(delta)
+		# a hit under the shock still runs out its flash, unseen, so it
+		# doesn't fire late once the shock ends
+		flash_t = maxf(flash_t - delta, 0.0)
 		return
 	if flash_t > 0.0:
 		flash_t -= delta
@@ -1410,9 +1415,6 @@ func die(source: String, dir: Vector3, headshot := false) -> void:
 		Game.fx.missile_strike(global_position, GRUDGE_DELAY, GRUDGE_RADIUS, GRUDGE_DAMAGE, "grudge")
 	if burn_t > 0.0 and Game.rank("hitodama") > 0:
 		_hitodama_burst()
-	var hk := float(Game.mut("heal_kill", 0.0))
-	if hk > 0.0:
-		Game.player.heal(hk)
 	if is_boss:
 		Game.main.on_boss_killed(self)
 	if pool:

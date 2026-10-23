@@ -87,6 +87,8 @@ func drink(color: Color, length: float, cut_at: float) -> void:
 	_lid.position = Vector3(0, 0.114, 0)
 	_lid.rotation = Vector3.ZERO
 	_lid.reparent(_body, false)
+	_lid.visible = true
+	_body.visible = true
 	visible = true
 
 
@@ -135,7 +137,8 @@ func _process(delta: float) -> void:
 		Sfx.play("can_gulp", -7.0, _rng.randf_range(0.9, 1.1), 0.0)
 	if t >= _len:
 		_t = -1.0
-		visible = false
+		# the can goes; the lid and the fizz keep flying until they land
+		_body.visible = false
 
 
 ## The cut: the lid flies off spinning and the fizz sprays up and away.
@@ -159,8 +162,9 @@ func _update_drops(delta: float) -> void:
 		_lid.position += _lid_v * delta
 		_lid.rotation += Vector3(14.0, 3.0, 9.0) * delta
 		if _lid.position.y < -1.2:
+			# landed out of view: park it on the can, hidden, until the next drink
 			_lid.reparent(_body, false)
-			_lid.visible = true
+			_lid.visible = false
 	for d in _drops:
 		if d.t > 0.6:
 			continue
@@ -170,3 +174,14 @@ func _update_drops(delta: float) -> void:
 		n.position += d.v * delta
 		if d.t > 0.6:
 			n.visible = false
+	if _t < 0.0 and visible and not _body.visible and not _in_flight():
+		visible = false
+
+
+func _in_flight() -> bool:
+	if _lid.get_parent() == self:
+		return true
+	for d in _drops:
+		if d.t <= 0.6:
+			return true
+	return false

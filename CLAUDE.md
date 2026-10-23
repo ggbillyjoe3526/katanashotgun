@@ -33,6 +33,11 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
 - **Review:** before marking a PR that touches code ready, run the `critic`
   and `qa-review` agents (plus `perf-review` when it touches combat, effects,
   enemies, rendering, maps or per-frame UI) and fix their blocking findings.
+- **Known issues:** `docs/KNOWN_ISSUES.md` lists every open bug (ID, repro
+  with seed and wave, suspected cause, severity, and whether it needs William's
+  play-test, another Claude attempt or his decision). Check it before fixing a
+  bug; add new bugs you find but don't fix; move an entry to its Resolved table
+  in the same PR as the fix.
 - **Bosses:** `docs/boss-roster.md` records how every boss fights. Read it
   before adding or changing a boss (its new-boss checklist), and update it in
   the same PR as any boss change.

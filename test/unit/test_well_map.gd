@@ -30,6 +30,18 @@ func _reach(from: Vector3, to: Vector3, layers: int) -> bool:
 	return path.size() > 0 and path[path.size() - 1].distance_to(to) < 1.5
 
 
+func test_the_skyline_never_draws_from_the_map_stream() -> void:
+	# KI-025: the weather is rolled from the map stream after the skyline is
+	# built, so the skyline keeps to its own stream
+	assert_eq(arena.backdrop.rng.seed, hash([SEED, "skyline"]))
+	var state := Game.rng_map.state
+	var city := CityBackdrop.new()
+	arena.add_child(city)
+	city.build(arena)
+	assert_eq(Game.rng_map.state, state, "building a skyline leaves the map's dice alone")
+	city.free()
+
+
 func test_floor_height_picks_the_floor_under_the_caller() -> void:
 	# the torii bridge (+5) crosses the shaft above the metro platform (-10);
 	# the floors are plated (WorldDetail), so they report the plates' top

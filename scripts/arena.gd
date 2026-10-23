@@ -52,6 +52,7 @@ var _t := 0.0
 var _storm := false
 var _lightning_t := 3.0
 var _flash := 0.0
+var _flash_ambient := 0.95 # the map's own ambient light, put back after a strike
 
 
 func build() -> void:
@@ -463,7 +464,11 @@ func _build_rain() -> void:
 	rain.material_override = Psx.fx(Color(rc.r, rc.g, rc.b, 0.3), null, false)
 	rain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(rain)
-	var roll := rng.randf()
+	# its own stream from the seed: nothing the map builds before it (signs,
+	# skyline, props) can shift a seed's weather (KI-025)
+	var weather := RandomNumberGenerator.new()
+	weather.seed = hash([Game.run_seed, "weather"])
+	var roll := weather.randf()
 	rain_level = 0 if roll < 0.35 else (1 if roll < 0.8 else 2)
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--rain="): # debug: force the weather (the roll above still happens)
@@ -498,19 +503,22 @@ func _process(delta: float) -> void:
 		var l: OmniLight3D = fl[0]
 		var n := sin(_t * 23.0 + l.position.x) * sin(_t * 7.3 + l.position.z)
 		l.light_energy = fl[1] * (0.25 if n > 0.82 else 1.0)
+	# lightning is presentation: it keeps real time through slow-mo and hitstop
 	if _storm:
-		_lightning_t -= delta
+		_lightning_t -= Game.real_dt
 		if _lightning_t <= 0.0:
 			_lightning_t = Game.rng_fx.randf_range(3.0, 8.0)
+			if _flash <= 0.0:
+				_flash_ambient = env.ambient_light_energy # The Well's is darker than 0.95
 			_flash = 1.0
 			Sfx.play("thunder", -2.0, 1.0, 0.15)
 			if Game.hud and Game.hud.post:
 				Game.hud.post.flash(0.35)
 	if _flash > 0.0:
-		_flash = maxf(0.0, _flash - delta * 3.0)
+		_flash = maxf(0.0, _flash - Game.real_dt * 3.0)
 		var k := _flash * (0.6 + 0.4 * sin(_t * 60.0))
 		moon.light_energy = 0.45 + k * 4.0
-		env.ambient_light_energy = 0.95 + k * 1.5
-	elif moon.light_energy != 0.45:
-		moon.light_energy = 0.45
-		env.ambient_light_energy = 0.95
+		env.ambient_light_energy = _flash_ambient + k * 1.5
+		if _flash <= 0.0:
+			moon.light_energy = 0.45
+			env.ambient_light_energy = _flash_ambient

@@ -547,14 +547,17 @@ func smoke(pos: Vector3, size := 1.5) -> void:
 		tp.s = size * _rng.randf_range(0.9, 1.5)
 
 
-## Defuses every pending strike (a cleared wave must not hurt anyone during
-## the tally or the next intro).
+## Defuses every pending strike and shockwave (a cleared wave must not hurt
+## anyone during the tally or the next intro). A shockwave still rolling out
+## finishes its ring, harmless.
 func clear_strikes() -> void:
 	for st in _strikes:
 		if st.missile != null and is_instance_valid(st.missile):
 			st.missile.queue_free()
 		st.n.queue_free()
 	_strikes.clear()
+	for w in _waves:
+		w.hit = true
 
 
 ## A missile lands on `target` after `delay` seconds; the red ring shows where.

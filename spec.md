@@ -614,8 +614,8 @@ Notes:
 | `katana` | **LMB**, J | Left hand. Hold to keep slashing (input buffer 0.18 s) |
 | `shotgun` | **RMB**, K | Right hand. Hold to keep firing at the cooldown rate |
 | `move_*` | WASD + arrows | |
-| `jump` | Space | Double jump |
-| `dash` | Shift, Q | |
+| `jump` | Space | Double jump. A press with no jump left waits 0.12 s for the landing (input buffer) |
+| `dash` | Shift, Q | Input buffer 0.12 s (a press just before a charge is back, or as a dash ends, still dashes). A slash or dash pressed during a glory kill or a ledge climb fires the moment it ends |
 | `finisher` | **F** | Glory kill the staggered enemy near the crosshair, or plunge onto a foe below from high ground (§3.4) |
 | `drink`, `can_next`, `can_prev` | **E**, mouse wheel | Soda cans, DEV-ONLY play-test (§19.1 #11): drink the selected can, pick another. Not in the rebind list yet |
 | pause | Esc | |
@@ -645,6 +645,7 @@ charges the gun; the gun sets up the blade.**
 | Max HP | 100 (Kongo Heart augment +25 per rank) |
 | Walk speed | 8.8 m/s, ground accel 70, air accel 28 (×0.3 above walk speed, to keep jump-pad and dash momentum) |
 | Gravity | 26 m/s² |
+| Fall speed cap | 50 m/s. Above every real drop on the map (the top of a metro pad launch lands at about 44 m/s); it only stops a body caught on an edge from building up a fall speed that would throw it through the floor once it slides free (KI-006) |
 | Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable. The double jump also adds 3 m/s toward the movement keys held (relative to the look direction), capped at 1.35× walk speed, so it never builds speed past that; with no keys held there is no push, so it can't carry the player off a ledge they didn't aim for (owner, 2026-10-18) |
 | Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
 | Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
@@ -809,7 +810,11 @@ with the katana. The same `finisher` key and prompt ("PLUNGE").
   runs in **real time**.
 - **Camera:** lunge 0.13 s (ease-out cubic) to a stand point
   `enemy + dir_to_player × (radius + 0.85)` (or +1.25 for brutes and
-  bosses). Then lock yaw and pitch on the enemy over 0.1 s.
+  bosses), at the enemy's floor. If the body doesn't fit there (from a
+  ledge above a foe at its foot, that point is inside the ledge), the next
+  side round the foe with room is used, 45° at a time, as the plunge does;
+  failing all, the foe's own spot (KI-006). Then lock yaw and pitch on the
+  enemy over 0.1 s.
 - The enemy is pinned (frozen AI, facing the player), and its stagger marker
   is hidden.
 - **Presentation:** the KIRI glory-kill look (§9.8: cross cuts, the picture
@@ -917,7 +922,7 @@ Burn lasts 3 s at 10 × rank dps, ticking every 0.5 s, with embers. Kill tag
 | chain | HYAKUNIN-GIRI | GLORY | 1 | Glory kills stagger every enemy within 9 m |
 | kamaitachi | KAMAITACHI RING | GLORY | 1 | A glory kill fires 8 blood blades flat out from the body (60 damage each) |
 | taiko | TAIKO FRENZY | GLORY | 1 | A glory kill adds +5 combo and freezes the combo timer for 3 s |
-| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge; every dash charges 1 cell |
+| idaten | IDATEN DRIVE | DASH | 1 | +1 dash charge, and every charge refills when you take it (owner, 2026-10-23, KI-020); every dash charges 1 cell |
 | fujin | FUJIN'S RETURN | DASH | 1 | Shotgun kills (including Raijin's Fork leaps) refund one dash charge |
 | dashcut | KAGE STEP | DASH | 2 | Dashing through enemies slices them (40 × rank) |
 | utsusemi | UTSUSEMI SHELL | DASH | 1 | A hit that would hurt you spends a dash charge instead (0.4 s invulnerable); once every 3 s |
@@ -1277,7 +1282,9 @@ All damage × the boss's `damage_mult`.
 
 ### 6.3 Mutators (seeded, from wave 2, 35% skip chance, never on boss waves)
 In-game names drop macrons (§13). A roll always makes two draws from the
-wave stream (chance, pick), never repeats the previous wave's mutator, and
+wave stream (chance, pick), never repeats the last mutator rolled (so a
+wave with no mutator in between doesn't free it: X, none, X can't happen;
+owner, 2026-10-23, KI-021), and
 only picks mutators whose `min_wave` has come (the harsher ones wait so
 waves 1 to 3 stay easy). The pool grew from 9 to 15 on 2026-10-18 at the
 owner's request for more variety.
@@ -1516,7 +1523,9 @@ the holographic cut-in (§9.8).
     so quitting before typing initials doesn't lose it.
 - The live HUD does not show the best score (the Focus layout, §9.7); the
   title (BEST, and the HI-SCORES panel) and the results screen do. Passing the best score triggers the
-  "NEW HI-SCORE" cut-in once per run.
+  "NEW HI-SCORE" cut-in once per run. With no score on the table yet (the
+  very first run) there is nothing to beat, so it doesn't play; the
+  results screen still says NEW BEST (owner, 2026-10-23, KI-022).
 - **Results:** a qualifying score asks for initials (A–Z, 0–9; Enter
   confirms; blanks become "-"), then the table appears with the new entry
   highlighted. **R** retries the same seed; a click or Enter starts a new
@@ -1529,7 +1538,10 @@ the holographic cut-in (§9.8).
 - **PLAY A SEED** (built 2026-10-19): a title menu item (or **S**) opens
   a box to type or paste a seed. Typing takes 0-9 and A-F (the dash fills
   itself in, a first character of 8 to F is refused); PASTE or Ctrl+V finds
-  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). PLAY or
+  the first seed in the clipboard text ("SEED 0BAD-C0DE" works). The
+  match is loose on purpose: any two groups of four hex digits count, so a
+  pasted date can fill the box, but the player sees the digits before
+  PLAY (owner, 2026-10-23, KI-024). PLAY or
   Enter starts a run on it at once; BACK or Esc closes; CLEAR empties.
   Left alone, runs keep random seeds. With a suspended run waiting, PLAY
   asks twice and then ends that run the way N does (its XP counts). The box
@@ -1537,8 +1549,15 @@ the holographic cut-in (§9.8).
 - **COPY** puts the run's seed on the clipboard: COPY beside the seed on
   the pause screen, COPY SEED in the results row, or **C** there.
 - Separate RNG streams:
-  - `rng_map = hash(seed × 3 + 1)`: map pick, palette, weather, cover layout,
-    signs.
+  - `rng_map = hash(seed × 3 + 1)`: map pick, palette, signs.
+    The Well's cover layout is fixed, the same on every seed (owner,
+    2026-10-23, KI-023): the hand-made cover is tuned around the leap links,
+    geyser pads and spawns.
+  - The weather has its own stream, `hash([seed, "weather"])`, and so do
+    the near backdrop towers (`hash([seed, "skyline"])`): a change to how
+    much the map build draws can never shift a seed's weather (owner,
+    2026-10-23, KI-025). This changed many seeds' weather, and every
+    seed's backdrop towers, once in 0.1 Dev 3.
   - `rng_upgrades = hash(seed × 7 + 3)`: augment offers (one shuffle per
     offer, so the same picks give the same offers).
   - **Per-wave streams**, reseeded from the seed and the wave number at every
@@ -1686,8 +1705,10 @@ the holographic cut-in (§9.8).
     preset, §14), a monorail passing south of the roof, an ad blimp,
     searchlights, and a sun that drifts slowly (a 10-minute sweep, kept in
     the skyline's gap to the north).
-  - Draws **one** number from `rng_map` and keeps its own RNG after that, so
-    it can never shift gameplay (§7.5). Tower bodies, strips and traffic are
+  - Draws nothing from `rng_map`: its own RNG is seeded from
+    `hash([seed, "skyline"])`, so it can never shift gameplay or anything
+    the map rolls after it (§7.5; until 2026-10-23 it drew one number from
+    `rng_map`, KI-025). Tower bodies, strips and traffic are
     MultiMeshes; nothing in it casts light.
   - **The City Is Watching** (`CityWatch`, §19.1 #9, on trial): news
     drones that gather with the combo and city screens with the live score
@@ -2641,8 +2662,15 @@ is never lost.
 - **As built:** `profile.json` and `run.json`, each with a `.bak`. Every file
   is a header line (`KSAVE <kind> <version> <sha256>`) then JSON; a file
   that fails its checksum is skipped. Load order: a finished `.tmp`, the
-  file, the backup. If every copy is bad they are renamed
-  `*.corrupt-<time>` (never deleted) and a new profile starts. Debug runs
+  file, the backup (and the old backup, if a crash cut a rotation short).
+  If every copy is bad they are renamed `*.corrupt-<time>` (never deleted)
+  and a new profile starts; so does a profile that can't be migrated. A
+  file that exists but can't be opened (another program holding it) is not
+  bad: the profile is tried again for about a second, then that session
+  plays on defaults, saves nothing, never moves the file, and the title says
+  PROFILE FILE BUSY. A save writes and checks the temp file, sets the old
+  backup aside, turns the file into the backup and only then drops the old
+  one. Debug runs
   (`--autoplay`, `--juicetest`, `--showcase`) use `user://debug/`. The run
   snapshot is taken after each wave's tally (and boss reward card), deleted
   the moment the player dies. Starting a NEW RUN over a suspended run pays

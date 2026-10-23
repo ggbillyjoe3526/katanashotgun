@@ -75,3 +75,5 @@ the long-vowel marks (DOJIGIRI, not Dōjigiri).
 
 - The music and sound effects are stand-ins until the professional
   soundtrack arrives.
+- Every open bug we know about, with how to make it happen, is listed in
+  [KNOWN_ISSUES.md](https://github.com/ggbillyjoe3526/katanashotgun/blob/main/docs/KNOWN_ISSUES.md).

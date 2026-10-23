@@ -74,6 +74,8 @@ When a wave is cleared, the tally adds up **chips** and multiplies them by a
 - Your best score shows at the bottom left of the title screen, and the
   table under **HI-SCORES** on the title. Pass your best mid-run and
   **NEW HI-SCORE** flashes once; the results screen then shows **NEW BEST**.
+  (On your very first run there's no score to beat yet, so only NEW BEST
+  shows.)
 - The results screen shows the table with your run's row lit. If your run
   makes the table, type **3 initials** into that row (letters and numbers,
   Enter to confirm). Your score is saved the moment the run ends, even if you

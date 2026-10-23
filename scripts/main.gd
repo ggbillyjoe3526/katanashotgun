@@ -11,6 +11,7 @@ var _capture_grace := 0.0
 var _build_stamp := "" # a build completed by this level-up, stamped after it
 var lock_failures := 0
 var resume: Dictionary = {} # the suspended run the title offers to continue
+var _snap: Dictionary = {} # this run's latest snapshot, as saved
 var results: Dictionary = {} # what this run paid into the profile (XP, levels)
 
 
@@ -128,11 +129,16 @@ func start_run() -> void:
 		elif a.begins_with("--augments="):
 			_debug_augments(a.substr(11))
 	if not resume.is_empty():
+		_snap = resume
 		first = RunSnapshot.apply(resume, director, player)
 		Game.dev_run = Game.dev_run or bool(resume.get("dev", false))
-		if resume.has("cans"):
-			Game.cans_run = true
+		# a run keeps the soda-can switch it started with, whatever the dev
+		# menu says now
+		Game.cans_run = resume.has("cans")
+		if Game.cans_run:
 			Game.cans.restore(resume.cans)
+		else:
+			Game.cans.switch_off()
 		hud.on_run_resumed()
 		resume = {}
 	director.start(first)
@@ -165,7 +171,7 @@ func _end_suspended_run() -> void:
 
 ## A run with soda cans on (`top10` false) keeps its XP but makes no entry.
 func _pay_run(stats: Dictionary, run_seed: int, top10 := true) -> void:
-	Profile.finish_run(stats)
+	Profile.finish_run(stats, top10)
 	if top10 and Profile.qualifies(int(stats.get("score", 0))):
 		Profile.add_score({"name": "---", "score": int(stats.score), "wave": int(stats.get("wave", 0)), "seed": Game.seed_string(run_seed)})
 
@@ -197,6 +203,7 @@ func _on_between_waves(next_wave: int) -> void:
 	if Game.cans_run:
 		snap["cans"] = Game.cans.held.duplicate() # cans stay on for the run, and it makes no top 10 entry
 	Profile.suspend_run(snap)
+	_snap = snap
 
 
 ## Debug: start with augments already picked. "all" takes every card at max
@@ -232,6 +239,15 @@ func pause_game() -> void:
 	get_tree().paused = true
 	hud.show_pause(true)
 	Sfx.duck_music(-20.0)
+
+
+## Alt-tab or any other window taking focus pauses the run (spec §2): the
+## mouse lock check alone misses a window that keeps the captured mode. Not
+## in the moment after a full-screen switch, while the window settles.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and Game.state == "playing" and not Game.debug_no_pause and _capture_grace <= 0.0:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		pause_game()
 
 
 func resume_game() -> void:
@@ -300,7 +316,7 @@ func on_player_died() -> void:
 	# the run is over: drop its snapshot first, so quitting now can't undo the
 	# death, then pay it into the profile and keep its score
 	Profile.clear_suspended_run()
-	results = _dev_results() if Game.dev_run else Profile.finish_run(Game.run_stats())
+	results = _dev_results() if Game.dev_run else Profile.finish_run(Game.run_stats(), not Game.cans_run)
 	Game.record_score()
 	Sfx.music_cut()
 	await get_tree().create_timer(0.6, true, false, true).timeout
@@ -318,7 +334,7 @@ func on_boss_killed(b: Enemy) -> void:
 	Game.bosses_killed += 1
 	Game.bosses_felled.append(b.kind)
 	# the reward is saved at once; its card shows after the boss tally
-	director.pending_reward = {} if Game.dev_run else Profile.boss_felled(b.kind)
+	director.pending_reward = {} if Game.dev_run or _boss_already_paid() else Profile.boss_felled(b.kind)
 	Game.slowmo(0.12, 2.6)
 	# loud, then quiet: the all-out FINISH splash, a hard cut to silence, then
 	# the slow souls-style line fades in
@@ -329,8 +345,26 @@ func on_boss_killed(b: Enemy) -> void:
 	# card shows, and the card used to be skipped with a script error
 	var line := b.defeat_text
 	var sub := "%s  -  %s" % [b.display_name, b.subtitle]
-	hud.juice.later(1.25, func(): hud.souls_card(line, Color(1.0, 0.86, 0.55), sub, "felled", 4.6))
-	hud.juice.later(5.4, func(): Sfx.resume_combat())
+	# a death in the meantime owns the screen and the music: these stand down
+	hud.juice.later(1.25, func():
+		if Game.state != "dead":
+			hud.souls_card(line, Color(1.0, 0.86, 0.55), sub, "felled", 4.6))
+	hud.juice.later(5.4, func():
+		if Game.state != "dead":
+			Sfx.resume_combat())
+
+
+## Quitting after a boss falls but before its wave's break ends resumes the
+## run at the start of that boss wave, from the snapshot taken before it. The
+## reward is already saved, so the snapshot remembers the wave it was paid for,
+## and felling the same boss again pays nothing twice.
+func _boss_already_paid() -> bool:
+	if _snap.is_empty() or not Profile.has_suspended_run():
+		return false
+	if RunSnapshot.boss_paid(_snap, Game.wave):
+		return true
+	Profile.suspend_run(_snap)
+	return false
 
 
 ## What a dev run's results screen counts up: nothing, at the Player Level
@@ -388,6 +422,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_F11 or (event.physical_keycode == KEY_ENTER and event.alt_pressed):
 			Settings.toggle_fullscreen()
+			_capture_grace = 0.6 # the window settling into its new mode is not the player leaving
 		elif event.physical_keycode == KEY_BRACKETLEFT:
 			Settings.nudge_sensitivity(-0.1)
 		elif event.physical_keycode == KEY_BRACKETRIGHT:

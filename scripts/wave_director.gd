@@ -247,6 +247,13 @@ func _lineup_code() -> String:
 	return out
 
 
+## Rebuilds Game.enemy_list when an enemy has joined or left the fight.
+func _sync_enemy_list() -> void:
+	if Enemy.list_dirty:
+		Enemy.list_dirty = false
+		Game.enemy_list = get_tree().get_nodes_in_group("enemies")
+
+
 func _max_alive() -> int:
 	return int(mini(8 + wave * 2, 22) * float(Game.mut("max_alive", 1.0)))
 
@@ -333,6 +340,8 @@ func on_boss_killed(b: Enemy) -> void:
 	boss_bounty = 2000 * wave
 	boss_bounty_name = b.display_name
 	# the boss's minions short out on the spot, then pop in a chain reaction
+	# (adds that dropped in this frame too)
+	_sync_enemy_list()
 	_cleanup = Game.enemy_list.duplicate()
 	for e in _cleanup:
 		if is_instance_valid(e) and e != b:
@@ -344,9 +353,7 @@ func on_boss_killed(b: Enemy) -> void:
 
 func _physics_process(delta: float) -> void:
 	_clock += delta
-	if Enemy.list_dirty:
-		Enemy.list_dirty = false
-		Game.enemy_list = get_tree().get_nodes_in_group("enemies")
+	_sync_enemy_list()
 	if Game.state != "playing":
 		return
 	if not _cleanup.is_empty():
@@ -371,13 +378,17 @@ func _physics_process(delta: float) -> void:
 			var alive := Game.enemy_list.size()
 			if not queue.is_empty() and spawn_t <= 0.0 and alive < _max_alive():
 				var sp := _pick_spawn()
-				var group := mini(_spawn_rng.randi_range(1, 3), queue.size())
+				# never past the cap: a group of three arriving one under it brings one
+				var group := mini(mini(_spawn_rng.randi_range(1, 3), queue.size()), _max_alive() - alive)
 				for i in group:
 					var item: Array = queue.pop_front()
 					var off := Vector3(_spawn_rng.randf_range(-2.0, 2.0), 0, _spawn_rng.randf_range(-2.0, 2.0)) if i > 0 else Vector3.ZERO
 					_spawn(item[0], item[1], sp + off)
 				spawn_t = maxf(0.8, 1.8 - wave * 0.06) * float(Game.mut("spawn_rate", 1.0))
-			if queue.is_empty() and alive == 0:
+				# the group just joined the fight: count it before asking if the
+				# wave is over (the last group onto an empty field used to clear it)
+				_sync_enemy_list()
+			if queue.is_empty() and Game.enemy_list.is_empty():
 				_wave_cleared()
 		"boss":
 			if boss != null and is_instance_valid(boss) and not boss.dead:

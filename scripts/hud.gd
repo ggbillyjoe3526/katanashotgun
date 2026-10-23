@@ -8,6 +8,8 @@ const MAGENTA := Color(1.0, 0.2, 0.7)
 const CYAN := Color(0.25, 0.95, 1.0)
 const RED := Color(1.0, 0.15, 0.2)
 const YELLOW := Color(1.0, 0.85, 0.25)
+## On the title when another program held the profile file at launch.
+const PROFILE_BUSY := "PROFILE FILE BUSY: PROGRESS WON'T SAVE THIS SESSION. RESTART TO TRY AGAIN"
 # preloaded rather than found by class name, so the HUD still compiles when
 # the editor hasn't rescanned yet (e.g. right after switching git branches)
 const FinisherPromptScript := preload("res://scripts/ui/finisher_prompt.gd")
@@ -95,6 +97,7 @@ var mut_label: Label
 var boss_bar_sub: Label
 var title_scores: Label
 var title_version: Label
+var title_notice: Label # shown only when the profile can't be saved this session
 var death_score: Label
 var death_best: Label # the NEW BEST chip under the score
 var death_stats_plate: Shard
@@ -197,6 +200,7 @@ const HP_PLATE_W := 22.0 # the health number's plate at three digits
 var score_hold := 0 # points already scored but held back until a tally slams
 var _score_bump := 0.0
 var _last_target := 0
+var _fit_every_frame: Array = [] # the labels re-fitted each frame, built once
 var _roll_tick_t := 0.0
 var _rolling := false
 var _hi_stamped := false
@@ -566,6 +570,8 @@ func _build_title() -> void:
 	# version name ("0.1 Dev 1"), set once in project.godot (VERSIONING.md, spec S3.2)
 	title_version = Ui.label(str(ProjectSettings.get_setting("application/config/version", "")).to_upper(), Ui.font_bold, 10, MenuList.KEY_DIM, 2)
 	title_root.add_child(title_version)
+	title_notice = Ui.label(PROFILE_BUSY, Ui.font_bold, 10, Color(1.0, 0.35, 0.3), 2)
+	title_root.add_child(title_notice)
 	_refresh_title()
 
 
@@ -583,6 +589,7 @@ func _score_table(highlight := -1, count := 5) -> String:
 func _refresh_title() -> void:
 	title_scores.text = "HI-SCORES\n" + _score_table(-1, 5)
 	title_best.text = "BEST %07d     PLAYER LV %d" % [Game.best_score(), Profile.player_level]
+	title_notice.visible = Profile.read_only
 
 
 ## A click on the title away from the menu closes an open side panel
@@ -1212,6 +1219,7 @@ func reward_ready() -> bool:
 ## shows at once rather than rolling up, and NEW HI-SCORE doesn't replay.
 func on_run_resumed() -> void:
 	_score_shown = Game.score
+	_last_target = Game.score # the saved score is not a fresh gain: no gold pop
 	_hi_stamped = Game.score > Game.best_score()
 
 
@@ -1395,7 +1403,12 @@ func _input(event: InputEvent) -> void:
 				Sfx.play("type", -6.0, 0.8)
 			elif initials.length() < 3:
 				var ch := ""
-				if kc >= KEY_A and kc <= KEY_Z:
+				# letters as printed on the player's keyboard (AZERTY's A is
+				# QWERTY's Q key); digits by position, unshifted on every layout
+				var lk: int = event.keycode
+				if lk >= KEY_A and lk <= KEY_Z:
+					ch = char(lk)
+				elif lk == KEY_NONE and kc >= KEY_A and kc <= KEY_Z:
 					ch = char(kc)
 				elif kc >= KEY_0 and kc <= KEY_9:
 					ch = char(kc)
@@ -1774,12 +1787,21 @@ func _fit(labels: Array) -> void:
 		l.size = Vector2.ZERO
 
 
+## Sets a label's colour only when it changes: every override call makes the
+## label re-shape its text, and these run every frame.
+func _font_color(l: Label, c: Color) -> void:
+	if not l.has_theme_color_override("font_color") or l.get_theme_color("font_color") != c:
+		l.add_theme_color_override("font_color", c)
+
+
 func _process(_delta: float) -> void:
 	var delta := Game.real_dt
 	_t += delta
 	_reward_t += delta
 	root.position = juice.shake_offset().round() if juice else Vector2.ZERO
-	_fit([hint_label, hint_sub, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats])
+	if _fit_every_frame.is_empty():
+		_fit_every_frame = [hint_label, hint_sub, combo_label, score_label, foes_label, wave_label, hp_label, sens_label, death_stats]
+	_fit(_fit_every_frame)
 	vs = root.get_rect().size
 	if vs.x < 10:
 		vs = Vector2(480, 270)
@@ -1795,6 +1817,10 @@ func _process(_delta: float) -> void:
 		_layout_levelup()
 	if play_root.visible:
 		_update_play(delta)
+	elif death_root.visible and post and post.heat > 0.0:
+		# the combo's heat cools off the death and results screens too (the
+		# pause screen keeps its frozen frame)
+		post.heat = move_toward(post.heat, 0.0, delta * 2.0)
 
 
 func _layout_title() -> void:
@@ -1829,6 +1855,7 @@ func _layout_title() -> void:
 	# bottom row: best and level left (the XP as a hairline under it), version right
 	var by := vs.y - 22.0
 	title_best.position = Vector2(x0, by)
+	title_notice.position = Vector2(x0, by - 16.0)
 	var need := Progression.xp_to_next(Profile.player_level)
 	title_xp_bg.position = Vector2(x0, _text_bottom(title_best) + 2.0)
 	title_xp_bg.size = Vector2(title_best.size.x, 2)
@@ -2004,11 +2031,11 @@ func _update_play(delta: float) -> void:
 	hp_label.visible = vitals
 	cell_label.visible = vitals
 	hp_label.text = str(int(ceil(p.hp)))
-	hp_label.add_theme_color_override("font_color", LOW_RED if low else Color.WHITE)
+	_font_color(hp_label, LOW_RED if low else Color.WHITE)
 	hp_label.size = Vector2.ZERO
 	hp_label.position = Vector2(c.x - fh - 5.0 - hp_label.size.x, roundf(c.y - hp_label.size.y * 0.5))
 	cell_label.text = str(p.cells)
-	cell_label.add_theme_color_override("font_color", CYAN if p.cells > 0 else LOW_RED)
+	_font_color(cell_label, CYAN if p.cells > 0 else LOW_RED)
 	cell_label.size = Vector2.ZERO
 	cell_label.position = Vector2(c.x + fh + 5.0, roundf(c.y - cell_label.size.y * 0.5))
 	# ---- out of cells: a short steady warning left of the health number
@@ -2059,7 +2086,7 @@ func _update_play(delta: float) -> void:
 	score_label.size = Vector2.ZERO
 	score_label.pivot_offset = Vector2(score_label.size.x, score_label.size.y * 0.5)
 	score_label.scale = Vector2.ONE * (1.0 + 0.2 * _score_bump * _score_bump)
-	score_label.add_theme_color_override("font_color", Color.WHITE.lerp(Juice.GOLD, minf(1.0, _score_bump * 1.5)))
+	_font_color(score_label, Color.WHITE.lerp(Juice.GOLD, minf(1.0, _score_bump * 1.5)))
 	score_label.position = Vector2(vs.x - m - score_label.size.x, SCORE_Y)
 	# ---- boss bar: top centre, between the wave and the score
 	var boss: Enemy = Game.main.boss if Game.main else null
@@ -2108,7 +2135,7 @@ func _update_play(delta: float) -> void:
 		var ccol := YELLOW.lerp(Color(1.0, 0.25, 0.55), heat)
 		if Game.combo >= 50:
 			ccol = Color.from_hsv(fmod(_t * 0.5, 1.0), 0.55, 1.0)
-		combo_label.add_theme_color_override("font_color", ccol.lerp(Color.WHITE, _combo_pop * 0.5))
+		_font_color(combo_label, ccol.lerp(Color.WHITE, _combo_pop * 0.5))
 		combo_label.position = Vector2(roundf(c.x - combo_label.size.x * 0.5), c.y + fh + COMBO_GAP)
 		combo_label.pivot_offset = (combo_label.size * 0.5).round()
 		combo_label.scale = Vector2.ONE * (1.0 + 0.15 * _combo_pop * _combo_pop)

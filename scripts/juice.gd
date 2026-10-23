@@ -41,6 +41,7 @@ var _spark_layer: SparkLayer
 var _intro_on := false
 var _intro_t := 0.0
 var _intro_ready := true
+var _intro_id := 0 # which intro the delayed countdown and FIGHT belong to
 var _band: Shard
 var _intro_title: GlitchText
 var _intro_lines: Array[Label] = []
@@ -97,6 +98,7 @@ var _bars_t := 99.0
 var _bars_len := 0.85
 var _fin: FinishBG
 var _fin_t := 99.0
+var _verbose := Game.has_flag("--verbose-juice") # read once, not every splash frame
 
 # KIRI (spec §9.8): the top-lane card and the full-screen slashes
 var _kiri: KiriCard
@@ -519,6 +521,8 @@ func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	_intro_on = true
 	_intro_ready = false
 	_intro_t = 0.0
+	_intro_id += 1
+	var id := _intro_id # an older intro's leftover callbacks stand down
 	_typed = 0
 	var acc := Color(pal.neon_a) if not boss else Color(1.0, 0.1, 0.18)
 	_intro_title.setup("WAVE %02d" % wave, 20, Color.WHITE, acc, wave, {"accent2": Color(pal.neon_b), "tag": "> SECTOR SHIN-KAGURA // HOSTILES INBOUND" if not boss else "> WARNING // HIGH-VALUE TARGET"})
@@ -547,11 +551,13 @@ func wave_intro(wave: int, sub: String, _col: Color, boss: bool) -> void:
 	var pitches := [1.0, 1.12, 1.26]
 	for i in 3:
 		later(1.2 + i * 0.55, func():
-			if not _intro_on or _intro_ready:
+			if not _intro_on or _intro_ready or id != _intro_id:
 				return
 			var count_at := Vector2(vs.x - COUNT_RIGHT, _band.position.y + roundf(_band.size.y * 0.5))
 			stamp(str(3 - i), Color.WHITE, 24, {"glitch": true, "brackets": true, "accent": Color(pal.neon_a), "seed": i, "anchor": Vector2.ZERO, "off": count_at, "from": 2.2, "hold": 0.3, "fade": 0.1, "shake": 2.0, "sound": "count", "vol": -4.0, "pitch": pitches[i], "slot": "intro"}))
 	later(2.85, func():
+		if id != _intro_id:
+			return
 		var cut := _intro_ready # the boss card already ended the intro
 		_intro_ready = true
 		if not boss and _intro_on and not cut:
@@ -1385,7 +1391,7 @@ func _update_finish(rd: float) -> void:
 	_fin_t += rd
 	_fin.t = _fin_t
 	_fin.queue_redraw()
-	if OS.get_cmdline_user_args().has("--verbose-juice"):
+	if _verbose:
 		print("fin t=%.2f vis=%s size=%s pos=%s" % [_fin_t, _fin.visible, _fin.size, _fin.position])
 	if _fin_t > 0.92:
 		_fin.visible = false
