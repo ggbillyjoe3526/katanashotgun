@@ -31,7 +31,8 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
 - **Installer:** `installer/KatanaShotgun.iss` (Inno Setup 6). Never change its
   `AppId`. No slash in file, folder or shortcut names.
 - **Review:** before marking a PR that touches code ready, run the `critic`
-  agent (`.claude/agents/critic.md`) and fix its blocking findings.
+  and `qa-review` agents (plus `perf-review` when it touches combat, effects,
+  enemies, rendering, maps or per-frame UI) and fix their blocking findings.
 - **Bosses:** `docs/boss-roster.md` records how every boss fights. Read it
   before adding or changing a boss (its new-boss checklist), and update it in
   the same PR as any boss change.
@@ -50,6 +51,23 @@ layout and debug flags. Where the spec and the code disagree, the spec wins.
 - **Exit-time leak warnings** (`RID allocations ... leaked at exit`,
   `ObjectDB instances were leaked`) appear at the end of every headless run;
   they are known and are not script errors.
+
+## Which model does what
+The owner's model policy (2026-10-23). Agents live in `.claude/agents/`, each
+with its model in the `model:` frontmatter; keep them matching this list.
+- **Fable 5.1:** the project coordinator only, never a thread or an agent.
+- **Opus 5.5** (`claude-opus-5-5`): every thread, the workers that write
+  code, tests and screenshots, and the `critic` agent.
+- **Sonnet 5.5** (`claude-sonnet-5-5`): the `qa-review` and `perf-review`
+  agents.
+- **Haiku 5.5** (`claude-haiku-5-5`): the `changelog` and `triage` agents, and
+  the default for grunt work: summaries, web searches, log reading, doc
+  lookups, simple debugging, trivial questions, and parallel fan-out of many
+  small identical jobs. Use it freely to keep the thread's context for the
+  hard reasoning.
+- **Haiku stays under 100k tokens of context:** one narrow job with only the
+  files it needs; split anything bigger across several Haiku agents. The
+  Haiku agent files set `autoCompactWindow: 100000`.
 
 ## Third-party code and assets
 Rules for anything made by someone else (from William's licence briefing,
