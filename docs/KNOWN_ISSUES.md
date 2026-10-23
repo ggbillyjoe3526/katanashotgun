@@ -218,6 +218,9 @@ Last full bug pass: 2026-10-23 (whole game, every script).
   "Needs a decision" sign-off below.
 - `scripts/enemy.gd` reads a `heal_kill` mutator value that no mutator
   sets (Blood Moon uses `exec_heal`), so that branch never runs.
+- The unit test `test_a_cut_short_red_signal_never_leaves_the_boss_hidden`
+  (`test/unit/test_boss_moveset.gd`) leaves one orphan node behind (Gut
+  reports it; the test still passes).
 - Bolt trail drops share the blood droplet budget, so a screen full of
   bolts can thin out blood and sparks (`scripts/bolt.gd`, `scripts/gore.gd`).
 
