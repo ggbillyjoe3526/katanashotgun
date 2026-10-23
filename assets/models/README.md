@@ -90,3 +90,27 @@ cd assets/models/shotgun/source
 - `scripts/shotgun_model.gd` loads it; `viewmodel.gd` swaps it in for the
   code-built gun, which only shows if the model fails to load (owner
   approved, 2026-10-19). About 23k triangles.
+
+## Cyber hands (`hands/`)
+- `source/build_hands.py`: builds both hands (collection "HANDS") from
+  plates laid around each weapon's grip; tweak a number and run it again.
+- `source/export_hands.py`: build, apply the bevels, triangulate and export
+  `hands.glb` (seconds, no bake):
+
+```
+cd assets/models/hands/source
+~/bpyenv/bin/python export_hands.py ../hands.glb
+```
+
+### Layout
+- Two meshes, each in the space of the weapon model it holds (Blender
+  axes, metres): `hand_katana` (left hand on the DOJIGIRI's handle, knuckles
+  towards the edge) and `hand_shotgun` (right hand on the RAIJIN-12's grip,
+  index finger on the trigger). `scripts/hands_model.gd` parents each to its
+  weapon model, so it follows every swing and kick.
+- Surfaces: `armor` (plates), `joint` (the dark under-suit) and `glow` (the
+  light lines, which take the weapon's trim material so the equipped look
+  tints them). Box-projected UVs, one panel texture repeat per 8 cm; no
+  baked textures (the game's code-made `panel` and `cloth` textures).
+- About 1.5k triangles per hand. The code-built gloves in `viewmodel.gd`
+  only show if the model fails to load.

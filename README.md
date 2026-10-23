@@ -203,6 +203,11 @@ Pass after `--` on the command line:
 - `--citytour` The City Is Watching from six fixed views (drones fly in,
   the screens' pages, NEW BEST over a made-up seed record, drones leave),
   then quits; add `--quality=low` to see WEAK's drone count
+- `--viewshot --out=DIR` the first-person view (weapons, hands) from fixed
+  spots with frozen enemies at 3 to 18 m, one PNG each (`--views=roof,street,deck`);
+  try a change first with `--eye=1.72 --fov=88 --vm=0.42 --kpos=x,y,z
+  --krot=x,y,z --kscale=1.5 --kroll=1.9 --spos=x,y,z --srot=x,y,z`, hold a
+  swing with `--slash=0|1|2 --at=0.06` or a glory kill pose with `--pose=thrust`
 - `--worldshot --out=DIR` The Well's world detail from six fixed views
   (`--views=roof,pit,service,deck,puddle,tower`), one PNG each plus the
   puddle mirror's picture, then quits; needs a real display (xvfb in the cloud)
