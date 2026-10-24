@@ -1,0 +1,12 @@
+### Quality of life
+- Esc now closes the pause screen too, and the click that closes it no longer swings the katana or fires the shotgun.
+- When a wave is down to its last three foes, small orange arrows at the screen's edge point to the ones you can't see, and a chevron marks far ones on screen. A boss off screen gets a bigger arrow.
+- Walk off a ledge and press jump a split second late: it's now a full jump, and you keep your double jump.
+- A quick shotgun click just before the gun is ready now fires as soon as it can, instead of being lost.
+- An empty shotgun now says "NO CHARGE / USE THE BLADE", and holds it long enough to read.
+- The pause screen has HOW TO PLAY, RESTART (same seed) and MAIN MENU. MAIN MENU saves the run so CONTINUE picks it up.
+- NEW RUN on the title and DEFAULTS in Settings now ask for a second click, so one stray click can't throw away a saved run or your key bindings.
+- HOW TO PLAY now covers the plunge, ledge climbing and the boss's KAMAE bar, and shows your own keys after you rebind them.
+- The [ and ] keys now show the new mouse sensitivity for a moment. New COMFORT settings: crosshair size and colour.
+- Pressing dash with no charge left now flashes the dash lights red with a dull clunk.
+- Below 30% health a quiet heartbeat plays under the music.

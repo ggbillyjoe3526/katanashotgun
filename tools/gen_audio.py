@@ -5,6 +5,7 @@ Run:  python3 tools/gen_audio.py        (from the project root; everything)
       python3 tools/gen_audio.py deflect_perfect   (only that sound)
       python3 tools/gen_audio.py cans   (only the soda can sounds)
       python3 tools/gen_audio.py marks  (only the hit and kill confirm ticks)
+      python3 tools/gen_audio.py cues   (only the low-health heartbeat and the empty dash)
 Writes .wav SFX and .ogg loops into assets/audio/. Requires numpy, scipy, ffmpeg.
 Everything is synthesized so the prototype has no third-party audio.
 """
@@ -850,6 +851,26 @@ def soda_sounds():
     save("can_crash", sfx_can_crash(), 0.5)
 
 
+def sfx_heartbeat():
+    """Low health: a soft, muffled lub-dub, felt more than heard."""
+    total = 0.42
+
+    def thump(f0, dur):
+        return lp(sweep_sine(f0, f0 * 0.6, dur) * env_exp(dur, 22), 220)
+    return at(thump(68, 0.14), 0.0, total) + at(thump(58, 0.16) * 0.7, 0.17, total)
+
+
+def sfx_dash_empty():
+    """Dash pressed with no charge: a short dull clunk, no whoosh."""
+    d = 0.09
+    return mix(np.sin(2 * np.pi * 110 * t_axis(d)) * env_exp(d, 45), lp(noise(0.03), 900) * env_exp(0.03, 90) * 0.5)
+
+
+def qol_cues():
+    save("heartbeat", sfx_heartbeat(), 0.7)
+    save("dash_empty", sfx_dash_empty(), 0.5)
+
+
 def hit_marks():
     save("hitmark", sfx_hitmark(), 0.7)
     save("killmark", sfx_killmark(), 0.8)
@@ -868,6 +889,9 @@ def main():
         return
     if sys.argv[1:] == ["marks"]:
         hit_marks()
+        return
+    if sys.argv[1:] == ["cues"]:
+        qol_cues()
         return
     save("shotgun", sfx_shotgun())
     save("recharge", sfx_recharge(), 0.6)
@@ -931,6 +955,7 @@ def main():
     rain_ogg()
     soda_sounds()
     hit_marks()
+    qol_cues()
     print("audio written to", os.path.abspath(OUT))
 
 

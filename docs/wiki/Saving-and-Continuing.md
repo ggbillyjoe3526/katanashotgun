@@ -15,8 +15,12 @@ setting and when you quit.
   your wave, score, cards, health, cells, dashes and the seed's position, so
   the rest of the run plays out exactly as it would have.
 - Next time you start the game, the title offers **CONTINUE** from the
-  start of the wave you were on. Click it to continue, or click **NEW RUN** (or
-  press **N**) to start a new run instead.
+  start of the wave you were on. Click it to continue, or click **NEW RUN**
+  twice (or press **N** twice) to start a new run instead.
+- **MAIN MENU** on the pause screen does the same without quitting: the run
+  waits on the title as CONTINUE. On wave 1 there's no snapshot yet, so the
+  run counts as finished and its XP is paid. **RESTART** ends the run (its
+  XP counts) and plays the same seed again.
 - Starting a new run over a saved one still pays that run's XP into your
   Player Level, so nothing is lost.
 - When you die, the snapshot is deleted. A death can't be undone by

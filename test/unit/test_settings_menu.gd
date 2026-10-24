@@ -303,9 +303,43 @@ func test_escape_still_backs_out() -> void:
 	assert_false(menu.visible)
 
 
-func test_defaults_button_resets_the_tab() -> void:
+func test_defaults_button_resets_the_tab_on_a_second_click() -> void:
 	menu.tab = SettingsMenu.TABS.find("COMFORT")
 	menu.open()
 	Settings.shake = 0.2
 	_click(menu._foot_rect(1).get_center())
-	assert_eq(Settings.shake, 1.0)
+	assert_eq(Settings.shake, 0.2, "one click only arms DEFAULTS")
+	assert_eq(menu.foot_label(1), "CLICK AGAIN")
+	_click(menu._foot_rect(1).get_center())
+	assert_eq(Settings.shake, 1.0, "the second click resets the tab")
+	assert_eq(menu.foot_label(1), "DEFAULTS")
+
+
+func test_an_armed_defaults_runs_out_and_never_crosses_tabs() -> void:
+	menu.tab = SettingsMenu.TABS.find("COMFORT")
+	menu.open()
+	Settings.shake = 0.2
+	_click(menu._foot_rect(1).get_center())
+	menu._set_tab(SettingsMenu.TABS.find("CONTROLS"))
+	Settings.sensitivity = 2.5
+	_click(menu._foot_rect(1).get_center())
+	assert_eq(Settings.sensitivity, 2.5, "the arm on COMFORT doesn't reset CONTROLS")
+	menu._defaults_t = 0.0 # its few seconds ran out
+	_click(menu._foot_rect(1).get_center())
+	assert_eq(Settings.sensitivity, 2.5, "after it runs out a click arms it again")
+
+
+func test_crosshair_settings_save_and_load() -> void:
+	Settings.crosshair_size = "large"
+	Settings.crosshair_color = "cyan"
+	var d := Settings.to_dict()
+	Settings.reset_comfort()
+	assert_eq(Settings.crosshair_size, "normal")
+	assert_eq(Settings.crosshair_color, "white")
+	Settings.from_dict(d)
+	assert_eq(Settings.crosshair_size, "large")
+	assert_eq(Settings.crosshair_color, "cyan")
+	Settings.from_dict({"v": Settings.VERSION, "crosshair_size": "huge", "crosshair_color": 3})
+	assert_eq(Settings.crosshair_size, "large", "an unknown size keeps the current one")
+	assert_eq(Settings.crosshair_color, "cyan")
+	Settings.reset_comfort()
