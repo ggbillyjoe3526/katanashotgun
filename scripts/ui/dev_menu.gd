@@ -232,7 +232,10 @@ func _set_cans(v: Variant) -> void:
 	if is_instance_valid(Game.cans):
 		Game.cans.on_switch(DevSettings.cans)
 	if Game.state != "title":
-		_show_note("CANS FROM THE NEXT WAVE" if DevSettings.cans else "THIS RUN KEEPS ITS CANS")
+		if DevSettings.cans:
+			_show_note("CANS FROM THE NEXT WAVE (NONE ON BOSS WAVES)")
+		else:
+			_show_note("THIS RUN KEEPS ITS CANS" if is_instance_valid(Game.cans) and Game.cans.enabled else "SODA CANS OFF")
 
 
 ## Fills the can slots with the next flavours in the list (each press moves
