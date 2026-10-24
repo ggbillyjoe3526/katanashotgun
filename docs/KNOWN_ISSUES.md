@@ -85,6 +85,7 @@ Resolved.)
 | KI-117 | A damaged save file was deleted when a good backup existed, instead of moved aside | bug pass, 2026-10-23 |
 | KI-118 | Equal high scores (a replayed seed) could put your initials on the older row | bug pass, 2026-10-23 |
 | KI-119 | Two debug flags looked up every frame (soda-can test, FINISH splash log); an unused wall-clock timer in Game | bug pass, 2026-10-23 |
+| KI-120 | Dev-only: SODA CANS switched on at the title never reached the run started from that title (the cans system read the switch once, when the title was built), so no can ever appeared until the game was restarted; switched on mid-run, it did nothing for that run | soda cans fix, 2026-10-24 |
 | KI-001 | A slash or dash pressed during a glory kill, or on the frame a ledge climb starts, did nothing afterwards (now kept and fired the moment it ends; a jump there is still dropped, as you hop clear anyway) | bug pass second try, 2026-10-23 |
 | KI-002 | Jump pressed just before landing, or dash pressed just before a charge came back, was lost (both now buffered for 0.12 s) | bug pass second try, 2026-10-23 |
 | KI-003 | Enemies couldn't follow you onto the water tanks, the stairwell hut or the east edge of the billboard gantry on The Well | bug pass second try, 2026-10-23 |

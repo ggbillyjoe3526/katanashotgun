@@ -232,7 +232,8 @@ Pass after `--` on the command line:
   perf overlay, hide the HUD, force a palette (the plain-look switch is now
   the player's RETRO LOOK setting in Settings > Video). RUN: god mode, autoplay bot, game speed, start wave,
   force a boss or mutator (these last until the game closes), and the soda
-  cans play-test: SODA CANS (saved, so it stays on until switched off) and
+  cans play-test: SODA CANS (saved, so it stays on until switched off; on
+  the title it applies to the run you start, mid-run from the next wave) and
   CAN FLAVOUR (forces one flavour). ACTIONS: skip the wave, a level-up
   offer, every card at max rank, refill, GIVE CANS, restart the seed, a new
   seed, the juice test. A run that used anything on RUN or ACTIONS is a dev

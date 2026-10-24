@@ -136,8 +136,8 @@ func _build_rows(t: String) -> Array:
 				func(): return DevSettings.mutator, func(v: Variant): DevSettings.mutator = v,
 				"EVERY REGULAR WAVE GETS THIS MUTATOR"))
 			out.append(_option("SODA CANS", on_off, on_off_names,
-				func(): return DevSettings.cans, func(v: Variant): DevSettings.cans = v,
-				"PLAY-TEST: CANS ON THE MAP FROM THE NEXT RUN. NO TOP 10"))
+				func(): return DevSettings.cans, _set_cans,
+				"PLAY-TEST: CANS FROM WAVE 2, NOT BOSS WAVES. NO TOP 10"))
 			var can_values := [""]
 			var can_names := ["SEEDED"]
 			for f in Soda.LIST:
@@ -169,6 +169,8 @@ func _build_rows(t: String) -> Array:
 ## Turns every dev setting off (the footer's ALL OFF).
 func _reset_tab() -> void:
 	DevSettings.reset()
+	if is_instance_valid(Game.cans):
+		Game.cans.on_switch(false) # the title's run follows; a run going keeps its cans
 	if perf:
 		perf.show_overlay(false)
 	_set_tab(tab, true)
@@ -223,13 +225,23 @@ func _refill() -> void:
 	_show_note("HEALTH AND CELLS FULL")
 
 
+## SODA CANS moved: the title's run takes it at once; mid-run, on brings
+## cans from the next wave and off waits for the next run.
+func _set_cans(v: Variant) -> void:
+	DevSettings.cans = bool(v)
+	if is_instance_valid(Game.cans):
+		Game.cans.on_switch(DevSettings.cans)
+	if Game.state != "title":
+		_show_note("CANS FROM THE NEXT WAVE" if DevSettings.cans else "THIS RUN KEEPS ITS CANS")
+
+
 ## Fills the can slots with the next flavours in the list (each press moves
 ## on, so every flavour comes round).
 func _give_cans() -> void:
 	if not _in_run():
 		return
 	if not Game.cans.enabled:
-		_show_note("TURN SODA CANS ON AND START A NEW RUN")
+		_show_note("TURN SODA CANS ON FIRST (RUN TAB)")
 		return
 	_mark_run()
 	Game.cans.held.clear()
