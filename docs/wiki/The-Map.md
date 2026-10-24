@@ -31,8 +31,10 @@ shrine, and cables strung with paper lanterns across the shaft. Coloured haze
 hangs over the city, mist pools in the shaft and drifts below the roof edge,
 and lamps throw light and beams onto the floor.
 
-Anything you'd walk into is solid: vending machines, vents, the pipe benches
-along the parapet, street lamps and skylight frames (you can hop over those).
+Anything you'd walk into is solid: vending machines, vents, air-con boxes,
+crate stacks, the pipe benches along the parapet and street lamps. Nothing
+on the floor is knee-high: props are either flat enough to run straight over
+(the skylights, the drains, the floor plates) or at least a 1.2 m hop high.
 None of it stands on a spawn point, a ramp or an enemy's leap spot, and
 nothing gives you a step up to a wall that is meant to stay out of reach.
 Signs, pipes and air-con units on walls hang above your head.

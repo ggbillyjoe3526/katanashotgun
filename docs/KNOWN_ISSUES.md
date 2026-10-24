@@ -56,8 +56,22 @@ here; see Resolved.)
 
 ## Needs a decision (William)
 
-Nothing waiting. (William decided KI-020 to KI-025 on 2026-10-23; see
-Resolved.)
+### KI-027 Ramp sides on The Well stop a sprint
+- **Severity:** medium (William's play-test, 2026-10-24: "too easy to run
+  into them")
+- **Symptom:** every ramp is a solid wedge with straight sides, so running
+  across its low end you hit a knee-high side wall and stop dead. Worst on
+  the metro floor, where the two ramps up to the service blocks stand out in
+  the middle of the floor; the north-deck ramps on the roof do the same.
+- **Repro:** any seed, wave 1: drop to the metro floor and run east-west
+  across it near the pad; or on the roof run along z = -15 towards x = -14.
+  The sprint test in `test/unit/test_world_detail.gd` finds them (it skips
+  ramp sides for now).
+- **Next:** William picks a ramp layout (ramps along the walls instead of
+  straight out into the floor) from the concept shots in the thread "Map
+  snags and bottom ramps"; then the test stops skipping ramps.
+
+(William decided KI-020 to KI-025 on 2026-10-23; see Resolved.)
 
 ---
 
@@ -65,6 +79,7 @@ Resolved.)
 
 | ID | Bug | Fixed in |
 |---|---|---|
+| KI-026 | You kept catching on small props on The Well's roof: skylight frames (0.6 m), small crate rows (0.7 m) and air-con boxes (1.0 m) were too low to notice and too high to walk over. Skylights are now flush (run straight over them), crates and air-con boxes are a clear 1.2 m hop, and the pipe benches back onto the parapet | William's play-test, 2026-10-24 |
 | KI-100 | A wave could end while its last group of enemies was still dropping in (field empty when the last group spawned) | bug pass, 2026-10-23 |
 | KI-101 | Hit freeze cut glory-kill impact frames to a single frame and made screen flashes jump ahead | bug pass, 2026-10-23 |
 | KI-102 | A shockwave still rolling out could hurt you during the wave tally | bug pass, 2026-10-23 |

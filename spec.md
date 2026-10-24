@@ -1662,11 +1662,17 @@ the holographic cut-in (§9.8).
     band (kept below the amber lips' glow), a foot plinth, ribs, copper
     pipes, AC units with status lights, vending machines, lit shutters and
     hanging blade signs; faces with a grab lip only get ribs. On the roof:
-    pipe benches along the parapet, vents, AC boxes and crates, drains,
-    skylights, a hokora shrine, antennas, and cables with paper lanterns.
+    pipe benches backed onto the parapet, vents, AC boxes and crate stacks,
+    drains, flush skylights, a hokora shrine, antennas, and cables with
+    paper lanterns.
   - **Solid or overhead.** Anything a body would walk into is solid and taller
     than the navmesh climb (0.5 m), so enemies path round it; everything on
-    walls hangs above 2.3 m. A solid prop is only placed if `_free` passes:
+    walls hangs above 2.3 m. **Nothing on a floor is knee-high** (owner's
+    play-test, 2026-10-24: a sprint kept catching on low props): a floor
+    prop is flush (`FLUSH` 0.08 m, no collider: skylights, drains) or at
+    least `HOP` 1.2 m tall (a deliberate hop), unless it backs onto the
+    parapet. A unit test sprints a player-sized capsule across every floor
+    and fails on anything between 0.15 and 1 m that stops it. A solid prop is only placed if `_free` passes:
     on one floor, inside nothing, 2.5 m from every spawn point and the
     player spawn, 5 m from the boss spawn, 1.5 m from every leap-link end,
     off every ramp and its landings, and never within 5 m of a wall whose

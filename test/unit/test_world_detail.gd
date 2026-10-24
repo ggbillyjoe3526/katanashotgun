@@ -149,3 +149,98 @@ func test_plated_floors_report_the_plates() -> void:
 	# blood, telegraphs and gibs sit on the plates, not under them
 	assert_almost_eq(arena.floor_height_at(-20, 20), WorldDetail.LIFT, 0.001)
 	assert_almost_eq(arena.floor_height_at(16, 19.5), 3.0, 0.001, "a container top is not plated")
+
+
+func test_no_floor_prop_is_knee_high() -> void:
+	# owner's play-test (2026-10-24): a sprint kept catching on low props.
+	# Props are flush (no collider) or a hop high; benches back onto the parapet.
+	var d := arena.detail
+	for box in d.prop_boxes:
+		var mid := box.get_center()
+		if box.position.y > arena.floor_height_at(mid.x, mid.z, box.position.y + 0.1) + 0.1:
+			continue # a part on top of another (a vent's cap)
+		var top := box.end.y
+		for other in d.prop_boxes:
+			if other.position.y >= box.position.y - 0.01 and other.position.y <= box.end.y + 0.01 and other.intersects(box.grow(0.01)):
+				top = maxf(top, other.end.y)
+		var rise := top - box.position.y
+		var at_edge := maxf(absf(box.position.x), absf(box.end.x)) >= 31.9 or maxf(absf(box.position.z), absf(box.end.z)) >= 31.9
+		assert_true(rise >= WorldDetail.HOP - 0.01 or at_edge, "prop %s is a hop high (%.2f m) or backs onto the parapet" % [box, rise])
+
+
+func test_a_sprint_never_stops_at_knee_height() -> void:
+	# a player-sized capsule runs every way from a grid of floor spots; on a
+	# flat floor nothing lower than a hop may stop it (walls, the parapet and
+	# the map's 1.2 m hops are meant to)
+	var body := CharacterBody3D.new()
+	body.collision_layer = 0
+	body.collision_mask = 1
+	body.floor_max_angle = deg_to_rad(50)
+	body.floor_snap_length = 0.35
+	var cs := CollisionShape3D.new()
+	var cap := CapsuleShape3D.new()
+	cap.radius = Player.CAPSULE_RADIUS
+	cap.height = Player.CAPSULE_HEIGHT
+	cs.shape = cap
+	cs.position.y = Player.CAPSULE_HEIGHT * 0.5
+	body.add_child(cs)
+	arena.add_child(body)
+	await wait_physics_frames(2)
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.collision_mask = 1
+	var space := arena.get_world_3d().direct_space_state
+	var dt := 1.0 / 60.0
+	var snags: Array[String] = []
+	var x := -30.0
+	while x <= 30.0:
+		var z := -30.0
+		while z <= 30.0:
+			var below := INF
+			for level in 4:
+				var fy := arena.floor_height_at(x, z, below)
+				if fy < -20.0:
+					break
+				below = fy - 0.5
+				var start := Vector3(x, fy + 0.05, z)
+				q.transform = Transform3D(Basis(), start + Vector3(0, Player.CAPSULE_HEIGHT * 0.5 + 0.05, 0))
+				if not space.intersect_shape(q, 1).is_empty():
+					continue
+				for i in 8:
+					var snag := _sprint(body, start, Vector3.FORWARD.rotated(Vector3.UP, i * PI / 4.0), dt)
+					if snag != "":
+						snags.append(snag)
+			z += 3.0
+		x += 3.0
+	body.free()
+	assert_eq(snags, [] as Array[String], "nothing knee-high stops a sprint")
+
+
+func _sprint(body: CharacterBody3D, start: Vector3, dir: Vector3, dt: float) -> String:
+	body.global_position = start
+	body.velocity = Vector3.ZERO
+	var prev := start
+	for step in 40:
+		var vy := 0.0 if body.is_on_floor() else body.velocity.y - 30.0 * dt
+		body.velocity = dir * Player.WALK_SPEED + Vector3(0, vy, 0)
+		body.move_and_slide()
+		var moved := Vector2(body.global_position.x - prev.x, body.global_position.z - prev.z).length()
+		prev = body.global_position
+		if step < 3 or moved > Player.WALK_SPEED * dt * 0.35 or not body.is_on_floor() or body.get_floor_normal().y < 0.99:
+			continue
+		for k in body.get_slide_collision_count():
+			var c := body.get_slide_collision(k)
+			if c.get_normal().dot(-dir) < 0.5:
+				continue
+			var rise := c.get_position().y - body.global_position.y
+			var top := rise
+			var hit := c.get_collider_shape() as CollisionShape3D
+			if hit and hit.shape is ConvexPolygonShape3D:
+				continue # a ramp's side: the ramp layout is its own fix (KI-027)
+			if hit and hit.shape is BoxShape3D:
+				top = hit.global_position.y + (hit.shape as BoxShape3D).size.y * 0.5 - body.global_position.y
+			var edge := maxf(absf(body.global_position.x), absf(body.global_position.z)) > 30.9 # the parapet, benches backed onto it
+			if top > 0.15 and top < 1.0 and not edge:
+				return "stopped at %s heading %s by a %.2f m block" % [body.global_position.snapped(Vector3(0.1, 0.1, 0.1)), dir.snapped(Vector3(0.1, 0.1, 0.1)), top]
+		return ""
+	return ""
