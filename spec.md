@@ -1621,11 +1621,15 @@ the holographic cut-in (§9.8).
   - **Metro ramps** (owner's pick "A", 2026-10-24: the old ones stood out in
     the middle of the pit and were too easy to run into): each runs along a
     service-block wall, from (±1, −10, ∓6.5) to (∓8, −5, ∓6.5), 3 m wide, and
-    ends straight onto a balcony. The open side has a neon edge line and a
-    hop-high (1.2 m) guard along the stretch where the ramp is lower than a
-    hop, so no ramp side in the pit is knee-high. The 3 m crate stands at
-    (4.5, −10, −5.5), the metro geyser pad at (−4.5, −10, 6.2), and the pit's
-    leap links sit clear of the ramp feet.
+    ends straight onto a balcony beside the top of that balcony's ramp up to
+    the roof (ending beside its low side would trip you on it). The open side has a neon edge line and a guard along the stretch
+    where the ramp is lower than a hop; the guard's top runs 1.2 m above the
+    floor at the foot and at least 1.2 m above the ramp, so it is a hop high
+    from either, and no open ramp side in the pit is knee-high (the service
+    ledge beside a ramp's top is: KI-031). The 3 m crate stands against the north
+    wall at (4.5, −10, −6), the metro geyser pad at (−4, −10, 5.9), and the
+    pit's leap links sit clear of the ramp feet, the crate and the pad (and
+    never inside a solid: `test_well_map.gd`).
   - **Geyser pads (9, fixed, never seeded).** The metro floor's (launch
     28 m/s up, 2.5 toward the bridge) throws the player up to the bridge.
     Eight more, added at the owner's request (2026-10-22: "more chances to

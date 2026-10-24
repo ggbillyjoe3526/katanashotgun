@@ -79,6 +79,17 @@ func test_leap_links_land_on_the_navmesh() -> void:
 			var q := NavigationServer3D.map_get_closest_point(map, end)
 			assert_lt(Vector2(q.x - end.x, q.z - end.z).length(), 0.6, "link end %s is walkable" % end)
 			assert_lt(absf(q.y - end.y), 1.0, "link end %s is on its floor" % end)
+	# and never inside a solid (a navmesh bake leaves pockets inside ramps)
+	var space := arena.get_world_3d().direct_space_state
+	var shape := SphereShape3D.new()
+	shape.radius = 0.45
+	var q := PhysicsShapeQueryParameters3D.new()
+	q.shape = shape
+	q.collision_mask = 1
+	for l in arena.nav_links:
+		for end in l:
+			q.transform = Transform3D(Basis.IDENTITY, end + Vector3(0, 1.0, 0))
+			assert_eq(space.intersect_shape(q, 1).size(), 0, "link end %s is not inside a wall" % end)
 
 
 func test_spawn_points_are_clear() -> void:

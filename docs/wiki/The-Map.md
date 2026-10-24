@@ -45,8 +45,8 @@ Signs, pipes and air-con units on walls hang above your head.
 
 - **Every level has a ramp.** In the pit, two ramps run along the service
   walls from the metro platform and end on the balconies, so the middle of
-  the floor stays open (a low lit wall guards the foot of each ramp's open
-  side). Ramps also run from the balconies up to the roof, from the roof to the north
+  the floor stays open (a lit wall a hop high guards the foot of each
+  ramp's open side). Ramps also run from the balconies up to the roof, from the roof to the north
   deck, from the deck to the top of the tower (on its west side) and up to the
   catwalks at their south ends. The bridge joins the two catwalks.
 - **Amber edges mark the ledges you can grab.** They're all 5 m tall: jump,

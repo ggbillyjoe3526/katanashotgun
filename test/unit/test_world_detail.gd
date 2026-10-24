@@ -241,7 +241,7 @@ func _sprint(body: CharacterBody3D, start: Vector3, dir: Vector3, dt: float) -> 
 			if hit and hit.shape is BoxShape3D:
 				top = hit.global_position.y + (hit.shape as BoxShape3D).size.y * 0.5 - body.global_position.y
 			var edge := maxf(absf(body.global_position.x), absf(body.global_position.z)) > arena.half - 1.1 # the parapet, benches backed onto it
-			if top > 0.15 and top < 0.99 and not edge: # 1 m (a crate stack beside the bridge) is a step, not a trip
+			if top > 0.15 and top < 0.99 and not edge: # 1 m beside the bridge: KI-029
 				return "stopped at %s heading %s by a %.2f m block" % [body.global_position.snapped(Vector3(0.1, 0.1, 0.1)), dir.snapped(Vector3(0.1, 0.1, 0.1)), top]
 		return ""
 	return ""

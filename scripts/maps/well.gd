@@ -97,21 +97,66 @@ func _lip(a: Vector3, b: Vector3) -> void:
 
 ## The open side of a ramp against a wall (foot to top, `out` points away
 ## from the ramp): a neon line along its edge so it reads from across the
-## floor, and a hop-high guard where the ramp is lower than a hop, so its
-## low end never catches a sprint from the side.
+## floor, and a guard along the stretch where the ramp is lower than a hop.
+## The guard's top runs a hop above the ramp, so it is a hop high from the
+## floor and from the ramp alike: its low end never catches a sprint.
 func _ramp_side(foot: Vector3, top: Vector3, width: float, out: Vector3) -> void:
 	var flat := Vector3(top.x - foot.x, 0, top.z - foot.z)
+	var along := flat.normalized()
 	var edge := out * width * 0.5
-	var mid := (foot + top) * 0.5 + edge + Vector3(0, 0.05, 0)
+	var mid := (foot + top) * 0.5 + edge - out * 0.08 + Vector3(0, 0.05, 0)
 	var line := _neon(Vector3(0.12, 0.1, foot.distance_to(top)), mid, _accent(2), 3.2)
 	line.look_at_from_position(mid, mid + (top - foot), Vector3.UP)
 	var hop := WorldDetail.HOP
 	var length := flat.length() * hop / (top.y - foot.y)
-	var c := foot + flat.normalized() * length * 0.5 + edge + out * 0.15 + Vector3(0, hop * 0.5, 0)
-	var rot := atan2(-flat.z, flat.x)
-	_solid(Vector3(length, hop, 0.3), c, m_dark, rot, 1)
-	var cap := _neon(Vector3(length, 0.08, 0.32), c + Vector3(0, hop * 0.5 + 0.02, 0), _accent(2), 2.6)
-	cap.rotation.y = rot
+	var a := foot + edge # guard's foot, on the ramp's edge
+	var b := a + along * length
+	var t := out * 0.3
+	var lo := Vector3(0, hop, 0)
+	var hi := Vector3(0, hop * 2.0 + 0.3, 0) # its end stays a hop above you coming down
+	_prism([a, b, b + t, a + t], [a + lo, b + hi, b + t + hi, a + t + lo], m_dark)
+	var cap := _neon(Vector3(0.32, 0.08, (b + hi).distance_to(a + lo)), (a + b + lo + hi + t) * 0.5 + Vector3(0, 0.04, 0), _accent(2), 2.6)
+	cap.look_at_from_position(cap.position, cap.position + (b + hi) - (a + lo), Vector3.UP)
+
+
+## A solid six-sided block from four floor corners and the four corners
+## above them (in the same order), drawn and collided as one convex hull.
+func _prism(base: Array[Vector3], top: Array[Vector3], mat: Material) -> void:
+	var pts: Array[Vector3] = base + top
+	var centre := Vector3.ZERO
+	for p in pts:
+		centre += p / 8.0
+	var faces := [[0, 1, 2, 3], [7, 6, 5, 4], [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0]]
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	st.set_smooth_group(-1)
+	for f in faces:
+		for tri in [[f[0], f[1], f[2]], [f[0], f[2], f[3]]]:
+			var v0: Vector3 = pts[tri[0]]
+			var v1: Vector3 = pts[tri[1]]
+			var v2: Vector3 = pts[tri[2]]
+			# Godot front faces are clockwise: the raw cross product must point inward
+			if (v1 - v0).cross(v2 - v0).dot((v0 + v1 + v2) / 3.0 - centre) > 0.0:
+				var tmp := v1
+				v1 = v2
+				v2 = tmp
+			for v in [v0, v1, v2]:
+				st.set_uv(Vector2(v.x + v.z, v.y) * 0.5)
+				st.add_vertex(v)
+	st.generate_normals()
+	var mi := MeshInstance3D.new()
+	mi.mesh = st.commit()
+	mi.material_override = mat
+	add_child(mi)
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var cs := CollisionShape3D.new()
+	var sh := ConvexPolygonShape3D.new()
+	sh.points = PackedVector3Array(pts)
+	cs.shape = sh
+	body.add_child(cs)
+	add_child(body)
 
 
 func _trim(a: Vector3, b: Vector3, col: Color, energy := 2.6) -> void:
@@ -189,8 +234,10 @@ func _shaft() -> void:
 		_lip(Vector3(s * 8, SERVICE, -8), Vector3(s * 8, SERVICE, 8))
 	# metro ramps run along the service walls and end on a balcony, so the
 	# middle of the pit stays open (owner's pick "A", 2026-10-24)
+	# (each ends beside the top of a balcony's ramp up to the roof, not
+	# beside its low side, which would trip you)
 	for s in [-1.0, 1.0]:
-		var foot := Vector3(s * 1, FLOOR, s * -6.5)
+		var foot := Vector3(s, FLOOR, s * -6.5)
 		var top := Vector3(s * -8, SERVICE, s * -6.5)
 		_ramp(foot, top, 3.0, m_ramp)
 		_ramp_side(foot, top, 3.0, Vector3(0, 0, s))
@@ -213,7 +260,7 @@ func _shaft() -> void:
 	_light(Vector3(8, -8, 6), _accent(1), 2.0, 12.0)
 	_light(Vector3(0, -2, 0), _accent(0), 1.6, 14.0)
 	_crate(Vector3(-9.5, FLOOR, -3), 1.2, _accent(5))
-	_crate(Vector3(4.5, FLOOR, -5.5), 3.0, _accent(4))
+	_crate(Vector3(4.5, FLOOR, -6), 3.0, _accent(4)) # against the north wall
 
 
 ## North deck (+5), shrine tower (+10), beacon cap (+13), water tanks (+8)
@@ -375,7 +422,7 @@ func _ring() -> void:
 ## plunge on the way down. Each stands clear of spawns, leap links, ramps
 ## and props, with open sky over it for the whole launch.
 func _pads() -> void:
-	_pad(Vector3(-4.5, FLOOR, 6.2), Vector3(0, 28.0, -2.5), true)
+	_pad(Vector3(-4, FLOOR, 5.9), Vector3(0, 28.0, -2.5), true)
 	var up := Vector3(0, PAD_LIFT, 0)
 	for s in [-1.0, 1.0]:
 		_pad(Vector3(s * 9, SERVICE, s * 10), up) # service blocks, the corners without a lamp
@@ -513,13 +560,12 @@ func _spawn_list() -> void:
 func _links() -> void:
 	var o := 1.3
 	# metro to the service blocks, past the metro ramps' feet, the crate and the pad
-	nav_links.append([Vector3(7.2, FLOOR, -8 + o), Vector3(7.2, SERVICE, -8 - o)])
-	nav_links.append([Vector3(-7.3, FLOOR, 8 - o), Vector3(-7.3, SERVICE, 8 + o)])
-	# metro to the balconies (the balconies' own ramps lead on to the roof)
-	for z in [3.0, -1.5]:
-		nav_links.append([Vector3(8 - o, FLOOR, z), Vector3(8 + o, SERVICE, z)])
-	for z in [-3.0, 1.5]:
-		nav_links.append([Vector3(-8 + o, FLOOR, z), Vector3(-8 - o, SERVICE, z)])
+	for x in [2.1, 7.0]:
+		nav_links.append([Vector3(x, FLOOR, -8 + o), Vector3(x, SERVICE, -8 - o)])
+	nav_links.append([Vector3(-7.0, FLOOR, 8 - o), Vector3(-7.0, SERVICE, 8 + o)])
+	# metro to the balconies, clear of the balconies' own ramps up to the roof
+	nav_links.append([Vector3(8 - o, FLOOR, 3.8), Vector3(8 + o, SERVICE, 3.8)])
+	nav_links.append([Vector3(-8 + o, FLOOR, -3.8), Vector3(-8 - o, SERVICE, -3.8)])
 	# service blocks to the roof
 	for x in [-6.0, 6.0]:
 		for s in [-1.0, 1.0]:
@@ -534,6 +580,6 @@ func _links() -> void:
 	nav_links.append([Vector3(4.2, 10, -28.5), Vector3(1.2, 13, -28.5)]) # tower to beacon cap
 	nav_links.append([Vector3(21.5, DECK, -25 + o), Vector3(21.5, 6.2, -25 - o)]) # deck to antenna terrace
 	nav_links.append([Vector3(16, 0, 23 - o), Vector3(16, DECK, 23 + o)]) # roof to billboard gantry
-	nav_links.append([Vector3(22 + o, 0, 26), Vector3(21 - o, DECK, 26)]) # roof to the gantry's east edge
+	nav_links.append([Vector3(22 + o, 0.7, 26), Vector3(21 - o, DECK, 26)]) # the east catwalk ramp's foot to the gantry's east edge
 	nav_links.append([Vector3(-22.5, DECK, -25 + o), Vector3(-22.5, 8, -25 - o)]) # deck to water tanks, between the tanks
 	nav_links.append([Vector3(-16.5, 0, 22 - o), Vector3(-16.5, 3, 22 + o)]) # roof to stairwell hut

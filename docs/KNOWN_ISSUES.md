@@ -67,6 +67,40 @@ here; see Resolved.)
 - **Next:** William decides whether they get the same treatment as the pit
   (turned along a wall, and a hop-high guard where the side is knee-high).
 
+### KI-029 A 1 m step beside the torii bridge on The Well
+- **Severity:** low
+- **Symptom:** the 6 m container stack under the west catwalk tops out 1 m
+  above the bridge, 0.3 m off its south edge, so running off that edge of
+  the bridge at x = -18 stops you on a 1 m step (not quite a 1.2 m hop).
+  The sprint test lets 1.0 m through for now.
+- **Repro:** any seed, wave 1: on the bridge at x = -18, run south.
+- **Next:** William decides whether it matters; the fix would be a 1.2 m
+  step (top crate 3.2 m) or a gap of 1 m or more.
+
+### KI-030 Holding forward on the metro geyser pad bumps you under the bridge
+- **Severity:** low (the launch still works if you steer a little)
+- **Symptom:** the metro pad throws you up towards the bridge, but holding
+  W carries you under the bridge's middle platform, so you hit its
+  underside at about 12.7 m and fall back to the floor. Steering a little
+  sideways lands you on the bridge. Found in review of KI-027; it was the
+  same with the pad's old spot.
+- **Repro:** any seed, wave 1: stand on the metro pad and hold W.
+- **Next:** Claude: aim the launch so it clears the platform's edge, or
+  move the pad; check with `--movetest`.
+
+### KI-031 Near the top of a pit ramp, the service ledge beside it is waist-high
+- **Severity:** low (only if you turn straight into it)
+- **Symptom:** each metro ramp climbs along a service block's wall, so for
+  its last 2 m the block's top is between knee and waist height beside you.
+  Turning straight into it there stops you until you hop; running up the
+  ramp, or at it at an angle, slides along. Every ramp that climbs beside
+  the ledge it reaches has this (the balcony ramps along the roof edge too).
+- **Repro:** any seed, wave 1: on the south pit ramp at x = 6.5, turn
+  south and run into the service block.
+- **Next:** William says in play whether it bothers him. A rail would make
+  a knee-high step on the ledge itself, so the real fix would be ending the
+  ramp on the service block instead of the balcony.
+
 (William decided KI-020 to KI-025 on 2026-10-23; see Resolved.)
 
 ---
