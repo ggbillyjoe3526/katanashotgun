@@ -256,6 +256,24 @@ func resume_game() -> void:
 	hud.show_pause(false)
 	Sfx.duck_music(-7.0)
 	_capture()
+	player.hold_fire() # the click that resumed is not a slash or a blast
+
+
+## The pause screen's RESTART: this run ends here, paid into the profile like
+## a run abandoned from the title, and the same seed starts again.
+func restart_run() -> void:
+	leave_run()
+	restart(true)
+
+
+## The pause screen's MAIN MENU: like quitting the game, the run waits on the
+## title as CONTINUE, from the start of this wave (its last snapshot, §11.3).
+## On the first wave there is no snapshot yet, so the run is paid now instead
+## and no progress is lost.
+func pause_to_title() -> void:
+	if not Profile.has_suspended_run():
+		leave_run()
+	to_title()
 
 
 func _open_levelup() -> void:
@@ -306,6 +324,7 @@ func _on_upgrade(id: String) -> void:
 	Game.state = "playing"
 	Sfx.duck_music(-7.0)
 	_capture_grace = 0.6
+	player.hold_fire() # the click that took the card is not a slash or a blast
 	if _build_stamp != "":
 		hud.stamp(_build_stamp, Upgrades.LINK_COLOR, 16, {"lane": "top", "hold": 1.2, "shake": 6.0, "pitch": 1.2, "burst": 30, "shadow": Color(0.3, 0.2, 0.0)})
 		_build_stamp = ""
@@ -425,16 +444,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_capture_grace = 0.6 # the window settling into its new mode is not the player leaving
 		elif event.physical_keycode == KEY_BRACKETLEFT:
 			Settings.nudge_sensitivity(-0.1)
+			hud.show_sensitivity()
 		elif event.physical_keycode == KEY_BRACKETRIGHT:
 			Settings.nudge_sensitivity(0.1)
+			hud.show_sensitivity()
 		elif event.physical_keycode == KEY_ESCAPE and Game.state == "playing":
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			pause_game()
+		elif event.physical_keycode == KEY_ESCAPE and Game.state == "paused":
+			# Esc again closes an open side panel, then the pause screen
+			if not hud.close_pause_panel():
+				resume_game()
 		elif Game.state == "title" and (event.physical_keycode == KEY_ENTER or event.physical_keycode == KEY_SPACE):
 			start_run()
 		elif Game.state == "title" and event.physical_keycode == KEY_N and not resume.is_empty():
-			Sfx.play("ui_click", -4.0)
-			abandon_suspended_run()
+			hud.press_title_new() # asks once more, like a click on NEW RUN
 		elif Game.state == "title" and event.physical_keycode == KEY_Q:
 			# title only: in a run Q is a dash key, and a lost mouse lock pauses
 			# mid-dash, so the pause screen quits by its button alone

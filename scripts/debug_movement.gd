@@ -1,6 +1,7 @@
 extends Node
 ## Debug: a scripted movement course that checks the jump, double jump,
-## ledge climb and plunge rules on real physics, then quits with exit code 0
+## ledge climb and plunge rules on real physics (and the weapons' input
+## buffers, which need the same real frames), then quits with exit code 0
 ## (all passed) or 1. Run with:
 ##   godot --headless --path . --fixed-fps 60 -- --movetest
 ## Each check builds its blocks on a test floor far outside the arena, puts
@@ -27,6 +28,11 @@ var _pad: Dictionary = {}
 var _last_vy := 0.0
 var _buffer_sent := false
 var _after_buffer := -INF # highest point rising after the early press
+var _left_floor := -1 # frame the player walked off the ledge (coyote checks)
+var _late_jump := {} # what the jump pressed after walking off did: its speed and the jumps left
+var _cells0 := 0
+var _slashes0 := 0
+var _held_slashes := -1 # slashes swung while the resume click was still held
 
 
 func _ready() -> void:
@@ -48,6 +54,10 @@ func _ready() -> void:
 		{"name": "a 7 m wall can never be climbed", "blocks": [[7.0, 1.2]], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0},
 		{"name": "double jump height on open floor", "blocks": [], "keys": ["jump", "double"], "want_climb": false, "want_top": 0.0, "measure": true, "forward": false},
 		{"name": "jump pressed just before landing (no jump left) still jumps", "blocks": [], "keys": ["jump", "double"], "forward": false, "buffer_jump": true},
+		{"name": "jump just after walking off a ledge is a ground jump (coyote time)", "blocks": [[3.0, 0.0]], "start_y": 3.0, "keys": [], "coyote": 3, "want_ground_jump": true},
+		{"name": "jump well after walking off a ledge is the air jump", "blocks": [[3.0, 0.0]], "start_y": 3.0, "keys": [], "coyote": 12, "want_ground_jump": false},
+		{"name": "a shotgun tap just before the gun is ready still fires", "blocks": [], "keys": [], "forward": false, "shotgun_tap": true, "min_frames": 40},
+		{"name": "the click that closes the pause screen never swings the katana", "blocks": [], "keys": [], "forward": false, "hold_fire": true, "min_frames": 50},
 		{"name": "double jump pushes a little toward the keys held", "blocks": [], "keys": ["jump", "double"], "push": true},
 		{"name": "no plunge from a jump on the same level", "blocks": [], "keys": ["jump", "double"], "enemy": Vector3(0, 0, -2.0), "want_plunge": false, "forward": false, "pitch": -0.9},
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
@@ -109,6 +119,9 @@ func _next() -> void:
 	_finisher_sent = false
 	_buffer_sent = false
 	_after_buffer = -INF
+	_left_floor = -1
+	_late_jump = {}
+	_held_slashes = -1
 	_max_y = -INF
 	_max_h = 0.0
 	_last_vy = 0.0
@@ -149,12 +162,17 @@ func _next() -> void:
 	p.yaw = 0.0
 	p.pitch = c.get("pitch", 0.0)
 	p.jumps_left = 1
+	p.cells = p.max_cells
+	p.shotgun_cd = 0.0
+	p.katana_cd = 0.0
+	_cells0 = p.cells
+	_slashes0 = p.slash_count
 	_executions0 = Game.executions
 
 
 func _release() -> void:
 	_taps.clear()
-	for a in ["move_forward", "jump", "finisher"]:
+	for a in ["move_forward", "jump", "finisher", "katana", "shotgun"]:
 		Input.action_release(a)
 
 
@@ -191,6 +209,29 @@ func _physics_process(_delta: float) -> void:
 	if c.get("buffer_jump", false) and _double_sent and not _buffer_sent and _f > 30 and not p.is_on_floor() and p.velocity.y < 0.0 and p.global_position.y - ORIGIN.y < 1.2:
 		_buffer_sent = true
 		_tap("jump")
+	if c.has("coyote"):
+		# walk off the deck, then press jump a few frames into the fall
+		if _left_floor < 0 and _f > 10 and not p.is_on_floor() and p.velocity.y <= 0.0:
+			_left_floor = _f
+		if _left_floor >= 0 and _f == _left_floor + int(c.coyote):
+			_tap("jump")
+		if _left_floor >= 0 and _f > _left_floor + int(c.coyote) and _late_jump.is_empty() and p.velocity.y > 0.0:
+			_late_jump = {"vy": p.velocity.y, "jumps": p.jumps_left}
+	if c.get("shotgun_tap", false) and _f == 12:
+		# a quick tap (two frames) while the gun has 0.08 s of cooldown left
+		p.shotgun_cd = 0.08
+		_tap("shotgun")
+	if c.get("hold_fire", false):
+		# the pause screen's closing click is held for half a second, then a
+		# real click follows
+		if _f == 12:
+			p.hold_fire()
+			Input.action_press("katana")
+		elif _f == 40:
+			_held_slashes = p.slash_count - _slashes0
+			Input.action_release("katana")
+		elif _f == 43:
+			_tap("katana")
 	if _buffer_sent and p.velocity.y > 0.0:
 		# rising again with no jump left: only the early press can do that
 		_after_buffer = maxf(_after_buffer, p.global_position.y - ORIGIN.y)
@@ -208,7 +249,7 @@ func _physics_process(_delta: float) -> void:
 	if c.get("want_glory", false) and p.gk_ready != null and not p.gk_ready_plunge and not _finisher_sent:
 		_finisher_sent = true
 		_tap("finisher")
-	var settled: bool = _f > 30 and p.is_on_floor() and (_after_buffer > 1.0 or not c.get("buffer_jump", false)) and p.climb_t < 0.0 and p.gk_target == null
+	var settled: bool = _f > int(c.get("min_frames", 30)) and p.is_on_floor() and (_after_buffer > 1.0 or not c.get("buffer_jump", false)) and p.climb_t < 0.0 and p.gk_target == null
 	if c.has("map_pad") and _f > 30 and _last_vy < 0.0 and p.velocity.y > 0.0:
 		settled = true # the pad caught the player on the way down and threw them up again
 	_last_vy = p.velocity.y
@@ -255,6 +296,20 @@ func _finish(c: Dictionary, p: Player) -> void:
 			errs.append("peak %.2f m, wanted about %.2f" % [_max_y, want])
 	if c.get("buffer_jump", false) and _after_buffer < 1.0:
 		errs.append("the early press was lost (rose %.2f m after it)" % _after_buffer)
+	if c.has("want_ground_jump"):
+		var want_vy: float = Player.JUMP_VEL if c.want_ground_jump else Player.DOUBLE_JUMP_VEL
+		var want_left := 1 if c.want_ground_jump else 0
+		if _late_jump.is_empty():
+			errs.append("the late jump never happened")
+		elif absf(float(_late_jump.vy) - want_vy) > 0.6 or int(_late_jump.jumps) != want_left:
+			errs.append("jumped at %.1f m/s with %d jump left, wanted %.1f with %d" % [_late_jump.vy, _late_jump.jumps, want_vy, want_left])
+	if c.get("shotgun_tap", false) and p.cells != _cells0 - 1:
+		errs.append("the early tap was lost (cells %d of %d)" % [p.cells, _cells0])
+	if c.get("hold_fire", false):
+		if _held_slashes != 0:
+			errs.append("%d slash(es) while the closing click was held" % _held_slashes)
+		if p.slash_count - _slashes0 < 1:
+			errs.append("the next click after letting go did not slash")
 	if c.get("want_glory", false) and not (_enemy_gone() and Game.executions == _executions0 + 1):
 		errs.append("glory kill did not happen (executions +%d)" % (Game.executions - _executions0))
 	if c.has("want_plunge"):

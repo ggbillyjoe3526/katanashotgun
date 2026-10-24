@@ -64,6 +64,8 @@ const FINISHER_BUFFER := 0.18
 const KATANA_BUFFER := 0.18 # seconds a slash press waits for the blade to be ready
 const JUMP_BUFFER := 0.12 # a jump pressed this long before landing still jumps
 const DASH_BUFFER := 0.12 # a dash pressed this long before a charge (or the dash ending) still dashes
+const SHOTGUN_BUFFER := 0.12 # a blast pressed this long before the gun is ready still fires
+const COYOTE := 0.1 # seconds after walking off a ledge that Space still jumps from the ground
 # plunge: the floor you left must be this far above the foe's feet (a jump
 # pad launch counts too), you must
 # still be this far above them, and they must be within a reach that grows
@@ -128,6 +130,9 @@ var shotgun_cd := 0.0
 var katana_buffer := 0.0
 var _jump_buffer := 0.0
 var _dash_buffer := 0.0
+var shotgun_buffer := 0.0
+var _coyote_t := 0.0 # time left to jump as if still on the ledge just walked off
+var _hold_fire := false # the click that closed a menu: the weapons wait for its release
 var combo_step := 0
 var combo_reset := 0.0
 var slash_count := 0
@@ -309,6 +314,8 @@ func _physics_process(delta: float) -> void:
 	katana_buffer -= delta
 	_jump_buffer -= delta
 	_dash_buffer -= delta
+	shotgun_buffer -= delta
+	_coyote_t -= delta
 	finisher_buffer -= delta
 	combo_reset -= delta
 	invuln -= delta
@@ -366,6 +373,8 @@ func _physics_process(delta: float) -> void:
 	# dash
 	if Input.is_action_just_pressed("dash") or _dash_queued:
 		_dash_buffer = DASH_BUFFER
+		if not _dash_queued and dash_t <= 0.0 and _dash_wait() > DASH_BUFFER:
+			Game.hud.dash_empty() # no charge in time for the buffer: say why nothing happened
 	_dash_queued = false
 	if _dash_buffer > 0.0 and dash_charges >= 1.0 and dash_t <= 0.0:
 		_dash_buffer = 0.0
@@ -402,8 +411,10 @@ func _physics_process(delta: float) -> void:
 	var jump_pressed := Input.is_action_just_pressed("jump") or _auto_jump
 	_auto_jump = false
 	if jump_pressed or (_jump_buffer > 0.0 and is_on_floor()):
-		if is_on_floor():
+		if is_on_floor() or _coyote_t > 0.0:
+			# on the ground, or walked off a ledge a moment ago: a ground jump
 			_jump_buffer = 0.0
+			_coyote_t = 0.0
 			velocity.y = JUMP_VEL
 			Sfx.play("jump", -8.0)
 		elif jumps_left <= 0:
@@ -434,6 +445,7 @@ func _physics_process(delta: float) -> void:
 		jumps_left = 1
 		_floor_y = global_position.y
 		_pad_launched = false
+		_coyote_t = COYOTE if velocity.y <= 0.0 else 0.0
 	_was_on_floor = is_on_floor()
 
 	for pad in Game.arena.jump_pads:
@@ -442,6 +454,7 @@ func _physics_process(delta: float) -> void:
 		if d < pad.r and absf(global_position.y - pad.pos.y) < 0.6 and velocity.y <= 0.5:
 			velocity = pad.launch
 			jumps_left = 1
+			_coyote_t = 0.0
 			_pad_launched = true
 			Sfx.play("jumppad", -4.0)
 			fov_kick = 10.0
@@ -459,18 +472,31 @@ func _physics_process(delta: float) -> void:
 	# weapons
 	var katana_pressed := Input.is_action_just_pressed("katana")
 	var katana_held := Input.is_action_pressed("katana")
+	var shotgun_pressed := Input.is_action_just_pressed("shotgun")
 	var shotgun_held := Input.is_action_pressed("shotgun")
+	if _hold_fire:
+		# the click that resumed the game is not an attack: wait for its release
+		if katana_held or shotgun_held:
+			katana_pressed = false
+			katana_held = false
+			shotgun_pressed = false
+			shotgun_held = false
+		else:
+			_hold_fire = false
 	if Game.debug_autoplay:
 		var auto := _autoplay_weapons()
 		katana_pressed = auto.x > 0.5
 		katana_held = katana_pressed
 		shotgun_held = auto.y > 0.5
+		shotgun_pressed = shotgun_held
 	if katana_pressed:
 		katana_buffer = KATANA_BUFFER
+	if shotgun_pressed:
+		shotgun_buffer = SHOTGUN_BUFFER
 	# a soda can in both hands: the weapons wait (a click buffers as usual)
 	if (katana_buffer > 0.0 or katana_held) and katana_cd <= 0.0 and not drinking:
 		_slash()
-	if shotgun_held and shotgun_cd <= 0.0 and not drinking:
+	if (shotgun_buffer > 0.0 or shotgun_held) and shotgun_cd <= 0.0 and not drinking:
 		_fire()
 
 	if global_position.y < Game.arena.kill_y:
@@ -560,6 +586,21 @@ func _hold_presses() -> void:
 		_queued_katana = true
 	if Input.is_action_just_pressed("dash"):
 		_dash_queued = true
+
+
+## After a click closes the pause screen or a level-up card: the weapons
+## ignore the buttons until they are let go, so that click never swings or fires.
+func hold_fire() -> void:
+	_hold_fire = true
+	katana_buffer = 0.0
+	shotgun_buffer = 0.0
+
+
+## Seconds until a dash charge is ready (0 with one in hand).
+func _dash_wait() -> float:
+	if dash_charges >= 1.0:
+		return 0.0
+	return (1.0 - dash_charges) * DASH_RECHARGE * float(Game.mut("dash_recharge", 1.0)) * Game.boost("dash_recharge")
 
 
 func _release_presses() -> void:
@@ -1248,6 +1289,7 @@ func _end_glory() -> void:
 
 # ---------------------------------------------------------------- shotgun
 func _fire() -> void:
+	shotgun_buffer = 0.0
 	if cells <= 0:
 		shotgun_cd = 0.3
 		Sfx.play("empty", -2.0)

@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="SfxCue" format=3]
+
+[ext_resource type="Script" path="res://scripts/audio/sfx_cue.gd" id="1_slv16"]
+[ext_resource type="AudioStream" path="res://assets/audio/dash_empty.wav" id="2_rlchf"]
+
+[resource]
+script = ExtResource("1_slv16")
+streams = Array[AudioStream]([ExtResource("2_rlchf")])

@@ -79,6 +79,14 @@ var pause_copy: MenuList
 var pause_armory_plate: Shard
 var pause_builds_plate: Shard
 var sens_label: Label
+var sens_toast: Label # [ and ] in a run or on the title: the new sensitivity for a moment
+var _sens_t := 99.0
+var pause_howto_plate: Shard
+var pause_howto: Control
+var _pause_panel := "" # the side panel open on the pause screen: "", "howto" or "armory"
+var _pause_cans_on := false # soda cans in hand to list on the pause screen
+var target_arrows: TargetArrows
+var _heart_t := 0.0
 var death_root: Control
 var death_stats: Label
 var death_vals: Label # the numbers, in their own column so they line up
@@ -170,11 +178,20 @@ const T_HOWTO := 5
 const T_SETTINGS := 6
 const T_QUIT := 7
 const PAUSE_X := 40.0
-const PAUSE_PITCH := 20.0
+const PAUSE_PITCH := 16.0
+const PAUSE_MENU_W := 140.0 # the side panel opens this far right of the menu
 const P_RESUME := 0 # pause menu items
-const P_ARMORY := 1
-const P_SETTINGS := 2
-const P_QUIT := 3
+const P_HOWTO := 1
+const P_ARMORY := 2
+const P_SETTINGS := 3
+const P_RESTART := 4
+const P_MENU := 5
+const P_QUIT := 6
+const NOAMMO_TEXT := "NO CHARGE\nUSE THE BLADE" # spec §3.3, on two lines beside the health number
+const NOAMMO_HOLD := 1.7 # seconds on screen: long enough to read (spec §9.9)
+const SENS_TOAST_HOLD := 1.2
+const HEART_LOW := 0.3 # the low-health line (the bar pulses, the heartbeat plays)...
+const HEART_GAP := Vector2(0.55, 0.95) # ...this many seconds apart, near death to just under
 const RESULTS_W := 400.0 # the results block: two 192 px plates and a gap
 const RESULTS_PLATE_W := 192.0
 const RESULTS_ROW := 15.0
@@ -256,14 +273,25 @@ class Crosshair:
 	var cell_flash: Array[float] = []
 	var dash := 0.0
 	var max_dash := 2
+	var dash_flash := 0.0 # dash pressed with no charge: the pips flash, fading
+	## The reticle's arms per Settings.crosshair_size: [gap from the dot, length]
+	const RETICLE := {"small": Vector2i(2, 2), "normal": Vector2i(3, 3), "large": Vector2i(4, 6)}
+	const RETICLE_COLORS := {
+		"white": Color(1, 1, 1, 0.9), "cyan": Color(0.25, 0.95, 1.0), "green": Color(0.55, 1.0, 0.35),
+		"yellow": Color(1.0, 0.85, 0.25), "pink": Color(1.0, 0.35, 0.8),
+	}
+	const DASH_DENIED := Color(1.0, 0.3, 0.25)
 
 	func _draw() -> void:
 		var col := Color(1, 1, 1, 0.9)
-		draw_rect(Rect2(0, 0, 1, 1), col)
-		draw_rect(Rect2(3, 0, 3, 1), col)
-		draw_rect(Rect2(-5, 0, 3, 1), col)
-		draw_rect(Rect2(0, 3, 1, 3), col)
-		draw_rect(Rect2(0, -5, 1, 3), col)
+		# the reticle: a dot and four arms, in the player's size and colour
+		var rc: Color = RETICLE_COLORS.get(Settings.crosshair_color, col)
+		var arm: Vector2i = RETICLE.get(Settings.crosshair_size, RETICLE.normal)
+		draw_rect(Rect2(0, 0, 1, 1), rc)
+		draw_rect(Rect2(arm.x, 0, arm.y, 1), rc)
+		draw_rect(Rect2(1 - arm.x - arm.y, 0, arm.y, 1), rc)
+		draw_rect(Rect2(0, arm.x, 1, arm.y), rc)
+		draw_rect(Rect2(0, 1 - arm.x - arm.y, 1, arm.y), rc)
 		if hit_t > 0.0:
 			# the hit marker: an X round the dot that eases out as it fades
 			var k := hit_t / hit_len
@@ -326,7 +354,7 @@ class Crosshair:
 		for i in max_dash:
 			var px := x0 + i * (w + g)
 			var fill := clampf(dash - i, 0.0, 1.0)
-			draw_rect(Rect2(px, H - 1, w, 3), Color(0.14, 0.24, 0.12))
+			draw_rect(Rect2(px, H - 1, w, 3), Color(0.14, 0.24, 0.12).lerp(DASH_DENIED, dash_flash))
 			if fill >= 1.0:
 				draw_rect(Rect2(px, H - 1, w, 3), LIME)
 			elif fill > 0.0:
@@ -357,6 +385,10 @@ func _ready() -> void:
 	root.add_child(juice)
 	reward_card = RewardCard.new()
 	root.add_child(reward_card)
+	sens_toast = Ui.label("", Ui.font_bold, 10, Color.WHITE, 0)
+	sens_toast.add_theme_stylebox_override("normal", _popup_plate)
+	sens_toast.visible = false
+	root.add_child(sens_toast)
 	# outside the root, so HUD shake never moves the settings screen
 	settings_menu = SettingsMenu.new()
 	settings_menu.theme = root.theme
@@ -421,6 +453,8 @@ func _build_play() -> void:
 	score_label = Ui.label("0", Ui.font_mono, 30, Color.WHITE, 3)
 	play_root.add_child(score_label)
 
+	target_arrows = TargetArrows.new()
+	play_root.add_child(target_arrows)
 	crosshair = Crosshair.new()
 	crosshair.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	play_root.add_child(crosshair)
@@ -433,7 +467,8 @@ func _build_play() -> void:
 	noammo_bg = Shard.make(Color(0.08, 0.0, 0.02, 0.85), 4.0, Color(0, 0, 0, 0), RED)
 	noammo_bg.visible = false
 	play_root.add_child(noammo_bg)
-	noammo_label = Ui.label("NO CHARGE", Ui.font_bold, 10, Color(1.0, 0.35, 0.35), 0)
+	noammo_label = Ui.label(NOAMMO_TEXT, Ui.font_bold, 10, Color(1.0, 0.35, 0.35), 0)
+	noammo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	noammo_bg.add_child(noammo_label)
 	# the combo under the frame, with its timer as a line under the number
 	combo_label = _plated("", YELLOW)
@@ -522,7 +557,7 @@ func _build_title() -> void:
 	title_menu = MenuList.new()
 	title_menu.pitch = TITLE_PITCH
 	title_menu.add("START RUN", func(): Game.main.start_run())
-	title_menu.add("NEW RUN", func(): Game.main.abandon_suspended_run(), "N")
+	title_menu.add("NEW RUN", func(): Game.main.abandon_suspended_run(), "N", {"confirm": "END SAVED RUN?  CLICK AGAIN"})
 	title_menu.add("PLAY A SEED", open_seed_entry, "S")
 	title_menu.add("HI-SCORES", func(): _toggle_title_panel("scores"))
 	title_menu.add("ARMORY", func(): _toggle_title_panel("armory"))
@@ -541,25 +576,6 @@ func _build_title() -> void:
 	title_howto = Control.new()
 	title_howto.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	title_panel.add_child(title_howto)
-	# the controls, a key (or a word) and what it does
-	var lines := [
-		["LMB", "KATANA - CHARGES THE SHOTGUN", b],
-		["RMB", "SHOTGUN - STAGGERS FOES", Color(Game.palette.neon_c)],
-		[Ui.key_name("finisher"), "GLORY KILL A STAGGERED FOE", a],
-		["SLASH", "DEFLECTS ENEMY BOLTS", b.lerp(Color.WHITE, 0.4)],
-		["WASD", "MOVE", Color(0.9, 0.9, 0.95)],
-		["SPACE", "JUMP, AGAIN IN THE AIR", Color(0.9, 0.9, 0.95)],
-		["SHIFT", "DASH", Color(0.9, 0.9, 0.95)],
-		["HEAD", "HEADSHOTS DEAL DOUBLE DAMAGE", a.lerp(Color.WHITE, 0.3)],
-		["BOSS", "EVERY 3RD WAVE", a.lerp(Color.WHITE, 0.3)],
-	]
-	for i in lines.size():
-		var k := Ui.label(lines[i][0], Ui.font_bold, 10, lines[i][2])
-		k.position = Vector2(0, i * LINE)
-		title_howto.add_child(k)
-		var l := Ui.label(lines[i][1], Ui.font_bold, 10, Color.WHITE)
-		l.position = Vector2(HOWTO_KEY_W, i * LINE)
-		title_howto.add_child(l)
 	# bottom left: your best and your Player Level, with its XP as a hairline
 	title_best = Ui.label("", Ui.font_bold, 10, MenuList.REST, 2)
 	title_root.add_child(title_best)
@@ -605,8 +621,92 @@ func close_title_panel() -> bool:
 ## one again closes it.
 func _toggle_title_panel(kind: String) -> void:
 	_title_panel_kind = "" if _title_panel_kind == kind else kind
+	if _title_panel_kind == "howto":
+		_fill_howto(title_howto)
 	title_menu.current = {"scores": T_SCORES, "armory": T_ARMORY, "howto": T_HOWTO}.get(_title_panel_kind, T_START)
 	_refresh_title()
+
+
+## The pause screen's HOW TO PLAY and ARMORY: choosing the open one again
+## closes it.
+func _toggle_pause_panel(kind: String) -> void:
+	_pause_panel = "" if _pause_panel == kind else kind
+	if _pause_panel == "howto":
+		_fill_howto(pause_howto)
+	pause_menu.current = {"howto": P_HOWTO, "armory": P_ARMORY}.get(_pause_panel, P_RESUME)
+
+
+## Esc on the pause screen closes an open side panel first; returns whether
+## it closed one.
+func close_pause_panel() -> bool:
+	if _pause_panel == "":
+		return false
+	_toggle_pause_panel(_pause_panel)
+	return true
+
+
+## HOW TO PLAY (title and pause): a key, or a word, and what it does. The
+## keys are the player's own bindings, read each time it opens.
+func _fill_howto(box: Control) -> void:
+	for ch in box.get_children():
+		box.remove_child(ch)
+		ch.queue_free()
+	var a: Color = Game.palette.neon_a
+	var b: Color = Game.palette.neon_b
+	var plain := Color(0.9, 0.9, 0.95)
+	var fin := _bind_name("finisher")
+	# ten short lines: the panel fits beside the menu on the title and pause
+	var lines := [
+		[_bind_name("katana"), "KATANA: KILLS CHARGE THE GUN", b],
+		[_bind_name("shotgun"), "SHOTGUN: STAGGERS FOES", Color(Game.palette.neon_c)],
+		[fin, "GLORY KILL A STAGGERED FOE", a],
+		[fin, "PLUNGE ONTO A FOE BELOW", a],
+		["SLASH", "DEFLECTS ENEMY BOLTS", b.lerp(Color.WHITE, 0.4)],
+		[_move_name(), "MOVE", plain],
+		[_bind_name("jump"), "JUMP TWICE, CLIMB LEDGES", plain],
+		[_bind_name("dash"), "DASH", plain],
+		["HEAD", "HEADSHOTS DO DOUBLE DAMAGE", a.lerp(Color.WHITE, 0.3)],
+		["BOSS", "BREAK ITS KAMAE BAR, THEN %s" % fin, a.lerp(Color.WHITE, 0.3)],
+	]
+	for i in lines.size():
+		var k := Ui.label(lines[i][0], Ui.font_bold, 10, lines[i][2])
+		k.position = Vector2(0, i * LINE)
+		box.add_child(k)
+		var l := Ui.label(lines[i][1], Ui.font_bold, 10, Color.WHITE)
+		l.position = Vector2(HOWTO_KEY_W, i * LINE)
+		box.add_child(l)
+
+
+## The size HOW TO PLAY's lines take.
+func _howto_size(box: Control) -> Vector2:
+	var inner := Vector2.ZERO
+	for l: Label in box.get_children():
+		l.size = Vector2.ZERO
+		inner = Vector2(maxf(inner.x, l.position.x + l.size.x), l.position.y + l.size.y)
+	return inner
+
+
+## An action's binding as HOW TO PLAY shows it: its mouse button if it has
+## one (the weapons), else its first key.
+func _bind_name(action: String) -> String:
+	var evs := Settings.action_events(action)
+	for ev in evs:
+		if ev is InputEventMouseButton:
+			return Settings.event_name(ev)
+	return Settings.event_name(evs[0]) if not evs.is_empty() else "-"
+
+
+## The four movement keys as one word ("WASD", "ZQSD"), or KEYS when they
+## don't spell one.
+func _move_name() -> String:
+	var out := ""
+	for action in ["move_forward", "move_left", "move_back", "move_right"]:
+		var evs := Settings.action_events(action)
+		var n := Settings.event_name(evs[0]) if not evs.is_empty() and evs[0] is InputEventKey else ""
+		if n.length() != 1:
+			return "KEYS"
+		out += n
+	return out
 
 
 func _build_pause() -> void:
@@ -625,13 +725,23 @@ func _build_pause() -> void:
 	# lock pauses mid-dash); a click anywhere else still resumes
 	pause_menu = MenuList.new()
 	pause_menu.pitch = PAUSE_PITCH
-	pause_menu.add("RESUME", func(): Game.main.resume_game())
-	pause_menu.add("ARMORY", func():
-		pause_armory_plate.visible = not pause_armory_plate.visible
-		pause_menu.current = P_ARMORY if pause_armory_plate.visible else P_RESUME)
+	pause_menu.add("RESUME", func(): Game.main.resume_game(), "ESC")
+	pause_menu.add("HOW TO PLAY", func(): _toggle_pause_panel("howto"))
+	pause_menu.add("ARMORY", func(): _toggle_pause_panel("armory"))
 	pause_menu.add("SETTINGS", _open_settings, "TAB")
+	# RESTART ends this run (paid like any run) and plays its seed again;
+	# MAIN MENU leaves it waiting on the title as CONTINUE, like QUIT GAME
+	pause_menu.add("RESTART", func(): Game.main.restart_run(), "", {"confirm": "RESTART?  CLICK AGAIN"})
+	pause_menu.add("MAIN MENU", func(): Game.main.pause_to_title(), "", {"confirm": "MAIN MENU?  CLICK AGAIN"})
 	pause_menu.add("QUIT GAME", Game.quit_game, "", {"confirm": "QUIT?  CLICK AGAIN"})
 	pause_root.add_child(pause_menu)
+	pause_howto_plate = _side_plate()
+	pause_howto_plate.visible = false
+	pause_root.add_child(pause_howto_plate)
+	pause_howto = Control.new()
+	pause_howto.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pause_howto.position = Vector2(10, 6)
+	pause_howto_plate.add_child(pause_howto)
 	pause_armory_plate = _side_plate()
 	pause_armory_plate.visible = false
 	pause_root.add_child(pause_armory_plate)
@@ -677,14 +787,22 @@ func _layout_pause() -> void:
 	_fit([t])
 	t.position = Vector2(PAUSE_X, 44)
 	pause_menu.position = Vector2(PAUSE_X, 94)
-	# the armory opens under the menu; the builds hold the right side
+	# HOW TO PLAY and the armory open beside the menu, where the builds and
+	# the cans stand aside for them (one panel at a time)
+	var side := Vector2(PAUSE_X + PAUSE_MENU_W + 16.0, pause_menu.position.y - 6.0).round()
+	pause_armory_plate.visible = _pause_panel == "armory"
 	pause_armory_plate.size = (pause_armory.size + Vector2(20, 12)).round()
-	pause_armory_plate.position = Vector2(PAUSE_X, pause_menu.position.y + pause_menu.size.y + 10.0).round()
+	pause_armory_plate.position = side
+	pause_howto_plate.visible = _pause_panel == "howto"
+	if pause_howto_plate.visible:
+		pause_howto_plate.size = (_howto_size(pause_howto) + Vector2(20, 12)).round()
+		pause_howto_plate.position = side
 	var bl: Label = pause_builds_plate.get_node("Builds")
 	bl.size = Vector2.ZERO
-	pause_builds_plate.visible = bl.text != ""
+	pause_builds_plate.visible = bl.text != "" and _pause_panel == ""
 	pause_builds_plate.size = (bl.size + Vector2(20, 12)).round()
 	pause_builds_plate.position = Vector2(vs.x - PAUSE_X - pause_builds_plate.size.x, 44).round()
+	pause_cans_plate.visible = _pause_cans_on and _pause_panel == ""
 	if pause_cans_plate.visible:
 		var cw := 0.0
 		var ch := 0.0
@@ -709,7 +827,7 @@ func _layout_pause() -> void:
 	sens_label.position = Vector2(vs.x - PAUSE_X - sens_label.size.x, by)
 	var lh: Label = pause_root.get_node("LockHint")
 	# the open armory takes the hint's place; the mouse is in use there anyway
-	lh.visible = Game.main and Game.main.lock_failures >= 2 and not pause_armory_plate.visible
+	lh.visible = Game.main and Game.main.lock_failures >= 2 and _pause_panel == ""
 	lh.size = Vector2.ZERO
 	lh.position = Vector2(PAUSE_X, by - 18.0)
 
@@ -1011,7 +1129,7 @@ func show_pause(on: bool) -> void:
 	juice.giant().process_mode = juice.process_mode
 	pause_menu.disarm()
 	pause_menu.current = P_RESUME
-	pause_armory_plate.visible = false
+	_pause_panel = ""
 	var lines := Upgrades.build_lines(Game.upgrades)
 	var bl: Label = pause_builds_plate.get_node("Builds")
 	bl.text = "BUILDS\n" + "\n".join(lines) if not lines.is_empty() else ""
@@ -1028,10 +1146,10 @@ func _fill_pause_cans() -> void:
 			ch.queue_free()
 			pause_cans_plate.remove_child(ch)
 	var cans := Game.cans
-	if not is_instance_valid(cans) or not cans.enabled or cans.held.is_empty():
-		pause_cans_plate.visible = false
+	_pause_cans_on = is_instance_valid(cans) and cans.enabled and not cans.held.is_empty()
+	pause_cans_plate.visible = _pause_cans_on
+	if not _pause_cans_on:
 		return
-	pause_cans_plate.visible = true
 	var y := 6.0
 	var head := Ui.label("SODA CANS IN HAND", Ui.font_bold, 10, Color.WHITE)
 	head.position = Vector2(10, y)
@@ -1074,6 +1192,24 @@ func copy_seed() -> void:
 ## Q on the title: QUIT asks once more, like a click on it.
 func press_title_quit() -> void:
 	title_menu.press(T_QUIT)
+
+
+## N on the title: NEW RUN ends the saved run, so it asks once more too.
+func press_title_new() -> void:
+	title_menu.press(T_NEW)
+
+
+## [ or ] changed the mouse sensitivity: the new value shows for a moment
+## (the pause screen shows it in its bottom row instead).
+func show_sensitivity() -> void:
+	_sens_t = 0.0
+	sens_toast.text = "MOUSE SENSITIVITY %.1f" % Settings.sensitivity
+
+
+## Dash pressed with no charge coming in time: the dash pips flash.
+func dash_empty() -> void:
+	crosshair.dash_flash = 1.0
+	Sfx.play("dash_empty", -6.0)
 
 
 func show_death() -> void:
@@ -1815,12 +1951,26 @@ func _process(_delta: float) -> void:
 		_layout_death()
 	if levelup_root.visible:
 		_layout_levelup()
+	_layout_sens_toast(delta)
 	if play_root.visible:
 		_update_play(delta)
 	elif death_root.visible and post and post.heat > 0.0:
 		# the combo's heat cools off the death and results screens too (the
 		# pause screen keeps its frozen frame)
 		post.heat = move_toward(post.heat, 0.0, delta * 2.0)
+
+
+func _layout_sens_toast(delta: float) -> void:
+	_sens_t += delta
+	sens_toast.visible = _sens_t < SENS_TOAST_HOLD and not pause_root.visible
+	if not sens_toast.visible:
+		return
+	sens_toast.size = Vector2.ZERO
+	# top centre, between the wave and the score (under the boss bar on a boss)
+	var y := 4.0
+	if play_root.visible and boss_root.visible:
+		y = roundf(boss_root.position.y + _boss_plate_h + 3.0)
+	sens_toast.position = Vector2(roundf((vs.x - sens_toast.size.x) * 0.5), y)
 
 
 func _layout_title() -> void:
@@ -1878,14 +2028,14 @@ func _layout_title_panel() -> void:
 		"armory":
 			inner = armory.size
 		"howto":
-			for l: Label in title_howto.get_children():
-				l.size = Vector2.ZERO
-				inner = Vector2(maxf(inner.x, l.position.x + l.size.x), l.position.y + l.size.y)
+			inner = _howto_size(title_howto)
 	var pad := Vector2(10, 6)
 	for c: Control in [title_scores, armory, title_howto]:
 		c.position = pad
 	title_panel.size = (inner + pad * 2.0).round()
-	title_panel.position = Vector2(title_menu.position.x + TITLE_MENU_W + 16.0, title_menu.position.y - pad.y).round()
+	# beside the menu, lifted if it would reach the bottom row (best, version)
+	var top := minf(title_menu.position.y - pad.y, vs.y - 26.0 - title_panel.size.y)
+	title_panel.position = Vector2(title_menu.position.x + TITLE_MENU_W + 16.0, top).round()
 
 
 func _layout_levelup() -> void:
@@ -1997,7 +2147,7 @@ func _update_play(delta: float) -> void:
 	var hpk := clampf(p.hp / p.max_hp, 0.0, 1.0)
 	_hp_ghost_v = move_toward(_hp_ghost_v, hpk, delta * 0.6) if _hp_ghost_v > hpk else hpk
 	# low health pulses the bar and turns the number red; the number never flashes
-	var low := hpk < 0.3
+	var low := hpk < HEART_LOW
 	for i in _cell_flash.size():
 		if i < p.cells and i >= _last_cells:
 			_cell_flash[i] = 1.0
@@ -2013,6 +2163,7 @@ func _update_play(delta: float) -> void:
 	crosshair.cell_flash = _cell_flash
 	crosshair.dash = p.dash_charges
 	crosshair.max_dash = p.max_dash
+	crosshair.dash_flash = move_toward(crosshair.dash_flash, 0.0, delta * 2.5)
 	crosshair.hit_t = maxf(0.0, crosshair.hit_t - delta)
 	crosshair.hurt_dir.clear()
 	crosshair.hurt_a.clear()
@@ -2027,7 +2178,13 @@ func _update_play(delta: float) -> void:
 			crosshair.hurt_dir.append(d.normalized())
 			crosshair.hurt_a.append(clampf(_hurt_left[hi] / HURT_TIME * 1.5, 0.0, 1.0))
 	crosshair.queue_redraw()
+	target_arrows.refresh(vs, delta)
 	soda_hud.refresh(c, vitals, delta)
+	# below 30% health a soft heartbeat under the mix, quicker nearer death
+	_heart_t -= delta
+	if low and not p.dead and Game.state == "playing" and _heart_t <= 0.0:
+		Sfx.play("heartbeat", -4.0, 1.0, 0.0)
+		_heart_t = lerpf(HEART_GAP.x, HEART_GAP.y, hpk / HEART_LOW)
 	hp_label.visible = vitals
 	cell_label.visible = vitals
 	hp_label.text = str(int(ceil(p.hp)))
@@ -2040,14 +2197,14 @@ func _update_play(delta: float) -> void:
 	cell_label.position = Vector2(c.x + fh + 5.0, roundf(c.y - cell_label.size.y * 0.5))
 	# ---- out of cells: a short steady warning left of the health number
 	noammo_t += delta
-	noammo_bg.visible = vitals and noammo_t < 1.4
+	noammo_bg.visible = vitals and noammo_t < NOAMMO_HOLD
 	if noammo_bg.visible:
 		noammo_label.position = Vector2(5, 0)
 		noammo_bg.size = noammo_label.size + Vector2(10, 0)
 		# placed for a three-digit health number, so it never shifts as health changes
 		var hp_w := maxf(hp_label.size.x, HP_PLATE_W)
 		noammo_bg.position = Vector2(c.x - fh - 5.0 - hp_w - 4.0 - noammo_bg.size.x, roundf(c.y - noammo_bg.size.y * 0.5))
-		noammo_bg.modulate.a = clampf((1.4 - noammo_t) / 0.25, 0.0, 1.0)
+		noammo_bg.modulate.a = clampf((NOAMMO_HOLD - noammo_t) / 0.25, 0.0, 1.0)
 	# ---- run XP: a hairline along the bottom edge
 	xp_bg.position = Vector2(0, vs.y - 2)
 	xp_bg.size = Vector2(vs.x, 2)

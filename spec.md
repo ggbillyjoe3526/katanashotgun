@@ -612,20 +612,21 @@ Notes:
 | Action | Default | Notes |
 |---|---|---|
 | `katana` | **LMB**, J | Left hand. Hold to keep slashing (input buffer 0.18 s) |
-| `shotgun` | **RMB**, K | Right hand. Hold to keep firing at the cooldown rate |
+| `shotgun` | **RMB**, K | Right hand. Hold to keep firing at the cooldown rate. A press up to 0.12 s before the gun is ready still fires (input buffer; owner, 2026-10-24) |
 | `move_*` | WASD + arrows | |
 | `jump` | Space | Double jump. A press with no jump left waits 0.12 s for the landing (input buffer) |
 | `dash` | Shift, Q | Input buffer 0.12 s (a press just before a charge is back, or as a dash ends, still dashes). A slash or dash pressed during a glory kill or a ledge climb fires the moment it ends |
 | `finisher` | **F** | Glory kill the staggered enemy near the crosshair, or plunge onto a foe below from high ground (§3.4) |
 | `drink`, `can_next`, `can_prev` | **E**, mouse wheel | Soda cans, DEV-ONLY play-test (§19.1 #11): drink the selected can, pick another. Not in the rebind list yet |
-| pause | Esc | |
-| sensitivity −/+ | `[` / `]` | Shortcut; also in Settings |
+| pause | Esc | Esc again resumes (or first closes an open side panel); so does RESUME or a click. The click (or card pick) that resumes never swings or fires: the weapons wait until its button is let go (owner, 2026-10-24) |
+| sensitivity −/+ | `[` / `]` | Shortcut; also in Settings. The new value shows top centre for 1.2 s (on the pause screen, in its bottom row) |
 | settings | Tab (title, pause) | Settings screen (§15.4) |
 | quit game | Q twice (title) | Also QUIT on the title, QUIT GAME on pause and in Settings |
 | fullscreen | F11 / Alt+Enter | |
 | retry same seed | R (results screen) | |
 | back to the title | Esc (results screen) | Also MAIN MENU, top left (owner, 2026-10-22) |
 | play a seed | S (title) | PLAY A SEED box (§7.5) |
+| new run over a saved one | N (title) | Asks once more, like a click on NEW RUN (§9.7) |
 | copy seed | C (pause, results) | Also COPY / COPY SEED to click (§7.5) |
 | initials | A–Z, 0–9, Backspace, Enter | Results screen |
 
@@ -646,9 +647,9 @@ charges the gun; the gun sets up the blade.**
 | Walk speed | 8.8 m/s, ground accel 70, air accel 28 (×0.3 above walk speed, to keep jump-pad and dash momentum) |
 | Gravity | 26 m/s² |
 | Fall speed cap | 50 m/s. Above every real drop on the map (the top of a metro pad launch lands at about 44 m/s); it only stops a body caught on an edge from building up a fall speed that would throw it through the floor once it slides free (KI-006) |
-| Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable. The double jump also adds 3 m/s toward the movement keys held (relative to the look direction), capped at 1.35× walk speed, so it never builds speed past that; with no keys held there is no push, so it can't carry the player off a ledge they didn't aim for (owner, 2026-10-18) |
+| Jump / double jump | 9.4 / 10.6 m/s (1 extra jump, reset on landing, on jump pads and after a climb). The feet rise about 1.75 m, or about 4.0 m with the double jump at its top (measured at 60 Hz by `--movetest`). The double jump was 8.6 m/s (about 3.2 m in all); raised at the owner's request (2026-10-18) to make the vertical map's levels reachable. The double jump also adds 3 m/s toward the movement keys held (relative to the look direction), capped at 1.35× walk speed, so it never builds speed past that; with no keys held there is no push, so it can't carry the player off a ledge they didn't aim for (owner, 2026-10-18). **Coyote time 0.1 s** (owner, 2026-10-24): a jump pressed up to 0.1 s after walking off a ledge is still a ground jump and keeps the double jump; later, the press is the air jump as before (`--movetest` checks both) |
 | Ledge climb | Airborne, pushing into a ledge and looking within ~72° of it: grab it when its top is 0.3–2.0 m above the feet (hands overhead), the jump would not clear it by 0.15 m anyway, and the whole capsule fits up and over the edge. Then 0.2 s + 0.09 s per metre of rise: 60% lifts the body, 40% carries it over, keeping half walk speed forward. Katana and dash presses during it fire as it ends. Reach from flat ground: about 3.75 m with one jump, about 6.0 m with the double jump; **anything taller is never climbable** (`LedgeClimb`, `scripts/ledge_climb.gd`) |
-| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14 |
+| Dash | 2 charges, 21 m/s for 0.2 s, invulnerable for 0.3 s, recharge 1.4 s per charge (Idaten Drive: +1 charge), FOV kick +14. Pressed with no charge ready within the 0.12 s buffer: the dash pips flash red and a dull clunk plays (owner, 2026-10-24) |
 | Camera | FOV 88; trauma-based shake (decay 1.6/s, squared); strafe tilt; head bob; landing dip; FOV kicks |
 | Capsule | radius 0.4, height 1.8, eye height 1.72 (was 1.55; owner 2026-10-22: the low eye made the view feel zoomed in). The katana's height band and line of sight are measured from the eye, so they sit 0.17 m higher with it |
 | Hit invulnerability | 0.12 s |
@@ -737,7 +738,7 @@ charges the gun; the gun sets up the blade.**
   1 cell. Below 2 cells, they recharge by 1 every 2.5 s (the Yomi Blackout
   mutator turns this off).
 - **Empty:** a 0.3 s cooldown, the "empty" fizzle sound and a "NO CHARGE – USE
-  THE BLADE" flash.
+  THE BLADE" flash (two lines, 1.7 s, §9.7).
 - **Cooldown** 0.72 s. Trauma 0.32, recoil, FOV kick 4, hitstop 0.05 on hit
   (+0.02 on a kill; was 0.035, raised with the katana's, 2026-10-22), the hit
   confirm (§9.8), a white-blue spark on each body hit, muzzle light
@@ -2021,13 +2022,17 @@ the holographic cut-in (§9.8).
     - **Right edge: power cells**, one cyan block per cell, filled from the
       bottom, dark when empty; a newly charged cell flashes white.
     - **Bottom edge: dash charges**, lime pips (8×3, 4 px apart; 6×3 with
-      four or more), a recharging pip partly filled.
+      four or more), a recharging pip partly filled. A dash pressed with no
+      charge coming flashes the pips red (fading over 0.4 s).
     - The numbers sit just outside on small dark plates: the health number
       left of the frame (white, red below 30%; it never flashes) and the cell
       count right of it (cyan, red at 0).
     - The crosshair itself is the dot and ticks, with hit ticks on hit. The
       old katana and shotgun readiness arcs are gone (the approved Focus
-      mockups have none; the frame replaced them).
+      mockups have none; the frame replaced them). Its size (SMALL, NORMAL,
+      LARGE: ticks 2, 3 or 6 px long) and colour (WHITE, CYAN, GREEN,
+      YELLOW, PINK) are settings on the COMFORT tab; the frame keeps its own
+      colours (owner, 2026-10-24).
     - FINISH, the wave payout and the boss-defeated card own the middle of
       the screen: the frame and its numbers step aside while they are up.
   - **Under the frame:** the combo (`x12`, from ×2) on a dark plate, with
@@ -2044,8 +2049,19 @@ the holographic cut-in (§9.8).
     the frame, newest on top, at most 3, 16 px apart, 1.4 s each. The stack
     slides rather than jumps, and a repeat of the newest callout counts up
     ("DEFLECT! x3") instead of stacking.
-  - **Left of the health number:** a steady red-edged "NO CHARGE" plate when
-    the shotgun is fired with no cells.
+  - **Left of the health number:** a steady red-edged "NO CHARGE / USE THE
+    BLADE" plate (two lines, right-aligned, 1.7 s) when the shotgun is fired
+    with no cells.
+  - **Foe markers** (owner, 2026-10-24: never hunt for the last foes): once a
+    wave has nobody left to spawn and 3 or fewer standing, each one off
+    screen gets a small orange arrow 16 px in from the screen's edge,
+    pointing toward it (the bottom edge means behind you), and each one on
+    screen and over 14 m away a small orange chevron over its head. On a
+    boss wave the boss alone is marked: a bigger arrow in the palette's
+    first neon whenever it is off screen (on screen its bar is enough). They
+    fade in over 0.25 s; steady, never blinking (`TargetArrows`).
+  - **Top centre, for a moment:** `MOUSE SENSITIVITY 1.3` on a dark plate
+    for 1.2 s after [ or ] (under the boss bar on a boss wave).
   - **Top centre: the boss bar**, a 220 px plate between the wave and the
     score: the boss's name (red), its HP bar with a white trail, and the
     KAMAE row under it (§5.5). On a screen too narrow for it between the
@@ -2082,17 +2098,32 @@ the holographic cut-in (§9.8).
   - Under it, the menu (16 px apart): START RUN (or CONTINUE WAVE n and
     NEW RUN [N] when a run is suspended, §11.3), PLAY A SEED [S], HI-SCORES,
     ARMORY, HOW TO PLAY, SETTINGS [TAB], QUIT [Q]. A click anywhere else, or
-    Enter or Space, also starts (or continues) the run.
+    Enter or Space, also starts (or continues) the run. NEW RUN ends the
+    saved run, so like QUIT it only arms on the first press ("END SAVED
+    RUN?  CLICK AGAIN", 3 s; owner, 2026-10-24).
   - HI-SCORES (top 5), ARMORY (§11.2; click a row or press 1 or 2) and
-    HOW TO PLAY (the controls, a key column and what each does) open on a
-    plate beside the menu, one at a time; choosing the open one again, or a
-    click away from the menu, closes it.
+    HOW TO PLAY open on a plate beside the menu, one at a time; choosing the
+    open one again, or a click away from the menu, closes it.
+  - **HOW TO PLAY** (title and pause): ten lines, a key column and what each
+    does: katana (kills charge the gun), shotgun (staggers), glory kill,
+    plunge, slash deflects, move, jump twice and climb ledges, dash,
+    headshots, and the boss (break its KAMAE bar, then the finisher key).
+    The keys are the player's own bindings, read each time it opens (a
+    weapon shows its mouse button). Lifted clear of the bottom row when it
+    would reach it.
   - Bottom left: `BEST 0386418     PLAYER LV 6`, with the Player Level's XP
     as a 2 px hairline under it (§11.1). Bottom right: the version.
   - The title music plays while the camera drifts.
-- **Pause:** dim, "PAUSED" (Orbitron 24 px) top left, and under it RESUME,
-  ARMORY (opens the armory plate under the menu), SETTINGS [TAB] and QUIT
-  GAME (no Q here: Q is a dash key mid-run). A click anywhere else resumes.
+- **Pause:** dim, "PAUSED" (Orbitron 24 px) top left, and under it (16 px
+  apart) RESUME [ESC], HOW TO PLAY, ARMORY, SETTINGS [TAB], RESTART, MAIN
+  MENU and QUIT GAME (no Q here: Q is a dash key mid-run). HOW TO PLAY and
+  ARMORY open on a plate beside the menu, one at a time (the builds and cans
+  plates stand aside while one is open); Esc closes it, then resumes. A
+  click anywhere else resumes. RESTART ends the run, paid into the profile
+  like a run abandoned from the title, and plays the same seed again; MAIN
+  MENU goes to the title with the run saved as CONTINUE from the start of
+  this wave, like QUIT GAME (on wave 1, with no save yet, the run is paid
+  instead). Both arm on the first click, like QUIT (owner, 2026-10-24).
   Your builds so far sit on a plate top right. Bottom left: `SEED 548A-8455
   [C] COPY`; bottom right: the mouse sensitivity, which [ and ] change; a
   hint over the seed if the mouse fails to lock. Music ducks to −20 dB. The
@@ -2544,10 +2575,13 @@ about 10 LU over the music, and heavy rain louder than the music.
   hitmark (the hit confirm's dry tick), killmark (the kill confirm's deeper
   knock).
 - **Gore:** gore0–2, gore_big, execution.
-- **Movement:** dash, jump, land, jumppad.
+- **Movement:** dash, dash_empty (a dull clunk: dash pressed with no
+  charge), jump, land, jumppad.
 - **Enemies:** enemy_shot, windup, roar, slam, spawn, blink, shuriken,
   gatling, missile, explosion, beep, alarm.
-- **Player:** hurt, player_death, pickup.
+- **Player:** hurt, player_death, pickup, heartbeat (a soft muffled
+  lub-dub below 30% health, every 0.55 s near death to 0.95 s just under
+  30%, at −4 dB, only while playing; owner, 2026-10-24).
 - **Flow:** levelup, wave_clear, boss_intro, riser, coin, highscore, felled,
   flatline, finish, cutin.
 - **UI:** ui_click, ui_hover, type.
@@ -2966,9 +3000,11 @@ seed | click: new seed | Esc or MAIN MENU: title).
   - Audio buses (Master, Music, SFX, Ambience, UI); sensitivity, FOV, render
     scale, quality preset, FPS cap, VSync.
   - Screen-shake and flash intensity sliders (accessibility), key rebinding,
-    window mode.
+    window mode. COMFORT also holds CROSSHAIR SIZE and CROSSHAIR COLOUR
+    (§9.7).
   - **Mouse only** (owner, 2026-10-18): click tabs, options and the footer
-    (BACK, DEFAULTS, QUIT GAME), drag or scroll sliders, click a key slot then
+    (BACK, DEFAULTS, QUIT GAME; DEFAULTS resets the tab on a second click
+    within 3 s, so a stray click never wipes the key bindings), drag or scroll sliders, click a key slot then
     press the new key (or click the slot with a mouse button), right-click a
     slot to clear it. No keyboard navigation and no key hints; Esc still backs
     out.

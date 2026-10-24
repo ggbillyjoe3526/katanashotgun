@@ -19,15 +19,15 @@ and Linux).
 |---|---|
 | Mouse | Look |
 | LMB (or J) | Katana: 3-hit combo, cleaves, **katana kills charge the shotgun** |
-| RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2 |
+| RMB (or K) | Arc shotgun: lightning spread, staggers, headshots ×2. A tap just before it's ready still fires |
 | F (near a staggered enemy) | **Glory kill**: a first-person finisher, heals, +3 cells. A gold "F GLORY KILL" prompt shows when one is in reach |
 | F (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows when one is lined up |
 | F (near a boss with its KAMAE broken) | **ONIKIRI**: bosses have no glory kill. Keep attacking to fill the KAMAE bar under their HP; a full bar breaks them, and F takes 20% of their HP (or kills at 20% or less) |
 | Slash an incoming bolt | **Deflect** it back |
 | WASD / arrows | Move |
-| Space | Jump / double jump. Jump at a ledge just out of reach and hold forward to **climb** it |
+| Space | Jump / double jump (a jump just after walking off an edge is still a ground jump). Jump at a ledge just out of reach and hold forward to **climb** it |
 | Shift (or Q) | Dash (invulnerable) |
-| Esc | Pause · `[` `]` mouse sensitivity · F11 fullscreen |
+| Esc | Pause, Esc again resumes. The pause screen also has HOW TO PLAY, RESTART (same seed) and MAIN MENU (the run waits as CONTINUE) · `[` `]` mouse sensitivity · F11 fullscreen |
 | Tab (title or pause) | **Settings**: volumes, video, mouse and keys, comfort |
 | Q twice (title) | **Quit the game**; or click QUIT GAME twice on the title, pause or Settings screen |
 | S (title) | **Play a seed**: type or paste a friend's seed, Enter plays it |
@@ -166,13 +166,13 @@ Open with **Tab** or the SETTINGS button on the title or pause screen.
   on 1080p), OFF draws at the screen's own resolution.
 - **Controls:** mouse sensitivity and two keys or mouse buttons per action.
   Taking a key another action uses swaps the two. Esc and F11 stay fixed.
-- **Comfort:** screen shake and flash strength. Below 100% flashes, impact
-  frames don't strobe.
+- **Comfort:** screen shake and flash strength (below 100% flashes, impact
+  frames don't strobe), crosshair size and colour.
 
 Everything is done with the mouse: click a tab, click the left or right half
 of an option, drag or scroll a slider. To rebind, click a slot and press the
 new key (or click the slot with the mouse button you want); right-click a slot
-to clear it. DEFAULTS resets the tab, BACK (or Esc) closes. Settings are saved in
+to clear it. DEFAULTS resets the tab (on a second click), BACK (or Esc) closes. Settings are saved in
 your profile (`profile.json`, see above), so they get the same backup.
 
 ## Debug flags

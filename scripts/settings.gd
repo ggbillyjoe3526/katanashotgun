@@ -1,7 +1,8 @@
 class_name Settings
 ## The player's settings (spec §15.4): audio bus volumes, window and frame
 ## pacing, render scale, quality preset, field of view, mouse sensitivity, key
-## bindings, and the comfort sliders for screen shake and flashes.
+## bindings, and the comfort settings: screen shake, flashes and the
+## crosshair's size and colour.
 ## All static, so any script reads them directly (Settings.fov). Game calls
 ## boot() once at start-up; the settings menu edits the values, then calls
 ## the matching apply_*() and save().
@@ -43,6 +44,8 @@ const SLOTS := 2 # bindings shown per action
 ## F10 opens the dev menu (DevSettings.KEY).
 const RESERVED_KEYS: Array[int] = [KEY_ESCAPE, KEY_F11, KEY_F10]
 const DEFAULT_FOV := 88.0
+const CROSSHAIR_SIZES: Array[String] = ["small", "normal", "large"]
+const CROSSHAIR_COLORS: Array[String] = ["white", "cyan", "green", "yellow", "pink"]
 
 static var path := "user://settings.json"
 
@@ -58,6 +61,8 @@ static var sensitivity := 1.0
 static var aim_assist := true # a slash pulls onto a foe just out of reach, a near-miss blast bends onto it
 static var shake := 1.0 # comfort: 0 = no screen shake, 1 = full
 static var flash := 1.0 # comfort: 0 = no white flashes or impact frames, 1 = full
+static var crosshair_size := "normal" # CROSSHAIR_SIZES
+static var crosshair_color := "white" # CROSSHAIR_COLORS
 ## action -> Array of event dicts ({"k": physical keycode} or {"m": mouse button})
 static var bindings := {}
 
@@ -121,6 +126,8 @@ static func _remember_defaults(action: String) -> void:
 static func reset_comfort() -> void:
 	shake = 1.0
 	flash = 1.0
+	crosshair_size = "normal"
+	crosshair_color = "white"
 
 
 # ---------------------------------------------------------------- apply
@@ -421,6 +428,8 @@ static func to_dict() -> Dictionary:
 		"aim_assist": aim_assist,
 		"shake": shake,
 		"flash": flash,
+		"crosshair_size": crosshair_size,
+		"crosshair_color": crosshair_color,
 		"bindings": bindings.duplicate(true),
 		"dev_cans": DevSettings.cans,
 	}
@@ -468,6 +477,12 @@ static func from_dict(d: Dictionary) -> void:
 		shake = clampf(float(d.shake), 0.0, 1.0)
 	if _is_num(d.get("flash")):
 		flash = clampf(float(d.flash), 0.0, 1.0)
+	var cs: Variant = d.get("crosshair_size")
+	if cs is String and CROSSHAIR_SIZES.has(cs):
+		crosshair_size = cs
+	var cc: Variant = d.get("crosshair_color")
+	if cc is String and CROSSHAIR_COLORS.has(cc):
+		crosshair_color = cc
 	if d.get("dev_cans") is bool:
 		DevSettings.cans = d.dev_cans
 	var bd: Variant = d.get("bindings")

@@ -10,22 +10,24 @@ rebound in [Settings](Settings) (two keys or mouse buttons each).
 | --- | --- |
 | Mouse | Look |
 | **Left mouse** (or J) | **Katana**: a 3-hit combo that cuts everything in the arc. Hold to keep slashing. Katana kills charge the shotgun |
-| **Right mouse** (or K) | **Arc shotgun**: a lightning spread that staggers. Headshots do double. Hold to keep firing |
+| **Right mouse** (or K) | **Arc shotgun**: a lightning spread that staggers. Headshots do double. Hold to keep firing. Empty, it says **NO CHARGE / USE THE BLADE** |
 | Slash at an incoming shot | **Deflect** it straight back at whoever fired it. Slash in the last moment before it hits for a **perfect deflect** |
 | **F** (near a staggered enemy) | **Glory kill**: a finisher that heals and refills cells. A gold "F GLORY KILL" prompt shows when one is in reach |
 | **F** (dropping from high ground onto a foe) | **Plunge**: drive the katana down into it. Counts as a glory kill. A gold "F PLUNGE" prompt shows |
 | **F** (on a boss whose KAMAE is broken) | **ONIKIRI**: the boss break blow, 20% of its health. A red "F ONIKIRI" prompt shows |
 | W A S D or arrow keys | Move |
-| **Space** | Jump, press again in the air to double jump. Jump at a ledge just out of reach and hold forward to **climb** it |
-| **Shift** (or Q) | Dash: a quick burst, and you can't be hurt during it |
-| Esc | Pause |
-| `[` and `]` | Mouse sensitivity down and up |
+| **Space** | Jump, press again in the air to double jump. Jump at a ledge just out of reach and hold forward to **climb** it. Walked off an edge? A jump a split second later still counts as a normal jump |
+| **Shift** (or Q) | Dash: a quick burst, and you can't be hurt during it. With no charge left the dash lights flash red |
+| Esc | Pause (Esc again resumes) |
+| `[` and `]` | Mouse sensitivity down and up (the new value shows at the top for a moment) |
 | F11 (or Alt+Enter) | Switch between full screen and a window |
 | F3 | Show the performance overlay (frame rate, frame time) |
 
-Presses are buffered for a moment: a slash, F, jump or dash pressed a
-fraction of a second early still counts, and a slash or dash pressed during
-a glory kill or a ledge climb fires the moment it ends.
+Presses are buffered for a moment: a slash, shotgun blast, F, jump or dash
+pressed a fraction of a second early still counts, and a slash or dash
+pressed during a glory kill or a ledge climb fires the moment it ends. The
+click that closes the pause screen (or takes a level-up card) never swings
+or fires: let go and click again.
 
 ## Menus
 
@@ -33,12 +35,14 @@ a glory kill or a ledge climb fires the moment it ends.
 | --- | --- | --- |
 | Title, pause, results | Click a word | Every menu choice is a word you click: it turns white with a cyan bar beside it when you point at it |
 | Title | Click (away from the menu), Enter or Space | Start a run, or continue your saved run |
-| Title | N | Start a new run when a saved run is waiting |
+| Title | N twice | Start a new run when a saved run is waiting (the first press asks, so you can't lose the saved run by accident) |
 | Title | **S** | [Play a seed](Seeds#playing-a-friends-seed): type or paste a friend's seed (Ctrl+V pastes, Enter plays, Esc goes back) |
 | Title or pause | **Tab** | Open [Settings](Settings) |
 | Title or pause | 1 / 2 | Change your katana edge / shotgun coil look ([rewards](Player-Level-and-Rewards)), or click its row under ARMORY |
 | Title | Q twice | Quit the game (or click QUIT twice) |
-| Pause | Click (away from the menu) | Resume |
+| Pause | Esc, or click (away from the menu) | Resume (Esc first closes HOW TO PLAY or ARMORY if one is open) |
+| Pause | Click RESTART twice | End this run and play the same seed again from wave 1 |
+| Pause | Click MAIN MENU twice | Back to the title; your run waits there as CONTINUE, from the start of this wave |
 | Pause | [ and ] | Lower or raise the mouse sensitivity (also works in a fight) |
 | Pause or results | **C** | [Copy the seed](Seeds#sharing-your-seed) to share it (or click COPY) |
 | Level-up | 1, 2, 3 or click | Select a card. The same key again, a second click or Enter takes it |

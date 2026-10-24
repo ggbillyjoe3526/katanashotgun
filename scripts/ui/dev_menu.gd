@@ -81,6 +81,11 @@ func foot_label(i: int) -> String:
 	return "ALL OFF" if i == 1 else super(i)
 
 
+## ALL OFF goes through on one click: these are dev switches, not the player's.
+func _press_defaults() -> void:
+	_reset_tab()
+
+
 # ---------------------------------------------------------------- rows
 func _build_rows(t: String) -> Array:
 	var out := []
