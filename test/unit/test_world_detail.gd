@@ -236,12 +236,12 @@ func _sprint(body: CharacterBody3D, start: Vector3, dir: Vector3, dt: float) -> 
 			var rise := c.get_position().y - body.global_position.y
 			var top := rise
 			var hit := c.get_collider_shape() as CollisionShape3D
-			if hit and hit.shape is ConvexPolygonShape3D:
-				continue # a ramp's side: the ramp layout is its own fix (KI-027)
+			if hit and hit.shape is ConvexPolygonShape3D and body.global_position.y > WellMap.FLOOR + 1.0:
+				continue # a roof ramp's side (KI-028); the pit's ramps are guarded
 			if hit and hit.shape is BoxShape3D:
 				top = hit.global_position.y + (hit.shape as BoxShape3D).size.y * 0.5 - body.global_position.y
 			var edge := maxf(absf(body.global_position.x), absf(body.global_position.z)) > arena.half - 1.1 # the parapet, benches backed onto it
-			if top > 0.15 and top < 1.0 and not edge:
+			if top > 0.15 and top < 0.99 and not edge: # 1 m (a crate stack beside the bridge) is a step, not a trip
 				return "stopped at %s heading %s by a %.2f m block" % [body.global_position.snapped(Vector3(0.1, 0.1, 0.1)), dir.snapped(Vector3(0.1, 0.1, 0.1)), top]
 		return ""
 	return ""

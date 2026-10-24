@@ -1618,6 +1618,14 @@ the holographic cut-in (§9.8).
     in reach of a double jump, 7 m is not):
     1.2 m hop, 3 m mantle, 5 m grab ledge (amber lip, colour `ffa21f` in
     every palette), 7 m+ sheer. Every level also has a ramp route.
+  - **Metro ramps** (owner's pick "A", 2026-10-24: the old ones stood out in
+    the middle of the pit and were too easy to run into): each runs along a
+    service-block wall, from (±1, −10, ∓6.5) to (∓8, −5, ∓6.5), 3 m wide, and
+    ends straight onto a balcony. The open side has a neon edge line and a
+    hop-high (1.2 m) guard along the stretch where the ramp is lower than a
+    hop, so no ramp side in the pit is knee-high. The 3 m crate stands at
+    (4.5, −10, −5.5), the metro geyser pad at (−4.5, −10, 6.2), and the pit's
+    leap links sit clear of the ramp feet.
   - **Geyser pads (9, fixed, never seeded).** The metro floor's (launch
     28 m/s up, 2.5 toward the bridge) throws the player up to the bridge.
     Eight more, added at the owner's request (2026-10-22: "more chances to
@@ -1673,9 +1681,8 @@ the holographic cut-in (§9.8).
     bare cells, drains) or at least `HOP` 1.2 m tall (a deliberate hop),
     unless it backs onto the parapet. A unit test sprints a player-sized
     capsule across every floor and fails on anything between 0.15 and 1 m
-    that stops it. It skips ramp sides for now: a ramp's low end still stops
-    you from the side (KNOWN ISSUES KI-027, new ramp layout waiting on the
-    owner's pick). A solid prop is only placed if `_free` passes:
+    that stops it. It skips the roof ramps' sides for now (KNOWN ISSUES
+    KI-028). A solid prop is only placed if `_free` passes:
     on one floor, inside nothing, 2.5 m from every spawn point and the
     player spawn, 5 m from the boss spawn, 1.5 m from every leap-link end,
     off every ramp and its landings, and never within 5 m of a wall whose

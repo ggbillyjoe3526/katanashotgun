@@ -95,6 +95,25 @@ func _lip(a: Vector3, b: Vector3) -> void:
 	_neon(size * Vector3(1, 0.5, 1), c + Vector3(0, -0.35, 0), AMBER, 1.6)
 
 
+## The open side of a ramp against a wall (foot to top, `out` points away
+## from the ramp): a neon line along its edge so it reads from across the
+## floor, and a hop-high guard where the ramp is lower than a hop, so its
+## low end never catches a sprint from the side.
+func _ramp_side(foot: Vector3, top: Vector3, width: float, out: Vector3) -> void:
+	var flat := Vector3(top.x - foot.x, 0, top.z - foot.z)
+	var edge := out * width * 0.5
+	var mid := (foot + top) * 0.5 + edge + Vector3(0, 0.05, 0)
+	var line := _neon(Vector3(0.12, 0.1, foot.distance_to(top)), mid, _accent(2), 3.2)
+	line.look_at_from_position(mid, mid + (top - foot), Vector3.UP)
+	var hop := WorldDetail.HOP
+	var length := flat.length() * hop / (top.y - foot.y)
+	var c := foot + flat.normalized() * length * 0.5 + edge + out * 0.15 + Vector3(0, hop * 0.5, 0)
+	var rot := atan2(-flat.z, flat.x)
+	_solid(Vector3(length, hop, 0.3), c, m_dark, rot, 1)
+	var cap := _neon(Vector3(length, 0.08, 0.32), c + Vector3(0, hop * 0.5 + 0.02, 0), _accent(2), 2.6)
+	cap.rotation.y = rot
+
+
 func _trim(a: Vector3, b: Vector3, col: Color, energy := 2.6) -> void:
 	var d := b - a
 	_neon(Vector3(absf(d.x) + 0.1, absf(d.y) + 0.1, absf(d.z) + 0.1), (a + b) * 0.5, col, energy)
@@ -168,8 +187,13 @@ func _shaft() -> void:
 	for s in [-1.0, 1.0]:
 		_lip(Vector3(-SHAFT, SERVICE, s * 8), Vector3(SHAFT, SERVICE, s * 8))
 		_lip(Vector3(s * 8, SERVICE, -8), Vector3(s * 8, SERVICE, 8))
-	_ramp(Vector3(5, FLOOR, 1), Vector3(5, SERVICE, -8), 3.0, m_ramp)
-	_ramp(Vector3(-5, FLOOR, -1), Vector3(-5, SERVICE, 8), 3.0, m_ramp)
+	# metro ramps run along the service walls and end on a balcony, so the
+	# middle of the pit stays open (owner's pick "A", 2026-10-24)
+	for s in [-1.0, 1.0]:
+		var foot := Vector3(s * 1, FLOOR, s * -6.5)
+		var top := Vector3(s * -8, SERVICE, s * -6.5)
+		_ramp(foot, top, 3.0, m_ramp)
+		_ramp_side(foot, top, 3.0, Vector3(0, 0, s))
 	# balcony ramps fill the balcony's width, so nothing wedges against the wall
 	_ramp(Vector3(-10, SERVICE, 7), Vector3(-10, 0, -3), 4.0, m_ramp)
 	_ramp(Vector3(10, SERVICE, -7), Vector3(10, 0, 3), 4.0, m_ramp)
@@ -189,7 +213,7 @@ func _shaft() -> void:
 	_light(Vector3(8, -8, 6), _accent(1), 2.0, 12.0)
 	_light(Vector3(0, -2, 0), _accent(0), 1.6, 14.0)
 	_crate(Vector3(-9.5, FLOOR, -3), 1.2, _accent(5))
-	_crate(Vector3(-2.5, FLOOR, -5), 3.0, _accent(4))
+	_crate(Vector3(4.5, FLOOR, -5.5), 3.0, _accent(4))
 
 
 ## North deck (+5), shrine tower (+10), beacon cap (+13), water tanks (+8)
@@ -351,7 +375,7 @@ func _ring() -> void:
 ## plunge on the way down. Each stands clear of spawns, leap links, ramps
 ## and props, with open sky over it for the whole launch.
 func _pads() -> void:
-	_pad(Vector3(0, FLOOR, 6), Vector3(0, 28.0, -2.5), true)
+	_pad(Vector3(-4.5, FLOOR, 6.2), Vector3(0, 28.0, -2.5), true)
 	var up := Vector3(0, PAD_LIFT, 0)
 	for s in [-1.0, 1.0]:
 		_pad(Vector3(s * 9, SERVICE, s * 10), up) # service blocks, the corners without a lamp
@@ -488,15 +512,13 @@ func _spawn_list() -> void:
 ## amber grab lip (and the hop and mantle onto the antenna terrace and beacon cap).
 func _links() -> void:
 	var o := 1.3
-	# metro to the service blocks, clear of the metro ramps, crates and the pad
-	for x in [-6.0, 1.0]:
-		nav_links.append([Vector3(x, FLOOR, -8 + o), Vector3(x, SERVICE, -8 - o)])
-	for x in [-2.5, 6.0]:
-		nav_links.append([Vector3(x, FLOOR, 8 - o), Vector3(x, SERVICE, 8 + o)])
+	# metro to the service blocks, past the metro ramps' feet, the crate and the pad
+	nav_links.append([Vector3(7.2, FLOOR, -8 + o), Vector3(7.2, SERVICE, -8 - o)])
+	nav_links.append([Vector3(-7.3, FLOOR, 8 - o), Vector3(-7.3, SERVICE, 8 + o)])
 	# metro to the balconies (the balconies' own ramps lead on to the roof)
-	for z in [3.0, 6.0]:
+	for z in [3.0, -1.5]:
 		nav_links.append([Vector3(8 - o, FLOOR, z), Vector3(8 + o, SERVICE, z)])
-	for z in [-3.0, -6.0]:
+	for z in [-3.0, 1.5]:
 		nav_links.append([Vector3(-8 + o, FLOOR, z), Vector3(-8 - o, SERVICE, z)])
 	# service blocks to the roof
 	for x in [-6.0, 6.0]:

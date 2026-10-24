@@ -36,16 +36,17 @@ crate stacks, the pipe benches along the parapet and street lamps. No prop
 on the floor is knee-high: each is either flat enough to run straight over
 (the skylights, the drains, the floor plates) or at least a 1.2 m hop high;
 only the pipe benches are lower, and they sit right against the parapet.
-(The low ends of the ramps can still stop you from the side: a new ramp
-layout is coming soon.)
+(The low sides of the roof ramps can still stop you if you run into them.)
 None of it stands on a spawn point, a ramp or an enemy's leap spot, and
 nothing gives you a step up to a wall that is meant to stay out of reach.
 Signs, pipes and air-con units on walls hang above your head.
 
 ## Getting around
 
-- **Every level has a ramp.** Ramps run from the metro platform to the
-  service ledges, from the balconies up to the roof, from the roof to the north
+- **Every level has a ramp.** In the pit, two ramps run along the service
+  walls from the metro platform and end on the balconies, so the middle of
+  the floor stays open (a low lit wall guards the foot of each ramp's open
+  side). Ramps also run from the balconies up to the roof, from the roof to the north
   deck, from the deck to the top of the tower (on its west side) and up to the
   catwalks at their south ends. The bridge joins the two catwalks.
 - **Amber edges mark the ledges you can grab.** They're all 5 m tall: jump,
