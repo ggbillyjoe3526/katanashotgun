@@ -164,7 +164,8 @@ func test_no_floor_prop_is_knee_high() -> void:
 			if other.position.y >= box.position.y - 0.01 and other.position.y <= box.end.y + 0.01 and other.intersects(box.grow(0.01)):
 				top = maxf(top, other.end.y)
 		var rise := top - box.position.y
-		var at_edge := maxf(absf(box.position.x), absf(box.end.x)) >= 31.9 or maxf(absf(box.position.z), absf(box.end.z)) >= 31.9
+		var wall := arena.half - 0.1 # the parapet's inner face is at half
+		var at_edge := maxf(absf(box.position.x), absf(box.end.x)) >= wall or maxf(absf(box.position.z), absf(box.end.z)) >= wall
 		assert_true(rise >= WorldDetail.HOP - 0.01 or at_edge, "prop %s is a hop high (%.2f m) or backs onto the parapet" % [box, rise])
 
 
@@ -213,7 +214,7 @@ func test_a_sprint_never_stops_at_knee_height() -> void:
 			z += 3.0
 		x += 3.0
 	body.free()
-	assert_eq(snags, [] as Array[String], "nothing knee-high stops a sprint")
+	assert_true(snags.is_empty(), "nothing knee-high stops a sprint:\n" + "\n".join(snags))
 
 
 func _sprint(body: CharacterBody3D, start: Vector3, dir: Vector3, dt: float) -> String:
@@ -239,7 +240,7 @@ func _sprint(body: CharacterBody3D, start: Vector3, dir: Vector3, dt: float) -> 
 				continue # a ramp's side: the ramp layout is its own fix (KI-027)
 			if hit and hit.shape is BoxShape3D:
 				top = hit.global_position.y + (hit.shape as BoxShape3D).size.y * 0.5 - body.global_position.y
-			var edge := maxf(absf(body.global_position.x), absf(body.global_position.z)) > 30.9 # the parapet, benches backed onto it
+			var edge := maxf(absf(body.global_position.x), absf(body.global_position.z)) > arena.half - 1.1 # the parapet, benches backed onto it
 			if top > 0.15 and top < 1.0 and not edge:
 				return "stopped at %s heading %s by a %.2f m block" % [body.global_position.snapped(Vector3(0.1, 0.1, 0.1)), dir.snapped(Vector3(0.1, 0.1, 0.1)), top]
 		return ""

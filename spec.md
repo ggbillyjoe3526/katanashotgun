@@ -1669,10 +1669,13 @@ the holographic cut-in (§9.8).
     than the navmesh climb (0.5 m), so enemies path round it; everything on
     walls hangs above 2.3 m. **Nothing on a floor is knee-high** (owner's
     play-test, 2026-10-24: a sprint kept catching on low props): a floor
-    prop is flush (`FLUSH` 0.08 m, no collider: skylights, drains) or at
-    least `HOP` 1.2 m tall (a deliberate hop), unless it backs onto the
-    parapet. A unit test sprints a player-sized capsule across every floor
-    and fails on anything between 0.15 and 1 m that stops it. A solid prop is only placed if `_free` passes:
+    prop is flush (`FLUSH`, level with the plates, no collider: skylights in
+    bare cells, drains) or at least `HOP` 1.2 m tall (a deliberate hop),
+    unless it backs onto the parapet. A unit test sprints a player-sized
+    capsule across every floor and fails on anything between 0.15 and 1 m
+    that stops it. It skips ramp sides for now: a ramp's low end still stops
+    you from the side (KNOWN ISSUES KI-027, new ramp layout waiting on the
+    owner's pick). A solid prop is only placed if `_free` passes:
     on one floor, inside nothing, 2.5 m from every spawn point and the
     player spawn, 5 m from the boss spawn, 1.5 m from every leap-link end,
     off every ramp and its landings, and never within 5 m of a wall whose

@@ -32,9 +32,8 @@ const MIRROR_LAYER := 1 << 19
 ## Floor props are flat enough to run over (no collider) or at least a hop
 ## high, never knee height in between: a sprint must not stop on something
 ## the player didn't see as an obstacle (owner's play-test, 2026-10-24).
-const FLUSH := 0.08
+const FLUSH := LIFT # level with the floor plates
 const HOP := 1.2
-const BENCH := 31.75 # pipe benches' centre line, backed onto the parapet
 
 ## Off for a bare map (tests compare against it; `--nodetail` for a look or
 ## a frame-rate comparison).
@@ -510,11 +509,12 @@ func _dress_face(p: Vector3, s: Vector3, side: int, top: float, bot: float, leds
 func _roof() -> void:
 	# pipe runs on stands along the parapet, in 6 m stretches (solid benches),
 	# backed onto it so the edge stays one straight wall
+	var bench := a.half - 0.25 # their centre line, 0.5 m deep
 	for sgn in [-1.0, 1.0]:
 		for axis in 2:
 			for i in 10:
 				var t := -30.0 + i * 6.0 + 3.0
-				var c: Vector3 = Vector3(t, 0.0, sgn * BENCH) if axis == 0 else Vector3(sgn * BENCH, 0.0, t)
+				var c: Vector3 = Vector3(t, 0.0, sgn * bench) if axis == 0 else Vector3(sgn * bench, 0.0, t)
 				var half := Vector3(3.0, 0.45, 0.25) if axis == 0 else Vector3(0.25, 0.45, 3.0)
 				if not _free(c + Vector3(0, 0.45, 0), half, 0.0):
 					continue
@@ -549,14 +549,14 @@ func _roof() -> void:
 					_box(Vector3(1.4, HOP - 1.0, 0.8), p + Vector3(0, 1.0 + (HOP - 1.0) * 0.5, 0), m_steel, ang) # fan housing
 					_box(Vector3(0.1, 0.1, 0.1), p + Vector3(0, 0.95, 0) + Vector3(0.5, 0, 0.51).rotated(Vector3.UP, ang), m_led, ang, leds[r.randi() % leds.size()])
 			2:
-				# a row of three crates with two on top: hop height, not knee height
+				# two rows of three crates: hop height, not knee height
 				var hh := HOP * 0.5
 				if _free(p + Vector3(0, hh, 0), Vector3(1.25, hh, 0.45), p.y):
 					_solid(p + Vector3(0, hh, 0), Vector3(1.25, hh, 0.45))
 					for k in 3:
 						_box(Vector3(0.7, 0.6, 0.7), p + Vector3(k * 0.8 - 0.8, 0.3, 0), m_steel, r.randf_range(-0.1, 0.1))
-					for k in 2:
-						_box(Vector3(0.7, 0.6, 0.7), p + Vector3(k * 0.8 - 0.4, 0.9, 0), m_steel, 0.08 - k * 0.16)
+					for k in 3:
+						_box(Vector3(0.7, 0.6, 0.7), p + Vector3(k * 0.8 - 0.8, 0.9, 0), m_steel, 0.06 - k * 0.06)
 	# drains: flat, in an open floor cell (water gathers round them)
 	for p in [Vector3(-6, 0, 20), Vector3(6, 0, -19), Vector3(-20, 0, -12), Vector3(19, 0, 12), Vector3(0, 0, 16)]:
 		_drains.append(p)
@@ -567,9 +567,10 @@ func _roof() -> void:
 		if not _free(p + Vector3(0, 0.3, 0), Vector3(1.5, 0.3, 1.0), p.y):
 			continue
 		_solids.append(AABB(p + Vector3(-1.5, 0, -1.0), Vector3(3.0, 0.6, 2.0))) # keeps props and puddles off it
+		_floor_neon.append(AABB(p + Vector3(-1.5, 0, -1.0), Vector3(3.0, 0.1, 2.0))) # and plates: its cells stay bare
 		_box(Vector3(3.0, FLUSH, 2.0), p + Vector3(0, FLUSH * 0.5, 0), m_steel)
-		_box(Vector3(2.6, 0.02, 1.6), p + Vector3(0, FLUSH + 0.01, 0), m_pane)
-		_panes.append([p + Vector3(0, FLUSH + 0.025, 0), Vector2(1.3, 0.8)])
+		_box(Vector3(2.6, 0.01, 1.6), p + Vector3(0, FLUSH + 0.005, 0), m_pane)
+		_panes.append([p + Vector3(0, FLUSH + 0.012, 0), Vector2(1.3, 0.8)]) # blood (+0.02) lands on top
 	# a small shrine (hokora), on the first spot that is clear
 	for hp in [Vector3(-12, 5, -29.5), Vector3(21.5, 6.2, -30), Vector3(-24.5, 0, 30.5)]:
 		if _free(hp + Vector3(0, 0.9, 0), Vector3(0.85, 0.9, 0.75), hp.y):
