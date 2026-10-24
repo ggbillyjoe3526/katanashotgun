@@ -31,16 +31,22 @@ shrine, and cables strung with paper lanterns across the shaft. Coloured haze
 hangs over the city, mist pools in the shaft and drifts below the roof edge,
 and lamps throw light and beams onto the floor.
 
-Anything you'd walk into is solid: vending machines, vents, the pipe benches
-along the parapet, street lamps and skylight frames (you can hop over those).
+Anything you'd walk into is solid: vending machines, vents, air-con boxes,
+crate stacks, the pipe benches along the parapet and street lamps. No prop
+on the floor is knee-high: each is either flat enough to run straight over
+(the skylights, the drains, the floor plates) or at least a 1.2 m hop high;
+only the pipe benches are lower, and they sit right against the parapet.
+(The low sides of the roof ramps can still stop you if you run into them.)
 None of it stands on a spawn point, a ramp or an enemy's leap spot, and
 nothing gives you a step up to a wall that is meant to stay out of reach.
 Signs, pipes and air-con units on walls hang above your head.
 
 ## Getting around
 
-- **Every level has a ramp.** Ramps run from the metro platform to the
-  service ledges, from the balconies up to the roof, from the roof to the north
+- **Every level has a ramp.** In the pit, two ramps run along the service
+  walls from the metro platform and end on the balconies, so the middle of
+  the floor stays open (a lit wall a hop high guards the foot of each
+  ramp's open side). Ramps also run from the balconies up to the roof, from the roof to the north
   deck, from the deck to the top of the tower (on its west side) and up to the
   catwalks at their south ends. The bridge joins the two catwalks.
 - **Amber edges mark the ledges you can grab.** They're all 5 m tall: jump,

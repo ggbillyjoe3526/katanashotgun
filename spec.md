@@ -1619,6 +1619,18 @@ the holographic cut-in (§9.8).
     in reach of a double jump, 7 m is not):
     1.2 m hop, 3 m mantle, 5 m grab ledge (amber lip, colour `ffa21f` in
     every palette), 7 m+ sheer. Every level also has a ramp route.
+  - **Metro ramps** (owner's pick "A", 2026-10-24: the old ones stood out in
+    the middle of the pit and were too easy to run into): each runs along a
+    service-block wall, from (±1, −10, ∓6.5) to (∓8, −5, ∓6.5), 3 m wide, and
+    ends straight onto a balcony beside the top of that balcony's ramp up to
+    the roof (ending beside its low side would trip you on it). The open side has a neon edge line and a guard along the stretch
+    where the ramp is lower than a hop; the guard's top runs 1.2 m above the
+    floor at the foot and at least 1.2 m above the ramp, so it is a hop high
+    from either, and no open ramp side in the pit is knee-high (the service
+    ledge beside a ramp's top is: KI-031). The 3 m crate stands against the north
+    wall at (4.5, −10, −6), the metro geyser pad at (−4, −10, 5.9), and the
+    pit's leap links sit clear of the ramp feet, the crate and the pad (and
+    never inside a solid: `test_well_map.gd`).
   - **Geyser pads (9, fixed, never seeded).** The metro floor's (launch
     28 m/s up, 2.5 toward the bridge) throws the player up to the bridge.
     Eight more, added at the owner's request (2026-10-22: "more chances to
@@ -1663,11 +1675,19 @@ the holographic cut-in (§9.8).
     band (kept below the amber lips' glow), a foot plinth, ribs, copper
     pipes, AC units with status lights, vending machines, lit shutters and
     hanging blade signs; faces with a grab lip only get ribs. On the roof:
-    pipe benches along the parapet, vents, AC boxes and crates, drains,
-    skylights, a hokora shrine, antennas, and cables with paper lanterns.
+    pipe benches backed onto the parapet, vents, AC boxes and crate stacks,
+    drains, flush skylights, a hokora shrine, antennas, and cables with
+    paper lanterns.
   - **Solid or overhead.** Anything a body would walk into is solid and taller
     than the navmesh climb (0.5 m), so enemies path round it; everything on
-    walls hangs above 2.3 m. A solid prop is only placed if `_free` passes:
+    walls hangs above 2.3 m. **Nothing on a floor is knee-high** (owner's
+    play-test, 2026-10-24: a sprint kept catching on low props): a floor
+    prop is flush (`FLUSH`, level with the plates, no collider: skylights in
+    bare cells, drains) or at least `HOP` 1.2 m tall (a deliberate hop),
+    unless it backs onto the parapet. A unit test sprints a player-sized
+    capsule across every floor and fails on anything between 0.15 and 1 m
+    that stops it. It skips the roof ramps' sides for now (KNOWN ISSUES
+    KI-028). A solid prop is only placed if `_free` passes:
     on one floor, inside nothing, 2.5 m from every spawn point and the
     player spawn, 5 m from the boss spawn, 1.5 m from every leap-link end,
     off every ramp and its landings, and never within 5 m of a wall whose
