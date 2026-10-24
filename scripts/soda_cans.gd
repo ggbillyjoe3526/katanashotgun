@@ -52,18 +52,36 @@ var _cantest := Game.has_flag("--cantest") # read once: the command line never c
 
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF # moved every frame
-	enabled = DevSettings.cans or Game.has_flag("--cans")
-	if enabled:
-		for i in MAX_FLOOR + (1 if Game.has_flag("--cantest") else 0):
-			_free.append(_new_can())
+	if DevSettings.cans or Game.has_flag("--cans"):
+		_turn_on()
+
+
+## The DEV menu's SODA CANS switch moved. On the title it decides the run
+## about to start (Main is built once for the title and the run, so _ready
+## has already read the old value). Mid-run, turning it on brings cans from
+## the next wave and the run makes no top 10 entry; turning it off leaves
+## this run's cans as they are, since the run already had them.
+func on_switch(on: bool) -> void:
+	if Game.state == "title":
+		Game.cans_run = on or Game.has_flag("--cans")
+		if Game.cans_run:
+			_turn_on()
+		else:
+			switch_off()
+	elif on:
+		Game.cans_run = true
+		_turn_on()
+
+
+func _turn_on() -> void:
+	enabled = true
+	for i in MAX_FLOOR + (1 if _cantest else 0) - _free.size() - _floor.size():
+		_free.append(_new_can())
 
 
 ## The run is resuming a snapshot with cans: they stay on for the run.
 func restore(ids: Array) -> void:
-	if not enabled:
-		enabled = true
-		for i in MAX_FLOOR:
-			_free.append(_new_can())
+	_turn_on()
 	held.clear()
 	for id in ids:
 		if not Soda.get_def(str(id)).is_empty() and held.size() < Soda.MAX_HELD:

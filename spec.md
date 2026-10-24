@@ -3304,7 +3304,10 @@ build on is in: PLAY A SEED on the title (§7.5).
    **BUILT as a DEV-ONLY play-test (2026-10-19), awaiting the owner's
    verdict.** It adds a pickup system on purpose (the owner signed off, §0.3);
    off by default, it is switched on in the DEV menu (F10, RUN tab, SODA
-   CANS, from the next run; saved as `dev_cans` in settings.json). Off means
+   CANS; saved as `dev_cans` in settings.json). On the title it decides the
+   run about to start; mid-run, on brings cans from the next wave (the run
+   then makes no top 10 entry) and off leaves the run's cans as they are
+   until the next run. Off means
    no can is ever made and nothing draws a number. A run with cans keeps its
    XP and unlocks but makes no top 10 entry or lifetime best score (`Game.cans_run`), so seeded
    scores stay comparable; the DEV tag says CANS RUN: NO TOP 10.
