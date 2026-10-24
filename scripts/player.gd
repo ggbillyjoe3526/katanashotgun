@@ -476,12 +476,13 @@ func _physics_process(delta: float) -> void:
 	var shotgun_held := Input.is_action_pressed("shotgun")
 	if _hold_fire:
 		# the click that resumed the game is not an attack: wait for its release
-		if katana_held or shotgun_held:
-			katana_pressed = false
-			katana_held = false
-			shotgun_pressed = false
-			shotgun_held = false
-		else:
+		# (a click pressed and let go between two ticks still counts as it)
+		var held := katana_held or shotgun_held
+		katana_pressed = false
+		katana_held = false
+		shotgun_pressed = false
+		shotgun_held = false
+		if not held:
 			_hold_fire = false
 	if Game.debug_autoplay:
 		var auto := _autoplay_weapons()
@@ -582,7 +583,11 @@ func _end_climb() -> void:
 ## While a climb or a glory kill holds the body, a katana or dash press is
 ## kept (not dropped) and fires the moment the move ends.
 func _hold_presses() -> void:
-	if Input.is_action_just_pressed("katana"):
+	if _hold_fire:
+		# the click that resumed the game is not kept either
+		if not (Input.is_action_pressed("katana") or Input.is_action_pressed("shotgun")):
+			_hold_fire = false
+	elif Input.is_action_just_pressed("katana"):
 		_queued_katana = true
 	if Input.is_action_just_pressed("dash"):
 		_dash_queued = true
@@ -592,6 +597,7 @@ func _hold_presses() -> void:
 ## ignore the buttons until they are let go, so that click never swings or fires.
 func hold_fire() -> void:
 	_hold_fire = true
+	_queued_katana = false
 	katana_buffer = 0.0
 	shotgun_buffer = 0.0
 

@@ -33,6 +33,8 @@ var _late_jump := {} # what the jump pressed after walking off did: its speed an
 var _cells0 := 0
 var _slashes0 := 0
 var _held_slashes := -1 # slashes swung while the resume click was still held
+var _climb_clicked := false # the resume click has been sent mid-climb
+var _climb_slashes0 := 0 # slashes before it (the last check's click may land on frame 0)
 
 
 func _ready() -> void:
@@ -58,6 +60,7 @@ func _ready() -> void:
 		{"name": "jump well after walking off a ledge is the air jump", "blocks": [[3.0, 0.0]], "start_y": 3.0, "keys": [], "coyote": 12, "want_ground_jump": false},
 		{"name": "a shotgun tap just before the gun is ready still fires", "blocks": [], "keys": [], "forward": false, "shotgun_tap": true, "min_frames": 40},
 		{"name": "the click that closes the pause screen never swings the katana", "blocks": [], "keys": [], "forward": false, "hold_fire": true, "min_frames": 50},
+		{"name": "the click that closes the pause screen mid-climb never slashes after it", "blocks": [[2.6, 2.0]], "keys": ["jump"], "want_climb": true, "want_top": 2.6, "climb_click": true},
 		{"name": "double jump pushes a little toward the keys held", "blocks": [], "keys": ["jump", "double"], "push": true},
 		{"name": "no plunge from a jump on the same level", "blocks": [], "keys": ["jump", "double"], "enemy": Vector3(0, 0, -2.0), "want_plunge": false, "forward": false, "pitch": -0.9},
 		{"name": "no plunge onto a brute that isn't staggered", "blocks": [[4.0, 0.0, 6.0]], "start_y": 4.0, "keys": [], "enemy": Vector3(0, 0, -3.5), "kind": "brute", "want_plunge": false, "pitch": -0.9},
@@ -122,6 +125,7 @@ func _next() -> void:
 	_left_floor = -1
 	_late_jump = {}
 	_held_slashes = -1
+	_climb_clicked = false
 	_max_y = -INF
 	_max_h = 0.0
 	_last_vy = 0.0
@@ -232,6 +236,12 @@ func _physics_process(_delta: float) -> void:
 			Input.action_release("katana")
 		elif _f == 43:
 			_tap("katana")
+	if c.get("climb_click", false) and not _climb_clicked and p.climb_t >= 0.0:
+		# the game resumes on a click while the body is busy climbing
+		_climb_clicked = true
+		_climb_slashes0 = p.slash_count
+		p.hold_fire()
+		_tap("katana")
 	if _buffer_sent and p.velocity.y > 0.0:
 		# rising again with no jump left: only the early press can do that
 		_after_buffer = maxf(_after_buffer, p.global_position.y - ORIGIN.y)
@@ -310,6 +320,11 @@ func _finish(c: Dictionary, p: Player) -> void:
 			errs.append("%d slash(es) while the closing click was held" % _held_slashes)
 		if p.slash_count - _slashes0 < 1:
 			errs.append("the next click after letting go did not slash")
+	if c.get("climb_click", false):
+		if not _climb_clicked:
+			errs.append("never climbed, so the click was never sent")
+		elif p.slash_count != _climb_slashes0:
+			errs.append("the resume click slashed as the climb ended")
 	if c.get("want_glory", false) and not (_enemy_gone() and Game.executions == _executions0 + 1):
 		errs.append("glory kill did not happen (executions +%d)" % (Game.executions - _executions0))
 	if c.has("want_plunge"):

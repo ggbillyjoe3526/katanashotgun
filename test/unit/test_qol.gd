@@ -20,10 +20,13 @@ class StandIn:
 var _cam: Camera3D
 var _arrows: TargetArrows
 var _saved_list: Array
+var _saved_palette: Dictionary
 
 
 func before_each() -> void:
 	_saved_list = Game.enemy_list
+	_saved_palette = Game.palette
+	Game.palette = Palette.expand(Palette.LIST[0]) # HOW TO PLAY's colours
 	Game.enemy_list = []
 	_cam = Camera3D.new()
 	_cam.fov = 70.0
@@ -36,6 +39,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	Game.enemy_list = _saved_list
+	Game.palette = _saved_palette
 
 
 func _foe(pos: Vector3, boss := false) -> Enemy:
@@ -120,5 +124,33 @@ func test_how_to_play_shows_the_players_own_keys() -> void:
 		InputMap.action_add_event("jump", ev)
 	assert_has(words, "V", "the rebound jump key")
 	assert_has(words, "LMB", "the katana's button")
-	assert_has(words, "HIGH ABOVE A FOE: PLUNGE ONTO IT")
+	assert_has(words, "PLUNGE ONTO A FOE BELOW")
 	assert_false(words.has("SPACE"), "never the default once rebound")
+
+
+func test_how_to_play_makes_room_for_a_long_key() -> void:
+	var dash := InputMap.action_get_events("dash").duplicate()
+	var wheel := InputEventMouseButton.new()
+	wheel.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	InputMap.action_erase_events("dash")
+	InputMap.action_add_event("dash", wheel)
+	var hud := Hud.new()
+	add_child_autofree(hud)
+	var box := Control.new()
+	add_child_autofree(box)
+	hud._fill_howto(box)
+	InputMap.action_erase_events("dash")
+	for ev in dash:
+		InputMap.action_add_event("dash", ev)
+	var key: Label
+	var words: Label
+	for l: Label in box.get_children():
+		if l.text == "WHEEL DOWN":
+			key = l
+		elif l.text == "DASH":
+			words = l
+	assert_not_null(key, "the rebound dash shows")
+	assert_not_null(words)
+	if key != null and words != null:
+		key.size = Vector2.ZERO
+		assert_gt(words.position.x, key.position.x + key.size.x, "the words start past the key")

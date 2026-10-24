@@ -271,7 +271,9 @@ func restart_run() -> void:
 ## On the first wave there is no snapshot yet, so the run is paid now instead
 ## and no progress is lost.
 func pause_to_title() -> void:
-	if not Profile.has_suspended_run():
+	# this run's own snapshot, not just any saved run (a --wave= run never
+	# loaded the old one)
+	if _snap.is_empty() or not Profile.has_suspended_run():
 		leave_run()
 	to_title()
 

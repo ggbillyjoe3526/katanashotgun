@@ -2058,7 +2058,8 @@ the holographic cut-in (§9.8).
     pointing toward it (the bottom edge means behind you), and each one on
     screen and over 14 m away a small orange chevron over its head. On a
     boss wave the boss alone is marked: a bigger arrow in the palette's
-    first neon whenever it is off screen (on screen its bar is enough). They
+    first neon whenever it is off screen (on screen its bar is enough);
+    once it falls, its last 3 or fewer adds are marked like a wave's. They
     fade in over 0.25 s; steady, never blinking (`TargetArrows`).
   - **Top centre, for a moment:** `MOUSE SENSITIVITY 1.3` on a dark plate
     for 1.2 s after [ or ] (under the boss bar on a boss wave).

@@ -168,7 +168,7 @@ const LOGO_LINE := 36.0 # SHOTGUN sits this far under KATANA
 const LOGO_CAP := 23.0 # Orbitron's capital height at LOGO_PX
 const LOGO_CAP_TOP := 10.0 # and its capitals' top inside the text box
 const SLASH_W := 16.0
-const HOWTO_KEY_W := 46.0 # HOW TO PLAY: the keys' column
+const HOWTO_KEY_W := 46.0 # HOW TO PLAY: the keys' column (wider for a long key)
 const T_START := 0 # title menu items
 const T_NEW := 1
 const T_SEED := 2
@@ -395,7 +395,7 @@ func _ready() -> void:
 	add_child(settings_menu)
 	# the settings screen covers the title or pause screen; the text behind it
 	# would peek out at its edges
-	settings_menu.visibility_changed.connect(func(): root.visible = not settings_menu.visible)
+	settings_menu.visibility_changed.connect(_on_settings_visibility)
 	# added after the settings screen so it sees keys first: Tab is typed
 	# into it, never opens settings behind it
 	seed_entry = SeedEntry.new()
@@ -645,8 +645,20 @@ func close_pause_panel() -> bool:
 	return true
 
 
+func _on_settings_visibility() -> void:
+	root.visible = not settings_menu.visible
+	if settings_menu.visible:
+		return
+	# keys may have been rebound: an open HOW TO PLAY shows the new ones
+	if _title_panel_kind == "howto":
+		_fill_howto(title_howto)
+	if _pause_panel == "howto":
+		_fill_howto(pause_howto)
+
+
 ## HOW TO PLAY (title and pause): a key, or a word, and what it does. The
-## keys are the player's own bindings, read each time it opens.
+## keys are the player's own bindings, read each time it opens or the
+## settings screen closes.
 func _fill_howto(box: Control) -> void:
 	for ch in box.get_children():
 		box.remove_child(ch)
@@ -668,12 +680,16 @@ func _fill_howto(box: Control) -> void:
 		["HEAD", "HEADSHOTS DO DOUBLE DAMAGE", a.lerp(Color.WHITE, 0.3)],
 		["BOSS", "BREAK ITS KAMAE BAR, THEN %s" % fin, a.lerp(Color.WHITE, 0.3)],
 	]
+	# the words start past the longest key ("WHEEL DOWN" once rebound)
+	var key_w := HOWTO_KEY_W
+	for line in lines:
+		key_w = maxf(key_w, Ui.font_bold.get_string_size(line[0], HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x + 6.0)
 	for i in lines.size():
 		var k := Ui.label(lines[i][0], Ui.font_bold, 10, lines[i][2])
 		k.position = Vector2(0, i * LINE)
 		box.add_child(k)
 		var l := Ui.label(lines[i][1], Ui.font_bold, 10, Color.WHITE)
-		l.position = Vector2(HOWTO_KEY_W, i * LINE)
+		l.position = Vector2(key_w, i * LINE)
 		box.add_child(l)
 
 

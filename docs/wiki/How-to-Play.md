@@ -39,7 +39,8 @@ enemy you are aiming at.
   three enemies, each one you can't see gets an arrow pointing to it (an
   arrow on the bottom edge means behind you), and far-off ones on screen get
   a small chevron over their heads. On a boss wave, a bigger arrow points to
-  the boss whenever it's off screen.
+  the boss whenever it's off screen, and once it falls its last few helpers
+  get arrows too.
 - **Big moments** (X10 COMBO, GLORY KILL with its points, KAMAE BROKEN, a
   boss enraging) appear just under the top row. **Warnings** (MISSILES
   INBOUND) take over the bottom of the screen as a red emergency band;

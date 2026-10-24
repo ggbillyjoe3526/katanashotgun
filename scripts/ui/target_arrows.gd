@@ -3,7 +3,8 @@ extends Control
 ## Points the way to foes the player can't find (spec §9.7). When a wave is
 ## down to its last few foes, each one off screen gets a small arrow at the
 ## screen's edge pointing toward it, and each one far away on screen a small
-## chevron over its head. The boss gets an arrow whenever it is off screen.
+## chevron over its head. The boss gets an arrow whenever it is off screen,
+## and once it falls its last few adds are marked the same way.
 ## Presentation only: no RNG, and nothing is allocated per frame.
 
 const LAST_FEW := 3 # foes left (none still waiting to spawn) before markers show
@@ -37,14 +38,18 @@ func refresh(vs: Vector2, delta: float) -> void:
 	var cam := get_viewport().get_camera_3d()
 	if main != null and cam != null and Game.state == "playing" and not Game.player.dead:
 		var d: WaveDirector = main.director
-		if stragglers(d):
+		var boss_up: bool = is_instance_valid(main.boss) and not main.boss.dead
+		# the last few foes, or the adds still standing once the boss fell
+		if stragglers(d) or (d.phase == "boss" and not boss_up and Game.enemy_list.size() <= LAST_FEW):
 			for e in Game.enemy_list:
 				if is_instance_valid(e) and not e.dead:
 					_mark(cam, e, vs)
-		elif d.phase == "boss" and is_instance_valid(main.boss) and not main.boss.dead:
+		elif d.phase == "boss" and boss_up:
 			_mark(cam, main.boss, vs)
+	var was := _alpha
 	_alpha = move_toward(_alpha, 1.0 if _n > 0 else 0.0, delta / FADE_IN)
-	queue_redraw()
+	if _alpha > 0.0 or was > 0.0:
+		queue_redraw() # nothing to draw for most of a wave: skip the redraw
 
 
 ## Whether the wave is down to its last few foes: nobody left waiting to spawn
