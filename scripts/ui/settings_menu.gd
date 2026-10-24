@@ -55,6 +55,7 @@ var _note := ""
 var _note_t := 99.0
 var _save_t := -1.0
 var _quit_t := 0.0 # QUIT GAME was clicked once: seconds left for the second click
+var _defaults_t := 0.0 # DEFAULTS was clicked once: seconds left for the second click
 
 
 func _ready() -> void:
@@ -82,6 +83,7 @@ func open() -> void:
 	_dragging = -1
 	_note_t = 99.0
 	_quit_t = 0.0
+	_defaults_t = 0.0
 	_set_tab(tab)
 	Sfx.play("ui_click", -4.0)
 
@@ -115,6 +117,8 @@ func can_open() -> bool:
 
 # ---------------------------------------------------------------- rows
 func _set_tab(i: int, keep_row := false) -> void:
+	if wrapi(i, 0, tabs.size()) != tab:
+		_defaults_t = 0.0 # an armed DEFAULTS belongs to the tab it was clicked on
 	tab = wrapi(i, 0, tabs.size())
 	rows = _build_rows(tabs[tab])
 	sel = clampi(sel, 0, maxi(rows.size() - 1, 0)) if keep_row else 0
@@ -183,6 +187,12 @@ func _build_rows(t: String) -> Array:
 			out.append(_slider("FLASHES", 0.0, 1.0, 0.05,
 				func(): return Settings.flash, _set_flash,
 				_pct, "WHITE FLASHES. BELOW 100% NOTHING STROBES"))
+			out.append(_option("CROSSHAIR SIZE", Settings.CROSSHAIR_SIZES, ["SMALL", "NORMAL", "LARGE"],
+				func(): return Settings.crosshair_size, func(v: Variant): Settings.crosshair_size = v,
+				"HOW FAR THE CROSSHAIR'S ARMS REACH"))
+			out.append(_option("CROSSHAIR COLOUR", Settings.CROSSHAIR_COLORS, ["WHITE", "CYAN", "GREEN", "YELLOW", "PINK"],
+				func(): return Settings.crosshair_color, func(v: Variant): Settings.crosshair_color = v,
+				"THE CROSSHAIR'S COLOUR. THE HEALTH FRAME KEEPS ITS OWN"))
 	return out
 
 
@@ -340,6 +350,18 @@ func _reset_tab() -> void:
 	_changed()
 
 
+## The first click arms DEFAULTS, a second one within a few seconds resets
+## the tab: one stray click must never wipe a whole tab (every key binding).
+func _press_defaults() -> void:
+	if _defaults_t > 0.0:
+		_defaults_t = 0.0
+		_reset_tab()
+		return
+	_defaults_t = TechButton.ARM_S
+	_show_note("CLICK DEFAULTS AGAIN TO RESET THE %s TAB" % tabs[tab])
+	Sfx.play("ui_click", -6.0)
+
+
 func _show_note(text: String) -> void:
 	_note = text
 	_note_t = 0.0
@@ -440,7 +462,7 @@ func _gui_input(event: InputEvent) -> void:
 				close()
 				return
 			1:
-				_reset_tab()
+				_press_defaults()
 				return
 			2:
 				_press_quit()
@@ -551,6 +573,8 @@ func foot_label(i: int) -> String:
 		if restart_pending():
 			return RESTART_ARMED if quit_armed() else RESTART
 		return QUIT_ARMED if quit_armed() else "QUIT GAME"
+	if i == 1 and _defaults_t > 0.0:
+		return "CLICK AGAIN"
 	return ["BACK", "DEFAULTS"][i]
 
 
@@ -584,6 +608,7 @@ func _process(_delta: float) -> void:
 	var rd := Game.real_dt
 	_note_t += rd
 	_quit_t -= rd
+	_defaults_t -= rd
 	if _save_t >= 0.0:
 		_save_t -= rd
 		if _save_t < 0.0:

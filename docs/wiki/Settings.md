@@ -4,7 +4,8 @@ Open **Settings** with **Tab** or the **SETTINGS** button on the title or
 pause screen. Everything works with the mouse: click a tab, click the left or
 right half of an option to change it, and drag or scroll a slider. Changes
 apply at once and are remembered next time. **DEFAULTS** resets the tab you're
-on; **BACK** (or Esc) closes the screen.
+on (click it twice: the first click only asks, so a stray click never wipes
+your key bindings); **BACK** (or Esc) closes the screen.
 
 ## Audio
 
@@ -84,7 +85,8 @@ on the basic one by itself and Settings tells you so.
 
 ## Controls
 
-- **Mouse sensitivity** (the `[` and `]` keys change it in game too).
+- **Mouse sensitivity** (the `[` and `]` keys change it in game too, and
+  show the new value at the top of the screen for a moment).
 - **Aim assist:** ON (default) or OFF. A slash pulls you onto an enemy just
   out of reach, and a shotgun blast that only just misses bends onto the
   body. See [Weapons](Weapons#aim-assist).
@@ -103,6 +105,10 @@ on the basic one by itself and Settings tells you so.
 - **Flashes:** how strong the screen flashes are. Below 100%, impact frames
   stop strobing. At 0 the test-card colour bars, static and the FINISH
   negative are switched off too.
+- **Crosshair size:** SMALL, NORMAL (default) or LARGE: how far the
+  crosshair's four ticks reach.
+- **Crosshair colour:** WHITE (default), CYAN, GREEN, YELLOW or PINK. The
+  health and cell frame around it keeps its own colours.
 
 ## Quit game
 

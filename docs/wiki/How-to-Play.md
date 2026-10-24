@@ -35,6 +35,12 @@ enemy you are aiming at.
   at most, newest on top.
 - **Top left:** the wave and how many enemies are left. **Top right:** your
   score. **Top centre:** a boss's name, health and KAMAE bar.
+- **Orange arrows at the screen's edge:** once a wave is down to its last
+  three enemies, each one you can't see gets an arrow pointing to it (an
+  arrow on the bottom edge means behind you), and far-off ones on screen get
+  a small chevron over their heads. On a boss wave, a bigger arrow points to
+  the boss whenever it's off screen, and once it falls its last few helpers
+  get arrows too.
 - **Big moments** (X10 COMBO, GLORY KILL with its points, KAMAE BROKEN, a
   boss enraging) appear just under the top row. **Warnings** (MISSILES
   INBOUND) take over the bottom of the screen as a red emergency band;
@@ -53,6 +59,8 @@ text never piles up.
   glory kill adds 4 more.
 - Glory kills heal 20 HP on the spot.
 - A dash makes you untouchable for a moment; use it to get through attacks.
+- Below 30% health the health bar pulses, the number turns red and a quiet
+  heartbeat plays.
 - Falling off the map puts you back at the start point.
 
 ## Shotgun cells
