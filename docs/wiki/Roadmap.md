@@ -6,6 +6,9 @@ already arrived is in the [Patch Notes](Patch-Notes).
 
 ## Next
 
+**Development is paused for now** (since 24 October 2026). The plans below
+pick up again when it resumes; 0.1 Dev 2 stays the latest build until then.
+
 - **More public builds.** 0.1 Dev 2 is out and 0.1 Dev 3 is in the works.
   Then come Dev 4 and on, then 0.1 Beta 1, Beta 2, and then the full **0.1**
   release. Each one is posted on the

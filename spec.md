@@ -520,7 +520,7 @@ Notes:
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
 | Music style | Fast (140 to 165 bpm), futuristic, energetic dark electronic bass music with an EDM feel, like Rezz: wobble basses, EDM drums, glitch edits, no string instruments (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
-| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 2` (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 set 2026-10-19; `VERSIONING.md`) |
+| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 3`, not yet released (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 released 2026-10-20, Dev 3 set 2026-10-20; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
@@ -539,6 +539,11 @@ Notes:
 | Dev menu | A hidden developer menu on F10 with a switch for a plain, non-retro look, plus play-test tools; runs that use its cheats are never recorded (owner asked 2026-10-19; §16) |
 | Retro look strength | The full PS1 look was too strong and the plain look too clean: a RETRO LOOK setting with LIGHT as the default, a sharper, gentler middle (owner asked 2026-10-19; §9.1). FULL was then removed, leaving LIGHT and OFF (owner, 2026-10-22 play-test) |
 | Leaving a run | The results screen offers MAIN MENU (Esc) back to the title as well as retry and new run (owner, 2026-10-22 play-test; §9.8) |
+| First-person view | Katana pick "A": bigger, upright, flat of the blade to the player; cyber hands on both grips; eye at head height (1.72 m) with the weapons smaller in the corners; body size unchanged (owner, 2026-10-22 play-test; §3.1) |
+| The Well's pit ramps | Pick "A": the two metro-pit ramps run along the service walls onto the balconies, with a hop-high guard on each open side; floor props are flush or a clear 1.2 m hop (owner, 2026-10-24 play-test; §8) |
+| Quality of life | All 11 suggestions built: Esc resumes, last-foe arrows, coyote time, shotgun buffer, NO CHARGE text, pause RESTART and MAIN MENU, click-again confirms, a full HOW TO PLAY, sensitivity toast and crosshair options, empty-dash cue, low-HP heartbeat (owner, 2026-10-24; §2.1, §3.1, §9.7) |
+| Known bugs | Every open bug lives in `docs/KNOWN_ISSUES.md` (KI-### IDs), tagged for a play-test, another Claude attempt or the owner's call (owner, 2026-10-23) |
+| Project status | On hold from 2026-10-24 until the owner says to resume (owner, 2026-10-24; `README.md`) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 
