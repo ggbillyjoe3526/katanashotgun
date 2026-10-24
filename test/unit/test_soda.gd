@@ -146,6 +146,50 @@ func test_uzume_holds_the_combo_then_halves_it() -> void:
 	assert_eq(c.phase, "")
 
 
+## The title and the run share one Main, so SodaCans is made before the
+## player can flip the switch: turning it on at the title must still bring
+## cans to the run started from that title (play-test 2026-10-24).
+func test_switch_on_at_the_title_reaches_that_run() -> void:
+	var saved_state := Game.state
+	var saved_run := Game.cans_run
+	var c := _cans(false)
+	assert_false(c.enabled)
+	Game.state = "title"
+	DevSettings.cans = true
+	c.on_switch(true)
+	assert_true(c.enabled, "the run about to start has cans")
+	assert_true(Game.cans_run, "and makes no top 10 entry")
+	Game.seed_wave(2)
+	c.on_wave_start(2, false)
+	assert_eq(c._floor.size(), 1, "wave 2 puts a can on the map")
+	c.on_switch(false)
+	assert_false(c.enabled, "off again at the title: no cans")
+	assert_false(Game.cans_run)
+	c.on_switch(true)
+	assert_eq(c._free.size() + c._floor.size(), SodaCans.MAX_FLOOR, "toggling never makes extra cans")
+	Game.state = saved_state
+	Game.cans_run = saved_run
+
+
+func test_switch_mid_run_on_next_wave_off_keeps_the_run() -> void:
+	var saved_state := Game.state
+	var saved_run := Game.cans_run
+	Game.cans_run = false
+	var c := _cans(false)
+	Game.state = "paused"
+	c.on_switch(true)
+	assert_true(c.enabled, "on mid-run: cans from the next wave")
+	assert_true(Game.cans_run, "the run now makes no top 10 entry")
+	Game.seed_wave(4)
+	c.on_wave_start(4, false)
+	assert_eq(c._floor.size(), 1)
+	c.on_switch(false)
+	assert_true(c.enabled, "off mid-run: this run keeps its cans")
+	assert_true(Game.cans_run)
+	Game.state = saved_state
+	Game.cans_run = saved_run
+
+
 func test_restoring_a_run_keeps_only_real_cans() -> void:
 	var c := _cans(false)
 	c.restore(["kaze", "nope", "gaki", "yuki", "uzume"])
