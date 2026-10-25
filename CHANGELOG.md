@@ -9,6 +9,96 @@ Don't edit this file for a change: add a note to `changelog.d/` instead (its
 `README.md` says how). At release time `tools/changelog.sh release` gathers
 those notes into a new section here.
 
+## 0.1 Dev 3 (2026-10-25)
+
+### Enemies fight with weapons you can read
+- Every grunt now carries a nata, a long cleaver with a neon edge, and every brute a studded kanabo club. No enemy hurts you just by standing close any more: you see the weapon raised, then swung.
+- Each attack telegraphs on the weapon itself: a glint at its tip as the windup starts, the edge heating to red, then a white-hot blow and a red arc where it cut.
+- When something hits you, a red arrow round your crosshair points at it.
+
+### Hits you can feel
+- Every hit you land flashes an X round the crosshair with a sharp tick: gold for a shotgun headshot, red with a deeper knock for a kill.
+- A slightly longer freeze on impact (longer on a kill), enemies flinching back from your blows, the view jolting along your cut, and a bright streak across each body the katana cuts.
+
+### Aim assist
+- New AIM ASSIST setting (Settings, Controls), on by default. A slash that would hit nothing pulls you onto an enemy just out of reach, and a shotgun blast that only just misses bends onto the body. Turn it off for pure aim.
+
+### Hands, a bigger katana and a wider view
+- You can now see your hands: armoured cyber hands grip the katana's handle and the shotgun, finger on the trigger. Their light lines take your weapon look's colour.
+- The katana is bigger and turned so you see the flat of the blade instead of a thin edge, held upright on the left.
+- The view no longer feels zoomed in: your eyes sit at proper head height, level with a grunt's, and both weapons are smaller and tucked into the corners so more of the city shows. Your body is the same size, so jumps, ledge grabs and plunges work as before.
+
+### Bosses arrive where you can see them
+- Every boss now drops in right where you're looking, usually on your own floor, and lands with a slam and a shake. No more turning round looking for Kurokage.
+- Bosses no longer throw themselves off ledges: Kurokage's dash-slash, Shuten's charge and the NULL CROSS lines stop at the edge, and sidesteps only go where there is floor, so a boss never ends up in the pit leaving you to wait.
+- Kurokage only starts a dash-slash when he can actually reach you, and Shuten saves his leap, charge and fan volley for when he's close and on your level.
+- Shuten and other big bodies now step down off ledges into the pit properly instead of getting stuck on the edge.
+
+### Geyser pads on every level
+- Eight new geyser pads on The Well: two on the service ledges, four on the roof and one at the north end of each side catwalk. Each throws you about 9 m straight up, so every level now has a launch into a plunge attack.
+- Steer while you fly to land on the level above, or hold nothing and drop back onto the pad.
+- A pad now only fires when you stand on its own floor, never from the floor underneath it.
+
+### Pit ramps out of the way
+- The two ramps in The Well's metro pit now run along the service walls and end straight on the balconies, so the middle of the pit is open floor.
+- A lit wall a hop high guards the bottom of each ramp's open side, so you can't trip on the ramp's edge any more.
+- The pit's geyser pad and its 3 m crate moved a little to make room.
+
+### No more snagging on small props
+- On The Well's roof you no longer catch on low clutter mid-sprint. Skylights now sit flush with the floor, so you run straight across them.
+- The small crate rows and air-con boxes are now a clear hop high (1.2 m), so they read as something to jump, not something to trip on.
+- The pipe benches along the roof edge now back right onto the parapet.
+
+### Quality of life
+- Esc now closes the pause screen too, and the click that closes it no longer swings the katana or fires the shotgun.
+- When a wave is down to its last three foes, small orange arrows at the screen's edge point to the ones you can't see, and a chevron marks far ones on screen. A boss off screen gets a bigger arrow.
+- Walk off a ledge and press jump a split second late: it's now a full jump, and you keep your double jump.
+- A quick shotgun click just before the gun is ready now fires as soon as it can, instead of being lost.
+- An empty shotgun now says "NO CHARGE / USE THE BLADE", and holds it long enough to read.
+- The pause screen has HOW TO PLAY, RESTART (same seed) and MAIN MENU. MAIN MENU saves the run so CONTINUE picks it up.
+- NEW RUN on the title and DEFAULTS in Settings now ask for a second click, so one stray click can't throw away a saved run or your key bindings.
+- HOW TO PLAY now covers the plunge, ledge climbing and the boss's KAMAE bar, and shows your own keys after you rebind them.
+- The [ and ] keys now show the new mouse sensitivity for a moment. New COMFORT settings: crosshair size and colour.
+- Pressing dash with no charge left now flashes the dash lights red with a dull clunk.
+- Below 30% health a quiet heartbeat plays under the music.
+
+### Back to the main menu after a run
+- The results screen now has MAIN MENU in the top-left corner. Click it or press Esc to go back to the title screen instead of starting another run.
+
+### One retro look
+- RETRO LOOK in Settings > Video is now just LIGHT or OFF. The chunky FULL look is gone; if you had it picked, the game starts on LIGHT.
+
+### Bug fixes
+- A wave no longer ends while its last enemies are still dropping in. If you cleared the field just before the final group arrived, the tally used to start with them still alive.
+- The white impact frames in glory kills now last their intended time instead of being cut to a single frame by the hit freeze, and screen flashes no longer jump ahead when a hit freeze starts.
+- A boss or brute shockwave still rolling outward can no longer hurt you once the wave is clear.
+- Continuing a saved run after a boss fell (if you quit before the next wave) no longer pays that boss's reward a second time.
+- Switching to another window (Alt+Tab) now always pauses the game.
+- Dying within a few seconds of a boss kill no longer brings the fight music and the boss's farewell card back over the death screen.
+- A continued run now keeps its combo.
+- The Well no longer stays brighter for the rest of a storm after the first lightning strike.
+- High-score initials now type the letters printed on your keyboard (AZERTY and other layouts).
+- Climbing a ledge right after a slash lunge no longer flings you off the top.
+- Cut-off grunt arms no longer flash or change colour along with the next grunt.
+- Enemies on The Well's service blocks now walk out of the freight lifts drawn for them.
+- Puddle reflections no longer trail a frame behind the camera.
+- A damaged save file is now always kept aside, never deleted, and a replayed seed with the same score puts your initials on the right row.
+- A slash or dash pressed during a glory kill, or right as a ledge climb starts, now fires the moment it ends instead of being lost.
+- Jump pressed just before you land, and dash pressed just before a charge comes back, now still go off (a short input buffer).
+- A glory kill from a ledge or mid-jump can no longer leave you stuck inside the ledge or wall below; you finish beside the enemy where there is room.
+- Enemies can now follow you onto the water tanks, the stairwell hut and the east end of the billboard gantry on The Well.
+- The enemy count no longer goes over the wave's limit.
+- The score no longer flashes as if you'd scored when you continue a saved run.
+- A save file that another program is holding open is no longer mistaken for a damaged one: the game waits a moment for it, and if it is still busy the title says so and that session saves nothing instead of starting your profile over.
+- Saving keeps the old backup safe even if the backup step fails, and a profile from a newer version of the game stays safely copied aside.
+- A puddle no longer sits inside the solid block at the bottom of The Well.
+- The weather on each seed is now locked in for good: future changes to the map can no longer change a seed's rain. This was a one-time change, so a seed from 0.1 Dev 2 may now have different rain, and the city towers around The Well are arranged differently.
+
+### Soda cans play-test switch fixed
+- Turning SODA CANS on in the DEV menu (F10, RUN tab) on the title screen now gives you cans in the run you start next. Before, it only worked after restarting the game, so no can ever showed up.
+- Turning it on during a run now brings cans from the next wave. That run then makes no top 10 entry, like any run with cans.
+- Reminder: the first can turns up on wave 2, and boss waves never have cans. Look for a tall light pillar in the can's colour.
+
 ## 0.1 Dev 2 (2026-10-20)
 
 ### Seeds you can trust

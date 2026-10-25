@@ -24,7 +24,8 @@ leads somewhere.
 
 Last full bug pass: 2026-10-23 (whole game, every script); a second try at
 every open entry followed the same day. Checked again 2026-10-24, when the
-project went on hold.
+project went on hold, and 2026-10-25 for the 0.1 Dev 3 release: every
+entry still open below ships in it.
 
 ---
 

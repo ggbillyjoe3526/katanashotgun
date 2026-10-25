@@ -520,7 +520,7 @@ Notes:
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
 | Music style | Fast (140 to 165 bpm), futuristic, energetic dark electronic bass music with an EDM feel, like Rezz: wobble basses, EDM drums, glitch edits, no string instruments (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
-| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 3`, not yet released (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 released 2026-10-20, Dev 3 set 2026-10-20; `VERSIONING.md`) |
+| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 3` (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 released 2026-10-20, Dev 3 released 2026-10-25; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
@@ -543,7 +543,7 @@ Notes:
 | The Well's pit ramps | Pick "A": the two metro-pit ramps run along the service walls onto the balconies, with a hop-high guard on each open side; floor props are flush or a clear 1.2 m hop (owner, 2026-10-24 play-test; §8) |
 | Quality of life | All 11 suggestions built: Esc resumes, last-foe arrows, coyote time, shotgun buffer, NO CHARGE text, pause RESTART and MAIN MENU, click-again confirms, a full HOW TO PLAY, sensitivity toast and crosshair options, empty-dash cue, low-HP heartbeat (owner, 2026-10-24; §2.1, §3.1, §9.7) |
 | Known bugs | Every open bug lives in `docs/KNOWN_ISSUES.md` (KI-### IDs), tagged for a play-test, another Claude attempt or the owner's call (owner, 2026-10-23) |
-| Project status | On hold from 2026-10-24 until the owner says to resume (owner, 2026-10-24; `README.md`) |
+| Project status | On hold 2026-10-24, resumed 2026-10-25 when the owner asked for the 0.1 Dev 3 release (owner; `README.md`) |
 | How Claude works | claude.ai project threads in the cloud (no GPU) plus the owner's Windows PC for play-tests and GPU checks |
 
 

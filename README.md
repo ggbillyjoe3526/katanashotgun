@@ -10,12 +10,10 @@ started from the v0.3 prototype and is a desktop game (Windows first, then Mac
 and Linux).
 
 ## Project status
-**On hold since 2026-10-24**, until the owner says to resume. `main` is
-`0.1 Dev 3` (not released yet; `0.1 Dev 2` is the latest release). Every pull
-request up to #54 is merged and nothing is left on a branch. Waiting for the
-owner when work resumes:
-- **Play-tests** of everything merged since Dev 2 (PRs #45 to #54), listed in
-  his play-test checklist: results-screen MAIN MENU and RETRO LOOK LIGHT/OFF,
+`0.1 Dev 3` (released 2026-10-25) is the latest build; the hold set on
+2026-10-24 ended with it. Waiting for the owner:
+- **Play-tests** of everything new in Dev 3 (PRs #45 to #54), listed in his
+  play-test checklist: results-screen MAIN MENU and RETRO LOOK LIGHT/OFF,
   geyser pads on every level, enemy weapons and hit feel with AIM ASSIST,
   bosses landing in view, the hands, katana A and head-height view, the bug
   pass, the soda-can switch, no knee-high snags and the pit ramps along the
@@ -26,7 +24,6 @@ owner when work resumes:
   (roof ramp sides), KI-029 (1 m step by the torii bridge) and KI-031 (the
   service ledge beside each pit ramp's top); KI-005 needs a profile on his
   laptop.
-- **Next release** (`0.1 Dev 3`) when he asks for it.
 
 ## Play it
 - **Windows:** download the installer or the portable zip from the
