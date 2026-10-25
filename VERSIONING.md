@@ -11,8 +11,8 @@ Each version number goes through three stages:
 | Beta | `0.1 Beta 1`, `0.1 Beta 2`, ... | feature-complete, being tested |
 | Release | `0.1` | out of beta |
 
-`0.1 Dev 2` was released on 2026-10-20; the game is now working towards
-**0.1 Dev 3**. Each update moves to the next name:
+`0.1 Dev 3` was released on 2026-10-25; the game is now working towards
+**0.1 Dev 4**. Each update moves to the next name:
 the Dev count goes up until the game enters beta, the Beta count goes up
 until it is released, and then the release is plain `0.1`. What comes after
 `0.1` (for example `0.2 Dev 1`, or fixes to `0.1`) is for the owner to decide
@@ -23,11 +23,11 @@ The version is set in **one place**: `config/version` in `project.godot`,
 written exactly as players see it:
 
 ```
-config/version="0.1 Dev 3"
+config/version="0.1 Dev 4"
 ```
 
 Everything else reads it from there:
-- **Title screen:** bottom-right corner shows the name as is (`0.1 Dev 3`).
+- **Title screen:** bottom-right corner shows the name as is (`0.1 Dev 4`).
 - **Release pipeline** (`.github/workflows/release.yml`): `tools/version.sh`
   turns the name into the forms below.
 - **Windows installer** (`installer/KatanaShotgun.iss`): the name, the file

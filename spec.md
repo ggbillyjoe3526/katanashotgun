@@ -520,7 +520,7 @@ Notes:
 | Developer / publisher name for the installer | `ggbillyjoe3526` (default until the owner picks one) |
 | Godot version pinned | 4.7.2-stable |
 | Music style | Fast (140 to 165 bpm), futuristic, energetic dark electronic bass music with an EDM feel, like Rezz: wobble basses, EDM drums, glitch edits, no string instruments (§10.2); placeholders regenerated to match, real tracks to follow (owner, 2026-10-18) |
-| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 3` (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 released 2026-10-20, Dev 3 released 2026-10-25; `VERSIONING.md`) |
+| Version names | `0.1 Dev N` → `0.1 Beta N` → `0.1`; current `0.1 Dev 4`, not yet released (owner, 2026-10-18; Dev 1 released 2026-10-18, Dev 2 released 2026-10-20, Dev 3 released 2026-10-25, Dev 4 set 2026-10-25; `VERSIONING.md`) |
 | Changelog notes | one file per PR in `changelog.d/`, gathered into `CHANGELOG.md` at release by `tools/changelog.sh release`, so parallel PRs don't conflict (2026-10-18) |
 | Code signing | not yet |
 | Mac builds | built (universal, unsigned zip); optional, dropped if it causes trouble |
